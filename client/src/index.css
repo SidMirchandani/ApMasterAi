@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(224, 43%, 25%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(224, 43%, 25%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(224, 43%, 25%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(189, 35%, 45%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(224, 43%, 25%);
+  --radius: 0.5rem;
+
+  /* Gemini-themed color palette */
+  --gemini-blue: hsl(217, 91%, 60%);
+  --gemini-purple: hsl(258, 90%, 66%);
+  --gemini-teal: hsl(174, 61%, 55%);
+  --gemini-gray: hsl(220, 9%, 46%);
+  --gemini-dark: hsl(222, 84%, 5%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(189, 35%, 45%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+
+  /* Gemini-themed color palette for dark mode */
+  --gemini-blue: hsl(217, 91%, 60%);
+  --gemini-purple: hsl(258, 90%, 66%);
+  --gemini-teal: hsl(174, 61%, 55%);
+  --gemini-gray: hsl(220, 9%, 46%);
+  --gemini-dark: hsl(222, 84%, 5%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .text-gemini-blue { color: var(--gemini-blue); }
+  .text-gemini-purple { color: var(--gemini-purple); }
+  .text-gemini-teal { color: var(--gemini-teal); }
+  .text-gemini-gray { color: var(--gemini-gray); }
+  .text-gemini-dark { color: var(--gemini-dark); }
+  
+  .bg-gemini-blue { background-color: var(--gemini-blue); }
+  .bg-gemini-purple { background-color: var(--gemini-purple); }
+  .bg-gemini-teal { background-color: var(--gemini-teal); }
+  .bg-gemini-gray { background-color: var(--gemini-gray); }
+  .bg-gemini-dark { background-color: var(--gemini-dark); }
+  
+  .border-gemini-blue { border-color: var(--gemini-blue); }
+  .border-gemini-purple { border-color: var(--gemini-purple); }
+  .border-gemini-teal { border-color: var(--gemini-teal); }
+  .border-gemini-gray { border-color: var(--gemini-gray); }
+  .border-gemini-dark { border-color: var(--gemini-dark); }
+
+  .hover\:bg-gemini-blue:hover { background-color: var(--gemini-blue); }
+  .hover\:bg-gemini-purple:hover { background-color: var(--gemini-purple); }
+  .hover\:bg-gemini-teal:hover { background-color: var(--gemini-teal); }
+  .hover\:bg-gemini-gray:hover { background-color: var(--gemini-gray); }
+  .hover\:bg-gemini-dark:hover { background-color: var(--gemini-dark); }
+
+  .hover\:text-gemini-blue:hover { color: var(--gemini-blue); }
+  .hover\:text-gemini-purple:hover { color: var(--gemini-purple); }
+  .hover\:text-gemini-teal:hover { color: var(--gemini-teal); }
+  .hover\:text-gemini-gray:hover { color: var(--gemini-gray); }
+  .hover\:text-gemini-dark:hover { color: var(--gemini-dark); }
+}
