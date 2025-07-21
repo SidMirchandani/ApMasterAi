@@ -1,0 +1,56 @@
+📘 AP Practice App Project Kickoff Document
+Project Title: APMaster.ai (working name — subject to change)
+Target Launch: May 2026 (soft beta release by Jan 2026)
+
+🌟 Project Vision
+Our mission is to build an intuitive, AI-powered AP test prep platform that empowers students across the U.S. to prepare more efficiently for their AP exams. The tool will combine the structure of College Board practice, the community feel of Fiveable, and the intelligence of ChatGPT, making test prep personalized, engaging, and effective.
+
+We’re not just creating a study tool — we’re building a smart learning environment that:
+
+Mimics the real AP test experience (timed sections, scoring, instant feedback).
+
+Gives AI-powered explanations and recommendations.
+
+Tracks student progress and helps them focus on weak areas.
+
+Is free and accessible to all.
+
+🎯 End Goal
+By the end of this project, we will:
+
+Launch a fully functional web-based app for AP students with:
+
+Timed practice tests for multiple AP subjects.
+
+Realistic scoring and automated explanations.
+
+Personalized reports and AI tutoring.
+
+Host and test with at least 500+ users by Spring 2026.
+
+Share our platform on social media, at schools, and AP communities.
+
+Possibly open-source parts of our code for educational impact and recognition.
+
+🛠 Tools & Technologies
+We’ve carefully chosen tools that are beginner-friendly, scalable, and cost-effective.
+
+🖥️ Frontend (User Interface)
+Tools: HTML, CSS, Tailwind CSS (in Replit)
+
+Why?: Clean, fast, and customizable. Tailwind makes it easy to design responsive UIs without writing tons of CSS. Replit makes it easy to collaborate and deploy.
+
+Optional Advanced (Phase 2): React.js (Replit or Vite + GitHub + Vercel)
+
+Why?: For dynamic UI, reusable components, and smoother interactivity.
+
+🔐 Backend + Database
+Tool: Firebase (Authentication + Firestore Database)
+
+Why?:
+
+Easy login system (Google, email/password).
+
+Real-time database to store user progress, test history, and more.
+
+Generous free tier for student-scale projects.
