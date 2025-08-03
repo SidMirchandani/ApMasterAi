@@ -110,26 +110,26 @@ export default function Learn() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-khan-background">
       <Navigation />
       
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Choose Your <span className="bg-gradient-to-r from-gemini-blue to-gemini-purple bg-clip-text text-transparent">AP Subject</span>
+            <h1 className="text-4xl md:text-5xl font-bold text-khan-gray-dark mb-4">
+              Choose Your <span className="text-khan-green">AP Subject</span>
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Select an AP course to begin your personalized learning journey with AI-powered study materials and practice tests.
+            <p className="text-xl text-khan-gray-medium max-w-2xl mx-auto">
+              Select an AP course to begin your personalized learning journey with practice tests and study materials.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {apSubjects.map((subject) => (
-              <Card key={subject.id} className="hover:shadow-lg transition-shadow border-gray-200">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg font-semibold text-gray-900">
+              <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 hover:border-khan-green/30">
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <CardTitle className="text-lg font-bold text-khan-gray-dark">
                       {subject.name}
                     </CardTitle>
                     <Badge 
@@ -139,27 +139,27 @@ export default function Learn() {
                       {subject.difficulty}
                     </Badge>
                   </div>
-                  <CardDescription className="text-gray-600 leading-relaxed">
+                  <CardDescription className="text-khan-gray-medium leading-relaxed text-sm">
                     {subject.description}
                   </CardDescription>
                 </CardHeader>
                 
                 <CardContent>
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
+                  <div className="flex items-center justify-between text-sm text-khan-gray-medium mb-6">
                     <div className="flex items-center space-x-1">
                       <BookOpen className="w-4 h-4" />
-                      <span>{subject.units} Units</span>
+                      <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
-                      <span>{subject.examDate}</span>
+                      <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
                     </div>
                   </div>
                   
                   <div className="flex flex-col space-y-3">
                     <Button 
                       onClick={() => handleStartLearning(subject.id)}
-                      className="bg-gradient-to-r from-gemini-blue to-gemini-purple text-white hover:opacity-90 transition-opacity w-full"
+                      className="bg-khan-green text-white hover:bg-khan-green-light transition-colors w-full font-semibold"
                     >
                       Start Learning
                       <ArrowRight className="ml-2 w-4 h-4" />
@@ -168,10 +168,10 @@ export default function Learn() {
                     <Button 
                       variant="outline"
                       onClick={() => handleDiagnosticTest(subject.id)}
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
+                      className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white transition-colors w-full font-semibold"
                     >
                       <Target className="mr-2 w-4 h-4" />
-                      Diagnostic Test
+                      Practice Test
                     </Button>
                   </div>
                 </CardContent>
@@ -179,22 +179,7 @@ export default function Learn() {
             ))}
           </div>
           
-          <div className="mt-16 text-center">
-            <div className="bg-white rounded-xl border border-gray-200 p-8 max-w-2xl mx-auto">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Not sure where to start?</h3>
-              <p className="text-gray-600 mb-6">
-                Take our comprehensive assessment to identify which AP subjects align with your interests and academic strengths.
-              </p>
-              <Button 
-                variant="outline"
-                size="lg"
-                className="border-2 border-gemini-blue text-gemini-blue hover:bg-gemini-blue hover:text-white"
-              >
-                <Target className="mr-2 w-5 h-5" />
-                Take Full Assessment
-              </Button>
-            </div>
-          </div>
+
         </div>
       </div>
     </div>

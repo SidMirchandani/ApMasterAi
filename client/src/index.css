@@ -26,12 +26,17 @@
   --ring: hsl(224, 43%, 25%);
   --radius: 0.5rem;
 
-  /* Gemini-themed color palette */
-  --gemini-blue: hsl(217, 91%, 60%);
-  --gemini-purple: hsl(258, 90%, 66%);
-  --gemini-teal: hsl(174, 61%, 55%);
-  --gemini-gray: hsl(220, 9%, 46%);
-  --gemini-dark: hsl(222, 84%, 5%);
+  /* Khan Academy inspired color palette */
+  --khan-green: hsl(116, 100%, 33%);
+  --khan-green-light: hsl(122, 75%, 41%);
+  --khan-blue: hsl(216, 85%, 53%);
+  --khan-purple: hsl(248, 100%, 67%);
+  --khan-orange: hsl(28, 96%, 57%);
+  --khan-red: hsl(6, 78%, 57%);
+  --khan-gray-dark: hsl(214, 11%, 15%);
+  --khan-gray-medium: hsl(212, 6%, 39%);
+  --khan-gray-light: hsl(212, 8%, 75%);
+  --khan-background: hsl(210, 11%, 96%);
 }
 
 .dark {
@@ -56,12 +61,17 @@
   --ring: hsl(240, 4.9%, 83.9%);
   --radius: 0.5rem;
 
-  /* Gemini-themed color palette for dark mode */
-  --gemini-blue: hsl(217, 91%, 60%);
-  --gemini-purple: hsl(258, 90%, 66%);
-  --gemini-teal: hsl(174, 61%, 55%);
-  --gemini-gray: hsl(220, 9%, 46%);
-  --gemini-dark: hsl(222, 84%, 5%);
+  /* Khan Academy inspired color palette for dark mode */
+  --khan-green: hsl(116, 100%, 33%);
+  --khan-green-light: hsl(122, 75%, 41%);
+  --khan-blue: hsl(216, 85%, 53%);
+  --khan-purple: hsl(248, 100%, 67%);
+  --khan-orange: hsl(28, 96%, 57%);
+  --khan-red: hsl(6, 78%, 57%);
+  --khan-gray-dark: hsl(214, 11%, 15%);
+  --khan-gray-medium: hsl(212, 6%, 39%);
+  --khan-gray-light: hsl(212, 8%, 75%);
+  --khan-background: hsl(210, 11%, 96%);
 }
 
 @layer base {
@@ -80,33 +90,40 @@
 }
 
 @layer utilities {
-  .text-gemini-blue { color: var(--gemini-blue); }
-  .text-gemini-purple { color: var(--gemini-purple); }
-  .text-gemini-teal { color: var(--gemini-teal); }
-  .text-gemini-gray { color: var(--gemini-gray); }
-  .text-gemini-dark { color: var(--gemini-dark); }
+  .text-khan-green { color: var(--khan-green); }
+  .text-khan-green-light { color: var(--khan-green-light); }
+  .text-khan-blue { color: var(--khan-blue); }
+  .text-khan-purple { color: var(--khan-purple); }
+  .text-khan-orange { color: var(--khan-orange); }
+  .text-khan-red { color: var(--khan-red); }
+  .text-khan-gray-dark { color: var(--khan-gray-dark); }
+  .text-khan-gray-medium { color: var(--khan-gray-medium); }
+  .text-khan-gray-light { color: var(--khan-gray-light); }
   
-  .bg-gemini-blue { background-color: var(--gemini-blue); }
-  .bg-gemini-purple { background-color: var(--gemini-purple); }
-  .bg-gemini-teal { background-color: var(--gemini-teal); }
-  .bg-gemini-gray { background-color: var(--gemini-gray); }
-  .bg-gemini-dark { background-color: var(--gemini-dark); }
+  .bg-khan-green { background-color: var(--khan-green); }
+  .bg-khan-green-light { background-color: var(--khan-green-light); }
+  .bg-khan-blue { background-color: var(--khan-blue); }
+  .bg-khan-purple { background-color: var(--khan-purple); }
+  .bg-khan-orange { background-color: var(--khan-orange); }
+  .bg-khan-red { background-color: var(--khan-red); }
+  .bg-khan-gray-dark { background-color: var(--khan-gray-dark); }
+  .bg-khan-gray-medium { background-color: var(--khan-gray-medium); }
+  .bg-khan-gray-light { background-color: var(--khan-gray-light); }
+  .bg-khan-background { background-color: var(--khan-background); }
   
-  .border-gemini-blue { border-color: var(--gemini-blue); }
-  .border-gemini-purple { border-color: var(--gemini-purple); }
-  .border-gemini-teal { border-color: var(--gemini-teal); }
-  .border-gemini-gray { border-color: var(--gemini-gray); }
-  .border-gemini-dark { border-color: var(--gemini-dark); }
+  .border-khan-green { border-color: var(--khan-green); }
+  .border-khan-blue { border-color: var(--khan-blue); }
+  .border-khan-purple { border-color: var(--khan-purple); }
+  .border-khan-orange { border-color: var(--khan-orange); }
+  .border-khan-gray-light { border-color: var(--khan-gray-light); }
 
-  .hover\:bg-gemini-blue:hover { background-color: var(--gemini-blue); }
-  .hover\:bg-gemini-purple:hover { background-color: var(--gemini-purple); }
-  .hover\:bg-gemini-teal:hover { background-color: var(--gemini-teal); }
-  .hover\:bg-gemini-gray:hover { background-color: var(--gemini-gray); }
-  .hover\:bg-gemini-dark:hover { background-color: var(--gemini-dark); }
+  .hover\:bg-khan-green:hover { background-color: var(--khan-green); }
+  .hover\:bg-khan-blue:hover { background-color: var(--khan-blue); }
+  .hover\:bg-khan-purple:hover { background-color: var(--khan-purple); }
+  .hover\:bg-khan-orange:hover { background-color: var(--khan-orange); }
 
-  .hover\:text-gemini-blue:hover { color: var(--gemini-blue); }
-  .hover\:text-gemini-purple:hover { color: var(--gemini-purple); }
-  .hover\:text-gemini-teal:hover { color: var(--gemini-teal); }
-  .hover\:text-gemini-gray:hover { color: var(--gemini-gray); }
-  .hover\:text-gemini-dark:hover { color: var(--gemini-dark); }
+  .hover\:text-khan-green:hover { color: var(--khan-green); }
+  .hover\:text-khan-blue:hover { color: var(--khan-blue); }
+  .hover\:text-khan-purple:hover { color: var(--khan-purple); }
+  .hover\:text-khan-orange:hover { color: var(--khan-orange); }
 }
