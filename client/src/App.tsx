@@ -8,6 +8,8 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Learn from "@/pages/learn";
 import Login from "@/pages/login";
+import Course from "@/pages/course";
+import PracticeTest from "@/pages/practice-test";
 
 function Router() {
   return (
@@ -15,6 +17,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/learn" component={Learn} />
       <Route path="/login" component={Login} />
+      <Route path="/course/:id" component={Course} />
+      <Route path="/practice-test/:id" component={PracticeTest} />
       <Route component={NotFound} />
     </Switch>
   );
