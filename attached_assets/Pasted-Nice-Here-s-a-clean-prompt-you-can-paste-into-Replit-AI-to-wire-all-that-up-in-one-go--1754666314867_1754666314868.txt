@@ -1,0 +1,57 @@
+Nice! Here’s a clean prompt you can paste into Replit AI to wire all that up in one go.
+
+---
+
+**Prompt for Replit Assistant:**
+
+> My app uses Firebase Auth and Wouter. I want a dashboard flow after login/signup.
+>
+> **Goals**
+>
+> 1. On successful login/signup, navigate to **`/dashboard`**.
+> 2. Add a **Dashboard** page that shows the AP courses I’ve added.
+> 3. If I have **no courses**, show an empty state with a CTA to “Add courses”.
+> 4. Allow **Add/Delete** of courses from the dashboard via a simple UI (modal or inline list).
+> 5. Data should persist per user: use **Firestore** at `users/{uid}/courses` with documents `{ id: string }` where `id` matches our `apSubjects` ids used in `learn.tsx`.
+>
+> **Implement**
+>
+> * Create `src/pages/dashboard.tsx` with:
+>
+>   * `useAuth()` to get `user`/`uid`.
+>   * Firestore reads from `users/${uid}/courses` (subscribe with `onSnapshot`).
+>   * If empty, show a friendly message and a button “Add courses”.
+>   * An **Add Courses** dialog or panel that lists `apSubjects` (reuse the same list from `learn.tsx` or extract it to `src/lib/ap-subjects.ts` and import in both places). Clicking **Add** writes `{ id }` to Firestore; if already added, disable the button.
+>   * Show current courses as cards or a list with a **Delete** (trash) button that removes that course doc.
+> * Add a route in `src/App.tsx`:
+>
+>   ```tsx
+>   <Route path="/dashboard" component={Dashboard} />
+>   ```
+> * Update login & signup success handlers to redirect:
+>
+>   * In `src/pages/login.tsx` (and signup page if separate), after Firebase auth resolves, call `navigate("/dashboard")`.
+> * Make sure imports use our alias style (`@/pages/...`, `@/components/...`).
+> * Create `src/lib/firebase.ts` if missing to export initialized `db` (Firestore).
+> * Keep the Tailwind look consistent with existing pages and include `<Navigation />` at top.
+>
+> **Output**
+>
+> * New/updated files with full contents:
+>
+>   * `src/pages/dashboard.tsx`
+>   * `src/lib/ap-subjects.ts` (export the `apSubjects` array now used by Learn + Dashboard)
+>   * `src/lib/firebase.ts` (if not present)
+>   * `src/pages/login.tsx` (and signup page) showing the `navigate("/dashboard")` change
+>   * `src/App.tsx` with the new route
+>
+> **Notes**
+>
+> * Use Firestore CRUD (`collection`, `doc`, `setDoc`, `deleteDoc`, `onSnapshot`).
+> * Guard the page: if not authenticated, redirect to `/login`.
+> * Types: course object is `{ id: string }`, and we can derive display (name, difficulty) by looking up `apSubjects`.
+> * Keep code minimal and readable.
+
+---
+
+If you’d rather avoid Firestore for now, say “use `localStorage` keyed by `uid`” instead of the Firestore bits.
