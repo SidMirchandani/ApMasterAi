@@ -96,9 +96,9 @@ export default function Navigation() {
                 <Button 
                   className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold"
                   asChild
-                  data-testid="button-get-started"
+                  data-testid="button-sign-up"
                 >
-                  <Link href="/learn">Get Started</Link>
+                  <Link href="/login">Sign Up</Link>
                 </Button>
               </>
             )}
