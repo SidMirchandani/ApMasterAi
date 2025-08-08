@@ -1,3 +1,17 @@
+import { BookOpen } from "lucide-react";
+import { Clock } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Target } from "lucide-react";
+import { Button } from "@/components/ui/button"; // or relative path like "../../components/ui/button"
+import { Badge } from "@/components/ui/badge"; // or a relative path like "../../components/ui/badge"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card"; // or a relative path like "../../components/ui/card"
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
@@ -97,6 +111,26 @@ const difficultyColors = {
 export default function Learn() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
+  // Navigate to the subject’s main study area
+  const handleStartLearning = (subjectId: string) => {
+    // remember last subject the user opened (handy for resume-last-session)
+    localStorage.setItem("apmaster:lastSubject", subjectId);
+
+    // go to the course page for this subject
+    navigate(`/course/${subjectId}`); // change to `/learn/${subjectId}` if that’s your route
+  };
+
+  // Jump straight to a diagnostic/practice test for the subject
+  const handleDiagnosticTest = (subjectId: string) => {
+    localStorage.setItem(
+      "apmaster:lastDiagnostic",
+      JSON.stringify({ subjectId, ts: Date.now() })
+    );
+
+    // go to the practice test page for this subject
+    navigate(`/practice-test/${subjectId}`); // adjust to your real route if different
+  };
+
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
