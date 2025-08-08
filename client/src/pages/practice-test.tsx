@@ -1,11 +1,36 @@
 
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
+import { useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
 import Navigation from "@/components/ui/navigation";
 import { Target, Clock, BarChart3, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PracticeTest() {
   const { id } = useParams<{ id: string }>();
+  const { isAuthenticated, loading } = useAuth();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-khan-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-khan-gray-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
   
   // Get test name from the ID (you can expand this with actual data later)
   const getTestName = (testId: string) => {

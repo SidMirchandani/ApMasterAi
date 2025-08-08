@@ -22,24 +22,35 @@ import { apSubjects, difficultyColors } from "@/lib/ap-subjects";
 export default function Learn() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
-  // Navigate to the subject’s main study area
+
+  // Navigate to the subject's main study area
   const handleStartLearning = (subjectId: string) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
     // remember last subject the user opened (handy for resume-last-session)
     localStorage.setItem("apmaster:lastSubject", subjectId);
 
     // go to the course page for this subject
-    navigate(`/course/${subjectId}`); // change to `/learn/${subjectId}` if that’s your route
+    navigate(`/course/${subjectId}`);
   };
 
   // Jump straight to a diagnostic/practice test for the subject
   const handleDiagnosticTest = (subjectId: string) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
     localStorage.setItem(
       "apmaster:lastDiagnostic",
       JSON.stringify({ subjectId, ts: Date.now() })
     );
 
     // go to the practice test page for this subject
-    navigate(`/practice-test/${subjectId}`); // adjust to your real route if different
+    navigate(`/practice-test/${subjectId}`);
   };
 
 
