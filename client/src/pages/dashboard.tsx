@@ -496,9 +496,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex overflow-hidden">
       {/* Sidebar */}
-      <div className="w-64 bg-gray-200 flex flex-col">
+      <div className="w-64 bg-gray-200 flex flex-col flex-shrink-0">
         {/* Header */}
         <div className="p-6 border-b border-gray-300">
           <h2 className="text-xl font-bold text-khan-gray-dark">AP Test Dashboard</h2>
@@ -541,13 +541,14 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 bg-khan-background">
-        <div className="p-8">
+      <div className="flex-1 bg-khan-background flex">
+        {/* Main Content Area */}
+        <div className="flex-1 p-8 overflow-y-auto max-h-screen">
           {renderTabContent()}
         </div>
 
         {/* Action Log Sidebar */}
-        <div className="fixed top-0 right-0 w-80 h-full bg-gray-200 p-6 border-l border-gray-300">
+        <div className="w-80 h-screen bg-gray-200 p-6 border-l border-gray-300 flex-shrink-0 overflow-y-auto">
           <div className="mb-6">
             <h3 className="text-lg font-bold text-khan-gray-dark mb-2">Action Log</h3>
             <p className="text-sm text-khan-gray-medium mb-4">View your latest test results.</p>
