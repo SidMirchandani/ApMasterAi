@@ -80,7 +80,7 @@ export default function Login() {
           description: "Your account has been created successfully.",
         });
       }
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (error: any) {
       setError(error.message);
     } finally {
