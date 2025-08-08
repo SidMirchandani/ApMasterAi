@@ -80,7 +80,9 @@ export default function Login() {
           description: "Your account has been created successfully.",
         });
       }
-      navigate("/dashboard", { replace: true });
+      // Clear form and redirect to dashboard
+      setFormData({ email: "", password: "", confirmPassword: "" });
+      navigate("/dashboard");
     } catch (error: any) {
       setError(error.message);
     } finally {
