@@ -39,4 +39,4 @@ args = "npm run dev"
 waitForPort = 5000
 
 [agent]
-integrations = ["javascript_gemini==1.0.0"]
+integrations = ["firebase_barebones_javascript==1.0.0", "javascript_gemini==1.0.0"]
