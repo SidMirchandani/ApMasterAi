@@ -63,7 +63,7 @@ export default function Navigation() {
                     data-testid="button-user-menu"
                   >
                     <User className="w-4 h-4 mr-2" />
-                    {user.email?.split('@')[0] || 'User'}
+                    {user.displayName || user.email?.split('@')[0] || 'User'}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">

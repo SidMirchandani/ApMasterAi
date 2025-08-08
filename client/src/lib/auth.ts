@@ -2,6 +2,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  updateProfile,
   User,
   UserCredential
 } from "firebase/auth";
@@ -16,6 +17,7 @@ export interface AuthUser {
 export interface SignUpData {
   email: string;
   password: string;
+  displayName?: string;
 }
 
 export interface LoginData {
@@ -24,9 +26,17 @@ export interface LoginData {
 }
 
 // Sign up with email and password
-export const signUpWithEmail = async ({ email, password }: SignUpData): Promise<UserCredential> => {
+export const signUpWithEmail = async ({ email, password, displayName }: SignUpData): Promise<UserCredential> => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Update the user's display name if provided
+    if (displayName && userCredential.user) {
+      await updateProfile(userCredential.user, {
+        displayName: displayName.trim()
+      });
+    }
+    
     return userCredential;
   } catch (error: any) {
     throw new Error(error.message || "Failed to create account");

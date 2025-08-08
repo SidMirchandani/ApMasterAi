@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { BookOpen, Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
+import { BookOpen, Eye, EyeOff, Loader2, Mail, Lock, User } from "lucide-react";
 import { signUpWithEmail, loginWithEmail } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,7 +21,8 @@ export default function Login() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    displayName: ""
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,6 +37,11 @@ export default function Login() {
   const validateForm = () => {
     if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
+      return false;
+    }
+    
+    if (!isLogin && !formData.displayName.trim()) {
+      setError("Please enter your name");
       return false;
     }
     
@@ -73,7 +79,8 @@ export default function Login() {
       } else {
         await signUpWithEmail({
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          displayName: formData.displayName
         });
         toast({
           title: "Account created!",
@@ -81,7 +88,7 @@ export default function Login() {
         });
       }
       // Clear form and redirect to dashboard
-      setFormData({ email: "", password: "", confirmPassword: "" });
+      setFormData({ email: "", password: "", confirmPassword: "", displayName: "" });
       navigate("/dashboard");
     } catch (error: any) {
       setError(error.message);
@@ -118,6 +125,29 @@ export default function Login() {
           
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Display Name Field (Signup only) */}
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="displayName" className="text-khan-gray-dark font-medium">
+                    Your Name
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-khan-gray-medium w-5 h-5" />
+                    <Input
+                      id="displayName"
+                      name="displayName"
+                      type="text"
+                      required={!isLogin}
+                      value={formData.displayName}
+                      onChange={handleInputChange}
+                      className="pl-10 border-2 border-gray-200 focus:border-khan-green"
+                      placeholder="Enter your name"
+                      data-testid="input-display-name"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-khan-gray-dark font-medium">
@@ -223,7 +253,7 @@ export default function Login() {
                   onClick={() => {
                     setIsLogin(!isLogin);
                     setError("");
-                    setFormData({ email: "", password: "", confirmPassword: "" });
+                    setFormData({ email: "", password: "", confirmPassword: "", displayName: "" });
                   }}
                   className="text-khan-blue hover:text-khan-purple transition-colors font-medium"
                   data-testid="button-toggle-mode"

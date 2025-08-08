@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
@@ -64,7 +63,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     console.log("Dashboard auth state:", { loading, isAuthenticated, user: !!user, uid: user?.uid });
-    
+
     if (!loading && !isAuthenticated) {
       console.log("Not authenticated, redirecting to login");
       navigate("/login");
@@ -77,11 +76,11 @@ export default function Dashboard() {
     }
 
     console.log("Setting up course subscription for user:", user.uid);
-    
+
     // Subscribe to user's courses
     const coursesRef = collection(db, "users", user.uid, "courses");
     const q = query(coursesRef);
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const courses: UserCourse[] = [];
       snapshot.forEach((doc) => {
@@ -104,7 +103,7 @@ export default function Dashboard() {
     try {
       const courseRef = doc(db, "users", user.uid, "courses", courseId);
       await setDoc(courseRef, { id: courseId });
-      
+
       toast({
         title: "Course added!",
         description: "The course has been added to your dashboard.",
@@ -125,7 +124,7 @@ export default function Dashboard() {
     try {
       const courseRef = doc(db, "users", user.uid, "courses", courseId);
       await deleteDoc(courseRef);
-      
+
       toast({
         title: "Course removed",
         description: "The course has been removed from your dashboard.",
@@ -199,13 +198,13 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold text-khan-gray-dark mb-2">
-                  Welcome back, {user?.displayName || 'User'}!
+                  Welcome back, {user?.displayName || user?.email?.split('@')[0] || 'User'}!
                 </h1>
                 <p className="text-xl text-khan-gray-medium">
                   Continue your AP learning journey
                 </p>
               </div>
-              
+
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold">
@@ -220,7 +219,7 @@ export default function Dashboard() {
                       Select from available AP courses to add to your dashboard.
                     </DialogDescription>
                   </DialogHeader>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     {availableCourses.map((subject) => (
                       <Card key={subject.id} className="bg-white border-2 border-gray-100">
@@ -251,7 +250,7 @@ export default function Dashboard() {
                         </CardFooter>
                       </Card>
                     ))}
-                    
+
                     {availableCourses.length === 0 && (
                       <div className="col-span-2 text-center py-8">
                         <p className="text-khan-gray-medium">
@@ -387,7 +386,7 @@ export default function Dashboard() {
             )}
           </div>
         );
-      
+
       case 'history':
         return (
           <div>
@@ -421,7 +420,7 @@ export default function Dashboard() {
                   <p className="text-khan-gray-medium">Complete practice tests to track your progress over time.</p>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -479,7 +478,7 @@ export default function Dashboard() {
                     <p className="text-khan-gray-medium mb-4">Manage your account preferences and settings.</p>
                     <Button variant="outline">Edit Profile</Button>
                   </div>
-                  
+
                   <div className="border-t pt-6">
                     <h3 className="text-lg font-semibold text-khan-gray-dark mb-2">Study Preferences</h3>
                     <p className="text-khan-gray-medium mb-4">Customize your learning experience.</p>
