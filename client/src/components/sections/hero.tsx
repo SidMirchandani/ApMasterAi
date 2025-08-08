@@ -32,14 +32,6 @@ export default function Hero() {
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>
-          
-          <Button 
-            variant="outline" 
-            size="lg"
-            className="border-2 border-khan-gray-light text-khan-gray-dark hover:bg-white px-8 py-4 text-lg font-semibold"
-          >
-            Browse Subjects
-          </Button>
         </div>
         
         <div className="flex items-center justify-center space-x-6 text-sm text-khan-gray-medium">

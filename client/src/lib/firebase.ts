@@ -1,30 +1,27 @@
+
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "demo-api-key",
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project"}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project",
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project"}.firebasestorage.app`,
+  apiKey: "AIzaSyBr45b5l2j7mnTU6fZieRpyydAKz6VsOXU",
+  authDomain: "gen-lang-client-0260042933.firebaseapp.com",
+  databaseURL: "https://gen-lang-client-0260042933-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "gen-lang-client-0260042933",
+  storageBucket: "gen-lang-client-0260042933.firebasestorage.app",
   messagingSenderId: "473292929444",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "demo-app-id",
+  appId: "1:473292929444:web:9c31efee894902acc3a931",
   measurementId: "G-0MB631YLJ0"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize services
+// Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
-export const db = getFirestore(app);
 
-// Initialize Analytics only in browser environment
-let analytics;
-if (typeof window !== 'undefined') {
-  analytics = getAnalytics(app);
-}
+// Initialize Analytics
+export const analytics = getAnalytics(app);
 
-export { analytics };
 export default app;
