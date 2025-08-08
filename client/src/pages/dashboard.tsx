@@ -47,13 +47,21 @@ export default function Dashboard() {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log("Dashboard auth state:", { loading, isAuthenticated, user: !!user, uid: user?.uid });
+    
     if (!loading && !isAuthenticated) {
+      console.log("Not authenticated, redirecting to login");
       navigate("/login");
       return;
     }
 
-    if (!user?.uid) return;
+    if (!user?.uid) {
+      console.log("No user UID, skipping course subscription");
+      return;
+    }
 
+    console.log("Setting up course subscription for user:", user.uid);
+    
     // Subscribe to user's courses
     const coursesRef = collection(db, "users", user.uid, "courses");
     const q = query(coursesRef);
@@ -63,6 +71,7 @@ export default function Dashboard() {
       snapshot.forEach((doc) => {
         courses.push({ id: doc.id });
       });
+      console.log("Loaded courses:", courses);
       setUserCourses(courses);
       setLoadingCourses(false);
     }, (error) => {
@@ -119,12 +128,12 @@ export default function Dashboard() {
   const availableCourses = apSubjects.filter(subject => !getUserCourseIds().includes(subject.id));
   const enrolledCourses = apSubjects.filter(subject => getUserCourseIds().includes(subject.id));
 
-  if (loading || loadingCourses) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-khan-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-khan-gray-medium">Loading dashboard...</p>
+          <p className="text-khan-gray-medium">Loading authentication...</p>
         </div>
       </div>
     );
@@ -132,6 +141,20 @@ export default function Dashboard() {
 
   if (!isAuthenticated) {
     return null; // Will redirect to login
+  }
+
+  if (loadingCourses) {
+    return (
+      <div className="min-h-screen bg-khan-background">
+        <Navigation />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-khan-gray-medium">Loading your courses...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
