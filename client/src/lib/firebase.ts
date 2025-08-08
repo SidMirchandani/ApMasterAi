@@ -4,12 +4,12 @@ import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || process.env.GEMINI_API_KEY,
-  authDomain: "gen-lang-client-0260042933.firebaseapp.com",
-  projectId: "gen-lang-client-0260042933",
-  storageBucket: "gen-lang-client-0260042933.firebasestorage.app",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "demo-api-key",
+  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project"}.firebaseapp.com`,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project",
+  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project"}.firebasestorage.app`,
   messagingSenderId: "473292929444",
-  appId: "1:473292929444:web:9c31efee894902acc3a931",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "demo-app-id",
   measurementId: "G-0MB631YLJ0"
 };
 
