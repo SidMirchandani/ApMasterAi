@@ -195,19 +195,17 @@ export default function Dashboard() {
         return (
           <div className="space-y-8">
             {/* Welcome Section */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-bold text-khan-gray-dark mb-2">
-                  Welcome back, {user?.displayName || user?.email?.split('@')[0] || 'User'}!
-                </h1>
-                <p className="text-xl text-khan-gray-medium">
-                  Continue your AP learning journey
-                </p>
-              </div>
-
+            <div>
+              <h1 className="text-4xl font-bold text-khan-gray-dark mb-2">
+                Welcome back, {user?.displayName || user?.email?.split('@')[0] || 'User'}!
+              </h1>
+              <p className="text-xl text-khan-gray-medium mb-6">
+                Continue your AP learning journey
+              </p>
+              
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold">
+                  <Button className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold shadow-lg">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Courses
                   </Button>
@@ -268,9 +266,9 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold text-khan-gray-dark mb-4">Recent Tests</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {enrolledCourses.slice(0, 4).map((subject) => (
-                  <Card key={subject.id} className="bg-white border border-gray-200 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/practice-test/${subject.id}`)}>
+                  <Card key={subject.id} className="bg-white border-2 border-gray-200 hover:border-khan-green hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate(`/practice-test/${subject.id}`)}>
                     <CardContent className="p-4">
-                      <div className="w-full h-24 bg-gray-100 rounded-lg flex items-center justify-center mb-3">
+                      <div className="w-full h-24 bg-khan-green/10 rounded-lg flex items-center justify-center mb-3">
                         <BookOpen className="w-8 h-8 text-khan-green" />
                       </div>
                       <p className="text-sm font-medium text-khan-gray-dark truncate">{subject.name}</p>
@@ -281,14 +279,14 @@ export default function Dashboard() {
             </div>
 
             {/* Suggested Actions */}
-            <Card className="bg-gray-100">
+            <Card className="bg-khan-green/5 border-2 border-khan-green/20">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-bold text-khan-gray-dark mb-2">Suggested Actions</h3>
                     <p className="text-khan-gray-medium">Next steps to improve your scores.</p>
                   </div>
-                  <Button variant="outline" className="bg-white">
+                  <Button className="bg-khan-green text-white hover:bg-khan-green-light transition-colors">
                     Take Action
                   </Button>
                 </div>
