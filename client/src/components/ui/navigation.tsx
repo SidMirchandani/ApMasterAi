@@ -68,8 +68,13 @@ export default function Navigation() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
+                    <Link href="/dashboard" className="cursor-pointer">
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/learn" className="cursor-pointer">
-                      My Courses
+                      Browse Courses
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
