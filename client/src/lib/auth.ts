@@ -1,6 +1,8 @@
 import { 
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut,
   User,
   UserCredential
@@ -40,6 +42,17 @@ export const loginWithEmail = async ({ email, password }: LoginData): Promise<Us
     return userCredential;
   } catch (error: any) {
     throw new Error(error.message || "Failed to login");
+  }
+};
+
+// Sign in with Google
+export const signInWithGoogle = async (): Promise<UserCredential> => {
+  try {
+    const provider = new GoogleAuthProvider();
+    const userCredential = await signInWithPopup(auth, provider);
+    return userCredential;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to sign in with Google");
   }
 };
 
