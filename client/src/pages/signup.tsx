@@ -81,12 +81,21 @@ export default function Signup() {
     <div className="min-h-screen bg-khan-background flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center space-x-3 mb-8">
+          <Link href="/" className="inline-flex items-center space-x-3 mb-6">
             <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center">
               <BookOpen className="w-7 h-7 text-white" />
             </div>
             <span className="text-3xl font-bold text-khan-gray-dark">APMaster</span>
           </Link>
+          
+          <div className="mb-8">
+            <Link
+              href="/"
+              className="inline-flex items-center text-khan-gray-medium hover:text-khan-gray-dark transition-colors font-medium"
+            >
+              ← Go back to home
+            </Link>
+          </div>
         </div>
 
         <Card className="bg-white border-2 border-gray-100 shadow-lg">
@@ -199,15 +208,6 @@ export default function Signup() {
             </form>
           </CardContent>
         </Card>
-
-        <div className="text-center mt-6">
-          <Link
-            href="/"
-            className="inline-flex items-center text-khan-gray-medium hover:text-khan-gray-dark transition-colors font-medium"
-          >
-            ← Go back to home
-          </Link>
-        </div>
       </div>
     </div>
   );
