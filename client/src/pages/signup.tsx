@@ -68,7 +68,8 @@ export default function Signup() {
         title: "Account created!",
         description: "Your account has been created successfully.",
       });
-      navigate("/dashboard");
+      // Force redirect to dashboard immediately
+      window.location.href = "/dashboard";
     } catch (error: any) {
       setError(error.message);
     } finally {

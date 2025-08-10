@@ -62,7 +62,8 @@ export default function Login() {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      navigate("/dashboard");
+      // Force redirect to dashboard immediately
+      window.location.href = "/dashboard";
     } catch (error: any) {
       setError(error.message);
     } finally {
