@@ -174,6 +174,15 @@ export default function Login() {
             </form>
           </CardContent>
         </Card>
+
+        <div className="text-center mt-6">
+          <Link
+            href="/"
+            className="inline-flex items-center text-khan-gray-medium hover:text-khan-gray-dark transition-colors font-medium"
+          >
+            ← Go back to home
+          </Link>
+        </div>
       </div>
     </div>
   );
