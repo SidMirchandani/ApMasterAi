@@ -36,7 +36,10 @@ export default function Navigation() {
     <nav className="border-b border-khan-gray-light bg-white sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center space-x-3">
+          <Link 
+            href={isAuthenticated ? "/dashboard" : "/"} 
+            className="flex items-center space-x-3"
+          >
             <div className="w-10 h-10 bg-khan-green rounded-lg flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
@@ -44,13 +47,25 @@ export default function Navigation() {
           </Link>
           
           <div className="flex items-center space-x-6">
-            <Link 
-              href="/learn" 
-              className="text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors"
-              data-testid="link-courses"
-            >
-              Courses
-            </Link>
+            {isAuthenticated && (
+              <>
+                <Link 
+                  href="/learn" 
+                  className="text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors"
+                  data-testid="link-courses"
+                >
+                  Courses
+                </Link>
+                
+                <Link 
+                  href="/dashboard" 
+                  className="text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors"
+                  data-testid="link-dashboard"
+                >
+                  Dashboard
+                </Link>
+              </>
+            )}
             
             {loading ? (
               <div className="w-20 h-9 bg-gray-200 animate-pulse rounded" />
@@ -63,21 +78,10 @@ export default function Navigation() {
                     data-testid="button-user-menu"
                   >
                     <User className="w-4 h-4 mr-2" />
-                    {user.email?.split('@')[0] || 'User'}
+                    Account
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="cursor-pointer">
-                      Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/learn" className="cursor-pointer">
-                      Browse Courses
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={handleLogout}
                     className="cursor-pointer text-khan-red focus:text-khan-red"
@@ -103,7 +107,7 @@ export default function Navigation() {
                   asChild
                   data-testid="button-sign-up"
                 >
-                  <Link href="/login">Sign Up</Link>
+                  <Link href="/signup">Sign Up</Link>
                 </Button>
               </>
             )}

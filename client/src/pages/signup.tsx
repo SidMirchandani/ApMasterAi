@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BookOpen, Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
-import { loginWithEmail } from "@/lib/auth";
+import { signUpWithEmail } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
-export default function Login() {
+export default function Signup() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   
@@ -19,7 +19,8 @@ export default function Login() {
   
   const [formData, setFormData] = useState({
     email: "",
-    password: ""
+    password: "",
+    confirmPassword: ""
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,8 +33,13 @@ export default function Login() {
   };
 
   const validateForm = () => {
-    if (!formData.email || !formData.password) {
+    if (!formData.email || !formData.password || !formData.confirmPassword) {
       setError("Please fill in all fields");
+      return false;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
       return false;
     }
     
@@ -54,13 +60,13 @@ export default function Login() {
     setError("");
     
     try {
-      await loginWithEmail({
+      await signUpWithEmail({
         email: formData.email,
         password: formData.password
       });
       toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
+        title: "Account created!",
+        description: "Your account has been created successfully.",
       });
       navigate("/dashboard");
     } catch (error: any) {
@@ -85,10 +91,10 @@ export default function Login() {
         <Card className="bg-white border-2 border-gray-100 shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-khan-gray-dark">
-              Welcome back
+              Create your account
             </CardTitle>
             <CardDescription className="text-khan-gray-medium">
-              Sign in to continue your AP preparation journey
+              Start your AP preparation journey today
             </CardDescription>
           </CardHeader>
           
@@ -139,6 +145,25 @@ export default function Login() {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-khan-gray-dark font-medium">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-khan-gray-medium w-5 h-5" />
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="pl-10 border-2 border-gray-200 focus:border-khan-green"
+                    placeholder="Confirm your password"
+                  />
+                </div>
+              </div>
+
               {error && (
                 <Alert className="border-khan-red/20 bg-khan-red/5">
                   <AlertDescription className="text-khan-red">
@@ -155,19 +180,19 @@ export default function Login() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 w-4 h-4 animate-spin" />
-                    Signing in...
+                    Creating account...
                   </>
                 ) : (
-                  "Sign In"
+                  "Create Account"
                 )}
               </Button>
 
               <div className="text-center pt-4">
                 <Link
-                  href="/signup"
+                  href="/login"
                   className="text-khan-blue hover:text-khan-purple transition-colors font-medium"
                 >
-                  Don't have an account? Sign up
+                  Already have an account? Sign in
                 </Link>
               </div>
             </form>

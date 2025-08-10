@@ -15,42 +15,56 @@ import {
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/ui/navigation";
 import { apSubjects, difficultyColors } from "@/lib/ap-subjects";
 
 
-export default function Learn() {
+export default function Courses() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
 
-  // Navigate to the subject's main study area
-  const handleStartLearning = (subjectId: string) => {
+  // Add subject to dashboard
+  const handleAddToDashboard = (subject: typeof apSubjects[0]) => {
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
 
-    // remember last subject the user opened (handy for resume-last-session)
-    localStorage.setItem("apmaster:lastSubject", subjectId);
-
-    // go to the course page for this subject
-    navigate(`/course/${subjectId}`);
-  };
-
-  // Jump straight to a diagnostic/practice test for the subject
-  const handleDiagnosticTest = (subjectId: string) => {
-    if (!isAuthenticated) {
-      navigate("/login");
+    // Get existing subjects from localStorage
+    const existingSubjects = localStorage.getItem('dashboardSubjects');
+    const subjects = existingSubjects ? JSON.parse(existingSubjects) : [];
+    
+    // Check if subject is already added
+    if (subjects.some((s: any) => s.id === subject.id)) {
+      toast({
+        title: "Already added",
+        description: `${subject.name} is already in your dashboard.`,
+        variant: "default"
+      });
       return;
     }
-
-    localStorage.setItem(
-      "apmaster:lastDiagnostic",
-      JSON.stringify({ subjectId, ts: Date.now() })
-    );
-
-    // go to the practice test page for this subject
-    navigate(`/practice-test/${subjectId}`);
+    
+    // Add subject with default progress
+    const newSubject = {
+      ...subject,
+      progress: 0,
+      lastStudied: null
+    };
+    
+    const updatedSubjects = [...subjects, newSubject];
+    localStorage.setItem('dashboardSubjects', JSON.stringify(updatedSubjects));
+    
+    toast({
+      title: "Subject added!",
+      description: `${subject.name} has been added to your dashboard.`,
+    });
+    
+    // Navigate to dashboard after adding
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 1000);
   };
 
 
@@ -124,20 +138,11 @@ export default function Learn() {
 
                   <div className="flex flex-col space-y-3">
                     <Button
-                      onClick={() => handleStartLearning(subject.id)}
+                      onClick={() => handleAddToDashboard(subject)}
                       className="bg-khan-green text-white hover:bg-khan-green-light transition-colors w-full font-semibold"
                     >
-                      Start Learning
+                      Add to Dashboard
                       <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      onClick={() => handleDiagnosticTest(subject.id)}
-                      className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white transition-colors w-full font-semibold"
-                    >
-                      <Target className="mr-2 w-4 h-4" />
-                      Practice Test
                     </Button>
                   </div>
                 </CardContent>
