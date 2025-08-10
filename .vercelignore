@@ -1,0 +1,11 @@
+
+node_modules
+.env
+.env.local
+.env.production.local
+.env.development.local
+dist
+.replit
+replit.nix
+attached_assets
+.config
