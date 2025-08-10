@@ -6,20 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BookOpen, Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
-import { loginWithEmail } from "@/lib/auth";
+import { signUpWithEmail, loginWithEmail } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   
+  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   
   const [formData, setFormData] = useState({
     email: "",
-    password: ""
+    password: "",
+    confirmPassword: ""
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,6 +36,11 @@ export default function Login() {
   const validateForm = () => {
     if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
+      return false;
+    }
+    
+    if (!isLogin && formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
       return false;
     }
     
@@ -54,14 +61,27 @@ export default function Login() {
     setError("");
     
     try {
-      await loginWithEmail({
-        email: formData.email,
-        password: formData.password
-      });
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
-      });
+      if (isLogin) {
+        await loginWithEmail({
+          email: formData.email,
+          password: formData.password
+        });
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in.",
+        });
+      } else {
+        await signUpWithEmail({
+          email: formData.email,
+          password: formData.password
+        });
+        toast({
+          title: "Account created!",
+          description: "Your account has been created successfully.",
+        });
+      }
+      // Clear form and redirect to dashboard
+      setFormData({ email: "", password: "", confirmPassword: "" });
       navigate("/dashboard");
     } catch (error: any) {
       setError(error.message);
@@ -73,6 +93,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-khan-background flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        {/* Header */}
         <div className="text-center">
           <Link href="/" className="inline-flex items-center space-x-3 mb-8">
             <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center">
@@ -82,18 +103,22 @@ export default function Login() {
           </Link>
         </div>
 
+        {/* Login/Signup Card */}
         <Card className="bg-white border-2 border-gray-100 shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-khan-gray-dark">
-              Welcome back
+              {isLogin ? "Welcome back" : "Create your account"}
             </CardTitle>
             <CardDescription className="text-khan-gray-medium">
-              Sign in to continue your AP preparation journey
+              {isLogin 
+                ? "Sign in to continue your AP preparation journey" 
+                : "Start your AP preparation journey today"}
             </CardDescription>
           </CardHeader>
           
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-khan-gray-dark font-medium">
                   Email address
@@ -109,10 +134,12 @@ export default function Login() {
                     onChange={handleInputChange}
                     className="pl-10 border-2 border-gray-200 focus:border-khan-green"
                     placeholder="Enter your email"
+                    data-testid="input-email"
                   />
                 </div>
               </div>
 
+              {/* Password Field */}
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-khan-gray-dark font-medium">
                   Password
@@ -128,6 +155,7 @@ export default function Login() {
                     onChange={handleInputChange}
                     className="pl-10 pr-10 border-2 border-gray-200 focus:border-khan-green"
                     placeholder="Enter your password"
+                    data-testid="input-password"
                   />
                   <button
                     type="button"
@@ -139,6 +167,30 @@ export default function Login() {
                 </div>
               </div>
 
+              {/* Confirm Password Field (Signup only) */}
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-khan-gray-dark font-medium">
+                    Confirm Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-khan-gray-medium w-5 h-5" />
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      required
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      className="pl-10 border-2 border-gray-200 focus:border-khan-green"
+                      placeholder="Confirm your password"
+                      data-testid="input-confirm-password"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Error Alert */}
               {error && (
                 <Alert className="border-khan-red/20 bg-khan-red/5">
                   <AlertDescription className="text-khan-red">
@@ -147,32 +199,57 @@ export default function Login() {
                 </Alert>
               )}
 
+              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold py-3"
+                data-testid="button-submit"
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 w-4 h-4 animate-spin" />
-                    Signing in...
+                    {isLogin ? "Signing in..." : "Creating account..."}
                   </>
                 ) : (
-                  "Sign In"
+                  isLogin ? "Sign In" : "Create Account"
                 )}
               </Button>
 
+              {/* Toggle Login/Signup */}
               <div className="text-center pt-4">
-                <Link
-                  href="/signup"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setError("");
+                    setFormData({ email: "", password: "", confirmPassword: "" });
+                  }}
                   className="text-khan-blue hover:text-khan-purple transition-colors font-medium"
+                  data-testid="button-toggle-mode"
                 >
-                  Don't have an account? Sign up
-                </Link>
+                  {isLogin 
+                    ? "Don't have an account? Sign up" 
+                    : "Already have an account? Sign in"}
+                </button>
               </div>
             </form>
           </CardContent>
         </Card>
+
+        {/* Footer */}
+        <div className="text-center text-sm text-khan-gray-medium">
+          <p>
+            By continuing, you agree to our{" "}
+            <Link href="#" className="text-khan-blue hover:text-khan-purple transition-colors">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="#" className="text-khan-blue hover:text-khan-purple transition-colors">
+              Privacy Policy
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
