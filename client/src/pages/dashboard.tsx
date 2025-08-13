@@ -3,9 +3,10 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Clock, Trash2, Plus } from "lucide-react";
+import { BookOpen, Clock, Trash2, Plus, Calendar } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import { format } from "date-fns";
 
 interface DashboardSubject {
   id: string;
@@ -16,6 +17,7 @@ interface DashboardSubject {
   examDate: string;
   progress: number;
   lastStudied?: string;
+  dateAdded?: string;
 }
 
 const difficultyColors = {
@@ -171,6 +173,13 @@ export default function Dashboard() {
                             ></div>
                           </div>
                         </div>
+                        
+                        {subject.dateAdded && (
+                          <div className="flex items-center space-x-1 text-xs text-khan-gray-medium">
+                            <Calendar className="w-3 h-3" />
+                            <span>Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}</span>
+                          </div>
+                        )}
                         
                         <Button 
                           onClick={() => handleStartStudying(subject.id)}
