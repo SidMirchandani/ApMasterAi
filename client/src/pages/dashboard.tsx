@@ -37,10 +37,12 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
 
   // Fetch user subjects from API
-  const { data: subjects = [], isLoading: subjectsLoading } = useQuery({
+  const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{success: boolean, data: DashboardSubject[]}>({
     queryKey: ["/api/user/subjects"],
     enabled: isAuthenticated && !!user,
   });
+  
+  const subjects = subjectsResponse?.data || [];
 
   // Remove subject mutation
   const removeSubjectMutation = useMutation({
