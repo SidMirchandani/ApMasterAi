@@ -1,4 +1,6 @@
-import { users, waitlistEmails, type User, type InsertUser, type WaitlistEmail, type InsertWaitlistEmail } from "@shared/schema";
+import { users, waitlistEmails, userSubjects, type User, type InsertUser, type WaitlistEmail, type InsertWaitlistEmail, type UserSubject, type InsertUserSubject } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -7,67 +9,92 @@ export interface IStorage {
   addToWaitlist(email: InsertWaitlistEmail): Promise<WaitlistEmail>;
   getWaitlistEmails(): Promise<WaitlistEmail[]>;
   isEmailInWaitlist(email: string): Promise<boolean>;
+  getUserSubjects(userId: number): Promise<UserSubject[]>;
+  addUserSubject(userSubject: InsertUserSubject): Promise<UserSubject>;
+  removeUserSubject(userId: number, subjectId: string): Promise<void>;
+  hasUserSubject(userId: number, subjectId: string): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private waitlistEmails: Map<number, WaitlistEmail>;
-  private currentUserId: number;
-  private currentWaitlistId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.waitlistEmails = new Map();
-    this.currentUserId = 1;
-    this.currentWaitlistId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async addToWaitlist(insertEmail: InsertWaitlistEmail): Promise<WaitlistEmail> {
-    // Check if email already exists
-    const existingEmail = Array.from(this.waitlistEmails.values()).find(
-      (entry) => entry.email === insertEmail.email
-    );
-    
-    if (existingEmail) {
-      throw new Error("Email already registered for waitlist");
+    try {
+      const [waitlistEmail] = await db
+        .insert(waitlistEmails)
+        .values(insertEmail)
+        .returning();
+      return waitlistEmail;
+    } catch (error: any) {
+      if (error.code === '23505') { // PostgreSQL unique constraint violation
+        throw new Error("Email already registered for waitlist");
+      }
+      throw error;
     }
-
-    const id = this.currentWaitlistId++;
-    const waitlistEmail: WaitlistEmail = {
-      id,
-      email: insertEmail.email,
-      signedUpAt: new Date(),
-    };
-    this.waitlistEmails.set(id, waitlistEmail);
-    return waitlistEmail;
   }
 
   async getWaitlistEmails(): Promise<WaitlistEmail[]> {
-    return Array.from(this.waitlistEmails.values());
+    return await db.select().from(waitlistEmails);
   }
 
   async isEmailInWaitlist(email: string): Promise<boolean> {
-    return Array.from(this.waitlistEmails.values()).some(
-      (entry) => entry.email === email
-    );
+    const [result] = await db
+      .select()
+      .from(waitlistEmails)
+      .where(eq(waitlistEmails.email, email));
+    return !!result;
+  }
+
+  async getUserSubjects(userId: number): Promise<UserSubject[]> {
+    return await db
+      .select()
+      .from(userSubjects)
+      .where(eq(userSubjects.userId, userId));
+  }
+
+  async addUserSubject(userSubject: InsertUserSubject): Promise<UserSubject> {
+    const [subject] = await db
+      .insert(userSubjects)
+      .values(userSubject)
+      .returning();
+    return subject;
+  }
+
+  async removeUserSubject(userId: number, subjectId: string): Promise<void> {
+    await db
+      .delete(userSubjects)
+      .where(and(
+        eq(userSubjects.userId, userId),
+        eq(userSubjects.subjectId, subjectId)
+      ));
+  }
+
+  async hasUserSubject(userId: number, subjectId: string): Promise<boolean> {
+    const [result] = await db
+      .select()
+      .from(userSubjects)
+      .where(and(
+        eq(userSubjects.userId, userId),
+        eq(userSubjects.subjectId, subjectId)
+      ));
+    return !!result;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

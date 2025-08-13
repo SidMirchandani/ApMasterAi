@@ -18,12 +18,57 @@ import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/ui/navigation";
 import { apSubjects, difficultyColors } from "@/lib/ap-subjects";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 
 export default function Courses() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Add subject to dashboard mutation
+  const addSubjectMutation = useMutation({
+    mutationFn: async (subject: typeof apSubjects[0]) => {
+      const response = await apiRequest("POST", "/api/user/subjects", {
+        subjectId: subject.id,
+        name: subject.name,
+        description: subject.description,
+        units: subject.units,
+        difficulty: subject.difficulty,
+        examDate: subject.examDate,
+        progress: 0,
+      });
+      return response.json();
+    },
+    onSuccess: (data, subject) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/subjects"] });
+      toast({
+        title: "Subject added!",
+        description: `${subject.name} has been added to your dashboard.`,
+      });
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.message;
+      if (errorMessage.includes("Subject already added")) {
+        toast({
+          title: "Already added",
+          description: "This subject is already in your dashboard.",
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add subject. Please try again.",
+          variant: "destructive"
+        });
+      }
+    },
+  });
 
   // Add subject to dashboard
   const handleAddToDashboard = (subject: typeof apSubjects[0]) => {
@@ -32,40 +77,7 @@ export default function Courses() {
       return;
     }
 
-    // Get existing subjects from localStorage
-    const existingSubjects = localStorage.getItem('dashboardSubjects');
-    const subjects = existingSubjects ? JSON.parse(existingSubjects) : [];
-    
-    // Check if subject is already added
-    if (subjects.some((s: any) => s.id === subject.id)) {
-      toast({
-        title: "Already added",
-        description: `${subject.name} is already in your dashboard.`,
-        variant: "default"
-      });
-      return;
-    }
-    
-    // Add subject with default progress and current timestamp
-    const newSubject = {
-      ...subject,
-      progress: 0,
-      lastStudied: null,
-      dateAdded: new Date().toISOString()
-    };
-    
-    const updatedSubjects = [...subjects, newSubject];
-    localStorage.setItem('dashboardSubjects', JSON.stringify(updatedSubjects));
-    
-    toast({
-      title: "Subject added!",
-      description: `${subject.name} has been added to your dashboard.`,
-    });
-    
-    // Navigate to dashboard after adding
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1000);
+    addSubjectMutation.mutate(subject);
   };
 
 

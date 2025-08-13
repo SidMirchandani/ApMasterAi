@@ -7,9 +7,13 @@ import { BookOpen, Clock, Trash2, Plus, Calendar } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { format } from "date-fns";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface DashboardSubject {
-  id: string;
+  id: number;
+  userId: number;
+  subjectId: string;
   name: string;
   description: string;
   units: number;
@@ -17,7 +21,7 @@ interface DashboardSubject {
   examDate: string;
   progress: number;
   lastStudied?: string;
-  dateAdded?: string;
+  dateAdded: string;
 }
 
 const difficultyColors = {
@@ -30,7 +34,23 @@ const difficultyColors = {
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
-  const [dashboardSubjects, setDashboardSubjects] = useState<DashboardSubject[]>([]);
+  const queryClient = useQueryClient();
+
+  // Fetch user subjects from API
+  const { data: subjects = [], isLoading: subjectsLoading } = useQuery({
+    queryKey: ["/api/user/subjects"],
+    enabled: isAuthenticated && !!user,
+  });
+
+  // Remove subject mutation
+  const removeSubjectMutation = useMutation({
+    mutationFn: async (subjectId: string) => {
+      await apiRequest("DELETE", `/api/user/subjects/${subjectId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/subjects"] });
+    },
+  });
 
   useEffect(() => {
     console.log('Dashboard auth state:', { loading, isAuthenticated, user: !!user });
@@ -40,20 +60,8 @@ export default function Dashboard() {
     }
   }, [loading, isAuthenticated, navigate]);
 
-  useEffect(() => {
-    // Load saved subjects from localStorage
-    const savedSubjects = localStorage.getItem('dashboardSubjects');
-    if (savedSubjects) {
-      const subjects = JSON.parse(savedSubjects);
-      console.log('Loaded subjects from localStorage:', subjects);
-      setDashboardSubjects(subjects);
-    }
-  }, []);
-
   const removeSubject = (subjectId: string) => {
-    const updatedSubjects = dashboardSubjects.filter(s => s.id !== subjectId);
-    setDashboardSubjects(updatedSubjects);
-    localStorage.setItem('dashboardSubjects', JSON.stringify(updatedSubjects));
+    removeSubjectMutation.mutate(subjectId);
   };
 
   const handleStartStudying = (subjectId: string) => {
@@ -61,7 +69,7 @@ export default function Dashboard() {
     console.log(`Starting to study ${subjectId}`);
   };
 
-  if (loading) {
+  if (loading || subjectsLoading) {
     return (
       <div className="min-h-screen bg-khan-background">
         <Navigation />
@@ -91,7 +99,7 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {dashboardSubjects.length === 0 ? (
+          {subjects.length === 0 ? (
             <div className="text-center py-16">
               <BookOpen className="mx-auto h-24 w-24 text-khan-gray-light mb-6" />
               <h2 className="text-2xl font-bold text-khan-gray-dark mb-4">
@@ -123,7 +131,7 @@ export default function Dashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {dashboardSubjects.map((subject) => (
+                {subjects.map((subject: DashboardSubject) => (
                   <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100">
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between mb-2">
@@ -138,7 +146,7 @@ export default function Dashboard() {
                             {subject.difficulty}
                           </Badge>
                           <button
-                            onClick={() => removeSubject(subject.id)}
+                            onClick={() => removeSubject(subject.subjectId)}
                             className="text-khan-gray-light hover:text-khan-red transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -179,15 +187,12 @@ export default function Dashboard() {
                         <div className="flex items-center space-x-1 text-xs text-khan-gray-medium">
                           <Calendar className="w-3 h-3" />
                           <span>
-                            {subject.dateAdded 
-                              ? `Added ${format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}`
-                              : "Added to dashboard"
-                            }
+                            Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}
                           </span>
                         </div>
                         
                         <Button 
-                          onClick={() => handleStartStudying(subject.id)}
+                          onClick={() => handleStartStudying(subject.subjectId)}
                           className="bg-khan-green text-white hover:bg-khan-green-light transition-colors w-full font-semibold"
                         >
                           Continue Studying
