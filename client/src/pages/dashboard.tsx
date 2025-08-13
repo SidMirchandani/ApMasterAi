@@ -44,7 +44,9 @@ export default function Dashboard() {
     // Load saved subjects from localStorage
     const savedSubjects = localStorage.getItem('dashboardSubjects');
     if (savedSubjects) {
-      setDashboardSubjects(JSON.parse(savedSubjects));
+      const subjects = JSON.parse(savedSubjects);
+      console.log('Loaded subjects from localStorage:', subjects);
+      setDashboardSubjects(subjects);
     }
   }, []);
 
@@ -174,12 +176,15 @@ export default function Dashboard() {
                           </div>
                         </div>
                         
-                        {subject.dateAdded && (
-                          <div className="flex items-center space-x-1 text-xs text-khan-gray-medium">
-                            <Calendar className="w-3 h-3" />
-                            <span>Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}</span>
-                          </div>
-                        )}
+                        <div className="flex items-center space-x-1 text-xs text-khan-gray-medium">
+                          <Calendar className="w-3 h-3" />
+                          <span>
+                            {subject.dateAdded 
+                              ? `Added ${format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}`
+                              : "Added to dashboard"
+                            }
+                          </span>
+                        </div>
                         
                         <Button 
                           onClick={() => handleStartStudying(subject.id)}
