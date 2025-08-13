@@ -46,11 +46,12 @@ export default function Courses() {
       return;
     }
     
-    // Add subject with default progress
+    // Add subject with default progress and current timestamp
     const newSubject = {
       ...subject,
       progress: 0,
-      lastStudied: null
+      lastStudied: null,
+      dateAdded: new Date().toISOString()
     };
     
     const updatedSubjects = [...subjects, newSubject];
