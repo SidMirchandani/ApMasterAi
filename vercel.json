@@ -3,11 +3,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "server/index.ts",
-      "use": "@vercel/node",
+      "src": "package.json",
+      "use": "@vercel/static-build",
       "config": {
-        "includeFiles": ["dist/public/**"]
+        "distDir": "dist/public"
       }
+    },
+    {
+      "src": "server/index.ts",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -16,7 +20,7 @@
       "dest": "/server/index.ts"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json))",
       "dest": "/dist/public/$1"
     },
     {
@@ -24,9 +28,6 @@
       "dest": "/dist/public/index.html"
     }
   ],
-  "outputDirectory": "dist/public",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
   "functions": {
     "server/index.ts": {
       "maxDuration": 30
