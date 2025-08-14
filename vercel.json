@@ -16,8 +16,12 @@
       "dest": "/server/index.ts"
     },
     {
-      "src": "/(.*)",
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
       "dest": "/dist/public/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/public/index.html"
     }
   ],
   "outputDirectory": "dist/public",
@@ -27,5 +31,8 @@
     "server/index.ts": {
       "maxDuration": 30
     }
+  },
+  "env": {
+    "NODE_ENV": "production"
   }
 }
