@@ -7,7 +7,7 @@ import {
   User,
   UserCredential
 } from "firebase/auth";
-import { auth } from "./firebase";
+import { auth, isFirebaseEnabled } from "./firebase";
 
 export interface AuthUser {
   uid: string;
@@ -27,6 +27,10 @@ export interface LoginData {
 
 // Sign up with email and password
 export const signUpWithEmail = async ({ email, password }: SignUpData): Promise<UserCredential> => {
+  if (!isFirebaseEnabled || !auth) {
+    throw new Error("Authentication is not configured. Please contact support.");
+  }
+  
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     return userCredential;
@@ -37,6 +41,10 @@ export const signUpWithEmail = async ({ email, password }: SignUpData): Promise<
 
 // Sign in with email and password
 export const loginWithEmail = async ({ email, password }: LoginData): Promise<UserCredential> => {
+  if (!isFirebaseEnabled || !auth) {
+    throw new Error("Authentication is not configured. Please contact support.");
+  }
+  
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential;
@@ -58,6 +66,10 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
 
 // Sign out
 export const logout = async (): Promise<void> => {
+  if (!isFirebaseEnabled || !auth) {
+    throw new Error("Authentication is not configured. Please contact support.");
+  }
+  
   try {
     await signOut(auth);
   } catch (error: any) {

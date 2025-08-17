@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, isFirebaseEnabled } from "@/lib/firebase";
 import { AuthUser, convertFirebaseUser } from "@/lib/auth";
 
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isFirebaseEnabled: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +21,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isFirebaseEnabled || !auth) {
+      // If Firebase is not configured, set loading to false immediately
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: User | null) => {
       const authUser = convertFirebaseUser(firebaseUser);
       setUser(authUser);
@@ -32,7 +39,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value: AuthContextType = {
     user,
     loading,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    isFirebaseEnabled
   };
 
   return (
