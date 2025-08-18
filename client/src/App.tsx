@@ -12,6 +12,7 @@ import Signup from "@/pages/signup";
 import Course from "@/pages/course";
 import PracticeTest from "@/pages/practice-test";
 import Dashboard from "@/pages/dashboard";
+import Study from "@/pages/study";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/study" component={Study} />
       <Route path="/course/:id" component={Course} />
       <Route path="/practice-test/:id" component={PracticeTest} />
       <Route component={NotFound} />

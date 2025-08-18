@@ -20,6 +20,7 @@ interface DashboardSubject {
   difficulty: string;
   examDate: string;
   progress: number;
+  masteryLevel: number;
   lastStudied?: string;
   dateAdded: string;
 }
@@ -67,8 +68,8 @@ export default function Dashboard() {
   };
 
   const handleStartStudying = (subjectId: string) => {
-    // Navigate to specific subject study page (placeholder for now)
-    console.log(`Starting to study ${subjectId}`);
+    // Navigate to study page with subject ID
+    navigate(`/study?subject=${subjectId}`);
   };
 
   if (loading || subjectsLoading) {
@@ -147,6 +148,18 @@ export default function Dashboard() {
                           >
                             {subject.difficulty}
                           </Badge>
+                          {subject.masteryLevel && (
+                            <Badge 
+                              variant="outline" 
+                              className={
+                                subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                                subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
+                                "bg-green-100 text-green-800 border-green-200"
+                              }
+                            >
+                              Goal: {subject.masteryLevel}
+                            </Badge>
+                          )}
                           <button
                             onClick={() => removeSubject(subject.subjectId)}
                             className="text-khan-gray-light hover:text-khan-red transition-colors"
