@@ -12,7 +12,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
@@ -20,17 +20,44 @@ import Navigation from "@/components/ui/navigation";
 import { apSubjects, difficultyColors } from "@/lib/ap-subjects";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
+
+const masteryLevels = [
+  {
+    level: 3,
+    title: "Pass (3)",
+    description: "I want to pass the AP exam and earn college credit",
+    color: "bg-yellow-100 text-yellow-800 border-yellow-200"
+  },
+  {
+    level: 4,
+    title: "Well Qualified (4)", 
+    description: "I want to demonstrate strong understanding and skills",
+    color: "bg-blue-100 text-blue-800 border-blue-200"
+  },
+  {
+    level: 5,
+    title: "Extremely Well Qualified (5)",
+    description: "I want to achieve the highest possible score",
+    color: "bg-green-100 text-green-800 border-green-200"
+  }
+];
 
 export default function Courses() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showMasteryModal, setShowMasteryModal] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<typeof apSubjects[0] | null>(null);
+  const [selectedMastery, setSelectedMastery] = useState<string>("4");
 
   // Add subject to dashboard mutation
   const addSubjectMutation = useMutation({
-    mutationFn: async (subject: typeof apSubjects[0]) => {
+    mutationFn: async ({ subject, masteryLevel }: { subject: typeof apSubjects[0], masteryLevel: string }) => {
       const response = await apiRequest("POST", "/api/user/subjects", {
         subjectId: subject.id,
         name: subject.name,
@@ -39,15 +66,17 @@ export default function Courses() {
         difficulty: subject.difficulty,
         examDate: subject.examDate,
         progress: 0,
+        masteryLevel: parseInt(masteryLevel),
       });
       return response.json();
     },
-    onSuccess: (data, subject) => {
+    onSuccess: (data, { subject }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/user/subjects"] });
       toast({
         title: "Subject added!",
         description: `${subject.name} has been added to your dashboard.`,
       });
+      setShowMasteryModal(false);
       setTimeout(() => {
         navigate('/dashboard');
       }, 1000);
@@ -77,7 +106,17 @@ export default function Courses() {
       return;
     }
 
-    addSubjectMutation.mutate(subject);
+    setSelectedSubject(subject);
+    setShowMasteryModal(true);
+  };
+
+  const handleConfirmAddSubject = () => {
+    if (!selectedSubject) return;
+    
+    addSubjectMutation.mutate({ 
+      subject: selectedSubject, 
+      masteryLevel: selectedMastery 
+    });
   };
 
 
@@ -166,6 +205,74 @@ export default function Courses() {
 
         </div>
       </div>
+
+      {/* Mastery Level Selection Modal */}
+      <Dialog open={showMasteryModal} onOpenChange={setShowMasteryModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Target className="w-6 h-6 text-khan-green" />
+              <span>What's your AP goal?</span>
+            </DialogTitle>
+            <DialogDescription>
+              Choose the score you're aiming for in {selectedSubject?.name}. This helps us customize your study plan.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <RadioGroup 
+              value={selectedMastery} 
+              onValueChange={setSelectedMastery}
+              className="space-y-3"
+            >
+              {masteryLevels.map((level) => (
+                <div key={level.level} className="flex items-start space-x-3">
+                  <RadioGroupItem 
+                    value={level.level.toString()} 
+                    id={level.level.toString()}
+                    className="mt-1"
+                    data-testid={`mastery-level-${level.level}`}
+                  />
+                  <Label 
+                    htmlFor={level.level.toString()} 
+                    className="flex-1 cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Badge className={level.color}>
+                        Score {level.level}
+                      </Badge>
+                      <span className="font-semibold text-khan-gray-dark">
+                        {level.title}
+                      </span>
+                    </div>
+                    <p className="text-sm text-khan-gray-medium leading-relaxed">
+                      {level.description}
+                    </p>
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowMasteryModal(false)}
+                data-testid="button-cancel"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleConfirmAddSubject}
+                disabled={addSubjectMutation.isPending}
+                className="bg-khan-green text-white hover:bg-khan-green-light"
+                data-testid="button-add-subject"
+              >
+                {addSubjectMutation.isPending ? "Adding..." : "Add Subject"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
