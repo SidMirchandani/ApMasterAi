@@ -67,8 +67,8 @@ export default function Dashboard() {
   };
 
   const handleStartStudying = (subjectId: string) => {
-    // Navigate to specific subject study page (placeholder for now)
-    console.log(`Starting to study ${subjectId}`);
+    // Navigate to study page with subject ID
+    navigate(`/study?subject=${subjectId}`);
   };
 
   if (loading || subjectsLoading) {
