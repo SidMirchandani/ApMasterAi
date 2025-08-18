@@ -13,6 +13,9 @@ function getAuthHeaders(): Record<string, string> {
   
   if (auth?.currentUser?.uid) {
     headers["x-user-id"] = auth.currentUser.uid;
+    console.log("Adding auth header:", auth.currentUser.uid);
+  } else {
+    console.log("No auth user available for headers:", { auth: !!auth, currentUser: !!auth?.currentUser });
   }
   
   return headers;
