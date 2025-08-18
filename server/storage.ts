@@ -13,6 +13,7 @@ export interface IStorage {
   addUserSubject(userSubject: InsertUserSubject): Promise<UserSubject>;
   removeUserSubject(userId: number, subjectId: string): Promise<void>;
   hasUserSubject(userId: number, subjectId: string): Promise<boolean>;
+  updateSubjectMasteryLevel(userId: number, subjectId: string, masteryLevel: number): Promise<UserSubject | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -94,6 +95,18 @@ export class DatabaseStorage implements IStorage {
         eq(userSubjects.subjectId, subjectId)
       ));
     return !!result;
+  }
+
+  async updateSubjectMasteryLevel(userId: number, subjectId: string, masteryLevel: number): Promise<UserSubject | null> {
+    const [updatedSubject] = await db
+      .update(userSubjects)
+      .set({ masteryLevel })
+      .where(and(
+        eq(userSubjects.userId, userId),
+        eq(userSubjects.subjectId, subjectId)
+      ))
+      .returning();
+    return updatedSubject || null;
   }
 }
 
