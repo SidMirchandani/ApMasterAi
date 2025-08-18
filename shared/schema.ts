@@ -24,6 +24,7 @@ export const userSubjects = pgTable("user_subjects", {
   difficulty: text("difficulty").notNull(),
   examDate: text("exam_date").notNull(),
   progress: integer("progress").default(0).notNull(),
+  masteryLevel: integer("mastery_level").default(4).notNull(), // AP test goal: 3, 4, or 5
   lastStudied: timestamp("last_studied"),
   dateAdded: timestamp("date_added").defaultNow().notNull(),
 });

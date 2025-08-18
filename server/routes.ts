@@ -122,6 +122,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/user/subjects/:subjectId/mastery", async (req, res) => {
+    try {
+      const firebaseUid = req.headers['x-user-id'] as string;
+      
+      if (!firebaseUid) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Authentication required" 
+        });
+      }
+
+      const { masteryLevel } = req.body;
+      
+      if (!masteryLevel || masteryLevel < 3 || masteryLevel > 5) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Mastery level must be 3, 4, or 5" 
+        });
+      }
+
+      const userId = await getOrCreateUser(firebaseUid);
+      const updatedSubject = await storage.updateSubjectMasteryLevel(userId, req.params.subjectId, masteryLevel);
+      
+      if (!updatedSubject) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Subject not found" 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Mastery level updated",
+        data: updatedSubject 
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to update mastery level" 
+      });
+    }
+  });
+
   // Waitlist signup endpoint
   app.post("/api/waitlist", async (req, res) => {
     try {
