@@ -3,6 +3,7 @@ import { User, onAuthStateChanged, onIdTokenChanged } from "firebase/auth";
 import { auth, isFirebaseEnabled, waitForAuth } from "@/lib/firebase";
 import { AuthUser, convertFirebaseUser } from "@/lib/auth";
 import { initializeAuthPersistence, monitorAuthStability } from "@/lib/auth-persistence";
+import { AuthDomainHandler, initializeCrossDomainAuth } from "@/lib/auth-domain-handler";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -53,19 +54,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       try {
+        // Initialize cross-domain auth handling
+        initializeCrossDomainAuth();
+        
         // Initialize auth persistence first
         await initializeAuthPersistence();
         
         // Monitor auth state stability
         stabilityCleanup = monitorAuthStability();
         
+        // Try to restore auth from storage (for cross-domain scenarios)
+        await AuthDomainHandler.restoreAuthFromStorage();
+        
         // Wait for auth to be ready
         const authInstance = await waitForAuth();
         
         if (!mounted) return;
 
-        // Set up auth state listener with enhanced error handling
-        const unsubscribe = onAuthStateChanged(authInstance, 
+        // Set up enhanced auth state listener with cross-domain support
+        const unsubscribe = AuthDomainHandler.monitorAuthStateForDomain(
           (firebaseUser: User | null) => {
             if (!mounted) return;
             
@@ -73,7 +80,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
               const authUser = convertFirebaseUser(firebaseUser);
               setUser(authUser);
               setError(null);
-              console.log('Auth state changed:', { 
+              console.log('Auth state changed (cross-domain):', { 
+                uid: firebaseUser?.uid, 
+                email: firebaseUser?.email,
+                authenticated: !!firebaseUser,
+                domain: window.location.hostname
+              });
+            } catch (error) {
+              console.error('Error processing auth state change:', error);
+              setError('Authentication processing error');
+              setUser(null);
+            } finally {
+              setLoading(false);
+            }
+          }
+        );
+
+        // Also keep the standard listener for fallback
+        const standardUnsubscribe = onAuthStateChanged(authInstance, 
+          (firebaseUser: User | null) => {
+            if (!mounted) return;
+            
+            try {
+              const authUser = convertFirebaseUser(firebaseUser);
+              setUser(authUser);
+              setError(null);
+              console.log('Auth state changed (standard):', { 
                 uid: firebaseUser?.uid, 
                 email: firebaseUser?.email,
                 authenticated: !!firebaseUser 
@@ -118,6 +150,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Cleanup function
         return () => {
           unsubscribe();
+          standardUnsubscribe();
           tokenUnsubscribe();
           if (stabilityCleanup) {
             stabilityCleanup();

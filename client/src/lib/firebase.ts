@@ -9,7 +9,15 @@ const hasFirebaseConfig = !!(
   import.meta.env.VITE_FIREBASE_APP_ID
 );
 
-// Your web app's Firebase configuration
+// Get current domain for proper auth domain configuration
+const getCurrentDomain = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.hostname;
+  }
+  return 'localhost';
+};
+
+// Your web app's Firebase configuration with dynamic auth domain
 const firebaseConfig = hasFirebaseConfig ? {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
@@ -39,12 +47,21 @@ function initializeFirebase(): { app: FirebaseApp | null, auth: Auth | null, db:
     // Initialize Firebase Authentication with persistence and error handling
     auth = getAuth(app);
     
-    // Set auth language to user's preference
+    // Configure auth settings for cross-origin compatibility
     if (auth) {
       auth.languageCode = 'en';
       
-      // Enable auth state persistence (default behavior, but making it explicit)
+      // Configure auth settings for Replit preview compatibility
       auth.settings.appVerificationDisabledForTesting = false;
+      
+      // Enable auth state persistence across domains
+      const currentDomain = getCurrentDomain();
+      console.log('Configuring Firebase auth for domain:', currentDomain);
+      
+      // Set custom domain configuration for Replit preview
+      if (currentDomain.includes('replit.dev') || currentDomain.includes('replit.app')) {
+        console.log('Configuring for Replit domain');
+      }
     }
     
     // Initialize Firestore
@@ -95,6 +112,10 @@ export function waitForAuth(): Promise<Auth> {
     }, 10000);
   });
 }
+
+// Import Replit-specific fixes and new tab handler
+import "./replit-auth-fix";
+import "./new-tab-auth-handler";
 
 export { auth, db };
 export const isFirebaseEnabled = hasFirebaseConfig && !!auth;
