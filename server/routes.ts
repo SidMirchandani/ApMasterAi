@@ -3,21 +3,27 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertWaitlistEmailSchema, insertUserSubjectSchema } from "@shared/schema";
 import { z } from "zod";
+import { DatabaseRetryHandler, ensureDatabaseHealth } from "./db-retry-handler";
 
-// Middleware to handle Firebase user authentication
+// Enhanced middleware to handle Firebase user authentication with database retry
 async function getOrCreateUser(firebaseUid: string): Promise<number> {
-  // Try to find user by username (using firebase UID as username)
-  let user = await storage.getUserByUsername(firebaseUid);
-  
-  if (!user) {
-    // Create new user with Firebase UID as username
-    user = await storage.createUser({
-      username: firebaseUid,
-      password: 'firebase_auth' // Placeholder since we use Firebase
-    });
-  }
-  
-  return user.id;
+  return DatabaseRetryHandler.withRetry(async () => {
+    await ensureDatabaseHealth();
+    
+    // Try to find user by username (using firebase UID as username)
+    let user = await storage.getUserByUsername(firebaseUid);
+    
+    if (!user) {
+      // Create new user with Firebase UID as username
+      user = await storage.createUser({
+        username: firebaseUid,
+        password: 'firebase_auth' // Placeholder since we use Firebase
+      });
+      console.log('Created new user for Firebase UID:', firebaseUid);
+    }
+    
+    return user.id;
+  });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
