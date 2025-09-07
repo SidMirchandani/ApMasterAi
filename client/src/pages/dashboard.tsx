@@ -68,6 +68,7 @@ export default function Dashboard() {
   };
 
   const handleStartStudying = (subjectId: string) => {
+    console.log(`Starting to study ${subjectId}`);
     // Navigate to study page with subject ID
     navigate(`/study?subject=${subjectId}`);
   };

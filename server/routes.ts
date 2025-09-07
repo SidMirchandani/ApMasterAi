@@ -25,8 +25,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user/subjects", async (req, res) => {
     try {
       const firebaseUid = req.headers['x-user-id'] as string;
+      console.log("GET /api/user/subjects - Firebase UID:", firebaseUid);
       
       if (!firebaseUid) {
+        console.log("No Firebase UID provided in headers");
         return res.status(401).json({ 
           success: false, 
           message: "Authentication required" 
@@ -41,6 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: subjects 
       });
     } catch (error) {
+      console.error("Error in GET /api/user/subjects:", error);
       res.status(500).json({ 
         success: false, 
         message: "Failed to get user subjects" 
@@ -51,8 +54,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/user/subjects", async (req, res) => {
     try {
       const firebaseUid = req.headers['x-user-id'] as string;
+      console.log("POST /api/user/subjects - Firebase UID:", firebaseUid);
+      console.log("Request body:", req.body);
       
       if (!firebaseUid) {
+        console.log("No Firebase UID provided in headers");
         return res.status(401).json({ 
           success: false, 
           message: "Authentication required" 
@@ -83,7 +89,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: subject 
       });
     } catch (error) {
+      console.error("Error in POST /api/user/subjects:", error);
       if (error instanceof z.ZodError) {
+        console.error("Validation error:", error.errors);
         return res.status(400).json({ 
           success: false, 
           message: "Invalid subject data" 

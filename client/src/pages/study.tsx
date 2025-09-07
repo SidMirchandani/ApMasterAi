@@ -1,94 +1,331 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { BookOpen, Target, ArrowLeft } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BookOpen, Clock, Target, CheckCircle, PlayCircle, ArrowLeft } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { apSubjects } from "@/lib/ap-subjects";
 
-const masteryLevels = [
+interface StudySubject {
+  id: number;
+  userId: number;
+  subjectId: string;
+  name: string;
+  description: string;
+  units: number;
+  difficulty: string;
+  examDate: string;
+  progress: number;
+  masteryLevel: number;
+  lastStudied?: string;
+  dateAdded: string;
+}
+
+interface Topic {
+  id: string;
+  title: string;
+  description: string;
+  estimatedTime: string;
+  difficulty: "Beginner" | "Intermediate" | "Advanced";
+  completed: boolean;
+  practiceQuestions: number;
+}
+
+interface Unit {
+  id: string;
+  title: string;
+  description: string;
+  topics: Topic[];
+}
+
+const calcSubjectTopics: Unit[] = [
   {
-    level: 3,
-    title: "Qualified (3)",
-    description: "I need foundational practice and review of core concepts",
-    color: "bg-yellow-100 text-yellow-800 border-yellow-200"
+    id: "unit1",
+    title: "Limits and Continuity",
+    description: "Introduction to limits, one-sided limits, and continuity",
+    topics: [
+      {
+        id: "limits-intro",
+        title: "Introduction to Limits",
+        description: "Understanding the concept of limits and limit notation",
+        estimatedTime: "45 min",
+        difficulty: "Beginner",
+        completed: false,
+        practiceQuestions: 15
+      },
+      {
+        id: "limit-laws",
+        title: "Limit Laws",
+        description: "Properties and rules for evaluating limits",
+        estimatedTime: "30 min", 
+        difficulty: "Beginner",
+        completed: false,
+        practiceQuestions: 12
+      },
+      {
+        id: "continuity",
+        title: "Continuity",
+        description: "Definition of continuity and types of discontinuities",
+        estimatedTime: "40 min",
+        difficulty: "Intermediate", 
+        completed: false,
+        practiceQuestions: 18
+      }
+    ]
   },
   {
-    level: 4,
-    title: "Well Qualified (4)", 
-    description: "I have good understanding but want to strengthen weak areas",
-    color: "bg-blue-100 text-blue-800 border-blue-200"
+    id: "unit2", 
+    title: "Differentiation",
+    description: "Derivatives and their applications",
+    topics: [
+      {
+        id: "derivative-definition",
+        title: "Definition of Derivative",
+        description: "Understanding derivatives as rates of change",
+        estimatedTime: "50 min",
+        difficulty: "Intermediate",
+        completed: false,
+        practiceQuestions: 20
+      },
+      {
+        id: "derivative-rules",
+        title: "Derivative Rules",
+        description: "Power rule, product rule, quotient rule, and chain rule",
+        estimatedTime: "60 min",
+        difficulty: "Intermediate",
+        completed: false,
+        practiceQuestions: 25
+      },
+      {
+        id: "implicit-differentiation",
+        title: "Implicit Differentiation",
+        description: "Finding derivatives of implicitly defined functions",
+        estimatedTime: "45 min",
+        difficulty: "Advanced",
+        completed: false,
+        practiceQuestions: 16
+      }
+    ]
   },
   {
-    level: 5,
-    title: "Extremely Well Qualified (5)",
-    description: "I want challenging problems to perfect my mastery",
-    color: "bg-green-100 text-green-800 border-green-200"
+    id: "unit3",
+    title: "Integration",
+    description: "Antiderivatives and the Fundamental Theorem of Calculus",
+    topics: [
+      {
+        id: "antiderivatives",
+        title: "Antiderivatives",
+        description: "Basic integration techniques and rules",
+        estimatedTime: "55 min",
+        difficulty: "Intermediate",
+        completed: false,
+        practiceQuestions: 22
+      },
+      {
+        id: "fundamental-theorem",
+        title: "Fundamental Theorem of Calculus", 
+        description: "Connecting derivatives and integrals",
+        estimatedTime: "50 min",
+        difficulty: "Advanced",
+        completed: false,
+        practiceQuestions: 18
+      },
+      {
+        id: "integration-techniques",
+        title: "Integration Techniques",
+        description: "Substitution and integration by parts",
+        estimatedTime: "70 min",
+        difficulty: "Advanced",
+        completed: false,
+        practiceQuestions: 28
+      }
+    ]
   }
 ];
 
-export default function Study() {
-  const { isAuthenticated, loading } = useAuth();
-  const [location, navigate] = useLocation();
-  const [showMasteryModal, setShowMasteryModal] = useState(true);
-  const [selectedMastery, setSelectedMastery] = useState<string>("4");
-  const [subject, setSubject] = useState<any>(null);
+const biologySubjectTopics: Unit[] = [
+  {
+    id: "unit1",
+    title: "Chemistry of Life",
+    description: "Basic chemistry concepts and biological molecules",
+    topics: [
+      {
+        id: "water-properties",
+        title: "Properties of Water",
+        description: "Water's role in biological systems",
+        estimatedTime: "40 min",
+        difficulty: "Beginner",
+        completed: false,
+        practiceQuestions: 14
+      },
+      {
+        id: "macromolecules",
+        title: "Biological Macromolecules",
+        description: "Carbohydrates, lipids, proteins, and nucleic acids",
+        estimatedTime: "60 min",
+        difficulty: "Intermediate",
+        completed: false,
+        practiceQuestions: 24
+      }
+    ]
+  },
+  {
+    id: "unit2",
+    title: "Cell Structure and Function",
+    description: "Cell theory, organelles, and cellular processes",
+    topics: [
+      {
+        id: "cell-theory",
+        title: "Cell Theory",
+        description: "Fundamental principles of cell biology",
+        estimatedTime: "35 min",
+        difficulty: "Beginner",
+        completed: false,
+        practiceQuestions: 12
+      },
+      {
+        id: "organelles",
+        title: "Cell Organelles",
+        description: "Structure and function of cellular components",
+        estimatedTime: "55 min",
+        difficulty: "Intermediate",
+        completed: false,
+        practiceQuestions: 20
+      }
+    ]
+  }
+];
 
-  // Get subject ID from URL
-  const subjectId = new URLSearchParams(location.split('?')[1] || '').get('subject');
+const getTopicsForSubject = (subjectId: string): Unit[] => {
+  switch (subjectId) {
+    case 'calculus-ab':
+    case 'calculus-bc':
+      return calcSubjectTopics;
+    case 'biology':
+      return biologySubjectTopics;
+    default:
+      return [
+        {
+          id: "general",
+          title: "General Topics",
+          description: "Core concepts and practice materials",
+          topics: [
+            {
+              id: "fundamentals",
+              title: "Fundamental Concepts",
+              description: "Core principles and basic understanding",
+              estimatedTime: "45 min",
+              difficulty: "Beginner",
+              completed: false,
+              practiceQuestions: 15
+            },
+            {
+              id: "intermediate-topics",
+              title: "Intermediate Topics",
+              description: "Building on the fundamentals",
+              estimatedTime: "60 min",
+              difficulty: "Intermediate", 
+              completed: false,
+              practiceQuestions: 20
+            },
+            {
+              id: "advanced-applications",
+              title: "Advanced Applications",
+              description: "Complex problem solving and applications",
+              estimatedTime: "75 min",
+              difficulty: "Advanced",
+              completed: false,
+              practiceQuestions: 25
+            }
+          ]
+        }
+      ];
+  }
+};
+
+const difficultyColors = {
+  "Beginner": "bg-green-100 text-green-800 border-green-200",
+  "Intermediate": "bg-yellow-100 text-yellow-800 border-yellow-200", 
+  "Advanced": "bg-red-100 text-red-800 border-red-200"
+};
+
+export default function Study() {
+  const { user, isAuthenticated, loading } = useAuth();
+  const [, navigate] = useLocation();
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  
+  // Get subject ID from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const subjectId = urlParams.get('subject');
+
+  // Fetch user subjects to get the specific subject details
+  const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{success: boolean, data: StudySubject[]}>({
+    queryKey: ["/api/user/subjects"],
+    enabled: isAuthenticated && !!user,
+  });
+
+  const subjects = subjectsResponse?.data || [];
+  const currentSubject = subjects.find(s => s.subjectId === subjectId);
+  const topics = currentSubject ? getTopicsForSubject(currentSubject.subjectId) : [];
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      navigate("/login");
+      navigate('/login');
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [loading, isAuthenticated, navigate]);
 
   useEffect(() => {
-    // In a real app, you'd fetch the subject data based on subjectId
-    // For now, we'll use mock data
-    if (subjectId) {
-      setSubject({
-        id: subjectId,
-        name: subjectId.charAt(0).toUpperCase() + subjectId.slice(1),
-        description: `Advanced Placement ${subjectId.charAt(0).toUpperCase() + subjectId.slice(1)}`
-      });
+    if (!subjectId) {
+      navigate('/dashboard');
     }
-  }, [subjectId]);
+  }, [subjectId, navigate]);
 
-  const handleStartStudy = () => {
-    setShowMasteryModal(false);
-    // Here you would typically start the actual study session
-    console.log(`Starting study session for ${subject?.name} at mastery level ${selectedMastery}`);
+  const handleStartTopic = (topicId: string) => {
+    // Navigate to practice test or study material for this topic
+    navigate(`/practice-test/${subjectId}?topic=${topicId}`);
   };
 
-  if (loading) {
+  const handleContinueStudying = () => {
+    // Find the next incomplete topic or go to practice test
+    const nextTopic = topics
+      .flatMap(unit => unit.topics)
+      .find(topic => !topic.completed);
+    
+    if (nextTopic) {
+      handleStartTopic(nextTopic.id);
+    } else {
+      // If all topics are complete, go to practice test
+      navigate(`/practice-test/${subjectId}`);
+    }
+  };
+
+  if (loading || subjectsLoading) {
     return (
-      <div className="min-h-screen bg-khan-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-khan-gray-medium">Loading...</p>
+      <div className="min-h-screen bg-khan-background">
+        <Navigation />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  if (!subject) {
+  if (!currentSubject) {
     return (
       <div className="min-h-screen bg-khan-background">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-khan-gray-dark mb-4">Subject not found</h1>
-            <Button onClick={() => navigate('/dashboard')}>
-              <ArrowLeft className="mr-2 w-4 h-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Subject Not Found</h1>
+            <p className="text-gray-600 mb-8">The requested subject was not found in your dashboard.</p>
+            <Button onClick={() => navigate('/dashboard')} data-testid="button-back-to-dashboard">
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dashboard
             </Button>
           </div>
@@ -97,126 +334,173 @@ export default function Study() {
     );
   }
 
+  const totalTopics = topics.reduce((sum, unit) => sum + unit.topics.length, 0);
+  const completedTopics = topics.reduce((sum, unit) => sum + unit.topics.filter(t => t.completed).length, 0);
+  const overallProgress = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
+
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/dashboard')}
-            className="mb-4 text-khan-gray-medium hover:text-khan-gray-dark"
-          >
-            <ArrowLeft className="mr-2 w-4 h-4" />
-            Back to Dashboard
-          </Button>
-          
-          <div className="flex items-center space-x-3 mb-2">
-            <BookOpen className="w-8 h-8 text-khan-green" />
-            <h1 className="text-3xl font-bold text-khan-gray-dark">{subject.name}</h1>
-          </div>
-          <p className="text-khan-gray-medium">{subject.description}</p>
-        </div>
-
-        {!showMasteryModal ? (
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Target className="w-6 h-6 text-khan-green" />
-                <span>Study Session - Level {selectedMastery}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-16">
-                <div className="w-16 h-16 bg-khan-green rounded-full flex items-center justify-center mx-auto mb-6">
-                  <BookOpen className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-khan-gray-dark mb-4">
-                  Study session starting soon...
-                </h2>
-                <p className="text-khan-gray-medium mb-6">
-                  Get ready for targeted practice at mastery level {selectedMastery}
-                </p>
-                <Button 
-                  onClick={() => setShowMasteryModal(true)}
-                  variant="outline"
-                  className="border-khan-green text-khan-green hover:bg-khan-green hover:text-white"
-                >
-                  Change Mastery Level
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
-      </div>
-
-      {/* Mastery Level Selection Modal */}
-      <Dialog open={showMasteryModal} onOpenChange={setShowMasteryModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <Target className="w-6 h-6 text-khan-green" />
-              <span>Choose Your Mastery Level</span>
-            </DialogTitle>
-            <DialogDescription>
-              Select the AP level that matches your current understanding of {subject?.name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <RadioGroup 
-              value={selectedMastery} 
-              onValueChange={setSelectedMastery}
-              className="space-y-3"
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/dashboard')}
+              className="p-2"
+              data-testid="button-back"
             >
-              {masteryLevels.map((level) => (
-                <div key={level.level} className="flex items-start space-x-3">
-                  <RadioGroupItem 
-                    value={level.level.toString()} 
-                    id={level.level.toString()}
-                    className="mt-1"
-                    data-testid={`mastery-level-${level.level}`}
-                  />
-                  <Label 
-                    htmlFor={level.level.toString()} 
-                    className="flex-1 cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Badge className={level.color}>
-                        Level {level.level}
-                      </Badge>
-                      <span className="font-semibold text-khan-gray-dark">
-                        {level.title}
-                      </span>
-                    </div>
-                    <p className="text-sm text-khan-gray-medium leading-relaxed">
-                      {level.description}
-                    </p>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/dashboard')}
-                data-testid="button-cancel"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleStartStudy}
-                className="bg-khan-green text-white hover:bg-khan-green-light"
-                data-testid="button-start-study"
-              >
-                Start Studying
-              </Button>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900" data-testid="text-subject-name">
+                {currentSubject.name}
+              </h1>
+              <p className="text-gray-600 mt-1" data-testid="text-subject-description">
+                {currentSubject.description}
+              </p>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+          <Button 
+            onClick={handleContinueStudying} 
+            size="lg"
+            className="bg-khan-green hover:bg-khan-green/90"
+            data-testid="button-continue-studying"
+          >
+            <PlayCircle className="mr-2 h-5 w-5" />
+            Continue Studying
+          </Button>
+        </div>
+
+        {/* Progress Overview */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-khan-green" />
+              Your Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-khan-green" data-testid="text-progress-percentage">
+                  {Math.round(overallProgress)}%
+                </div>
+                <div className="text-sm text-gray-600">Overall Progress</div>
+                <Progress value={overallProgress} className="mt-2" />
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600" data-testid="text-completed-topics">
+                  {completedTopics}/{totalTopics}
+                </div>
+                <div className="text-sm text-gray-600">Topics Completed</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600" data-testid="text-mastery-level">
+                  {currentSubject.masteryLevel}
+                </div>
+                <div className="text-sm text-gray-600">Target Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600" data-testid="text-exam-date">
+                  {currentSubject.examDate}
+                </div>
+                <div className="text-sm text-gray-600">Exam Date</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Study Units */}
+        <div className="space-y-6">
+          {topics.map((unit, unitIndex) => (
+            <Card key={unit.id}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-khan-green" />
+                  Unit {unitIndex + 1}: {unit.title}
+                </CardTitle>
+                <CardDescription>{unit.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  {unit.topics.map((topic) => (
+                    <Card key={topic.id} className="border-l-4 border-l-khan-green/20">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-semibold text-lg" data-testid={`text-topic-${topic.id}`}>
+                                {topic.title}
+                              </h3>
+                              {topic.completed && (
+                                <CheckCircle className="h-5 w-5 text-green-500" data-testid={`icon-completed-${topic.id}`} />
+                              )}
+                              <Badge 
+                                variant="outline" 
+                                className={difficultyColors[topic.difficulty]}
+                                data-testid={`badge-difficulty-${topic.id}`}
+                              >
+                                {topic.difficulty}
+                              </Badge>
+                            </div>
+                            <p className="text-gray-600 mb-3" data-testid={`text-topic-description-${topic.id}`}>
+                              {topic.description}
+                            </p>
+                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                <span data-testid={`text-estimated-time-${topic.id}`}>
+                                  {topic.estimatedTime}
+                                </span>
+                              </div>
+                              <div data-testid={`text-practice-questions-${topic.id}`}>
+                                {topic.practiceQuestions} practice questions
+                              </div>
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <Button 
+                              onClick={() => handleStartTopic(topic.id)}
+                              variant={topic.completed ? "outline" : "default"}
+                              data-testid={`button-start-topic-${topic.id}`}
+                            >
+                              <PlayCircle className="mr-2 h-4 w-4" />
+                              {topic.completed ? "Review" : "Start"}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="mt-8 flex justify-center gap-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard')}
+            data-testid="button-back-to-dashboard-bottom"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          <Button 
+            onClick={handleContinueStudying}
+            className="bg-khan-green hover:bg-khan-green/90"
+            data-testid="button-continue-studying-bottom"
+          >
+            <PlayCircle className="mr-2 h-5 w-5" />
+            Continue Studying
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

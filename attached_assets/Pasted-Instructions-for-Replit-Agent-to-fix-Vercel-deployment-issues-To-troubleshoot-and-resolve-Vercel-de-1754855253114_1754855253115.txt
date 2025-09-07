@@ -1,0 +1,16 @@
+Instructions for Replit Agent to fix Vercel deployment issues
+To troubleshoot and resolve Vercel deployment problems using Replit Agent, follow these steps:
+Open the Agent Tool: Open the Agent icon in the Replit workspace's left sidebar, per the Replit Docs https://docs.replit.com/replitai/agent-v2. Select it to open the Agent chat interface.
+Provide Detailed Context: Describe the issue clearly in the chat: "The Replit preview works, but the Vercel app isn't deploying successfully. An error is received when attempting to deploy."
+Paste Vercel Logs: Copy and paste the full error messages and logs from your Vercel deployment. This provides Agent with key information about the problem. These logs are typically found in the Vercel dashboard under the Deployments tab for your project.
+Mention Potential Causes: Guide Agent by suggesting potential causes:
+The issue might be related to environment variables, file paths, or build configurations, which might not be translating correctly from Replit to Vercel.
+Missing dependencies might not be installing during the build process.
+The build command used in Vercel should be aligned with the project's needs.
+Request Specific Actions: Ask Agent to investigate and suggest solutions, such as:
+Analyze the Vercel logs and identify the root cause of the deployment error.
+Check that all environment variables needed for Vercel are correctly configured.
+Verify the file paths and import statements, ensuring they are compatible with the Vercel environment.
+Review the Vercel deployment settings and ensure they are appropriate for the project, specifically checking build commands and the output directory.
+Iterate and Refine: If Agent's initial suggestions don't resolve the problem, continue the conversation. Provide more context, ask more specific questions, and keep exploring possible solutions with Agent's assistance.
+By following these instructions, Replit Agent can effectively assist in debugging and resolving Vercel deployment issues. It is important to be as specific as possible and provide all the necessary information for Agent to help effectively.
