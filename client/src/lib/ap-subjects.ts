@@ -88,6 +88,14 @@ export const apSubjects = [
     examDate: "May 8, 2025"
   },
   {
+    id: "computer-science-principles",
+    name: "AP Computer Science Principles",
+    description: "Computational thinking, programming fundamentals, data analysis, and digital citizenship",
+    units: 7,
+    difficulty: "Medium",
+    examDate: "May 9, 2025"
+  },
+  {
     id: "statistics",
     name: "AP Statistics",
     description: "Data analysis, probability, statistical inference, and experimental design",
