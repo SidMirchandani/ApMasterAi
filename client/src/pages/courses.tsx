@@ -72,7 +72,7 @@ export default function Courses() {
       return response.json();
     },
     onSuccess: (data, { subject }) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user/subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["api", "user", "subjects"] });
       toast({
         title: "Subject added!",
         description: `${subject.name} has been added to your dashboard.`,
