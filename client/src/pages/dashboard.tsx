@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,7 @@ const difficultyColors = {
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
-  const [, navigate] = useLocation();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   // Optimized data fetching with better caching and error handling
@@ -101,14 +101,14 @@ export default function Dashboard() {
     // Only redirect after auth state has stabilized
     if (!loading && !isAuthenticated) {
       timeoutId = setTimeout(() => {
-        navigate('/login');
+        router.push('/login');
       }, 100); // Small delay to prevent flash
     }
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [loading, isAuthenticated, navigate]);
+  }, [loading, isAuthenticated, router]);
 
   const removeSubject = (subjectId: string) => {
     removeSubjectMutation.mutate(subjectId);
@@ -117,7 +117,7 @@ export default function Dashboard() {
   const handleStartStudying = (subjectId: string) => {
     console.log(`Starting to study ${subjectId}`);
     // Navigate to study page with subject ID
-    navigate(`/study?subject=${subjectId}`);
+    router.push(`/study?subject=${subjectId}`);
   };
 
   // Show loading state only when necessary
@@ -191,7 +191,7 @@ export default function Dashboard() {
                 Add AP subjects to your dashboard to start your preparation journey
               </p>
               <Button 
-                onClick={() => navigate('/learn')}
+                onClick={() => router.push('/learn')}
                 className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
               >
                 <Plus className="mr-2 w-5 h-5" />
@@ -203,7 +203,7 @@ export default function Dashboard() {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-khan-gray-dark">My Subjects</h2>
                 <Button 
-                  onClick={() => navigate('/learn')}
+                  onClick={() => router.push('/learn')}
                   variant="outline"
                   className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold"
                 >
