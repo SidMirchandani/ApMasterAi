@@ -42,7 +42,7 @@ export default function Dashboard() {
     queryKey: ["/api/user/subjects"],
     enabled: isAuthenticated && !!user,
   });
-  
+
   const subjects = subjectsResponse?.data || [];
 
   // Remove subject mutation
@@ -91,7 +91,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      
+
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
@@ -173,7 +173,7 @@ export default function Dashboard() {
                         {subject.description}
                       </p>
                     </CardHeader>
-                    
+
                     <CardContent>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between text-sm">
@@ -186,7 +186,7 @@ export default function Dashboard() {
                             <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-khan-gray-medium">Progress</span>
@@ -199,14 +199,14 @@ export default function Dashboard() {
                             ></div>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center space-x-1 text-xs text-khan-gray-medium">
                           <Calendar className="w-3 h-3" />
                           <span>
                             Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}
                           </span>
                         </div>
-                        
+
                         <Button 
                           onClick={() => handleStartStudying(subject.subjectId)}
                           className="bg-khan-green text-white hover:bg-khan-green-light transition-colors w-full font-semibold"

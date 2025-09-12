@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,7 +63,7 @@ const calcSubjectTopics: Unit[] = [
         id: "limit-laws",
         title: "Limit Laws",
         description: "Properties and rules for evaluating limits",
-        estimatedTime: "30 min", 
+        estimatedTime: "30 min",
         difficulty: "Beginner",
         completed: false,
         practiceQuestions: 12
@@ -73,14 +73,14 @@ const calcSubjectTopics: Unit[] = [
         title: "Continuity",
         description: "Definition of continuity and types of discontinuities",
         estimatedTime: "40 min",
-        difficulty: "Intermediate", 
+        difficulty: "Intermediate",
         completed: false,
         practiceQuestions: 18
       }
     ]
   },
   {
-    id: "unit2", 
+    id: "unit2",
     title: "Differentiation",
     description: "Derivatives and their applications",
     topics: [
@@ -129,7 +129,7 @@ const calcSubjectTopics: Unit[] = [
       },
       {
         id: "fundamental-theorem",
-        title: "Fundamental Theorem of Calculus", 
+        title: "Fundamental Theorem of Calculus",
         description: "Connecting derivatives and integrals",
         estimatedTime: "50 min",
         difficulty: "Advanced",
@@ -230,7 +230,7 @@ const getTopicsForSubject = (subjectId: string): Unit[] => {
               title: "Intermediate Topics",
               description: "Building on the fundamentals",
               estimatedTime: "60 min",
-              difficulty: "Intermediate", 
+              difficulty: "Intermediate",
               completed: false,
               practiceQuestions: 20
             },
@@ -251,18 +251,17 @@ const getTopicsForSubject = (subjectId: string): Unit[] => {
 
 const difficultyColors = {
   "Beginner": "bg-green-100 text-green-800 border-green-200",
-  "Intermediate": "bg-yellow-100 text-yellow-800 border-yellow-200", 
+  "Intermediate": "bg-yellow-100 text-yellow-800 border-yellow-200",
   "Advanced": "bg-red-100 text-red-800 border-red-200"
 };
 
 export default function Study() {
   const { user, isAuthenticated, loading } = useAuth();
-  const [, navigate] = useLocation();
+  const router = useRouter();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  
+
   // Get subject ID from URL params
-  const urlParams = new URLSearchParams(window.location.search);
-  const subjectId = urlParams.get('subject');
+  const subjectId = router.query.subject as string | undefined;
 
   // Fetch user subjects to get the specific subject details
   const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{success: boolean, data: StudySubject[]}>({
@@ -276,19 +275,19 @@ export default function Study() {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      navigate('/login');
+      router.push('/login');
     }
-  }, [loading, isAuthenticated, navigate]);
+  }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
     if (!subjectId) {
-      navigate('/dashboard');
+      router.push('/dashboard');
     }
-  }, [subjectId, navigate]);
+  }, [subjectId, router]);
 
   const handleStartTopic = (topicId: string) => {
     // Navigate to practice test or study material for this topic
-    navigate(`/practice-test/${subjectId}?topic=${topicId}`);
+    router.push(`/practice-test/${subjectId}?topic=${topicId}`);
   };
 
   const handleContinueStudying = () => {
@@ -296,12 +295,12 @@ export default function Study() {
     const nextTopic = topics
       .flatMap(unit => unit.topics)
       .find(topic => !topic.completed);
-    
+
     if (nextTopic) {
       handleStartTopic(nextTopic.id);
     } else {
       // If all topics are complete, go to practice test
-      navigate(`/practice-test/${subjectId}`);
+      router.push(`/practice-test/${subjectId}`);
     }
   };
 
@@ -324,7 +323,7 @@ export default function Study() {
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Subject Not Found</h1>
             <p className="text-gray-600 mb-8">The requested subject was not found in your dashboard.</p>
-            <Button onClick={() => navigate('/dashboard')} data-testid="button-back-to-dashboard">
+            <Button onClick={() => router.push('/dashboard')} data-testid="button-back-to-dashboard">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dashboard
             </Button>
@@ -341,14 +340,14 @@ export default function Study() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/dashboard')}
+            <Button
+              variant="ghost"
+              onClick={() => router.push('/dashboard')}
               className="p-2"
               data-testid="button-back"
             >
@@ -363,8 +362,8 @@ export default function Study() {
               </p>
             </div>
           </div>
-          <Button 
-            onClick={handleContinueStudying} 
+          <Button
+            onClick={handleContinueStudying}
             size="lg"
             className="bg-khan-green hover:bg-khan-green/90"
             data-testid="button-continue-studying"
@@ -438,8 +437,8 @@ export default function Study() {
                               {topic.completed && (
                                 <CheckCircle className="h-5 w-5 text-green-500" data-testid={`icon-completed-${topic.id}`} />
                               )}
-                              <Badge 
-                                variant="outline" 
+                              <Badge
+                                variant="outline"
                                 className={difficultyColors[topic.difficulty]}
                                 data-testid={`badge-difficulty-${topic.id}`}
                               >
@@ -462,7 +461,7 @@ export default function Study() {
                             </div>
                           </div>
                           <div className="ml-4">
-                            <Button 
+                            <Button
                               onClick={() => handleStartTopic(topic.id)}
                               variant={topic.completed ? "outline" : "default"}
                               data-testid={`button-start-topic-${topic.id}`}
@@ -483,15 +482,15 @@ export default function Study() {
 
         {/* Action Buttons */}
         <div className="mt-8 flex justify-center gap-4">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/dashboard')}
+          <Button
+            variant="outline"
+            onClick={() => router.push('/dashboard')}
             data-testid="button-back-to-dashboard-bottom"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
-          <Button 
+          <Button
             onClick={handleContinueStudying}
             className="bg-khan-green hover:bg-khan-green/90"
             data-testid="button-continue-studying-bottom"
