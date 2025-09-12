@@ -55,7 +55,7 @@ export default function Navigation() {
                 <Link
                   href="/learn"
                   className={`text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
-                    location === "/learn" || location === "/courses"
+                    location === "/learn"
                       ? "text-khan-green"
                       : ""
                   }`}

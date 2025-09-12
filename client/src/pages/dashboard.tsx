@@ -191,7 +191,7 @@ export default function Dashboard() {
                 Add AP subjects to your dashboard to start your preparation journey
               </p>
               <Button 
-                onClick={() => router.push('/courses')}
+                onClick={() => router.push('/learn')}
                 className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
               >
                 <Plus className="mr-2 w-5 h-5" />
@@ -203,7 +203,7 @@ export default function Dashboard() {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-khan-gray-dark">My Subjects</h2>
                 <Button 
-                  onClick={() => router.push('/courses')}
+                  onClick={() => router.push('/learn')}
                   variant="outline"
                   className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold"
                 >
