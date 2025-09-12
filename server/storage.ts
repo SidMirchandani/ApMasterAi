@@ -1,6 +1,6 @@
 import { users, waitlistEmails, userSubjects, type User, type InsertUser, type WaitlistEmail, type InsertWaitlistEmail, type UserSubject, type InsertUserSubject } from "@shared/schema";
-import { getDb } from "./db";
-import { eq, and } from "drizzle-orm";
+import { getDb, databaseManager } from "./db";
+import { eq, and, desc } from "drizzle-orm";
 import { DatabaseRetryHandler, ensureDatabaseHealth } from "./db-retry-handler";
 
 export interface IStorage {
@@ -88,14 +88,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserSubjects(userId: number): Promise<UserSubject[]> {
-    return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
+    try {
+      // Check database health before querying
+      const isHealthy = await databaseManager.healthCheck();
+      if (!isHealthy) {
+        console.log('Database connection unhealthy, attempting to reconnect...');
+        await databaseManager.forceReconnect();
+      }
+
       const db = await getDb();
-      return await db
+      const result = await db
         .select()
         .from(userSubjects)
-        .where(eq(userSubjects.userId, userId));
-    });
+        .where(eq(userSubjects.userId, userId))
+        .orderBy(desc(userSubjects.dateAdded));
+
+      console.log(`Retrieved ${result.length} subjects for user ${userId}`);
+      return result;
+    } catch (error) {
+      console.error('Error in getUserSubjects:', error);
+      throw new Error('Failed to retrieve user subjects from database');
+    }
   }
 
   async addUserSubject(userSubject: InsertUserSubject): Promise<UserSubject> {
