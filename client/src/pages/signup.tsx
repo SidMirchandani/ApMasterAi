@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useRouter } from "next/router";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { signUpWithEmail, signInWithGoogle } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Signup() {
-  const [, navigate] = useLocation();
+  const router = useRouter();
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(false);
@@ -68,8 +69,8 @@ export default function Signup() {
         title: "Account created!",
         description: "Your account has been created successfully.",
       });
-      // Force redirect to dashboard immediately
-      window.location.href = "/dashboard";
+      // Navigate to dashboard
+      router.push("/dashboard");
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -87,8 +88,8 @@ export default function Signup() {
         title: "Account created!",
         description: "Your account has been created successfully with Google.",
       });
-      // Force redirect to dashboard immediately
-      window.location.href = "/dashboard";
+      // Navigate to dashboard
+      router.push("/dashboard");
     } catch (error: any) {
       setError(error.message);
     } finally {
