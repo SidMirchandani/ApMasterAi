@@ -1,43 +1,37 @@
 
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { storage } from '../../server/storage';
-import { insertWaitlistEmailSchema } from '../../shared/schema';
-import { z } from 'zod';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { replitDb } from '../../server/replit-db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { method } = req;
-
-  switch (method) {
+  switch (req.method) {
     case 'POST':
       try {
-        const validatedData = insertWaitlistEmailSchema.parse(req.body);
-        const waitlistEmail = await storage.addToWaitlist(validatedData);
-        return res.json({ 
-          success: true, 
-          message: "Successfully added to waitlist!",
-          data: waitlistEmail 
-        });
+        const { email } = req.body;
+        
+        if (!email || typeof email !== 'string') {
+          return res.status(400).json({ error: 'Valid email is required' });
+        }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        const added = await replitDb.addToWaitlist(email.toLowerCase().trim());
+        
+        if (!added) {
+          return res.status(409).json({ error: 'Email already exists in waitlist' });
+        }
+
+        return res.status(201).json({ message: 'Successfully added to waitlist' });
       } catch (error) {
-        if (error instanceof z.ZodError) {
-          return res.status(400).json({ 
-            success: false, 
-            message: "Invalid email format" 
-          });
-        }
-        if (error instanceof Error && error.message === "Email already registered for waitlist") {
-          return res.status(409).json({ 
-            success: false, 
-            message: "This email is already registered for our waitlist" 
-          });
-        }
-        return res.status(500).json({ 
-          success: false, 
-          message: "Failed to add to waitlist" 
-        });
+        console.error('Waitlist API Error:', error);
+        return res.status(500).json({ error: 'Internal server error' });
       }
 
     default:
       res.setHeader('Allow', ['POST']);
-      return res.status(405).end(`Method ${method} Not Allowed`);
+      return res.status(405).json({ error: `Method ${req.method} not allowed` });
   }
 }

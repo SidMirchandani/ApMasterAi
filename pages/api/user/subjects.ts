@@ -1,18 +1,18 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { storage } from '../../../server/storage';
 import { insertUserSubjectSchema } from '../../../shared/schema';
 import { z } from 'zod';
 import { DatabaseRetryHandler, ensureDatabaseHealth } from '../../../server/db-retry-handler';
+import { verifyFirebaseToken } from '../../../server/firebase-admin';
 
 // Enhanced middleware to handle Firebase user authentication with database retry
 async function getOrCreateUser(firebaseUid: string): Promise<number> {
   return DatabaseRetryHandler.withRetry(async () => {
     await ensureDatabaseHealth();
-    
+
     // Try to find user by username (using firebase UID as username)
     let user = await storage.getUserByUsername(firebaseUid);
-    
+
     if (!user) {
       // Create new user with Firebase UID as username
       user = await storage.createUser({
@@ -21,7 +21,7 @@ async function getOrCreateUser(firebaseUid: string): Promise<number> {
       });
       console.log('Created new user for Firebase UID:', firebaseUid);
     }
-    
+
     return user.id;
   });
 }
@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const firebaseUid = req.headers['x-user-id'] as string;
     console.log(`${method} /api/user/subjects - Firebase UID:`, firebaseUid);
-    
+
     if (!firebaseUid) {
       console.log("No Firebase UID provided in headers");
       return res.status(401).json({ 
@@ -53,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       case 'POST':
         console.log("Request body:", req.body);
-        
+
         // Check if user already has this subject
         const hasSubject = await storage.hasUserSubject(userId, req.body.subjectId);
         if (hasSubject) {
@@ -67,9 +67,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ...req.body,
           userId
         });
-        
+
         const subject = await storage.addUserSubject(validatedData);
-        
+
         return res.json({ 
           success: true, 
           message: "Subject added to dashboard!",
