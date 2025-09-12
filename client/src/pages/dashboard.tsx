@@ -228,36 +228,32 @@ export default function Dashboard() {
                           <CardTitle className="text-xl font-bold text-khan-gray-dark">
                             {subject.name}
                           </CardTitle>
-                          <button
-                            onClick={() => removeSubject(subject.subjectId)}
-                            className="text-khan-gray-light hover:text-khan-red transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <div className="flex items-center space-x-2 mb-3">
-                          <div className="flex items-center space-x-2 text-khan-gray-medium">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
-                          </div>
-                          <Badge 
-                            variant="outline" 
-                            className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
-                          >
-                            {subject.difficulty}
-                          </Badge>
-                          {subject.masteryLevel && (
+                          <div className="flex items-center space-x-2">
                             <Badge 
                               variant="outline" 
-                              className={
-                                subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                                subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
-                                "bg-green-100 text-green-800 border-green-200"
-                              }
+                              className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
                             >
-                              Goal: {subject.masteryLevel}
+                              {subject.difficulty}
                             </Badge>
-                          )}
+                            {subject.masteryLevel && (
+                              <Badge 
+                                variant="outline" 
+                                className={
+                                  subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                                  subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
+                                  "bg-green-100 text-green-800 border-green-200"
+                                }
+                              >
+                                Goal: {subject.masteryLevel}
+                              </Badge>
+                            )}
+                            <button
+                              onClick={() => removeSubject(subject.subjectId)}
+                              className="text-khan-gray-light hover:text-khan-red transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         <p className="text-khan-gray-medium text-base leading-relaxed">
                           {subject.description}
@@ -266,6 +262,16 @@ export default function Dashboard() {
 
                       <CardContent>
                         <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center space-x-6">
+                            <div className="flex items-center space-x-2 text-khan-gray-medium">
+                              <BookOpen className="w-4 h-4" />
+                              <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-khan-gray-medium">
+                              <Clock className="w-4 h-4" />
+                              <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
+                            </div>
+                          </div>
                           <div className="flex items-center space-x-4">
                             <div className="text-right">
                               <div className="text-sm text-khan-gray-medium">Progress</div>
@@ -279,6 +285,15 @@ export default function Dashboard() {
                                 ></div>
                               </div>
                             </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2 text-sm text-khan-gray-medium">
+                            <Calendar className="w-4 h-4" />
+                            <span>
+                              Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}
+                            </span>
                           </div>
                           <Button 
                             onClick={() => handleStartStudying(subject.subjectId)}
