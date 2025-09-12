@@ -45,7 +45,11 @@ export default function Dashboard() {
     error: subjectsError,
     refetch: refetchSubjects
   } = useQuery<{success: boolean, data: DashboardSubject[]}>({
-    queryKey: ["/api/user/subjects"],
+    queryKey: ["api", "user", "subjects"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/subjects");
+      return response.json();
+    },
     enabled: isAuthenticated && !!user,
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 10 * 60 * 1000, // 10 minutes
@@ -64,13 +68,13 @@ export default function Dashboard() {
     },
     onMutate: async (subjectId) => {
       // Cancel outgoing refetches to avoid overwriting optimistic update
-      await queryClient.cancelQueries({ queryKey: ["/api/user/subjects"] });
+      await queryClient.cancelQueries({ queryKey: ["api", "user", "subjects"] });
       
       // Snapshot previous value
-      const previousSubjects = queryClient.getQueryData(["/api/user/subjects"]);
+      const previousSubjects = queryClient.getQueryData(["api", "user", "subjects"]);
       
       // Optimistically update by removing the subject
-      queryClient.setQueryData(["/api/user/subjects"], (old: any) => {
+      queryClient.setQueryData(["api", "user", "subjects"], (old: any) => {
         if (!old?.data) return old;
         return {
           ...old,
@@ -82,11 +86,11 @@ export default function Dashboard() {
     },
     onError: (err, subjectId, context) => {
       // Rollback on error
-      queryClient.setQueryData(["/api/user/subjects"], context?.previousSubjects);
+      queryClient.setQueryData(["api", "user", "subjects"], context?.previousSubjects);
     },
     onSettled: () => {
       // Refetch to ensure we have the latest data
-      queryClient.invalidateQueries({ queryKey: ["/api/user/subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["api", "user", "subjects"] });
     },
   });
 
