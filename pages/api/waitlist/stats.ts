@@ -1,28 +1,20 @@
 
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { storage } from '../../../server/storage';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { replitDb } from '../../../server/replit-db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { method } = req;
-
-  switch (method) {
+  switch (req.method) {
     case 'GET':
       try {
-        const emails = await storage.getWaitlistEmails();
-        return res.json({
-          success: true,
-          count: emails.length,
-          latestSignup: emails.length > 0 ? emails[emails.length - 1].signedUpAt : null
-        });
+        const stats = await replitDb.getWaitlistStats();
+        return res.status(200).json(stats);
       } catch (error) {
-        return res.status(500).json({ 
-          success: false, 
-          message: "Failed to get waitlist stats" 
-        });
+        console.error('Waitlist Stats API Error:', error);
+        return res.status(500).json({ error: 'Internal server error' });
       }
 
     default:
       res.setHeader('Allow', ['GET']);
-      return res.status(405).end(`Method ${method} Not Allowed`);
+      return res.status(405).json({ error: `Method ${req.method} not allowed` });
   }
 }

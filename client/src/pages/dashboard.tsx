@@ -69,10 +69,10 @@ export default function Dashboard() {
     onMutate: async (subjectId) => {
       // Cancel outgoing refetches to avoid overwriting optimistic update
       await queryClient.cancelQueries({ queryKey: ["api", "user", "subjects"] });
-      
+
       // Snapshot previous value
       const previousSubjects = queryClient.getQueryData(["api", "user", "subjects"]);
-      
+
       // Optimistically update by removing the subject
       queryClient.setQueryData(["api", "user", "subjects"], (old: any) => {
         if (!old?.data) return old;
@@ -81,7 +81,7 @@ export default function Dashboard() {
           data: old.data.filter((subject: DashboardSubject) => subject.subjectId !== subjectId)
         };
       });
-      
+
       return { previousSubjects };
     },
     onError: (err, subjectId, context) => {
@@ -97,14 +97,14 @@ export default function Dashboard() {
   // Optimized auth redirect with debouncing
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    
+
     // Only redirect after auth state has stabilized
     if (!loading && !isAuthenticated) {
       timeoutId = setTimeout(() => {
         navigate('/login');
       }, 100); // Small delay to prevent flash
     }
-    
+
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
