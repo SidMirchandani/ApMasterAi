@@ -212,108 +212,99 @@ export default function Dashboard() {
                 </Button>
               </div>
 
-              {subjectsLoading && subjects.length === 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[1, 2, 3].map((i) => (
-                    <Card key={i} className="bg-white border-2 border-gray-100 animate-pulse">
+              {subjectsLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4"></div>
+                    <p className="text-khan-gray-medium">Loading your subjects...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {subjects.map((subject: DashboardSubject) => (
+                    <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 w-full">
                       <CardHeader className="pb-4">
-                        <div className="h-6 bg-gray-200 rounded mb-2"></div>
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="flex items-start justify-between mb-2">
+                          <CardTitle className="text-xl font-bold text-khan-gray-dark">
+                            {subject.name}
+                          </CardTitle>
+                          <div className="flex items-center space-x-2">
+                            <Badge 
+                              variant="outline" 
+                              className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
+                            >
+                              {subject.difficulty}
+                            </Badge>
+                            {subject.masteryLevel && (
+                              <Badge 
+                                variant="outline" 
+                                className={
+                                  subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                                  subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
+                                  "bg-green-100 text-green-800 border-green-200"
+                                }
+                              >
+                                Goal: {subject.masteryLevel}
+                              </Badge>
+                            )}
+                            <button
+                              onClick={() => removeSubject(subject.subjectId)}
+                              className="text-khan-gray-light hover:text-khan-red transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-khan-gray-medium text-base leading-relaxed">
+                          {subject.description}
+                        </p>
                       </CardHeader>
+
                       <CardContent>
-                        <div className="space-y-4">
-                          <div className="h-4 bg-gray-200 rounded"></div>
-                          <div className="h-2 bg-gray-200 rounded"></div>
-                          <div className="h-10 bg-gray-200 rounded"></div>
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center space-x-6">
+                            <div className="flex items-center space-x-2 text-khan-gray-medium">
+                              <BookOpen className="w-4 h-4" />
+                              <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-khan-gray-medium">
+                              <Clock className="w-4 h-4" />
+                              <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <div className="text-right">
+                              <div className="text-sm text-khan-gray-medium">Progress</div>
+                              <div className="text-lg font-bold text-khan-gray-dark">{subject.progress}%</div>
+                            </div>
+                            <div className="w-24">
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-khan-green h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${subject.progress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2 text-sm text-khan-gray-medium">
+                            <Calendar className="w-4 h-4" />
+                            <span>
+                              Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}
+                            </span>
+                          </div>
+                          <Button 
+                            onClick={() => handleStartStudying(subject.subjectId)}
+                            className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
+                          >
+                            Continue Studying
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {subjects.map((subject: DashboardSubject) => (
-                  <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <CardTitle className="text-lg font-bold text-khan-gray-dark">
-                          {subject.name}
-                        </CardTitle>
-                        <div className="flex items-center space-x-2">
-                          <Badge 
-                            variant="outline" 
-                            className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
-                          >
-                            {subject.difficulty}
-                          </Badge>
-                          {subject.masteryLevel && (
-                            <Badge 
-                              variant="outline" 
-                              className={
-                                subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                                subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
-                                "bg-green-100 text-green-800 border-green-200"
-                              }
-                            >
-                              Goal: {subject.masteryLevel}
-                            </Badge>
-                          )}
-                          <button
-                            onClick={() => removeSubject(subject.subjectId)}
-                            className="text-khan-gray-light hover:text-khan-red transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-khan-gray-medium text-sm leading-relaxed">
-                        {subject.description}
-                      </p>
-                    </CardHeader>
-
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center space-x-1 text-khan-gray-medium">
-                            <BookOpen className="w-4 h-4" />
-                            <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
-                          </div>
-                          <div className="flex items-center space-x-1 text-khan-gray-medium">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-khan-gray-medium">Progress</span>
-                            <span className="text-sm font-medium text-khan-gray-dark">{subject.progress}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-khan-green h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${subject.progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center space-x-1 text-xs text-khan-gray-medium">
-                          <Calendar className="w-3 h-3" />
-                          <span>
-                            Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}
-                          </span>
-                        </div>
-
-                        <Button 
-                          onClick={() => handleStartStudying(subject.subjectId)}
-                          className="bg-khan-green text-white hover:bg-khan-green-light transition-colors w-full font-semibold"
-                        >
-                          Continue Studying
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
                 </div>
               )}
             </>
