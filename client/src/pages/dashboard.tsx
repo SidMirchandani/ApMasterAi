@@ -43,7 +43,8 @@ export default function Dashboard() {
     data: subjectsResponse, 
     isLoading: subjectsLoading,
     error: subjectsError,
-    refetch: refetchSubjects
+    refetch: refetchSubjects,
+    isFetching
   } = useQuery<{success: boolean, data: DashboardSubject[]}>({
     queryKey: ["api", "user", "subjects"],
     queryFn: async () => {
@@ -51,13 +52,15 @@ export default function Dashboard() {
       return response.json();
     },
     enabled: isAuthenticated && !!user,
-    staleTime: 10 * 60 * 1000, // 10 minutes - longer cache
-    gcTime: 15 * 60 * 1000, // 15 minutes - renamed from cacheTime
+    staleTime: 5 * 60 * 1000, // 5 minutes - good balance
+    gcTime: 30 * 60 * 1000, // 30 minutes - longer cache
     refetchOnWindowFocus: false,
     refetchOnMount: false, // Don't refetch if data exists
-    retry: 1, // Reduced retries for faster failure
-    retryDelay: 1000, // Fixed shorter delay
-    networkMode: 'online', // Only run when online
+    refetchOnReconnect: false, // Don't refetch on reconnect
+    retry: 2, // Allow 2 retries for better reliability
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    networkMode: 'online',
+    placeholderData: { success: true, data: [] }, // Show empty state immediately
   });
 
   // Memoize subjects array to prevent unnecessary re-renders
@@ -122,7 +125,7 @@ export default function Dashboard() {
     router.push(`/study?subject=${subjectId}`);
   };
 
-  // Show loading state only when necessary
+  // Show loading state only for initial auth
   if (loading) {
     return (
       <div className="min-h-screen bg-khan-background">
@@ -214,126 +217,134 @@ export default function Dashboard() {
                 </Button>
               </div>
 
-              {subjectsLoading && subjects.length === 0 ? (
+              {subjectsLoading ? (
                 <div className="space-y-4">
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4"></div>
+                    <p className="text-khan-gray-medium text-lg">Loading your subjects...</p>
+                  </div>
                   {[1, 2, 3].map((i) => (
-                    <Card key={i} className="bg-white border-2 border-gray-100 animate-pulse w-full">
-                      <div className="flex items-center justify-between p-6">
-                        <div className="flex-1 min-w-0 pr-6">
-                          <div className="h-6 bg-gray-200 rounded mb-2 w-1/3"></div>
-                          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                          <div className="flex space-x-6 mt-3">
-                            <div className="h-4 bg-gray-200 rounded w-20"></div>
-                            <div className="h-4 bg-gray-200 rounded w-24"></div>
-                            <div className="h-4 bg-gray-200 rounded w-32"></div>
+                    <div key={i} className="w-full bg-white border-2 border-gray-100 rounded-lg animate-pulse">
+                      <div className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0 pr-6">
+                            <div className="h-6 bg-gray-200 rounded mb-2 w-1/3"></div>
+                            <div className="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
+                            <div className="flex space-x-6">
+                              <div className="h-4 bg-gray-200 rounded w-20"></div>
+                              <div className="h-4 bg-gray-200 rounded w-24"></div>
+                              <div className="h-4 bg-gray-200 rounded w-32"></div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex-shrink-0 px-6 w-64">
-                          <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                          <div className="h-2 bg-gray-200 rounded"></div>
-                        </div>
-                        <div className="flex-shrink-0 flex items-center space-x-3">
-                          <div className="flex flex-col space-y-2">
-                            <div className="h-6 bg-gray-200 rounded w-16"></div>
-                            <div className="h-6 bg-gray-200 rounded w-16"></div>
+                          <div className="flex-shrink-0 px-6 w-64">
+                            <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                            <div className="h-2 bg-gray-200 rounded"></div>
                           </div>
-                          <div className="h-10 bg-gray-200 rounded w-32"></div>
-                          <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                          <div className="flex-shrink-0 flex items-center space-x-3">
+                            <div className="flex flex-col space-y-2">
+                              <div className="h-6 bg-gray-200 rounded w-16"></div>
+                              <div className="h-6 bg-gray-200 rounded w-16"></div>
+                            </div>
+                            <div className="h-10 bg-gray-200 rounded w-32"></div>
+                            <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                          </div>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                 </div>
               ) : (
                 <div className="space-y-4">
                   {subjects.map((subject: DashboardSubject) => (
-                  <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 w-full">
-                    <div className="flex items-center justify-between p-6">
-                      {/* Left section - Subject info */}
-                      <div className="flex-1 min-w-0 pr-6">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1 min-w-0">
-                            <CardTitle className="text-xl font-bold text-khan-gray-dark truncate">
-                              {subject.name}
-                            </CardTitle>
-                            <p className="text-khan-gray-medium text-sm leading-relaxed mt-1 line-clamp-2">
-                              {subject.description}
-                            </p>
+                  <div key={subject.id} className="w-full bg-white hover:shadow-md transition-all border-2 border-gray-100 hover:border-khan-green/30 rounded-lg">
+                    <div className="p-6">
+                      <div className="flex items-center justify-between">
+                        {/* Left section - Subject info */}
+                        <div className="flex-1 min-w-0 pr-6">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-xl font-bold text-khan-gray-dark truncate">
+                                {subject.name}
+                              </h3>
+                              <p className="text-khan-gray-medium text-sm leading-relaxed mt-1 line-clamp-2">
+                                {subject.description}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Stats row */}
+                          <div className="flex items-center space-x-6 text-sm text-khan-gray-medium mt-3">
+                            <div className="flex items-center space-x-1">
+                              <BookOpen className="w-4 h-4" />
+                              <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Clock className="w-4 h-4" />
+                              <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>Added {format(new Date(subject.dateAdded), "MMM d")}</span>
+                            </div>
                           </div>
                         </div>
-                        
-                        {/* Stats row */}
-                        <div className="flex items-center space-x-6 text-sm text-khan-gray-medium mt-3">
-                          <div className="flex items-center space-x-1">
-                            <BookOpen className="w-4 h-4" />
-                            <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>Added {format(new Date(subject.dateAdded), "MMM d")}</span>
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* Middle section - Progress */}
-                      <div className="flex-shrink-0 px-6 w-64">
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-khan-gray-medium">Progress</span>
-                            <span className="text-sm font-medium text-khan-gray-dark">{subject.progress}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-khan-green h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${subject.progress}%` }}
-                            ></div>
+                        {/* Middle section - Progress */}
+                        <div className="flex-shrink-0 px-6 w-64">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-khan-gray-medium">Progress</span>
+                              <span className="text-sm font-medium text-khan-gray-dark">{subject.progress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-khan-green h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${subject.progress}%` }}
+                              ></div>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Right section - Badges and Actions */}
-                      <div className="flex-shrink-0 flex items-center space-x-3">
-                        <div className="flex flex-col space-y-2">
-                          <Badge 
-                            variant="outline" 
-                            className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
-                          >
-                            {subject.difficulty}
-                          </Badge>
-                          {subject.masteryLevel && (
+                        {/* Right section - Badges and Actions */}
+                        <div className="flex-shrink-0 flex items-center space-x-3">
+                          <div className="flex flex-col space-y-2">
                             <Badge 
                               variant="outline" 
-                              className={
-                                subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                                subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
-                                "bg-green-100 text-green-800 border-green-200"
-                              }
+                              className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
                             >
-                              Goal: {subject.masteryLevel}
+                              {subject.difficulty}
                             </Badge>
-                          )}
+                            {subject.masteryLevel && (
+                              <Badge 
+                                variant="outline" 
+                                className={
+                                  subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                                  subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
+                                  "bg-green-100 text-green-800 border-green-200"
+                                }
+                              >
+                                Goal: {subject.masteryLevel}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <Button 
+                            onClick={() => handleStartStudying(subject.subjectId)}
+                            className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-6"
+                          >
+                            Continue Studying
+                          </Button>
+                          
+                          <button
+                            onClick={() => removeSubject(subject.subjectId)}
+                            className="text-khan-gray-light hover:text-khan-red transition-colors p-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                        
-                        <Button 
-                          onClick={() => handleStartStudying(subject.subjectId)}
-                          className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-6"
-                        >
-                          Continue Studying
-                        </Button>
-                        
-                        <button
-                          onClick={() => removeSubject(subject.subjectId)}
-                          className="text-khan-gray-light hover:text-khan-red transition-colors p-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 ))}
                 </div>
               )}
