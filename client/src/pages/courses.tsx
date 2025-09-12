@@ -190,12 +190,13 @@ export default function Courses() {
                   </div>
 
                   <div className="flex flex-col space-y-3">
-                    <Link href={`/course/${subject.id}`}>
-                      <Button className="w-full bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold">
-                        Start Learning
-                        <ArrowRight className="ml-2 w-4 h-4" />
-                      </Button>
-                    </Link>
+                    <Button 
+                      onClick={() => handleAddToDashboard(subject)}
+                      className="w-full bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold"
+                    >
+                      Add to Dashboard
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
