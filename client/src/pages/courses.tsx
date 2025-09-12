@@ -13,7 +13,8 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import Link from "next/link"; // Changed from wouter's Link
+import { useRouter } from "next/router"; // Changed from wouter's useLocation
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/ui/navigation";
@@ -48,7 +49,7 @@ const masteryLevels = [
 
 export default function Courses() {
   const { isAuthenticated, loading } = useAuth();
-  const [, navigate] = useLocation();
+  const router = useRouter(); // Changed from useLocation()
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showMasteryModal, setShowMasteryModal] = useState(false);
@@ -78,7 +79,7 @@ export default function Courses() {
       });
       setShowMasteryModal(false);
       setTimeout(() => {
-        navigate('/dashboard');
+        router.push('/dashboard'); // Changed from navigate
       }, 1000);
     },
     onError: (error: any) => {
@@ -102,7 +103,7 @@ export default function Courses() {
   // Add subject to dashboard
   const handleAddToDashboard = (subject: typeof apSubjects[0]) => {
     if (!isAuthenticated) {
-      navigate("/login");
+      router.push("/login"); // Changed from navigate
       return;
     }
 
@@ -112,7 +113,7 @@ export default function Courses() {
 
   const handleConfirmAddSubject = () => {
     if (!selectedSubject) return;
-    
+
     addSubjectMutation.mutate({ 
       subject: selectedSubject, 
       masteryLevel: selectedMastery 
@@ -122,9 +123,9 @@ export default function Courses() {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      navigate("/login");
+      router.push("/login"); // Changed from navigate
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [isAuthenticated, loading, router]); // router instead of navigate
 
   if (loading) {
     return (
@@ -189,13 +190,12 @@ export default function Courses() {
                   </div>
 
                   <div className="flex flex-col space-y-3">
-                    <Button
-                      onClick={() => handleAddToDashboard(subject)}
-                      className="bg-khan-green text-white hover:bg-khan-green-light transition-colors w-full font-semibold"
-                    >
-                      Add to Dashboard
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
+                    <Link href={`/course/${subject.id}`}>
+                      <Button className="w-full bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold">
+                        Start Learning
+                        <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -218,7 +218,7 @@ export default function Courses() {
               Choose the score you're aiming for in {selectedSubject?.name}. This helps us customize your study plan.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <RadioGroup 
               value={selectedMastery} 

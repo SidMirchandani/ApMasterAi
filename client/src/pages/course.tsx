@@ -1,20 +1,36 @@
-import { useParams, useLocation } from "wouter";
+import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import Navigation from "@/components/ui/navigation";
-import { BookOpen, Clock, Target, Users } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  BookOpen,
+  Clock,
+  Target,
+  Users,
+  Star,
+  ChevronRight,
+  Play,
+  CheckCircle,
+  Award,
+  TrendingUp,
+} from "lucide-react";
+import { apSubjects } from "@/lib/ap-subjects";
 
 export default function Course() {
-  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const { id } = router.query;
   const { isAuthenticated, loading } = useAuth();
-  const [, navigate] = useLocation();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      navigate("/login");
+      router.push("/login");
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [isAuthenticated, loading, router]);
 
   if (loading) {
     return (

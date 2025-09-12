@@ -1,5 +1,5 @@
 
-import { useParams, useLocation } from "wouter";
+import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import Navigation from "@/components/ui/navigation";
@@ -7,15 +7,15 @@ import { Target, Clock, BarChart3, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PracticeTest() {
-  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const { id } = router.query;
   const { isAuthenticated, loading } = useAuth();
-  const [, navigate] = useLocation();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      navigate("/login");
+      router.push("/login");
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [isAuthenticated, loading, router]);
 
   if (loading) {
     return (
