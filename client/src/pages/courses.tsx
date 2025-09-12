@@ -103,7 +103,7 @@ export default function Courses() {
   // Add subject to dashboard
   const handleAddToDashboard = (subject: typeof apSubjects[0]) => {
     if (!isAuthenticated) {
-      router.push("/login"); // Changed from navigate
+      router.push("/login");
       return;
     }
 
