@@ -2,8 +2,8 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { auth } from "./firebase";
 import { getAuthToken } from "./auth-retry";
 
-// Assume isFirebaseEnabled is defined elsewhere and indicates if Firebase is active
-declare const isFirebaseEnabled: boolean;
+// Check if Firebase is enabled by checking if auth exists
+const isFirebaseEnabled = typeof window !== 'undefined' && !!auth;
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -69,8 +69,11 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  console.log(`Making API request: ${method} ${url}`);
+  
   // Get auth headers asynchronously to ensure fresh tokens
   const authHeaders = await getAuthHeaders();
+  console.log('Auth headers keys:', Object.keys(authHeaders));
 
   const headers = {
     ...authHeaders,
@@ -85,7 +88,14 @@ export async function apiRequest(
       credentials: "include",
     });
 
-    await throwIfResNotOk(res);
+    console.log(`API response status: ${res.status} for ${method} ${url}`);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`API error response:`, errorText);
+      throw new Error(`${res.status}: ${errorText}`);
+    }
+    
     return res;
   } catch (error) {
     console.error(`API request failed: ${method} ${url}`, error);
