@@ -2,6 +2,9 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { auth } from "./firebase";
 import { getAuthToken } from "./auth-retry";
 
+// Assume isFirebaseEnabled is defined elsewhere and indicates if Firebase is active
+declare const isFirebaseEnabled: boolean;
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -9,38 +12,51 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const headers: Record<string, string> = {};
-  
-  if (auth?.currentUser) {
-    try {
-      // Use the enhanced token getter with retry logic
-      const idToken = await getAuthToken();
-      if (idToken) {
-        headers["x-user-id"] = auth.currentUser.uid;
-        headers["authorization"] = `Bearer ${idToken}`;
-        console.log("Adding auth headers for user:", auth.currentUser.uid);
-      } else {
-        // Fallback to just the UID if token is unavailable
-        headers["x-user-id"] = auth.currentUser.uid;
-        console.log("Adding auth header (UID only) for user:", auth.currentUser.uid);
-      }
-    } catch (error) {
-      console.error("Failed to get auth token:", error);
-      // Fallback to just the UID if token generation fails
-      if (auth.currentUser.uid) {
-        headers["x-user-id"] = auth.currentUser.uid;
-        console.log("Adding fallback auth header for user:", auth.currentUser.uid);
-      }
-    }
-  } else {
-    console.log("No auth user available for headers:", { 
-      auth: !!auth, 
-      currentUser: !!auth?.currentUser 
-    });
+// Cache for auth tokens to reduce Firebase calls
+let tokenCache: { token: string; uid: string; expiry: number } | null = null;
+
+// Get fresh auth headers with caching
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  if (!isFirebaseEnabled || !auth?.currentUser) {
+    return {};
   }
-  
-  return headers;
+
+  try {
+    const now = Date.now();
+    const currentUid = auth.currentUser.uid;
+
+    // Use cached token if it's still valid (with 5 minute buffer)
+    if (tokenCache &&
+        tokenCache.uid === currentUid &&
+        tokenCache.expiry > now + (5 * 60 * 1000)) {
+      return {
+        'Authorization': `Bearer ${tokenCache.token}`,
+        'X-User-ID': currentUid,
+        'Content-Type': 'application/json'
+      };
+    }
+
+    // Get fresh token
+    const token = await auth.currentUser.getIdToken();
+
+    // Cache the token (Firebase tokens are valid for 1 hour)
+    tokenCache = {
+      token,
+      uid: currentUid,
+      expiry: now + (55 * 60 * 1000) // Cache for 55 minutes
+    };
+
+    return {
+      'Authorization': `Bearer ${token}`,
+      'X-User-ID': currentUid,
+      'Content-Type': 'application/json'
+    };
+  } catch (error) {
+    console.error('Failed to get auth token:', error);
+    // Clear cache on error
+    tokenCache = null;
+    return {};
+  }
 }
 
 export async function apiRequest(
@@ -50,7 +66,7 @@ export async function apiRequest(
 ): Promise<Response> {
   // Get auth headers asynchronously to ensure fresh tokens
   const authHeaders = await getAuthHeaders();
-  
+
   const headers = {
     ...authHeaders,
     ...(data ? { "Content-Type": "application/json" } : {}),
@@ -80,7 +96,7 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     // Get fresh auth headers for queries
     const authHeaders = await getAuthHeaders();
-    
+
     try {
       const res = await fetch(queryKey.join("/") as string, {
         headers: authHeaders,

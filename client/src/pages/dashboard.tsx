@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Clock, Trash2, Plus, Calendar } from "lucide-react";
+import { BookOpen, Clock, Trash2, Plus, Calendar, AlertTriangle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DashboardSubject {
   id: number;
@@ -37,30 +38,72 @@ export default function Dashboard() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
 
-  // Fetch user subjects from API
-  const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{success: boolean, data: DashboardSubject[]}>({
+  // Optimized data fetching with better caching and error handling
+  const { 
+    data: subjectsResponse, 
+    isLoading: subjectsLoading,
+    error: subjectsError,
+    refetch: refetchSubjects
+  } = useQuery<{success: boolean, data: DashboardSubject[]}>({
     queryKey: ["/api/user/subjects"],
     enabled: isAuthenticated && !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  const subjects = subjectsResponse?.data || [];
+  // Memoize subjects array to prevent unnecessary re-renders
+  const subjects = useMemo(() => subjectsResponse?.data || [], [subjectsResponse?.data]);
 
-  // Remove subject mutation
+  // Optimized remove subject mutation with optimistic updates
   const removeSubjectMutation = useMutation({
     mutationFn: async (subjectId: string) => {
       await apiRequest("DELETE", `/api/user/subjects/${subjectId}`);
     },
-    onSuccess: () => {
+    onMutate: async (subjectId) => {
+      // Cancel outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ["/api/user/subjects"] });
+      
+      // Snapshot previous value
+      const previousSubjects = queryClient.getQueryData(["/api/user/subjects"]);
+      
+      // Optimistically update by removing the subject
+      queryClient.setQueryData(["/api/user/subjects"], (old: any) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.filter((subject: DashboardSubject) => subject.subjectId !== subjectId)
+        };
+      });
+      
+      return { previousSubjects };
+    },
+    onError: (err, subjectId, context) => {
+      // Rollback on error
+      queryClient.setQueryData(["/api/user/subjects"], context?.previousSubjects);
+    },
+    onSettled: () => {
+      // Refetch to ensure we have the latest data
       queryClient.invalidateQueries({ queryKey: ["/api/user/subjects"] });
     },
   });
 
+  // Optimized auth redirect with debouncing
   useEffect(() => {
-    console.log('Dashboard auth state:', { loading, isAuthenticated, user: !!user });
+    let timeoutId: NodeJS.Timeout;
+    
+    // Only redirect after auth state has stabilized
     if (!loading && !isAuthenticated) {
-      console.log('Not authenticated, redirecting to login');
-      navigate('/login');
+      timeoutId = setTimeout(() => {
+        navigate('/login');
+      }, 100); // Small delay to prevent flash
     }
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [loading, isAuthenticated, navigate]);
 
   const removeSubject = (subjectId: string) => {
@@ -73,12 +116,16 @@ export default function Dashboard() {
     navigate(`/study?subject=${subjectId}`);
   };
 
-  if (loading || subjectsLoading) {
+  // Show loading state only when necessary
+  if (loading) {
     return (
       <div className="min-h-screen bg-khan-background">
         <Navigation />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4"></div>
+            <p className="text-khan-gray-medium">Loading your dashboard...</p>
+          </div>
         </div>
       </div>
     );
@@ -86,6 +133,33 @@ export default function Dashboard() {
 
   if (!isAuthenticated) {
     return null; // Will redirect in useEffect
+  }
+
+  // Show error state if subjects failed to load
+  if (subjectsError && !subjectsLoading) {
+    return (
+      <div className="min-h-screen bg-khan-background">
+        <Navigation />
+        <div className="py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            <Alert className="mb-8 border-khan-red/20 bg-khan-red/5">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-khan-red">
+                Failed to load your subjects. Please try again.
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => refetchSubjects()}
+                  className="ml-4 border-khan-red text-khan-red hover:bg-khan-red hover:text-white"
+                >
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -134,8 +208,27 @@ export default function Dashboard() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {subjects.map((subject: DashboardSubject) => (
+              {subjectsLoading && subjects.length === 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="bg-white border-2 border-gray-100 animate-pulse">
+                      <CardHeader className="pb-4">
+                        <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-2 bg-gray-200 rounded"></div>
+                          <div className="h-10 bg-gray-200 rounded"></div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {subjects.map((subject: DashboardSubject) => (
                   <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100">
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between mb-2">
@@ -217,7 +310,8 @@ export default function Dashboard() {
                     </CardContent>
                   </Card>
                 ))}
-              </div>
+                </div>
+              )}
             </>
           )}
         </div>
