@@ -1,7 +1,8 @@
+
 {
   "version": 2,
   "functions": {
-    "pages/api/*/.[jt]s": {
+    "pages/api/**/*.[jt]s": {
       "maxDuration": 30
     }
   },
