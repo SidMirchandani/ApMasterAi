@@ -25,7 +25,7 @@ class AuthErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Auth Error Boundary caught an error:', error, errorInfo);
-    this.setState({ errorInfo: errorInfo.componentStack });
+    this.setState({ errorInfo: errorInfo.componentStack || null });
   }
 
   handleReload = () => {
