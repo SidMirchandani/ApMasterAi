@@ -1,21 +1,10 @@
-
 {
   "version": 2,
   "functions": {
-    "pages/api/**/*.ts": {
+    "pages/api/*/.[jt]s": {
       "maxDuration": 30
     }
   },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ],
   "env": {
     "NODE_ENV": "production"
   }
