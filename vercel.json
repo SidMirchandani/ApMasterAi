@@ -1,9 +1,3 @@
-
 {
-  "_comment": "Vercel config disabled for Replit deployment",
-  "_version": 2,
-  "_builds": [],
-  "_routes": [],
-  "_functions": {},
-  "_env": {}
+  "version": 2
 }
