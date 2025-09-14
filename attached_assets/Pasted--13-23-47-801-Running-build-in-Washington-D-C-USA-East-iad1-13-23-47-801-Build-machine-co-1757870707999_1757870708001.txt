@@ -1,0 +1,40 @@
+[13:23:47.801] Running build in Washington, D.C., USA (East) – iad1
+[13:23:47.801] Build machine configuration: 2 cores, 8 GB
+[13:23:47.842] Cloning github.com/SidMirchandani/ApMasterAi (Branch: main, Commit: 9bdc17b)
+[13:23:47.953] Previous build caches not available
+[13:23:50.394] Cloning completed: 2.552s
+[13:23:50.834] Running "vercel build"
+[13:23:51.232] Vercel CLI 47.1.1
+[13:23:52.085] WARNING: You should not upload the `.next` directory.
+[13:23:52.095] Installing dependencies...
+[13:24:15.066] npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+[13:24:15.126] npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+[13:24:34.986] 
+[13:24:34.987] added 814 packages in 43s
+[13:24:34.988] 
+[13:24:34.988] 96 packages are looking for funding
+[13:24:34.988]   run `npm fund` for details
+[13:24:35.049] Detected Next.js version: 14.2.3
+[13:24:35.057] Running "npm run build"
+[13:24:35.169] 
+[13:24:35.170] > rest-express@1.0.0 build
+[13:24:35.170] > next build
+[13:24:35.170] 
+[13:24:35.767]   ▲ Next.js 14.2.3
+[13:24:35.767]   - Environments: .env.local
+[13:24:35.768] 
+[13:24:35.768]    Linting and checking validity of types ...
+[13:24:47.397] Failed to compile.
+[13:24:47.397] 
+[13:24:47.398] ./client/src/components/auth-error-boundary.tsx:28:21
+[13:24:47.398] Type error: Type 'string | null | undefined' is not assignable to type 'string | null'.
+[13:24:47.398]   Type 'undefined' is not assignable to type 'string | null'.
+[13:24:47.398] 
+[13:24:47.398] [0m [90m 26 |[39m   componentDidCatch(error[33m:[39m [33mError[39m[33m,[39m errorInfo[33m:[39m [33mReact[39m[33m.[39m[33mErrorInfo[39m) {[0m
+[13:24:47.399] [0m [90m 27 |[39m     console[33m.[39merror([32m'Auth Error Boundary caught an error:'[39m[33m,[39m error[33m,[39m errorInfo)[33m;[39m[0m
+[13:24:47.399] [0m[31m[1m>[22m[39m[90m 28 |[39m     [36mthis[39m[33m.[39msetState({ errorInfo[33m:[39m errorInfo[33m.[39mcomponentStack })[33m;[39m[0m
+[13:24:47.399] [0m [90m    |[39m                     [31m[1m^[22m[39m[0m
+[13:24:47.399] [0m [90m 29 |[39m   }[0m
+[13:24:47.399] [0m [90m 30 |[39m[0m
+[13:24:47.399] [0m [90m 31 |[39m   handleReload [33m=[39m () [33m=>[39m {[0m
+[13:24:47.453] Error: Command "npm run build" exited with 1
