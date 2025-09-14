@@ -1,5 +1,7 @@
+
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useRouter } from "next/router";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +12,7 @@ import { loginWithEmail, signInWithGoogle } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
-  const [, navigate] = useLocation();
+  const router = useRouter();
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(false);
@@ -62,8 +64,8 @@ export default function Login() {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      // Force redirect to dashboard immediately
-      window.location.href = "/dashboard";
+      // Navigate to dashboard
+      router.push("/dashboard");
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -81,8 +83,8 @@ export default function Login() {
         title: "Welcome back!",
         description: "You have successfully logged in with Google.",
       });
-      // Force redirect to dashboard immediately
-      window.location.href = "/dashboard";
+      // Navigate to dashboard
+      router.push("/dashboard");
     } catch (error: any) {
       setError(error.message);
     } finally {

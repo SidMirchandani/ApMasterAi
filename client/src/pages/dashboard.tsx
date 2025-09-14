@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Clock, Trash2, Plus, Calendar } from "lucide-react";
+import { BookOpen, Clock, Trash2, Plus, Calendar, AlertTriangle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DashboardSubject {
   id: number;
@@ -34,34 +35,80 @@ const difficultyColors = {
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
-  const [, navigate] = useLocation();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Fetch user subjects from API
-  const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{success: boolean, data: DashboardSubject[]}>({
-    queryKey: ["/api/user/subjects"],
+  // Optimized data fetching with better caching and error handling
+  const { 
+    data: subjectsResponse, 
+    isLoading: subjectsLoading,
+    error: subjectsError,
+    refetch: refetchSubjects
+  } = useQuery<{success: boolean, data: DashboardSubject[]}>({
+    queryKey: ["api", "user", "subjects"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/subjects");
+      return response.json();
+    },
     enabled: isAuthenticated && !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
-  
-  const subjects = subjectsResponse?.data || [];
 
-  // Remove subject mutation
+  // Memoize subjects array to prevent unnecessary re-renders
+  const subjects = useMemo(() => subjectsResponse?.data || [], [subjectsResponse?.data]);
+
+  // Optimized remove subject mutation with optimistic updates
   const removeSubjectMutation = useMutation({
     mutationFn: async (subjectId: string) => {
       await apiRequest("DELETE", `/api/user/subjects/${subjectId}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user/subjects"] });
+    onMutate: async (subjectId) => {
+      // Cancel outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ["api", "user", "subjects"] });
+
+      // Snapshot previous value
+      const previousSubjects = queryClient.getQueryData(["api", "user", "subjects"]);
+
+      // Optimistically update by removing the subject
+      queryClient.setQueryData(["api", "user", "subjects"], (old: any) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.filter((subject: DashboardSubject) => subject.subjectId !== subjectId)
+        };
+      });
+
+      return { previousSubjects };
+    },
+    onError: (err, subjectId, context) => {
+      // Rollback on error
+      queryClient.setQueryData(["api", "user", "subjects"], context?.previousSubjects);
+    },
+    onSettled: () => {
+      // Refetch to ensure we have the latest data
+      queryClient.invalidateQueries({ queryKey: ["api", "user", "subjects"] });
     },
   });
 
+  // Optimized auth redirect with debouncing
   useEffect(() => {
-    console.log('Dashboard auth state:', { loading, isAuthenticated, user: !!user });
+    let timeoutId: NodeJS.Timeout;
+
+    // Only redirect after auth state has stabilized
     if (!loading && !isAuthenticated) {
-      console.log('Not authenticated, redirecting to login');
-      navigate('/login');
+      timeoutId = setTimeout(() => {
+        router.push('/login');
+      }, 100); // Small delay to prevent flash
     }
-  }, [loading, isAuthenticated, navigate]);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [loading, isAuthenticated, router]);
 
   const removeSubject = (subjectId: string) => {
     removeSubjectMutation.mutate(subjectId);
@@ -70,15 +117,19 @@ export default function Dashboard() {
   const handleStartStudying = (subjectId: string) => {
     console.log(`Starting to study ${subjectId}`);
     // Navigate to study page with subject ID
-    navigate(`/study?subject=${subjectId}`);
+    router.push(`/study?subject=${subjectId}`);
   };
 
-  if (loading || subjectsLoading) {
+  // Show loading state only when necessary
+  if (loading) {
     return (
       <div className="min-h-screen bg-khan-background">
         <Navigation />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4"></div>
+            <p className="text-khan-gray-medium">Loading your dashboard...</p>
+          </div>
         </div>
       </div>
     );
@@ -88,10 +139,37 @@ export default function Dashboard() {
     return null; // Will redirect in useEffect
   }
 
+  // Show error state if subjects failed to load
+  if (subjectsError && !subjectsLoading) {
+    return (
+      <div className="min-h-screen bg-khan-background">
+        <Navigation />
+        <div className="py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            <Alert className="mb-8 border-khan-red/20 bg-khan-red/5">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-khan-red">
+                Failed to load your subjects. Please try again.
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => refetchSubjects()}
+                  className="ml-4 border-khan-red text-khan-red hover:bg-khan-red hover:text-white"
+                >
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      
+
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
@@ -113,7 +191,7 @@ export default function Dashboard() {
                 Add AP subjects to your dashboard to start your preparation journey
               </p>
               <Button 
-                onClick={() => navigate('/courses')}
+                onClick={() => router.push('/learn')}
                 className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
               >
                 <Plus className="mr-2 w-5 h-5" />
@@ -125,7 +203,7 @@ export default function Dashboard() {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-khan-gray-dark">My Subjects</h2>
                 <Button 
-                  onClick={() => navigate('/courses')}
+                  onClick={() => router.push('/learn')}
                   variant="outline"
                   className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold"
                 >
@@ -134,90 +212,101 @@ export default function Dashboard() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {subjects.map((subject: DashboardSubject) => (
-                  <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <CardTitle className="text-lg font-bold text-khan-gray-dark">
-                          {subject.name}
-                        </CardTitle>
-                        <div className="flex items-center space-x-2">
-                          <Badge 
-                            variant="outline" 
-                            className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
-                          >
-                            {subject.difficulty}
-                          </Badge>
-                          {subject.masteryLevel && (
+              {subjectsLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4"></div>
+                    <p className="text-khan-gray-medium">Loading your subjects...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {subjects.map((subject: DashboardSubject) => (
+                    <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 w-full">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <CardTitle className="text-xl font-bold text-khan-gray-dark">
+                            {subject.name}
+                          </CardTitle>
+                          <div className="flex items-center space-x-2">
                             <Badge 
                               variant="outline" 
-                              className={
-                                subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                                subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
-                                "bg-green-100 text-green-800 border-green-200"
-                              }
+                              className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
                             >
-                              Goal: {subject.masteryLevel}
+                              {subject.difficulty}
                             </Badge>
-                          )}
-                          <button
-                            onClick={() => removeSubject(subject.subjectId)}
-                            className="text-khan-gray-light hover:text-khan-red transition-colors"
+                            {subject.masteryLevel && (
+                              <Badge 
+                                variant="outline" 
+                                className={
+                                  subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
+                                  subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
+                                  "bg-green-100 text-green-800 border-green-200"
+                                }
+                              >
+                                Goal: {subject.masteryLevel}
+                              </Badge>
+                            )}
+                            <button
+                              onClick={() => removeSubject(subject.subjectId)}
+                              className="text-khan-gray-light hover:text-khan-red transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-khan-gray-medium text-base leading-relaxed">
+                          {subject.description}
+                        </p>
+                      </CardHeader>
+
+                      <CardContent>
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center space-x-6">
+                            <div className="flex items-center space-x-2 text-khan-gray-medium">
+                              <BookOpen className="w-4 h-4" />
+                              <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-khan-gray-medium">
+                              <Clock className="w-4 h-4" />
+                              <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <div className="text-right">
+                              <div className="text-sm text-khan-gray-medium">Progress</div>
+                              <div className="text-lg font-bold text-khan-gray-dark">{subject.progress}%</div>
+                            </div>
+                            <div className="w-24">
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-khan-green h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${subject.progress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2 text-sm text-khan-gray-medium">
+                            <Calendar className="w-4 h-4" />
+                            <span>
+                              Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}
+                            </span>
+                          </div>
+                          <Button 
+                            onClick={() => handleStartStudying(subject.subjectId)}
+                            className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            Continue Studying
+                          </Button>
                         </div>
-                      </div>
-                      <p className="text-khan-gray-medium text-sm leading-relaxed">
-                        {subject.description}
-                      </p>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center space-x-1 text-khan-gray-medium">
-                            <BookOpen className="w-4 h-4" />
-                            <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
-                          </div>
-                          <div className="flex items-center space-x-1 text-khan-gray-medium">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-khan-gray-medium">Progress</span>
-                            <span className="text-sm font-medium text-khan-gray-dark">{subject.progress}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-khan-green h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${subject.progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-1 text-xs text-khan-gray-medium">
-                          <Calendar className="w-3 h-3" />
-                          <span>
-                            Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}
-                          </span>
-                        </div>
-                        
-                        <Button 
-                          onClick={() => handleStartStudying(subject.subjectId)}
-                          className="bg-khan-green text-white hover:bg-khan-green-light transition-colors w-full font-semibold"
-                        >
-                          Continue Studying
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>

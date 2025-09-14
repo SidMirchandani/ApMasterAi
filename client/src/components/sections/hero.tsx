@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen, Star } from "lucide-react";
-import { Link } from "wouter";
+import Link from "next/link";
 
 export default function Hero() {
   return (
@@ -22,16 +22,15 @@ export default function Hero() {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <Button 
-            size="lg"
-            className="bg-khan-green text-white hover:bg-khan-green-light transition-colors px-8 py-4 text-lg font-semibold"
-            asChild
-          >
-            <Link href="/learn">
+          <Link href="/learn">
+            <Button 
+              size="lg"
+              className="bg-khan-green text-white hover:bg-khan-green-light transition-colors px-8 py-4 text-lg font-semibold"
+            >
               Start Learning
               <ArrowRight className="ml-2 w-5 h-5" />
-            </Link>
-          </Button>
+            </Button>
+          </Link>
         </div>
         
         <div className="flex items-center justify-center space-x-6 text-sm text-khan-gray-medium">

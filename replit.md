@@ -37,18 +37,28 @@ The application follows a modern full-stack architecture with clear separation b
 - **Development**: Vite integration for hot reloading in development
 
 ### Data Storage
-- **Database**: PostgreSQL configured via environment variables
-- **ORM**: Drizzle ORM for type-safe database operations
+- **Database**: PostgreSQL with enhanced reliability and connection management
+- **Connection Pool**: Optimized for Replit with automatic reconnection and health monitoring
+- **ORM**: Drizzle ORM for type-safe database operations with retry mechanisms
 - **Schema**: Centralized in `shared/schema.ts` for type sharing
 - **Current Tables**:
-  - `users`: User authentication and profiles
-  - `waitlist_emails`: Email collection for beta signup
-- **Storage Pattern**: Interface-based storage layer with memory fallback for development
+  - `users`: User authentication and profiles with Firebase UID mapping
+  - `waitlist_emails`: Email collection for beta signup with uniqueness constraints
+  - `user_subjects`: Subject enrollment and mastery tracking
+- **Storage Pattern**: Interface-based storage layer with comprehensive error handling
+- **Reliability Features**:
+  - Automatic database reconnection on connection failures
+  - Health monitoring with 30-second check intervals
+  - Retry mechanisms with exponential backoff for all operations
+  - Cross-domain connection persistence for Replit environments
+  - Enhanced error handling with connection-specific recovery
 
 ### Authentication & Authorization
-- Currently implements basic user storage structure
-- Session management prepared but not fully implemented
-- Waitlist functionality as initial user engagement feature
+- **Firebase Authentication**: Cross-domain auth with Replit-specific reliability fixes
+- **Enhanced Auth Persistence**: Automatic auth state restoration across browser contexts
+- **Domain-Aware Configuration**: Handles Replit preview domains and new tab scenarios
+- **Session Management**: Firebase-based with automatic token refresh and error recovery
+- **Waitlist Functionality**: Email collection for beta signup with duplicate prevention
 
 ## Data Flow
 
