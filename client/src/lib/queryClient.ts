@@ -70,7 +70,7 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   console.log(`Making API request: ${method} ${url}`);
-  
+
   // Get auth headers asynchronously to ensure fresh tokens
   const authHeaders = await getAuthHeaders();
   console.log('Auth headers keys:', Object.keys(authHeaders));
@@ -89,13 +89,13 @@ export async function apiRequest(
     });
 
     console.log(`API response status: ${res.status} for ${method} ${url}`);
-    
+
     if (!res.ok) {
       const errorText = await res.text();
       console.error(`API error response:`, errorText);
       throw new Error(`${res.status}: ${errorText}`);
     }
-    
+
     return res;
   } catch (error) {
     console.error(`API request failed: ${method} ${url}`, error);
@@ -112,7 +112,7 @@ export const getQueryFn: <T>(options: {
     // Get fresh auth headers for queries
     const authHeaders = await getAuthHeaders();
     const url = queryKey.join("/") as string;
-    
+
     console.log('Query function called for:', url);
     console.log('Auth headers:', Object.keys(authHeaders));
 
@@ -142,14 +142,13 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
+      retry: 1,
+      staleTime: 30000, // 30 seconds
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      refetchOnReconnect: false,
     },
     mutations: {
-      retry: false,
+      retry: 0,
     },
   },
 });

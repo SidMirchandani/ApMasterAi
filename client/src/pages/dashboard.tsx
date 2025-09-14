@@ -38,76 +38,42 @@ export default function Dashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Optimized data fetching with better caching and error handling
+  // Simplified and faster data fetching
   const { 
     data: subjectsResponse, 
     isLoading: subjectsLoading,
     error: subjectsError,
     refetch: refetchSubjects
   } = useQuery<{success: boolean, data: DashboardSubject[]}>({
-    queryKey: ["api", "user", "subjects"],
+    queryKey: ["subjects"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/user/subjects");
       return response.json();
     },
-    enabled: isAuthenticated && !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isAuthenticated,
+    staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: false,
-    retry: 2,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retry: 1,
   });
 
   // Memoize subjects array to prevent unnecessary re-renders
   const subjects = useMemo(() => subjectsResponse?.data || [], [subjectsResponse?.data]);
 
-  // Optimized remove subject mutation with optimistic updates
+  // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
     mutationFn: async (subjectId: string) => {
       await apiRequest("DELETE", `/api/user/subjects/${subjectId}`);
     },
-    onMutate: async (subjectId) => {
-      // Cancel outgoing refetches to avoid overwriting optimistic update
-      await queryClient.cancelQueries({ queryKey: ["api", "user", "subjects"] });
-
-      // Snapshot previous value
-      const previousSubjects = queryClient.getQueryData(["api", "user", "subjects"]);
-
-      // Optimistically update by removing the subject
-      queryClient.setQueryData(["api", "user", "subjects"], (old: any) => {
-        if (!old?.data) return old;
-        return {
-          ...old,
-          data: old.data.filter((subject: DashboardSubject) => subject.subjectId !== subjectId)
-        };
-      });
-
-      return { previousSubjects };
-    },
-    onError: (err, subjectId, context) => {
-      // Rollback on error
-      queryClient.setQueryData(["api", "user", "subjects"], context?.previousSubjects);
-    },
-    onSettled: () => {
-      // Refetch to ensure we have the latest data
-      queryClient.invalidateQueries({ queryKey: ["api", "user", "subjects"] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
     },
   });
 
-  // Optimized auth redirect with debouncing
+  // Simple auth redirect
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    // Only redirect after auth state has stabilized
     if (!loading && !isAuthenticated) {
-      timeoutId = setTimeout(() => {
-        router.push('/login');
-      }, 100); // Small delay to prevent flash
+      router.push('/login');
     }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
   }, [loading, isAuthenticated, router]);
 
   const removeSubject = (subjectId: string) => {

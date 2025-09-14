@@ -72,15 +72,13 @@ export default function Courses() {
       return response.json();
     },
     onSuccess: (data, { subject }) => {
-      queryClient.invalidateQueries({ queryKey: ["api", "user", "subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
       toast({
         title: "Subject added!",
         description: `${subject.name} has been added to your dashboard.`,
       });
       setShowMasteryModal(false);
-      setTimeout(() => {
-        router.push('/dashboard'); // Changed from navigate
-      }, 1000);
+      router.push('/dashboard');
     },
     onError: (error: any) => {
       const errorMessage = error.message;
@@ -123,9 +121,9 @@ export default function Courses() {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.push("/login"); // Changed from navigate
+      router.push("/login");
     }
-  }, [isAuthenticated, loading, router]); // router instead of navigate
+  }, [loading, isAuthenticated, router]);
 
   if (loading) {
     return (
