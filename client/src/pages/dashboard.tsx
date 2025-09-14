@@ -38,12 +38,13 @@ export default function Dashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Simplified and faster data fetching
+  // Optimized data fetching with better loading states
   const { 
     data: subjectsResponse, 
     isLoading: subjectsLoading,
     error: subjectsError,
-    refetch: refetchSubjects
+    refetch: refetchSubjects,
+    isFetching: subjectsFetching
   } = useQuery<{success: boolean, data: DashboardSubject[]}>({
     queryKey: ["subjects"],
     queryFn: async () => {
@@ -51,13 +52,18 @@ export default function Dashboard() {
       return response.json();
     },
     enabled: isAuthenticated,
-    staleTime: 30000, // 30 seconds
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Memoize subjects array to prevent unnecessary re-renders
   const subjects = useMemo(() => subjectsResponse?.data || [], [subjectsResponse?.data]);
+
+  // Track if we have initial data or are still loading for the first time
+  const isInitialLoading = subjectsLoading && !subjectsResponse;
 
   // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
@@ -147,7 +153,14 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {subjects.length === 0 ? (
+          {isInitialLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4"></div>
+                <p className="text-khan-gray-medium">Loading your subjects...</p>
+              </div>
+            </div>
+          ) : subjects.length === 0 ? (
             <div className="text-center py-16">
               <BookOpen className="mx-auto h-24 w-24 text-khan-gray-light mb-6" />
               <h2 className="text-2xl font-bold text-khan-gray-dark mb-4">
@@ -178,14 +191,15 @@ export default function Dashboard() {
                 </Button>
               </div>
 
-              {subjectsLoading ? (
-                <div className="flex items-center justify-center py-16">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4"></div>
-                    <p className="text-khan-gray-medium">Loading your subjects...</p>
+              {subjectsFetching && subjects.length > 0 && (
+                <div className="mb-4 text-center">
+                  <div className="inline-flex items-center text-sm text-khan-gray-medium">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-khan-green mr-2"></div>
+                    Refreshing...
                   </div>
                 </div>
-              ) : (
+              )}
+              {(
                 <div className="space-y-4">
                   {subjects.map((subject: DashboardSubject) => (
                     <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 w-full">

@@ -58,6 +58,10 @@ export default async function handler(
         try {
           const subjects = await storage.getUserSubjects(userId);
           console.log('Retrieved subjects:', subjects.length);
+          
+          // Add caching headers for faster subsequent requests
+          res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+          
           return res.json({ 
             success: true, 
             data: subjects 

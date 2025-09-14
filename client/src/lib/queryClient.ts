@@ -142,13 +142,15 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
-      staleTime: 30000, // 30 seconds
+      retry: 2,
+      staleTime: 5 * 60 * 1000, // 5 minutes - keep data fresh longer
+      gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
       refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
+      refetchOnReconnect: true, // Refetch when reconnecting to network
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
-      retry: 0,
+      retry: 1,
     },
   },
 });
