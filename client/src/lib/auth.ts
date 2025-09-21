@@ -1,11 +1,11 @@
-import { 
+import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
   User,
-  UserCredential
+  UserCredential,
 } from "firebase/auth";
 import { auth, isFirebaseEnabled } from "./firebase";
 
@@ -26,13 +26,22 @@ export interface LoginData {
 }
 
 // Sign up with email and password
-export const signUpWithEmail = async ({ email, password }: SignUpData): Promise<UserCredential> => {
+export const signUpWithEmail = async ({
+  email,
+  password,
+}: SignUpData): Promise<UserCredential> => {
   if (!isFirebaseEnabled || !auth) {
-    throw new Error("Authentication is not configured. Please contact support.");
+    throw new Error(
+      "Authentication is not configured. Please contact support.",
+    );
   }
-  
+
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password,
+    );
     return userCredential;
   } catch (error: any) {
     throw new Error(error.message || "Failed to create account");
@@ -40,13 +49,22 @@ export const signUpWithEmail = async ({ email, password }: SignUpData): Promise<
 };
 
 // Sign in with email and password
-export const loginWithEmail = async ({ email, password }: LoginData): Promise<UserCredential> => {
+export const loginWithEmail = async ({
+  email,
+  password,
+}: LoginData): Promise<UserCredential> => {
   if (!isFirebaseEnabled || !auth) {
-    throw new Error("Authentication is not configured. Please contact support.");
+    throw new Error(
+      "Authentication is not configured. Please contact support.",
+    );
   }
-  
+
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password,
+    );
     return userCredential;
   } catch (error: any) {
     throw new Error(error.message || "Failed to login");
@@ -55,6 +73,12 @@ export const loginWithEmail = async ({ email, password }: LoginData): Promise<Us
 
 // Sign in with Google
 export const signInWithGoogle = async (): Promise<UserCredential> => {
+  if (!isFirebaseEnabled || !auth) {
+    throw new Error(
+      "Authentication is not configured. Please contact support.",
+    );
+  }
+
   try {
     const provider = new GoogleAuthProvider();
     const userCredential = await signInWithPopup(auth, provider);
@@ -67,9 +91,11 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
 // Sign out
 export const logout = async (): Promise<void> => {
   if (!isFirebaseEnabled || !auth) {
-    throw new Error("Authentication is not configured. Please contact support.");
+    throw new Error(
+      "Authentication is not configured. Please contact support.",
+    );
   }
-  
+
   try {
     await signOut(auth);
   } catch (error: any) {
@@ -80,10 +106,10 @@ export const logout = async (): Promise<void> => {
 // Convert Firebase User to AuthUser
 export const convertFirebaseUser = (user: User | null): AuthUser | null => {
   if (!user) return null;
-  
+
   return {
     uid: user.uid,
     email: user.email,
-    displayName: user.displayName
+    displayName: user.displayName,
   };
 };
