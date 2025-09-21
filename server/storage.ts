@@ -11,7 +11,7 @@ import {
 } from "@shared/schema";
 import { getDb } from "./db";
 import { eq, and, desc } from "drizzle-orm";
-import { DatabaseRetryHandler, ensureDatabaseHealth } from "./db-retry-handler";
+import { DatabaseRetryHandler } from "./db-retry-handler";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -34,7 +34,6 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
       const [user] = await db.select().from(users).where(eq(users.id, id));
       return user || undefined;
@@ -43,7 +42,6 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
       const [user] = await db
         .select()
@@ -55,7 +53,6 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
       const [user] = await db.insert(users).values(insertUser).returning();
       return user;
@@ -66,7 +63,6 @@ export class DatabaseStorage implements IStorage {
     insertEmail: InsertWaitlistEmail,
   ): Promise<WaitlistEmail> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
       try {
         const [waitlistEmail] = await db
@@ -76,7 +72,6 @@ export class DatabaseStorage implements IStorage {
         return waitlistEmail;
       } catch (error: any) {
         if (error.code === "23505") {
-          // PostgreSQL unique constraint violation
           throw new Error("Email already registered for waitlist");
         }
         throw error;
@@ -86,7 +81,6 @@ export class DatabaseStorage implements IStorage {
 
   async getWaitlistEmails(): Promise<WaitlistEmail[]> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
       return db.select().from(waitlistEmails);
     });
@@ -94,7 +88,6 @@ export class DatabaseStorage implements IStorage {
 
   async isEmailInWaitlist(email: string): Promise<boolean> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
       const [result] = await db
         .select()
@@ -106,20 +99,17 @@ export class DatabaseStorage implements IStorage {
 
   async getUserSubjects(userId: number): Promise<UserSubject[]> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
-      const result = await db
+      return db
         .select()
         .from(userSubjects)
         .where(eq(userSubjects.userId, userId))
         .orderBy(desc(userSubjects.dateAdded));
-      return result;
     });
   }
 
   async addUserSubject(userSubject: InsertUserSubject): Promise<UserSubject> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
       const [subject] = await db
         .insert(userSubjects)
@@ -131,7 +121,6 @@ export class DatabaseStorage implements IStorage {
 
   async removeUserSubject(userId: number, subjectId: string): Promise<void> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
       await db
         .delete(userSubjects)
@@ -146,7 +135,6 @@ export class DatabaseStorage implements IStorage {
 
   async hasUserSubject(userId: number, subjectId: string): Promise<boolean> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
       const [result] = await db
         .select()
@@ -167,7 +155,6 @@ export class DatabaseStorage implements IStorage {
     masteryLevel: number,
   ): Promise<UserSubject | null> {
     return DatabaseRetryHandler.withRetry(async () => {
-      await ensureDatabaseHealth();
       const db = await getDb();
       const [updatedSubject] = await db
         .update(userSubjects)

@@ -11,7 +11,10 @@ async function getOrCreateUser(firebaseUid: string): Promise<number> {
       username: firebaseUid,
       password: "firebase_auth", // placeholder since Firebase handles auth
     });
-    console.log("Created new user for Firebase UID:", firebaseUid);
+    console.log(
+      "[subjects API] Created new user for Firebase UID:",
+      firebaseUid,
+    );
   }
 
   return user.id;
@@ -36,12 +39,20 @@ export default async function handler(
 
     switch (method) {
       case "GET": {
-        const subjects = await storage.getUserSubjects(userId);
-        res.setHeader(
-          "Cache-Control",
-          "public, s-maxage=60, stale-while-revalidate=300",
-        );
-        return res.json({ success: true, data: subjects });
+        try {
+          const subjects = await storage.getUserSubjects(userId);
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=60, stale-while-revalidate=300",
+          );
+          return res.json({ success: true, data: subjects });
+        } catch (error) {
+          console.error("[subjects API][GET] Error:", error);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to load subjects from database",
+          });
+        }
       }
 
       case "POST": {
@@ -70,6 +81,7 @@ export default async function handler(
             data: subject,
           });
         } catch (error) {
+          console.error("[subjects API][POST] Error:", error);
           if (error instanceof z.ZodError) {
             return res.status(400).json({
               success: false,
@@ -77,7 +89,10 @@ export default async function handler(
               errors: error.errors,
             });
           }
-          throw error;
+          return res.status(500).json({
+            success: false,
+            message: "Failed to add subject to database",
+          });
         }
       }
 
@@ -89,7 +104,7 @@ export default async function handler(
         });
     }
   } catch (error) {
-    console.error(`Unhandled error in ${method} /api/user/subjects:`, error);
+    console.error(`[subjects API][${req.method}] Unhandled error:`, error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

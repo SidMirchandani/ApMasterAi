@@ -1,22 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../../server/storage";
-import { databaseManager } from "../../../../server/db";
 
-// Reuse the same logic from subjects.ts
 async function getOrCreateUser(firebaseUid: string): Promise<number> {
-  const isHealthy = await databaseManager.healthCheck();
-  if (!isHealthy) {
-    console.log("Database unhealthy, forcing reconnection...");
-    await databaseManager.forceReconnect();
-  }
-
   let user = await storage.getUserByUsername(firebaseUid);
+
   if (!user) {
     user = await storage.createUser({
       username: firebaseUid,
-      password: "firebase_auth", // placeholder
+      password: "firebase_auth", // placeholder since Firebase handles auth
     });
-    console.log("Created new user for Firebase UID:", firebaseUid);
+    console.log(
+      "[subjectId API] Created new user for Firebase UID:",
+      firebaseUid,
+    );
   }
 
   return user.id;
@@ -41,6 +37,7 @@ export default async function handler(
       );
       decodedToken = await verifyFirebaseToken(token);
     } catch (error) {
+      console.error("[subjectId API] Token verification failed:", error);
       return res.status(401).json({ success: false, message: "Invalid token" });
     }
 
@@ -49,24 +46,28 @@ export default async function handler(
 
     const { subjectId } = req.query;
     if (!subjectId || typeof subjectId !== "string") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Valid subject ID is required" });
+      return res.status(400).json({
+        success: false,
+        message: "Valid subject ID is required",
+      });
     }
 
     switch (req.method) {
-      case "DELETE":
+      case "DELETE": {
         try {
           await storage.removeUserSubject(userId, subjectId);
-          return res
-            .status(200)
-            .json({ success: true, message: "Subject removed successfully" });
+          return res.status(200).json({
+            success: true,
+            message: "Subject removed successfully",
+          });
         } catch (error) {
-          console.error("Error removing subject:", error);
-          return res
-            .status(500)
-            .json({ success: false, message: "Failed to remove subject" });
+          console.error("[subjectId API][DELETE] Error:", error);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to remove subject",
+          });
         }
+      }
 
       default:
         res.setHeader("Allow", ["DELETE"]);
@@ -76,9 +77,10 @@ export default async function handler(
         });
     }
   } catch (error) {
-    console.error("Unhandled API error:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
+    console.error("[subjectId API] Unhandled error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 }
