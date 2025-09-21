@@ -14,4 +14,12 @@
   "include": [
     "src"
   ]
+  {
+    "exclude": [
+      "node_modules",
+      ".next",
+      "functions",
+      "functions.bak"
+    ]
+  }
 }
