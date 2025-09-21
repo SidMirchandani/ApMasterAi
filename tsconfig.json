@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "ES6"],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,9 +23,12 @@
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": [
     "node_modules",
-    "apmaster/src/**",
     ".next",
+    "dist",
     "functions",
-    "functions.bak"
+    "functions.bak",
+    "apmaster",
+    "**/*.bak",
+    "**/*.bak/**"
   ]
 }

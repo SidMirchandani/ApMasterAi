@@ -1,11 +1,38 @@
+# Dependencies
 node_modules
-dist
-.DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
-.env
 
-# Ignore backup/unused dirs
+# Build / output
+.next
+out
+dist
+
+# System files
+.DS_Store
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Public build artifacts
+server/public
+
+# Vite config (ignore backups or generated variants)
+vite.config.ts.*
+
+# Archives
+*.tar.gz
+
+# Backup/unused dirs
 *.bak
 *.bak/
+
+# Vercel build output
+.vercel

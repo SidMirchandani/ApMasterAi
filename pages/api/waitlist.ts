@@ -1,37 +1,58 @@
+import type { NextApiRequest, NextApiResponse } from "next";
+import { storage } from "../../server/storage";
+import { z } from "zod";
 
-import { NextApiRequest, NextApiResponse } from 'next';
-import { replitDb } from '../../server/replit-db';
+// Schema validation for incoming email
+const emailSchema = z.string().email();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   switch (req.method) {
-    case 'POST':
+    case "POST":
       try {
         const { email } = req.body;
-        
-        if (!email || typeof email !== 'string') {
-          return res.status(400).json({ error: 'Valid email is required' });
-        }
 
-        // Basic email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          return res.status(400).json({ error: 'Invalid email format' });
-        }
+        // Validate input using zod
+        const parsedEmail = emailSchema.parse(email.toLowerCase().trim());
 
-        const added = await replitDb.addToWaitlist(email.toLowerCase().trim());
-        
-        if (!added) {
-          return res.status(409).json({ error: 'Email already exists in waitlist' });
+        try {
+          const added = await storage.addToWaitlist({ email: parsedEmail });
+          return res.status(201).json({
+            success: true,
+            message: "Successfully added to waitlist",
+            data: added,
+          });
+        } catch (error: any) {
+          if (error.message.includes("already registered")) {
+            return res.status(409).json({
+              success: false,
+              message: "Email already exists in waitlist",
+            });
+          }
+          throw error;
         }
-
-        return res.status(201).json({ message: 'Successfully added to waitlist' });
       } catch (error) {
-        console.error('Waitlist API Error:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid email format",
+            errors: error.errors,
+          });
+        }
+        console.error("Waitlist API Error:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
       }
 
     default:
-      res.setHeader('Allow', ['POST']);
-      return res.status(405).json({ error: `Method ${req.method} not allowed` });
+      res.setHeader("Allow", ["POST"]);
+      return res.status(405).json({
+        success: false,
+        message: `Method ${req.method} not allowed`,
+      });
   }
 }

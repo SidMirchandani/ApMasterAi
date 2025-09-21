@@ -1,5 +1,15 @@
-import { users, waitlistEmails, userSubjects, type User, type InsertUser, type WaitlistEmail, type InsertWaitlistEmail, type UserSubject, type InsertUserSubject } from "@shared/schema";
-import { getDb, databaseManager } from "./db";
+import {
+  users,
+  waitlistEmails,
+  userSubjects,
+  type User,
+  type InsertUser,
+  type WaitlistEmail,
+  type InsertWaitlistEmail,
+  type UserSubject,
+  type InsertUserSubject,
+} from "@shared/schema";
+import { getDb } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 import { DatabaseRetryHandler, ensureDatabaseHealth } from "./db-retry-handler";
 
@@ -14,7 +24,11 @@ export interface IStorage {
   addUserSubject(userSubject: InsertUserSubject): Promise<UserSubject>;
   removeUserSubject(userId: number, subjectId: string): Promise<void>;
   hasUserSubject(userId: number, subjectId: string): Promise<boolean>;
-  updateSubjectMasteryLevel(userId: number, subjectId: string, masteryLevel: number): Promise<UserSubject | null>;
+  updateSubjectMasteryLevel(
+    userId: number,
+    subjectId: string,
+    masteryLevel: number,
+  ): Promise<UserSubject | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -31,7 +45,10 @@ export class DatabaseStorage implements IStorage {
     return DatabaseRetryHandler.withRetry(async () => {
       await ensureDatabaseHealth();
       const db = await getDb();
-      const [user] = await db.select().from(users).where(eq(users.username, username));
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, username));
       return user || undefined;
     });
   }
@@ -40,15 +57,14 @@ export class DatabaseStorage implements IStorage {
     return DatabaseRetryHandler.withRetry(async () => {
       await ensureDatabaseHealth();
       const db = await getDb();
-      const [user] = await db
-        .insert(users)
-        .values(insertUser)
-        .returning();
+      const [user] = await db.insert(users).values(insertUser).returning();
       return user;
     });
   }
 
-  async addToWaitlist(insertEmail: InsertWaitlistEmail): Promise<WaitlistEmail> {
+  async addToWaitlist(
+    insertEmail: InsertWaitlistEmail,
+  ): Promise<WaitlistEmail> {
     return DatabaseRetryHandler.withRetry(async () => {
       await ensureDatabaseHealth();
       const db = await getDb();
@@ -59,7 +75,8 @@ export class DatabaseStorage implements IStorage {
           .returning();
         return waitlistEmail;
       } catch (error: any) {
-        if (error.code === '23505') { // PostgreSQL unique constraint violation
+        if (error.code === "23505") {
+          // PostgreSQL unique constraint violation
           throw new Error("Email already registered for waitlist");
         }
         throw error;
@@ -71,7 +88,7 @@ export class DatabaseStorage implements IStorage {
     return DatabaseRetryHandler.withRetry(async () => {
       await ensureDatabaseHealth();
       const db = await getDb();
-      return await db.select().from(waitlistEmails);
+      return db.select().from(waitlistEmails);
     });
   }
 
@@ -88,27 +105,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserSubjects(userId: number): Promise<UserSubject[]> {
-    try {
-      // Check database health before querying
-      const isHealthy = await databaseManager.healthCheck();
-      if (!isHealthy) {
-        console.log('Database connection unhealthy, attempting to reconnect...');
-        await databaseManager.forceReconnect();
-      }
-
+    return DatabaseRetryHandler.withRetry(async () => {
+      await ensureDatabaseHealth();
       const db = await getDb();
       const result = await db
         .select()
         .from(userSubjects)
         .where(eq(userSubjects.userId, userId))
         .orderBy(desc(userSubjects.dateAdded));
-
-      console.log(`Retrieved ${result.length} subjects for user ${userId}`);
       return result;
-    } catch (error) {
-      console.error('Error in getUserSubjects:', error);
-      throw new Error('Failed to retrieve user subjects from database');
-    }
+    });
   }
 
   async addUserSubject(userSubject: InsertUserSubject): Promise<UserSubject> {
@@ -129,10 +135,12 @@ export class DatabaseStorage implements IStorage {
       const db = await getDb();
       await db
         .delete(userSubjects)
-        .where(and(
-          eq(userSubjects.userId, userId),
-          eq(userSubjects.subjectId, subjectId)
-        ));
+        .where(
+          and(
+            eq(userSubjects.userId, userId),
+            eq(userSubjects.subjectId, subjectId),
+          ),
+        );
     });
   }
 
@@ -143,25 +151,33 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .select()
         .from(userSubjects)
-        .where(and(
-          eq(userSubjects.userId, userId),
-          eq(userSubjects.subjectId, subjectId)
-        ));
+        .where(
+          and(
+            eq(userSubjects.userId, userId),
+            eq(userSubjects.subjectId, subjectId),
+          ),
+        );
       return !!result;
     });
   }
 
-  async updateSubjectMasteryLevel(userId: number, subjectId: string, masteryLevel: number): Promise<UserSubject | null> {
+  async updateSubjectMasteryLevel(
+    userId: number,
+    subjectId: string,
+    masteryLevel: number,
+  ): Promise<UserSubject | null> {
     return DatabaseRetryHandler.withRetry(async () => {
       await ensureDatabaseHealth();
       const db = await getDb();
       const [updatedSubject] = await db
         .update(userSubjects)
         .set({ masteryLevel })
-        .where(and(
-          eq(userSubjects.userId, userId),
-          eq(userSubjects.subjectId, subjectId)
-        ))
+        .where(
+          and(
+            eq(userSubjects.userId, userId),
+            eq(userSubjects.subjectId, subjectId),
+          ),
+        )
         .returning();
       return updatedSubject || null;
     });
