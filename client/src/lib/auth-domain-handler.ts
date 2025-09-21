@@ -69,6 +69,11 @@ export class AuthDomainHandler {
       // Force Firebase to check its internal persistence
       // This should trigger onAuthStateChanged if the user is still valid
       await new Promise(resolve => {
+        if (!auth) {
+          resolve(null);
+          return;
+        }
+        
         const unsubscribe = auth.onAuthStateChanged((user) => {
           unsubscribe();
           resolve(user);
