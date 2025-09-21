@@ -2,24 +2,13 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import Navigation from "@/components/ui/navigation";
+import { Toaster } from "@/components/ui/toaster";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  BookOpen,
-  Clock,
-  Target,
-  Users,
-  Star,
-  ChevronRight,
-  Play,
-  CheckCircle,
-  Award,
-  TrendingUp,
-} from "lucide-react";
-import { apSubjects } from "@/lib/ap-subjects";
+import { BookOpen, Clock, Target, Users } from "lucide-react";
 
 export default function Course() {
   const router = useRouter();
@@ -47,24 +36,26 @@ export default function Course() {
     return null; // Will redirect to login
   }
 
-  // Get course name from the ID (you can expand this with actual data later)
+  // Get course name from the ID (expand later with actual data)
   const getCourseName = (courseId: string) => {
     const courseMap: Record<string, string> = {
       "calculus-ab": "AP Calculus AB",
       "calculus-bc": "AP Calculus BC",
-      "biology": "AP Biology",
-      "chemistry": "AP Chemistry",
+      biology: "AP Biology",
+      chemistry: "AP Chemistry",
       "physics-1": "AP Physics 1",
       "us-history": "AP U.S. History",
       "world-history": "AP World History",
       "english-language": "AP English Language",
       "english-literature": "AP English Literature",
-      "psychology": "AP Psychology"
+      psychology: "AP Psychology",
     };
     return courseMap[courseId] || "AP Course";
   };
 
-  const courseName = getCourseName(id || "");
+  // ✅ Normalize id into a string
+  const courseId = Array.isArray(id) ? id[0] : (id ?? "");
+  const courseName = getCourseName(courseId);
 
   return (
     <div className="min-h-screen bg-khan-background">
@@ -77,7 +68,8 @@ export default function Course() {
               {courseName}
             </h1>
             <p className="text-xl text-khan-gray-medium max-w-2xl mx-auto">
-              Master the concepts and skills you need to succeed on your AP exam.
+              Master the concepts and skills you need to succeed on your AP
+              exam.
             </p>
           </div>
 
@@ -87,36 +79,52 @@ export default function Course() {
                 <div className="w-16 h-16 bg-khan-green rounded-lg flex items-center justify-center mx-auto mb-4">
                   <BookOpen className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">Study Materials</h3>
-                <p className="text-khan-gray-medium">Comprehensive lessons and explanations</p>
+                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
+                  Study Materials
+                </h3>
+                <p className="text-khan-gray-medium">
+                  Comprehensive lessons and explanations
+                </p>
               </div>
 
               <div className="text-center">
                 <div className="w-16 h-16 bg-khan-blue rounded-lg flex items-center justify-center mx-auto mb-4">
                   <Target className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">Practice Questions</h3>
-                <p className="text-khan-gray-medium">Real AP-style problems and solutions</p>
+                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
+                  Practice Questions
+                </h3>
+                <p className="text-khan-gray-medium">
+                  Real AP-style problems and solutions
+                </p>
               </div>
 
               <div className="text-center">
                 <div className="w-16 h-16 bg-khan-purple rounded-lg flex items-center justify-center mx-auto mb-4">
                   <Clock className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">Timed Practice</h3>
-                <p className="text-khan-gray-medium">Exam simulation with real timing</p>
+                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
+                  Timed Practice
+                </h3>
+                <p className="text-khan-gray-medium">
+                  Exam simulation with real timing
+                </p>
               </div>
             </div>
 
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-khan-gray-dark mb-4">Course Content Coming Soon</h2>
+              <h2 className="text-2xl font-bold text-khan-gray-dark mb-4">
+                Course Content Coming Soon
+              </h2>
               <p className="text-khan-gray-medium mb-6">
-                We're building comprehensive study materials and practice questions for {courseName}.
-                Check back soon for updates!
+                We're building comprehensive study materials and practice
+                questions for {courseName}. Check back soon for updates!
               </p>
               <div className="flex items-center justify-center space-x-2 text-khan-green">
                 <Users className="w-5 h-5" />
-                <span className="font-medium">Join thousands of students preparing for success</span>
+                <span className="font-medium">
+                  Join thousands of students preparing for success
+                </span>
               </div>
             </div>
           </div>
