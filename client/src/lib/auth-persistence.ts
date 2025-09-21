@@ -1,5 +1,9 @@
 import { auth } from "./firebase";
-import { setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
+import {
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+} from "firebase/auth";
 
 // Ensure Firebase auth persistence is set correctly
 export async function initializeAuthPersistence(): Promise<void> {
@@ -15,7 +19,7 @@ export async function initializeAuthPersistence(): Promise<void> {
     console.log("Firebase auth persistence set to local");
   } catch (error) {
     console.error("Failed to set auth persistence:", error);
-    
+
     // Fallback to session persistence
     try {
       await setPersistence(auth, browserSessionPersistence);
@@ -48,7 +52,8 @@ export function setRememberMe(remember: boolean): void {
 
 // Enhanced auth state monitoring
 let authStateStable = false;
-let authStateTimeout: number | null = null;
+// ✅ Use ReturnType<typeof setTimeout> instead of number
+let authStateTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function monitorAuthStability(): (() => void) | undefined {
   if (!auth) return undefined;
@@ -56,12 +61,12 @@ export function monitorAuthStability(): (() => void) | undefined {
   // Reset stability flag on auth state changes
   const unsubscribe = auth.onAuthStateChanged(() => {
     authStateStable = false;
-    
+
     // Clear existing timeout
     if (authStateTimeout) {
       clearTimeout(authStateTimeout);
     }
-    
+
     // Mark as stable after 2 seconds of no changes
     authStateTimeout = setTimeout(() => {
       authStateStable = true;
