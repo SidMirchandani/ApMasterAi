@@ -50,8 +50,8 @@ export function setRememberMe(remember: boolean): void {
 let authStateStable = false;
 let authStateTimeout: number | null = null;
 
-export function monitorAuthStability(): void {
-  if (!auth) return;
+export function monitorAuthStability(): (() => void) | undefined {
+  if (!auth) return undefined;
 
   // Reset stability flag on auth state changes
   const unsubscribe = auth.onAuthStateChanged(() => {
@@ -69,7 +69,7 @@ export function monitorAuthStability(): void {
     }, 2000);
   });
 
-  // Cleanup function (call this when component unmounts)
+  // Return cleanup function
   return () => {
     unsubscribe();
     if (authStateTimeout) {
