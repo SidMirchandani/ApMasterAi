@@ -9,7 +9,7 @@ import {
   type UserSubject,
   type InsertUserSubject,
 } from "@shared/schema";
-import { getDb } from "./db";
+import { getDb, databaseManager } from "./db"; // ✅ import both
 import { eq, and, desc } from "drizzle-orm";
 import { DatabaseRetryHandler } from "./db-retry-handler";
 
@@ -172,3 +172,8 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+// ✅ Compatibility export for legacy usage
+export const getDbCompat = async () => {
+  return databaseManager.getDatabase();
+};

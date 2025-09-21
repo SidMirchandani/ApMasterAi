@@ -3,7 +3,7 @@ import { drizzle, type NeonDatabase } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 import * as schema from "@shared/schema";
 
-// Enhanced Neon configuration
+// Neon configuration for serverless Postgres
 neonConfig.webSocketConstructor = ws;
 neonConfig.useSecureWebSocket = true;
 neonConfig.pipelineConnect = false;
@@ -15,14 +15,14 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Pool config
+// Connection pool configuration
 const poolConfig: PoolConfig = {
   connectionString: process.env.DATABASE_URL,
   max: 10,
   min: 2,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-  maxUses: 7500,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 10_000,
+  maxUses: 7_500,
   keepAlive: true,
   log: (msg, level) => {
     if (level === "error") {
@@ -33,8 +33,8 @@ const poolConfig: PoolConfig = {
   },
 };
 
-class ReplitDatabaseManager {
-  private static instance: ReplitDatabaseManager;
+class DatabaseManager {
+  private static instance: DatabaseManager;
   private pool: Pool | null = null;
   private db: NeonDatabase<typeof schema> | null = null;
   private reconnectAttempts = 0;
@@ -43,14 +43,14 @@ class ReplitDatabaseManager {
 
   private constructor() {}
 
-  static getInstance(): ReplitDatabaseManager {
-    if (!ReplitDatabaseManager.instance) {
-      ReplitDatabaseManager.instance = new ReplitDatabaseManager();
-      ReplitDatabaseManager.instance.initializeConnection().catch((err) => {
+  static getInstance(): DatabaseManager {
+    if (!DatabaseManager.instance) {
+      DatabaseManager.instance = new DatabaseManager();
+      DatabaseManager.instance.initializeConnection().catch((err) => {
         console.error("Failed to initialize database:", err);
       });
     }
-    return ReplitDatabaseManager.instance;
+    return DatabaseManager.instance;
   }
 
   private async initializeConnection(): Promise<void> {
@@ -58,7 +58,7 @@ class ReplitDatabaseManager {
       console.log("Initializing database connection...");
       this.pool = new Pool(poolConfig);
 
-      // Test connection
+      // Test the connection
       const client = await this.pool.connect();
       await client.query("SELECT 1");
       client.release();
@@ -82,7 +82,7 @@ class ReplitDatabaseManager {
     });
   }
 
-  private async handleConnectionError(error: any): Promise<void> {
+  private async handleConnectionError(error: unknown): Promise<void> {
     if (this.isReconnecting) return;
 
     console.error("Database connection error:", error);
@@ -92,7 +92,7 @@ class ReplitDatabaseManager {
 
       const backoffMs = Math.min(
         1000 * Math.pow(2, this.reconnectAttempts - 1),
-        30000,
+        30_000,
       );
       await new Promise((resolve) => setTimeout(resolve, backoffMs));
 
@@ -124,6 +124,10 @@ class ReplitDatabaseManager {
     return this.db;
   }
 
+  getPool(): Pool | null {
+    return this.pool;
+  }
+
   async healthCheck(): Promise<boolean> {
     try {
       if (!this.pool) return false;
@@ -144,4 +148,9 @@ class ReplitDatabaseManager {
   }
 }
 
-export const databaseManager = ReplitDatabaseManager.getInstance();
+// Singleton instance
+export const databaseManager = DatabaseManager.getInstance();
+
+// Compatibility exports
+export const getDb = async () => databaseManager.getDatabase();
+export const getPool = () => databaseManager.getPool();
