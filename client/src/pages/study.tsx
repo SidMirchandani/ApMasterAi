@@ -1,15 +1,26 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Clock, Target, CheckCircle, PlayCircle, ArrowLeft } from "lucide-react";
+import {
+  BookOpen,
+  Clock,
+  Target,
+  CheckCircle,
+  PlayCircle,
+  ArrowLeft,
+} from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { apSubjects } from "@/lib/ap-subjects";
 
 interface StudySubject {
@@ -57,7 +68,7 @@ const calcSubjectTopics: Unit[] = [
         estimatedTime: "45 min",
         difficulty: "Beginner",
         completed: false,
-        practiceQuestions: 15
+        practiceQuestions: 15,
       },
       {
         id: "limit-laws",
@@ -66,7 +77,7 @@ const calcSubjectTopics: Unit[] = [
         estimatedTime: "30 min",
         difficulty: "Beginner",
         completed: false,
-        practiceQuestions: 12
+        practiceQuestions: 12,
       },
       {
         id: "continuity",
@@ -75,9 +86,9 @@ const calcSubjectTopics: Unit[] = [
         estimatedTime: "40 min",
         difficulty: "Intermediate",
         completed: false,
-        practiceQuestions: 18
-      }
-    ]
+        practiceQuestions: 18,
+      },
+    ],
   },
   {
     id: "unit2",
@@ -91,7 +102,7 @@ const calcSubjectTopics: Unit[] = [
         estimatedTime: "50 min",
         difficulty: "Intermediate",
         completed: false,
-        practiceQuestions: 20
+        practiceQuestions: 20,
       },
       {
         id: "derivative-rules",
@@ -100,7 +111,7 @@ const calcSubjectTopics: Unit[] = [
         estimatedTime: "60 min",
         difficulty: "Intermediate",
         completed: false,
-        practiceQuestions: 25
+        practiceQuestions: 25,
       },
       {
         id: "implicit-differentiation",
@@ -109,9 +120,9 @@ const calcSubjectTopics: Unit[] = [
         estimatedTime: "45 min",
         difficulty: "Advanced",
         completed: false,
-        practiceQuestions: 16
-      }
-    ]
+        practiceQuestions: 16,
+      },
+    ],
   },
   {
     id: "unit3",
@@ -125,7 +136,7 @@ const calcSubjectTopics: Unit[] = [
         estimatedTime: "55 min",
         difficulty: "Intermediate",
         completed: false,
-        practiceQuestions: 22
+        practiceQuestions: 22,
       },
       {
         id: "fundamental-theorem",
@@ -134,7 +145,7 @@ const calcSubjectTopics: Unit[] = [
         estimatedTime: "50 min",
         difficulty: "Advanced",
         completed: false,
-        practiceQuestions: 18
+        practiceQuestions: 18,
       },
       {
         id: "integration-techniques",
@@ -143,10 +154,10 @@ const calcSubjectTopics: Unit[] = [
         estimatedTime: "70 min",
         difficulty: "Advanced",
         completed: false,
-        practiceQuestions: 28
-      }
-    ]
-  }
+        practiceQuestions: 28,
+      },
+    ],
+  },
 ];
 
 const biologySubjectTopics: Unit[] = [
@@ -162,7 +173,7 @@ const biologySubjectTopics: Unit[] = [
         estimatedTime: "40 min",
         difficulty: "Beginner",
         completed: false,
-        practiceQuestions: 14
+        practiceQuestions: 14,
       },
       {
         id: "macromolecules",
@@ -171,9 +182,9 @@ const biologySubjectTopics: Unit[] = [
         estimatedTime: "60 min",
         difficulty: "Intermediate",
         completed: false,
-        practiceQuestions: 24
-      }
-    ]
+        practiceQuestions: 24,
+      },
+    ],
   },
   {
     id: "unit2",
@@ -187,7 +198,7 @@ const biologySubjectTopics: Unit[] = [
         estimatedTime: "35 min",
         difficulty: "Beginner",
         completed: false,
-        practiceQuestions: 12
+        practiceQuestions: 12,
       },
       {
         id: "organelles",
@@ -196,18 +207,18 @@ const biologySubjectTopics: Unit[] = [
         estimatedTime: "55 min",
         difficulty: "Intermediate",
         completed: false,
-        practiceQuestions: 20
-      }
-    ]
-  }
+        practiceQuestions: 20,
+      },
+    ],
+  },
 ];
 
 const getTopicsForSubject = (subjectId: string): Unit[] => {
   switch (subjectId) {
-    case 'calculus-ab':
-    case 'calculus-bc':
+    case "calculus-ab":
+    case "calculus-bc":
       return calcSubjectTopics;
-    case 'biology':
+    case "biology":
       return biologySubjectTopics;
     default:
       return [
@@ -223,7 +234,7 @@ const getTopicsForSubject = (subjectId: string): Unit[] => {
               estimatedTime: "45 min",
               difficulty: "Beginner",
               completed: false,
-              practiceQuestions: 15
+              practiceQuestions: 15,
             },
             {
               id: "intermediate-topics",
@@ -232,7 +243,7 @@ const getTopicsForSubject = (subjectId: string): Unit[] => {
               estimatedTime: "60 min",
               difficulty: "Intermediate",
               completed: false,
-              practiceQuestions: 20
+              practiceQuestions: 20,
             },
             {
               id: "advanced-applications",
@@ -241,18 +252,18 @@ const getTopicsForSubject = (subjectId: string): Unit[] => {
               estimatedTime: "75 min",
               difficulty: "Advanced",
               completed: false,
-              practiceQuestions: 25
-            }
-          ]
-        }
+              practiceQuestions: 25,
+            },
+          ],
+        },
       ];
   }
 };
 
 const difficultyColors = {
-  "Beginner": "bg-green-100 text-green-800 border-green-200",
-  "Intermediate": "bg-yellow-100 text-yellow-800 border-yellow-200",
-  "Advanced": "bg-red-100 text-red-800 border-red-200"
+  Beginner: "bg-green-100 text-green-800 border-green-200",
+  Intermediate: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  Advanced: "bg-red-100 text-red-800 border-red-200",
 };
 
 export default function Study() {
@@ -260,46 +271,51 @@ export default function Study() {
   const router = useRouter();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
 
-  // Get subject ID from URL params
-  const subjectId = router.query.subject as string | undefined;
+  // ✅ Safe handling of query param
+  const rawSubject = router.query.subject;
+  const subjectId = Array.isArray(rawSubject)
+    ? rawSubject[0]
+    : (rawSubject ?? undefined);
 
-  // Fetch user subjects to get the specific subject details
-  const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{success: boolean, data: StudySubject[]}>({
+  // Fetch user subjects
+  const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{
+    success: boolean;
+    data: StudySubject[];
+  }>({
     queryKey: ["/api/user/subjects"],
     enabled: isAuthenticated && !!user,
   });
 
   const subjects = subjectsResponse?.data || [];
-  const currentSubject = subjects.find(s => s.subjectId === subjectId);
-  const topics = currentSubject ? getTopicsForSubject(currentSubject.subjectId) : [];
+  const currentSubject = subjects.find((s) => s.subjectId === subjectId);
+  const topics = currentSubject
+    ? getTopicsForSubject(currentSubject.subjectId)
+    : [];
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.push('/login');
+      router.push("/login");
     }
   }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
     if (!subjectId) {
-      router.push('/dashboard');
+      router.push("/dashboard");
     }
   }, [subjectId, router]);
 
   const handleStartTopic = (topicId: string) => {
-    // Navigate to practice test or study material for this topic
     router.push(`/practice-test/${subjectId}?topic=${topicId}`);
   };
 
   const handleContinueStudying = () => {
-    // Find the next incomplete topic or go to practice test
     const nextTopic = topics
-      .flatMap(unit => unit.topics)
-      .find(topic => !topic.completed);
+      .flatMap((unit) => unit.topics)
+      .find((topic) => !topic.completed);
 
     if (nextTopic) {
       handleStartTopic(nextTopic.id);
     } else {
-      // If all topics are complete, go to practice test
       router.push(`/practice-test/${subjectId}`);
     }
   };
@@ -321,9 +337,16 @@ export default function Study() {
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Subject Not Found</h1>
-            <p className="text-gray-600 mb-8">The requested subject was not found in your dashboard.</p>
-            <Button onClick={() => router.push('/dashboard')} data-testid="button-back-to-dashboard">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Subject Not Found
+            </h1>
+            <p className="text-gray-600 mb-8">
+              The requested subject was not found in your dashboard.
+            </p>
+            <Button
+              onClick={() => router.push("/dashboard")}
+              data-testid="button-back-to-dashboard"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dashboard
             </Button>
@@ -334,30 +357,39 @@ export default function Study() {
   }
 
   const totalTopics = topics.reduce((sum, unit) => sum + unit.topics.length, 0);
-  const completedTopics = topics.reduce((sum, unit) => sum + unit.topics.filter(t => t.completed).length, 0);
-  const overallProgress = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
+  const completedTopics = topics.reduce(
+    (sum, unit) => sum + unit.topics.filter((t) => t.completed).length,
+    0,
+  );
+  const overallProgress =
+    totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push("/dashboard")}
               className="p-2"
               data-testid="button-back"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900" data-testid="text-subject-name">
+              <h1
+                className="text-3xl font-bold text-gray-900"
+                data-testid="text-subject-name"
+              >
                 {currentSubject.name}
               </h1>
-              <p className="text-gray-600 mt-1" data-testid="text-subject-description">
+              <p
+                className="text-gray-600 mt-1"
+                data-testid="text-subject-description"
+              >
                 {currentSubject.description}
               </p>
             </div>
@@ -384,26 +416,38 @@ export default function Study() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-khan-green" data-testid="text-progress-percentage">
+                <div
+                  className="text-2xl font-bold text-khan-green"
+                  data-testid="text-progress-percentage"
+                >
                   {Math.round(overallProgress)}%
                 </div>
                 <div className="text-sm text-gray-600">Overall Progress</div>
                 <Progress value={overallProgress} className="mt-2" />
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600" data-testid="text-completed-topics">
+                <div
+                  className="text-2xl font-bold text-blue-600"
+                  data-testid="text-completed-topics"
+                >
                   {completedTopics}/{totalTopics}
                 </div>
                 <div className="text-sm text-gray-600">Topics Completed</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600" data-testid="text-mastery-level">
+                <div
+                  className="text-2xl font-bold text-purple-600"
+                  data-testid="text-mastery-level"
+                >
                   {currentSubject.masteryLevel}
                 </div>
                 <div className="text-sm text-gray-600">Target Score</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600" data-testid="text-exam-date">
+                <div
+                  className="text-2xl font-bold text-orange-600"
+                  data-testid="text-exam-date"
+                >
                   {currentSubject.examDate}
                 </div>
                 <div className="text-sm text-gray-600">Exam Date</div>
@@ -426,16 +470,25 @@ export default function Study() {
               <CardContent>
                 <div className="grid gap-4">
                   {unit.topics.map((topic) => (
-                    <Card key={topic.id} className="border-l-4 border-l-khan-green/20">
+                    <Card
+                      key={topic.id}
+                      className="border-l-4 border-l-khan-green/20"
+                    >
                       <CardContent className="pt-6">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h3 className="font-semibold text-lg" data-testid={`text-topic-${topic.id}`}>
+                              <h3
+                                className="font-semibold text-lg"
+                                data-testid={`text-topic-${topic.id}`}
+                              >
                                 {topic.title}
                               </h3>
                               {topic.completed && (
-                                <CheckCircle className="h-5 w-5 text-green-500" data-testid={`icon-completed-${topic.id}`} />
+                                <CheckCircle
+                                  className="h-5 w-5 text-green-500"
+                                  data-testid={`icon-completed-${topic.id}`}
+                                />
                               )}
                               <Badge
                                 variant="outline"
@@ -445,17 +498,24 @@ export default function Study() {
                                 {topic.difficulty}
                               </Badge>
                             </div>
-                            <p className="text-gray-600 mb-3" data-testid={`text-topic-description-${topic.id}`}>
+                            <p
+                              className="text-gray-600 mb-3"
+                              data-testid={`text-topic-description-${topic.id}`}
+                            >
                               {topic.description}
                             </p>
                             <div className="flex items-center gap-4 text-sm text-gray-500">
                               <div className="flex items-center gap-1">
                                 <Clock className="h-4 w-4" />
-                                <span data-testid={`text-estimated-time-${topic.id}`}>
+                                <span
+                                  data-testid={`text-estimated-time-${topic.id}`}
+                                >
                                   {topic.estimatedTime}
                                 </span>
                               </div>
-                              <div data-testid={`text-practice-questions-${topic.id}`}>
+                              <div
+                                data-testid={`text-practice-questions-${topic.id}`}
+                              >
                                 {topic.practiceQuestions} practice questions
                               </div>
                             </div>
@@ -484,7 +544,7 @@ export default function Study() {
         <div className="mt-8 flex justify-center gap-4">
           <Button
             variant="outline"
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push("/dashboard")}
             data-testid="button-back-to-dashboard-bottom"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
