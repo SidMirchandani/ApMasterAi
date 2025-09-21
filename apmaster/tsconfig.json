@@ -11,15 +11,6 @@
     "target": "es2017"
   },
   "compileOnSave": true,
-  "include": [
-    "src"
-  ]
-  {
-    "exclude": [
-      "node_modules",
-      ".next",
-      "functions",
-      "functions.bak"
-    ]
-  }
+  "include": ["src"],
+  "exclude": ["node_modules", ".next", "functions", "functions.bak"]
 }

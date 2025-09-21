@@ -20,16 +20,12 @@
       "@shared/*": ["./shared/*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": [
     "node_modules",
-    "apmaster/src/**"
-      ".next",
-      "functions",
-      "functions.bak"
-    ]
+    "apmaster/src/**",
+    ".next",
+    "functions",
+    "functions.bak"
+  ]
 }
