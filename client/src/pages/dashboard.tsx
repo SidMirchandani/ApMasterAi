@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 interface DashboardSubject {
   id: number;
@@ -37,6 +38,7 @@ export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Optimized data fetching with better loading states
   const { 
@@ -49,6 +51,9 @@ export default function Dashboard() {
     queryKey: ["subjects"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/user/subjects");
+      if (!response.ok) {
+        throw new Error("Failed to fetch subjects");
+      }
       return response.json();
     },
     enabled: isAuthenticated,
@@ -57,6 +62,13 @@ export default function Dashboard() {
     refetchOnWindowFocus: false,
     retry: 2,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    onError: (error) => {
+      toast({
+        title: "Error loading subjects",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
   });
 
   // Memoize subjects array to prevent unnecessary re-renders
@@ -68,11 +80,26 @@ export default function Dashboard() {
   // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
     mutationFn: async (subjectId: string) => {
-      await apiRequest("DELETE", `/api/user/subjects/${subjectId}`);
+      const response = await apiRequest("DELETE", `/api/user/subjects/${subjectId}`);
+      if (!response.ok) {
+        throw new Error("Failed to remove subject");
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      toast({
+        title: "Subject removed",
+        description: "Your subject has been successfully removed.",
+      });
     },
+    onError: (error) => {
+      toast({
+        title: "Error removing subject",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
   });
 
   // Simple auth redirect

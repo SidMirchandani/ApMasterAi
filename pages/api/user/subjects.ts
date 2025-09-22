@@ -105,6 +105,17 @@ export default async function handler(
     }
   } catch (error) {
     console.error(`[subjects API][${req.method}] Unhandled error:`, error);
+    
+    // Check if it's a database connection error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Database') || errorMessage.includes('connection')) {
+      return res.status(503).json({
+        success: false,
+        message: "Database temporarily unavailable. Please try again in a moment.",
+        retryAfter: 5000
+      });
+    }
+    
     return res.status(500).json({
       success: false,
       message: "Internal server error",

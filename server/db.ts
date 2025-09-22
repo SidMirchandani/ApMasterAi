@@ -9,6 +9,11 @@ neonConfig.useSecureWebSocket = true;
 neonConfig.pipelineConnect = false;
 neonConfig.fetchConnectionCache = true;
 
+// Fix for Replit SSL certificate issues
+if (process.env.REPLIT_DEPLOYMENT) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 if (!process.env.DATABASE_URL) {
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
@@ -24,6 +29,7 @@ const poolConfig: PoolConfig = {
   connectionTimeoutMillis: 10_000,
   maxUses: 7_500,
   keepAlive: true,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   log: (msg, level) => {
     if (level === "error") {
       console.error("Database pool error:", msg);
