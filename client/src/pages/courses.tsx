@@ -55,7 +55,7 @@ interface Course {
   difficulty: string;
   units: number;
   examDate: string;
-  isAdded?: boolean | null;
+  isAdded?: boolean;
 }
 
 export default function Courses() {

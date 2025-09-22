@@ -270,8 +270,9 @@ export default function Study() {
   const router = useRouter();
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
 
-  // Get subject ID from URL params
-  const subjectId = router.query.subject as string | undefined;
+  // Get subject ID from URL params  
+  const rawSubject = router.query.subject;
+  const subjectId = Array.isArray(rawSubject) ? (rawSubject[0] || undefined) : (rawSubject || undefined);
 
   // Fetch user subjects to get the specific subject details
   const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{success: boolean, data: StudySubject[]}>({

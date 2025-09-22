@@ -328,7 +328,8 @@ export default function Dashboard() {
                                     return 'Recently';
                                   }
                                   
-                                  if (typeof dateValue === 'object' && !(typeof dateValue === 'string') && dateValue !== null && 'seconds' in dateValue) {
+                                  // Type guard for Firestore Timestamp
+                                  if (typeof dateValue === 'object' && dateValue !== null && !Array.isArray(dateValue) && 'seconds' in dateValue) {
                                     // Firestore Timestamp
                                     date = new Date((dateValue as any).seconds * 1000);
                                   } else if (dateValue instanceof Date) {

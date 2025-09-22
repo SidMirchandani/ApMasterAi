@@ -54,7 +54,7 @@ export default function Course() {
   };
 
   // ✅ Normalize id into a string
-  const courseId = Array.isArray(id) ? id[0] : (id ?? "");
+  const courseId = Array.isArray(id) ? (id[0] || "") : (id || "");
   const courseName = getCourseName(courseId);
 
   return (

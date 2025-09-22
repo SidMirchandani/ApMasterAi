@@ -49,7 +49,7 @@ export default function PracticeTest() {
   };
 
   // ✅ Normalize id into a string
-  const testId = Array.isArray(id) ? id[0] : (id ?? "");
+  const testId = Array.isArray(id) ? (id[0] || "") : (id || "");
   const testName = getTestName(testId);
 
   return (

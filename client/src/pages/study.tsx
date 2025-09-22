@@ -275,8 +275,8 @@ export default function Study() {
   // ✅ Safe handling of query param
   const rawSubject = router.query.subject;
   const subjectId = Array.isArray(rawSubject)
-    ? rawSubject[0]
-    : (rawSubject ?? undefined);
+    ? rawSubject[0] || undefined
+    : rawSubject || undefined;
 
   // Fetch user subjects
   const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{
