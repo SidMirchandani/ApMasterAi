@@ -57,7 +57,7 @@ export default function Dashboard() {
       return response.json();
     },
     enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always consider data stale for immediate updates
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
     retry: 2,
@@ -86,8 +86,20 @@ export default function Dashboard() {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, subjectId) => {
+      // Optimistically remove from cache immediately
+      queryClient.setQueryData(["subjects"], (oldData: any) => {
+        if (!oldData?.data) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.filter((subject: DashboardSubject) => subject.subjectId !== subjectId)
+        };
+      });
+      
+      // Then invalidate and refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      queryClient.refetchQueries({ queryKey: ["subjects"] });
+      
       toast({
         title: "Subject removed",
         description: "Your subject has been successfully removed.",
