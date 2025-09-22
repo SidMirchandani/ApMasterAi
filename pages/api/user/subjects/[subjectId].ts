@@ -52,7 +52,7 @@ export default async function handler(
     switch (req.method) {
       case "DELETE": {
         try {
-          await storage.deleteUserSubject(userId, subjectId);
+          await storage.deleteUserSubject(subjectId);
           return res.status(200).json({
             success: true,
             message: "Subject removed successfully",
