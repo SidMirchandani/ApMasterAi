@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../server/storage";
+import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { z } from "zod";
 
 // Define the schema inline since the shared schema import is not working
@@ -39,14 +40,29 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   const { method } = req;
-  const firebaseUid = req.headers["x-user-id"] as string;
-
-  if (!firebaseUid) {
+  
+  // Verify Firebase token first
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
     return res.status(401).json({
       success: false,
-      message: "Authentication required",
+      message: "Authentication required - missing token",
     });
   }
+
+  const token = authHeader.split(" ")[1];
+  let decodedToken;
+  try {
+    decodedToken = await verifyFirebaseToken(token);
+  } catch (error) {
+    console.error("[subjects API] Token verification failed:", error);
+    return res.status(401).json({
+      success: false,
+      message: "Invalid authentication token",
+    });
+  }
+
+  const firebaseUid = decodedToken.uid;
 
   try {
     const userId = await getOrCreateUser(firebaseUid);
