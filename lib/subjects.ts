@@ -35,11 +35,10 @@ export interface MasteryData {
 
 // Get all subjects for a user
 export async function getSubjects(userId: string): Promise<Subject[]> {
-  const subjectsRef = collection(db, "subjects");
+  const subjectsRef = collection(db, "userSubjects");
   const q = query(
     subjectsRef,
-    where("userId", "==", userId),
-    orderBy("createdAt", "desc")
+    where("userId", "==", userId)
   );
   
   const querySnapshot = await getDocs(q);
@@ -51,7 +50,7 @@ export async function getSubjects(userId: string): Promise<Subject[]> {
 
 // Get a single subject
 export async function getSubject(subjectId: string): Promise<Subject | null> {
-  const subjectDoc = await getDoc(doc(db, "subjects", subjectId));
+  const subjectDoc = await getDoc(doc(db, "userSubjects", subjectId));
   if (!subjectDoc.exists()) return null;
   
   return {
@@ -62,13 +61,12 @@ export async function getSubject(subjectId: string): Promise<Subject | null> {
 
 // Add a new subject
 export async function addSubject(userId: string, name: string, description?: string): Promise<string> {
-  const subjectsRef = collection(db, "subjects");
+  const subjectsRef = collection(db, "userSubjects");
   const docRef = await addDoc(subjectsRef, {
     name,
     description,
     userId,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    dateAdded: new Date().toISOString(),
   });
   
   return docRef.id;
@@ -76,25 +74,16 @@ export async function addSubject(userId: string, name: string, description?: str
 
 // Update a subject
 export async function updateSubject(subjectId: string, updates: Partial<Subject>): Promise<void> {
-  const subjectRef = doc(db, "subjects", subjectId);
+  const subjectRef = doc(db, "userSubjects", subjectId);
   await updateDoc(subjectRef, {
     ...updates,
-    updatedAt: serverTimestamp(),
   });
 }
 
 // Remove a subject
 export async function removeSubject(subjectId: string): Promise<void> {
-  const subjectRef = doc(db, "subjects", subjectId);
+  const subjectRef = doc(db, "userSubjects", subjectId);
   await deleteDoc(subjectRef);
-  
-  // Also remove associated mastery data
-  const masteryRef = collection(db, "mastery");
-  const masteryQuery = query(masteryRef, where("subjectId", "==", subjectId));
-  const masterySnapshot = await getDocs(masteryQuery);
-  
-  const deletePromises = masterySnapshot.docs.map(doc => deleteDoc(doc.ref));
-  await Promise.all(deletePromises);
 }
 
 // Get mastery data for a subject
