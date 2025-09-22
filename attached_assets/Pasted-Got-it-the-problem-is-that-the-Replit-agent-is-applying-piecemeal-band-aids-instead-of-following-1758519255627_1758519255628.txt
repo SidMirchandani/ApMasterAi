@@ -1,0 +1,70 @@
+Got it — the problem is that the Replit agent is applying *piecemeal band-aids* instead of following consistent rules. What you need is a **strict directive set** that forces it to (1) standardize types, (2) never let `Date` objects leak into JSX, and (3) always sanitize Firestore timestamps. Here’s what you can tell it:
+
+---
+
+💬 **Directives for Replit Agent (apply to all `.tsx` files):**
+
+1. **Type Standardization**
+
+   * All date-like fields (`examDate`, `dateAdded`, `lastStudied`, etc.) in interfaces must be typed as:
+
+     ```ts
+     string | number | Date | { seconds: number } | null
+     ```
+   * Do not leave them typed only as `string | null`.
+
+2. **Rendering in JSX**
+
+   * Never render a raw `Date` or object directly in JSX (`<span>{value}</span>`).
+   * Always convert to a **string** before rendering.
+   * Use the following logic everywhere dates are displayed:
+
+     ```ts
+     function formatDate(value: string | number | Date | { seconds: number } | null): string {
+       if (!value) return "TBD";
+       if (typeof value === "string" || typeof value === "number") return value.toString();
+       if (Object.prototype.toString.call(value) === "[object Date]") return format(value as Date, "MMM d, yyyy");
+       if ("seconds" in (value as any)) return format(new Date((value as any).seconds * 1000), "MMM d, yyyy");
+       return "TBD";
+     }
+     ```
+   * Replace all JSX occurrences like:
+
+     ```tsx
+     <span>{subject.examDate}</span>
+     ```
+
+     with:
+
+     ```tsx
+     <span>{formatDate(subject.examDate)}</span>
+     ```
+
+3. **Code Search and Replace**
+
+   * Search for **all instances of**:
+
+     * `instanceof Date`
+     * `as Date`
+     * Direct JSX usage of `subject.examDate`, `subject.dateAdded`, or similar
+   * Replace them with the safe `formatDate()` approach above.
+
+4. **Consistency**
+
+   * Do not mix multiple styles (`instanceof`, `Object.prototype.toString`, inline conversions).
+   * The only approved methods are:
+
+     * `formatDate()` utility for rendering in JSX.
+     * `Object.prototype.toString.call(value) === "[object Date]"` for type guards outside rendering.
+
+---
+
+⚡ **End Result**:
+
+* Every date is handled by one utility (`formatDate`).
+* JSX never sees a raw `Date`.
+* TypeScript stops complaining because the interface allows all possible values.
+
+---
+
+Do you want me to actually **write out the `utils/formatDate.ts` file** for you, so you can tell the agent “put this in `utils/` and import it everywhere”? That way, it can just refactor all `.tsx` files to call it.
