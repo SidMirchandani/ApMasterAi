@@ -10,7 +10,7 @@ neonConfig.pipelineConnect = false;
 neonConfig.fetchConnectionCache = true;
 
 // Fix for Replit SSL certificate issues
-if (process.env.REPLIT_DEPLOYMENT) {
+if (process.env.REPLIT_DEPLOYMENT || process.env.REPLIT_DEV_DOMAIN) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
 
@@ -29,7 +29,7 @@ const poolConfig: PoolConfig = {
   connectionTimeoutMillis: 10_000,
   maxUses: 7_500,
   keepAlive: true,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: process.env.NODE_ENV === 'production' || process.env.REPLIT_DEV_DOMAIN ? { rejectUnauthorized: false } : false,
   log: (msg, level) => {
     if (level === "error") {
       console.error("Database pool error:", msg);

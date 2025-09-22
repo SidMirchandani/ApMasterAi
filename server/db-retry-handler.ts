@@ -74,6 +74,8 @@ export class DatabaseRetryHandler {
       /ETIMEDOUT/i,
       /socket/i,
       /pool/i,
+      /SELF_SIGNED_CERT_IN_CHAIN/i,
+      /certificate/i,
     ];
     return patterns.some(
       (pattern) => pattern.test(error.message) || pattern.test(error.name),
