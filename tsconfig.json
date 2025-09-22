@@ -2,12 +2,18 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "skipLibCheck": true, // ✅ already helps with missing/buggy types
     "baseUrl": ".",
     "paths": {
-      "@/*": ["client/src/*"]
+      "@/*": [
+        "client/src/*"
+      ]
     },
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
@@ -15,12 +21,16 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "isolatedModules": false, // 🔑 set to false (avoids errors in Next.js)
+    "isolatedModules": true, // 🔑 set to false (avoids errors in Next.js)
     "jsx": "preserve",
     "incremental": true,
     "strict": false // 🔑 turn off strict mode
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
   "exclude": [
     "node_modules",
     ".next",
