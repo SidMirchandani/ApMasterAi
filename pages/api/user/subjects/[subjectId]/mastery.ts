@@ -1,22 +1,8 @@
+
 import type { NextApiRequest, NextApiResponse } from "next";
-import { storage } from "../../../../../server/storage";
-
-async function getOrCreateUser(firebaseUid: string) {
-  let user = await storage.getUserByUsername(firebaseUid);
-
-  if (!user) {
-    user = await storage.createUser({
-      username: firebaseUid,
-      password: "firebase_auth", // placeholder since Firebase handles auth
-    });
-    console.log(
-      "[mastery API] Created new user for Firebase UID:",
-      firebaseUid,
-    );
-  }
-
-  return user;
-}
+import { verifyFirebaseToken } from "../../../../server/firebase-admin";
+import { db } from "../../../../lib/firebase";
+import { collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 
 export default async function handler(
   req: NextApiRequest,
@@ -32,9 +18,6 @@ export default async function handler(
     const token = authHeader.split(" ")[1];
     let decodedToken;
     try {
-      const { verifyFirebaseToken } = await import(
-        "../../../../../server/firebase-admin"
-      );
       decodedToken = await verifyFirebaseToken(token);
     } catch (error) {
       console.error("[mastery API] Token verification failed:", error);
@@ -42,9 +25,8 @@ export default async function handler(
     }
 
     const firebaseUid = decodedToken.uid;
-    const user = await getOrCreateUser(firebaseUid);
-
     const { subjectId } = req.query;
+
     if (!subjectId || typeof subjectId !== "string") {
       return res.status(400).json({
         success: false,
@@ -58,33 +40,59 @@ export default async function handler(
 
         if (
           typeof masteryLevel !== "number" ||
-          masteryLevel < 0 ||
-          masteryLevel > 100
+          masteryLevel < 3 ||
+          masteryLevel > 5
         ) {
           return res.status(400).json({
             success: false,
-            message: "Mastery level must be a number between 0 and 100",
+            message: "Mastery level must be a number between 3 and 5",
           });
         }
 
-        const updated = await storage.updateSubjectMasteryLevel(
-          user.id,
-          subjectId,
-          masteryLevel,
-        );
+        try {
+          if (!db) {
+            return res.status(500).json({
+              success: false,
+              message: "Firebase not initialized",
+            });
+          }
 
-        if (!updated) {
-          return res.status(404).json({
+          const subjectsRef = collection(db, "userSubjects");
+          const q = query(
+            subjectsRef,
+            where("userId", "==", firebaseUid),
+            where("subjectId", "==", subjectId)
+          );
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+            return res.status(404).json({
+              success: false,
+              message: "Subject not found",
+            });
+          }
+
+          const docRef = querySnapshot.docs[0].ref;
+          await updateDoc(docRef, { masteryLevel });
+
+          const updatedData = {
+            id: querySnapshot.docs[0].id,
+            ...querySnapshot.docs[0].data(),
+            masteryLevel,
+          };
+
+          return res.status(200).json({
+            success: true,
+            message: "Mastery level updated successfully",
+            data: updatedData,
+          });
+        } catch (error) {
+          console.error("[mastery API][PUT] Error:", error);
+          return res.status(500).json({
             success: false,
-            message: "Subject not found",
+            message: "Failed to update mastery level",
           });
         }
-
-        return res.status(200).json({
-          success: true,
-          message: "Mastery level updated successfully",
-          data: updated,
-        });
       }
 
       default:

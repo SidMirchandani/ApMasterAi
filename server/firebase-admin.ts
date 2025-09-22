@@ -9,11 +9,30 @@ export function getFirebaseAdmin() {
     const apps = getApps();
     
     if (apps.length === 0) {
-      // For now, we'll use a simplified setup
-      // In production, you'd want to add proper service account credentials
-      adminApp = initializeApp({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      });
+      try {
+        // Try to use service account if available
+        const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY 
+          ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+          : null;
+
+        if (serviceAccount) {
+          adminApp = initializeApp({
+            credential: cert(serviceAccount),
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          });
+        } else {
+          // Fallback to project ID only (for development)
+          adminApp = initializeApp({
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          });
+        }
+      } catch (error) {
+        console.error('Firebase Admin initialization error:', error);
+        // Fallback initialization
+        adminApp = initializeApp({
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        });
+      }
     } else {
       adminApp = apps[0];
     }
