@@ -101,7 +101,15 @@ export const databaseManager = DatabaseManager.getInstance();
 export const getDb = () => {
   const db = databaseManager.getDatabase();
   if (!db) {
-    throw new Error("Firestore is not available in development mode");
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isReplit = process.env.REPL_ID || process.env.REPLIT_DB_URL;
+    
+    if (isDevelopment || isReplit) {
+      console.warn("Firestore is not available in development mode - using fallback storage");
+      return null;
+    }
+    
+    throw new Error("Firestore is not available");
   }
   return db;
 };

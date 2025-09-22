@@ -49,11 +49,16 @@ const isDevelopmentMode = () => {
 };
 
 export class Storage {
-  // Use getDb() which will either return the Firestore instance or null if in development mode without a connection.
-  private db = getDb();
-
   private getDbInstance() {
-    return getDb();
+    if (isDevelopmentMode()) {
+      return null;
+    }
+    try {
+      return getDb();
+    } catch (error) {
+      console.warn("Failed to get database instance:", error);
+      return null;
+    }
   }
 
   async addToWaitlist(email: string): Promise<WaitlistEntry> {
