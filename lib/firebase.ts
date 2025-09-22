@@ -25,3 +25,5 @@ export const rtdb = getDatabase(app);
 // Analytics only runs in browser
 export const analytics =
   typeof window !== "undefined" && isSupported() ? getAnalytics(app) : null;
+
+console.log("API KEY:", process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
