@@ -23,8 +23,8 @@ interface StudySubject {
   examDate: string;
   progress: number;
   masteryLevel: number;
-  lastStudied?: string | null;
-  dateAdded: string | null;
+  lastStudied?: string | null | Date | { seconds: number };
+  dateAdded: string | null | Date | { seconds: number };
 }
 
 interface Topic {

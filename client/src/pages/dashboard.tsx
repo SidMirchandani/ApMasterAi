@@ -12,6 +12,47 @@ import { apiRequest } from "@/lib/queryClient";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 
+// --- Utility Function for Safe Date Parsing ---
+// This function handles various date formats including Firestore Timestamps,
+// Date objects, strings, and numbers, providing a more robust way to parse dates.
+function safeDateParse(dateValue: any): Date | null {
+  if (!dateValue) {
+    return null;
+  }
+
+  try {
+    let date: Date;
+
+    // Type guard for Firestore Timestamp: { seconds: number, nanoseconds: number }
+    if (typeof dateValue === 'object' && dateValue !== null && !Array.isArray(dateValue) && 'seconds' in dateValue) {
+      date = new Date(dateValue.seconds * 1000);
+    }
+    // Safe runtime check for Date objects
+    else if (Object.prototype.toString.call(dateValue) === "[object Date]") {
+      date = dateValue as Date;
+    }
+    // Handle strings and numbers
+    else if (typeof dateValue === 'string' || typeof dateValue === 'number') {
+      date = new Date(dateValue);
+    } else {
+      // If the type is unexpected, return null
+      return null;
+    }
+
+    // Check if the parsed date is valid
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+
+    return date;
+  } catch (error) {
+    console.warn('safeDateParse encountered an error:', error);
+    return null; // Return null if any parsing error occurs
+  }
+}
+// --- End Utility Function ---
+
+
 interface DashboardSubject {
   id: number;
   userId: number;
@@ -20,11 +61,11 @@ interface DashboardSubject {
   description: string;
   units: number;
   difficulty: string;
-  examDate: string;
+  examDate: string; // Assuming examDate is always a string as per original
   progress: number;
   masteryLevel: number;
-  lastStudied?: string | null;
-  dateAdded: string | null;
+  lastStudied?: string | null | Date | { seconds: number }; // Widened type
+  dateAdded: string | null | Date | { seconds: number }; // Widened type
 }
 
 const difficultyColors: Record<string, string> = {
@@ -99,11 +140,11 @@ export default function Dashboard() {
           data: oldData.data.filter((subject: DashboardSubject) => subject.subjectId !== subjectId)
         };
       });
-      
+
       // Then invalidate and refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
       queryClient.refetchQueries({ queryKey: ["subjects"] });
-      
+
       toast({
         title: "Subject removed",
         description: "Your subject has been successfully removed.",
@@ -320,33 +361,10 @@ export default function Dashboard() {
                             <Calendar className="w-4 h-4" />
                             <span>
                               Added {(() => {
+                                const date = safeDateParse(subject.dateAdded);
+                                if (!date) return 'Recently';
+
                                 try {
-                                  let date: Date;
-                                  const dateValue = subject.dateAdded;
-                                  
-                                  if (!dateValue) {
-                                    return 'Recently';
-                                  }
-                                  
-                                  // Type guard for Firestore Timestamp
-                                  if (typeof dateValue === 'object' && dateValue !== null && !Array.isArray(dateValue) && 'seconds' in dateValue) {
-                                    // Firestore Timestamp
-                                    date = new Date((dateValue as any).seconds * 1000);
-                                  } else if (dateValue && Object.prototype.toString.call(dateValue) === '[object Date]') {
-                                    // Regular Date object using more reliable Date check
-                                    date = dateValue as Date;
-                                  } else if (typeof dateValue === 'string' || typeof dateValue === 'number') {
-                                    // String or number
-                                    date = new Date(dateValue);
-                                  } else {
-                                    return 'Recently';
-                                  }
-                                  
-                                  // Check if date is valid
-                                  if (isNaN(date.getTime())) {
-                                    return 'Recently';
-                                  }
-                                  
                                   return format(date, "MMM d, yyyy 'at' h:mm a");
                                 } catch (error) {
                                   console.warn('Date formatting error:', error);

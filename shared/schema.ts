@@ -1,17 +1,17 @@
 // Firebase Firestore collection interfaces
 export interface UserSubject {
-  id: string;
-  userId: string;
+  id?: string;
+  userId?: string;
   subjectId: string;
   name: string;
   description: string;
   units: number;
   difficulty: string;
-  examDate: string;
+  examDate: string | Date | { seconds: number };
   progress: number;
   masteryLevel: number;
-  lastStudied?: Date;
-  dateAdded: Date;
+  lastStudied?: string | null | Date | { seconds: number };
+  dateAdded?: string | null | Date | { seconds: number };
 }
 
 export interface WaitlistEntry {
