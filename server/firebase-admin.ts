@@ -16,12 +16,27 @@ export function getFirebaseAdmin() {
       if (!projectId) {
         throw new Error('NEXT_PUBLIC_FIREBASE_PROJECT_ID environment variable is required');
       }
+      
+      console.log('Initializing Firebase Admin with project ID:', projectId);
+      
+      // Check if we're in emulator mode
+      const useEmulator = process.env.NODE_ENV === 'development';
+      if (useEmulator) {
+        console.log('Development mode detected - make sure Firebase emulators are running if needed');
+      }
 
-      adminApp = initializeApp({
-        projectId,
-        // In development, this will use the default credentials
-        // In production, you'd want to add proper service account credentials
-      });
+      try {
+        // For development with Firebase emulator or using Application Default Credentials
+        adminApp = initializeApp({
+          projectId,
+          // This will work with Firebase emulators or Google Cloud default credentials
+        });
+        
+        console.log('Firebase Admin initialized with project:', projectId);
+      } catch (error) {
+        console.error('Failed to initialize Firebase Admin:', error);
+        throw error;
+      }
     } else {
       adminApp = apps[0];
     }

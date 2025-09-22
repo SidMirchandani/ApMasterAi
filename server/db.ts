@@ -36,11 +36,19 @@ export class DatabaseManager {
 
   async healthCheck(): Promise<boolean> {
     try {
-      if (!this.db) return false;
+      if (!this.db) {
+        console.log("Database not initialized, attempting to initialize...");
+        this.initializeConnection();
+        if (!this.db) return false;
+      }
+      
       // Simple health check - try to access Firestore
+      console.log("Performing Firestore health check...");
       await this.db.collection('_health').limit(1).get();
+      console.log("Firestore health check passed");
       return true;
-    } catch {
+    } catch (error) {
+      console.error("Firestore health check failed:", error);
       return false;
     }
   }
