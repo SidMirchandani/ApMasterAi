@@ -162,7 +162,7 @@ export default function Courses() {
         date = new Date((dateValue as any).seconds * 1000);
       } else if (dateValue && Object.prototype.toString.call(dateValue) === '[object Date]') {
         // Regular Date object using safe runtime check
-        date = dateValue as Date;
+        date = dateValue as unknown as Date;
       } else {
         // String or other format
         date = new Date(dateValue as string);

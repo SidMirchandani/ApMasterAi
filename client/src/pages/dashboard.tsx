@@ -29,7 +29,7 @@ function safeDateParse(dateValue: any): Date | null {
     }
     // Safe runtime check for Date objects
     else if (Object.prototype.toString.call(dateValue) === "[object Date]") {
-      date = dateValue as Date;
+      date = dateValue as unknown as Date;
     }
     // Handle strings and numbers
     else if (typeof dateValue === 'string' || typeof dateValue === 'number') {
@@ -61,11 +61,11 @@ interface DashboardSubject {
   description: string;
   units: number;
   difficulty: string;
-  examDate: string; // Assuming examDate is always a string as per original
+  examDate: string | Date | { seconds: number };
   progress: number;
   masteryLevel: number;
-  lastStudied?: string | null | Date | { seconds: number }; // Widened type
-  dateAdded: string | null | Date | { seconds: number }; // Widened type
+  lastStudied?: string | null | Date | { seconds: number };
+  dateAdded: string | null | Date | { seconds: number };
 }
 
 const difficultyColors: Record<string, string> = {

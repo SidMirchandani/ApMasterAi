@@ -32,7 +32,7 @@ interface StudySubject {
   description: string;
   units: number;
   difficulty: string;
-  examDate: string;
+  examDate: string | Date | { seconds: number };
   progress: number;
   masteryLevel: number;
   lastStudied?: string | null | Date | { seconds: number };

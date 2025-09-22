@@ -20,7 +20,7 @@ export function safeDateParse(dateValue: any): Date | null {
     
     // Handle Date objects using safe runtime check
     if (dateValue && Object.prototype.toString.call(dateValue) === '[object Date]') {
-      return dateValue;
+      return dateValue as unknown as Date;
     }
     
     // Handle strings and numbers
