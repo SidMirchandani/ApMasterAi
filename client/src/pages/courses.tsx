@@ -80,8 +80,12 @@ export default function Courses() {
       setShowMasteryModal(false);
       router.push('/dashboard');
     },
-    onError: (error: any) => {
-      const errorMessage = error.message;
+  });
+
+  // Handle mutation errors with useEffect since onError is deprecated in v5
+  useEffect(() => {
+    if (addSubjectMutation.error && !addSubjectMutation.isPending) {
+      const errorMessage = addSubjectMutation.error.message;
       if (errorMessage.includes("Subject already added")) {
         toast({
           title: "Already added",
@@ -100,16 +104,15 @@ export default function Courses() {
           description: "The number of units for this subject exceeds the allowed limit.",
           variant: "destructive"
         });
-      }
-       else {
+      } else {
         toast({
           title: "Error",
           description: "Failed to add subject. Please try again.",
           variant: "destructive"
         });
       }
-    },
-  });
+    }
+  }, [addSubjectMutation.error, addSubjectMutation.isPending, toast]);
 
   // Add subject to dashboard
   const handleAddToDashboard = (subject: typeof apSubjects[0]) => {

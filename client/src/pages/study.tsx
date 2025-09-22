@@ -21,6 +21,7 @@ import {
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { apSubjects } from "@/lib/ap-subjects";
 
 interface StudySubject {
@@ -282,7 +283,14 @@ export default function Study() {
     success: boolean;
     data: StudySubject[];
   }>({
-    queryKey: ["/api/user/subjects"],
+    queryKey: ["subjects"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/subjects");
+      if (!response.ok) {
+        throw new Error("Failed to fetch subjects");
+      }
+      return response.json();
+    },
     enabled: isAuthenticated && !!user,
   });
 
