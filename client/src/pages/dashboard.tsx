@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
 
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
 
   // Optimized data fetching with better loading states
   const { 
@@ -89,7 +91,8 @@ export default function Dashboard() {
     mutationFn: async (subjectId: string) => {
       const response = await apiRequest("DELETE", `/api/user/subjects/${subjectId}`);
       if (!response.ok) {
-        throw new Error("Failed to remove subject");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to remove subject");
       }
       return response.json();
     },
@@ -105,12 +108,16 @@ export default function Dashboard() {
 
       // Then invalidate and refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
-      queryClient.refetchQueries({ queryKey: ["subjects"] });
 
       toast({
         title: "Subject removed",
         description: "Your subject has been successfully removed.",
       });
+      
+      setSubjectToRemove(null);
+      
+      // Reload the page to ensure fresh data
+      window.location.reload();
     }
   });
 
@@ -132,8 +139,14 @@ export default function Dashboard() {
     }
   }, [loading, isAuthenticated, router]);
 
-  const removeSubject = (subjectId: string) => {
-    removeSubjectMutation.mutate(subjectId);
+  const handleRemoveSubject = (subject: DashboardSubject) => {
+    setSubjectToRemove(subject);
+  };
+
+  const confirmRemoveSubject = () => {
+    if (subjectToRemove) {
+      removeSubjectMutation.mutate(subjectToRemove.subjectId);
+    }
   };
 
   const handleStartStudying = (subjectId: string) => {
@@ -277,12 +290,33 @@ export default function Dashboard() {
                                 Goal: {subject.masteryLevel}
                               </Badge>
                             )}
-                            <button
-                              onClick={() => removeSubject(subject.subjectId)}
-                              className="text-khan-gray-light hover:text-khan-red transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <button
+                                  onClick={() => handleRemoveSubject(subject)}
+                                  className="text-khan-gray-light hover:text-khan-red transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remove Subject</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to remove "{subject.name}" from your dashboard? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={confirmRemoveSubject}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Remove
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                         <p className="text-khan-gray-medium text-base leading-relaxed">
