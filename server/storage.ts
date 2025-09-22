@@ -52,6 +52,10 @@ export class Storage {
   // Use getDb() which will either return the Firestore instance or null if in development mode without a connection.
   private db = getDb();
 
+  private getDbInstance() {
+    return getDb();
+  }
+
   async addToWaitlist(email: string): Promise<WaitlistEntry> {
     if (isDevelopmentMode()) {
       // Development mode fallback
@@ -70,10 +74,11 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
-      if (!this.db) throw new Error("Firestore not available");
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
 
       // Check if email already exists
-      const existingQuery = await this.db.collection('waitlist_emails')
+      const existingQuery = await db.collection('waitlist_emails')
         .where('email', '==', email)
         .limit(1)
         .get();
@@ -82,7 +87,7 @@ export class Storage {
         throw new Error('Email already exists in waitlist');
       }
 
-      const docRef = this.db.collection('waitlist_emails').doc();
+      const docRef = db.collection('waitlist_emails').doc();
       const entry: Omit<WaitlistEntry, 'id'> = {
         email,
         signedUpAt: new Date(),
@@ -104,8 +109,9 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
-      if (!this.db) throw new Error("Firestore not available");
-      const snapshot = await this.db.collection('waitlist_emails').get();
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
+      const snapshot = await db.collection('waitlist_emails').get();
       return { total: snapshot.size };
     });
   }
@@ -125,9 +131,10 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
-      if (!this.db) throw new Error("Firestore not available");
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
 
-      const docRef = this.db.collection('users').doc();
+      const docRef = db.collection('users').doc();
       const user: Omit<User, 'id'> = {
         firebaseUid,
         email,
@@ -138,7 +145,7 @@ export class Storage {
       await docRef.set(user);
 
       return {
-        id: doc.id,
+        id: docRef.id,
         ...user,
       };
     });
@@ -156,9 +163,10 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
-      if (!this.db) throw new Error("Firestore not available");
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
 
-      const usersRef = this.db.collection('users');
+      const usersRef = db.collection('users');
       const snapshot = await usersRef.where('firebaseUid', '==', firebaseUid).limit(1).get();
 
       if (snapshot.empty) {
@@ -186,9 +194,10 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
-      if (!this.db) throw new Error("Firestore not available");
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
 
-      const query = await this.db.collection('user_subjects')
+      const query = await db.collection('user_subjects')
         .where('userId', '==', userId)
         .orderBy('dateAdded', 'desc')
         .get();
@@ -213,9 +222,10 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
-      if (!this.db) throw new Error("Firestore not available");
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
 
-      const docRef = this.db.collection('user_subjects').doc();
+      const docRef = db.collection('user_subjects').doc();
       const subjectData: Omit<UserSubject, 'id'> = {
         ...subject,
         dateAdded: new Date(),
@@ -224,7 +234,7 @@ export class Storage {
       await docRef.set(subjectData);
 
       return {
-        id: doc.id,
+        id: docRef.id,
         ...subjectData,
       };
     });
@@ -243,9 +253,10 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
-      if (!this.db) throw new Error("Firestore not available");
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
 
-      const docRef = this.db.collection('user_subjects').doc(subjectId);
+      const docRef = db.collection('user_subjects').doc(subjectId);
 
       await docRef.update(updates);
 
@@ -272,8 +283,9 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
-      if (!this.db) throw new Error("Firestore not available");
-      await this.db.collection('user_subjects').doc(subjectId).delete();
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
+      await db.collection('user_subjects').doc(subjectId).delete();
     });
   }
 
@@ -285,9 +297,10 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
-      if (!this.db) throw new Error("Firestore not available");
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
 
-      const doc = await this.db.collection('user_subjects').doc(subjectId).get();
+      const doc = await db.collection('user_subjects').doc(subjectId).get();
 
       if (!doc.exists) {
         return null;
@@ -308,9 +321,10 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
-      if (!this.db) throw new Error("Firestore not available");
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
 
-      const query = await this.db.collection('user_subjects')
+      const query = await db.collection('user_subjects')
         .where('userId', '==', userId)
         .where('subjectId', '==', subjectId)
         .limit(1)
