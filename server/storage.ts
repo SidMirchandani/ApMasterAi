@@ -204,7 +204,6 @@ export class Storage {
 
       const query = await db.collection('user_subjects')
         .where('userId', '==', userId)
-        .orderBy('dateAdded', 'desc')
         .get();
 
       return query.docs.map(doc => ({
