@@ -24,7 +24,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { formatDate, safeDateParse } from "../../utils/date-utils";
+import { formatDate, safeDateParse } from "@/lib/utils";
 
 
 const masteryLevels = [

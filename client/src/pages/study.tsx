@@ -23,7 +23,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { apSubjects } from "@/lib/ap-subjects";
-import { formatDate } from "../../utils/date-utils";
+import { formatDate, formatDateTime } from "@/lib/utils";
 
 interface StudySubject {
   id: number;
@@ -528,7 +528,7 @@ export default function Study() {
                                 {topic.practiceQuestions} practice questions
                               </div>
                               <div>
-                                Added: {formatDate(topic.dateAdded, "MMM d, yyyy 'at' h:mm a")}
+                                Added: {formatDateTime(topic.dateAdded)}
                               </div>
                             </div>
                           </div>

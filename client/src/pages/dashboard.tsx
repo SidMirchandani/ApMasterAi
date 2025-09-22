@@ -6,10 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Clock, Trash2, Plus, Calendar, AlertTriangle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { formatDate } from "../../utils/date-utils";
+import { formatDate, formatDateTime } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 
@@ -323,7 +322,7 @@ export default function Dashboard() {
                           <div className="flex items-center space-x-2 text-sm text-khan-gray-medium">
                             <Calendar className="w-4 h-4" />
                             <span>
-                              Added {formatDate(subject.dateAdded, "MMM d, yyyy 'at' h:mm a")}
+                              Added {formatDateTime(subject.dateAdded)}
                             </span>
                           </div>
                           <Button 
