@@ -97,7 +97,7 @@ export default function Dashboard() {
       return response.json();
     },
     onSuccess: (data, subjectId) => {
-      // Optimistically remove from cache immediately
+      // Optimistically remove from cache immediately for instant UI update
       queryClient.setQueryData(["subjects"], (oldData: any) => {
         if (!oldData?.data) return oldData;
         return {
@@ -106,18 +106,12 @@ export default function Dashboard() {
         };
       });
 
-      // Then invalidate and refetch to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ["subjects"] });
-
       toast({
         title: "Subject removed",
         description: "Your subject has been successfully removed.",
       });
       
       setSubjectToRemove(null);
-      
-      // Reload the page to ensure fresh data
-      window.location.reload();
     }
   });
 
