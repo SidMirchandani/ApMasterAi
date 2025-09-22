@@ -32,10 +32,10 @@ interface StudySubject {
   description: string;
   units: number;
   difficulty: string;
-  examDate: string | Date | { seconds: number };
+  examDate: string | number | Date | { seconds: number } | null;
   progress: number;
   masteryLevel: number;
-  lastStudied?: string | null | Date | { seconds: number };
+  lastStudied?: string | number | Date | { seconds: number } | null;
   dateAdded: string | null | Date | { seconds: number };
 }
 

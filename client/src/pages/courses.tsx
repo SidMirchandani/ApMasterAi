@@ -24,6 +24,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { formatDate } from "@/lib/utils";
 
 
 const masteryLevels = [
@@ -54,7 +55,7 @@ interface Course {
   description: string;
   difficulty: string;
   units: number;
-  examDate: string;
+  examDate: string | number | Date | { seconds: number } | null;
   isAdded?: boolean;
 }
 
@@ -266,7 +267,7 @@ export default function Courses() {
                     </div>
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
-                      <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
+                      <span className="text-khan-gray-dark font-medium">{formatDate(subject.examDate)}</span>
                     </div>
                   </div>
 

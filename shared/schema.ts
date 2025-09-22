@@ -7,11 +7,11 @@ export interface UserSubject {
   description: string;
   units: number;
   difficulty: string;
-  examDate: string | Date | { seconds: number };
+  examDate: string | number | Date | { seconds: number } | null;
   progress: number;
   masteryLevel: number;
-  lastStudied?: string | null | Date | { seconds: number };
-  dateAdded?: string | null | Date | { seconds: number };
+  lastStudied?: string | number | Date | { seconds: number } | null;
+  dateAdded?: string | number | Date | { seconds: number } | null;
 }
 
 export interface WaitlistEntry {

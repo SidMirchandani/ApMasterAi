@@ -46,3 +46,100 @@ export function safeDateFormat(dateValue: any, options?: Intl.DateTimeFormatOpti
     return 'Recently';
   }
 }
+
+/**
+ * Universal date formatter for JSX rendering
+ * Ensures no raw Date objects or Firestore timestamps leak into JSX
+ * Always returns a string that is safe to render
+ */
+export function formatDate(value: string | number | Date | { seconds: number } | null | undefined): string {
+  if (!value) return "TBD";
+  
+  try {
+    // Handle strings and numbers directly
+    if (typeof value === "string" || typeof value === "number") {
+      return value.toString();
+    }
+    
+    // Handle Firestore Timestamps
+    if (typeof value === "object" && value !== null && !Array.isArray(value) && "seconds" in value) {
+      const date = new Date((value as any).seconds * 1000);
+      if (isNaN(date.getTime())) return "TBD";
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+    
+    // Handle Date objects using safe runtime check
+    if (Object.prototype.toString.call(value) === "[object Date]") {
+      const date = value as Date;
+      if (isNaN(date.getTime())) return "TBD";
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+    
+    return "TBD";
+  } catch (error) {
+    console.warn('Date formatting error:', error);
+    return "TBD";
+  }
+}
+
+/**
+ * Detailed date formatter for JSX rendering with time
+ * Always returns a string that is safe to render
+ */
+export function formatDateTime(value: string | number | Date | { seconds: number } | null | undefined): string {
+  if (!value) return "Recently";
+  
+  try {
+    // Handle strings and numbers directly
+    if (typeof value === "string" || typeof value === "number") {
+      const date = new Date(value);
+      if (isNaN(date.getTime())) return "Recently";
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+    
+    // Handle Firestore Timestamps
+    if (typeof value === "object" && value !== null && !Array.isArray(value) && "seconds" in value) {
+      const date = new Date((value as any).seconds * 1000);
+      if (isNaN(date.getTime())) return "Recently";
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+    
+    // Handle Date objects using safe runtime check
+    if (Object.prototype.toString.call(value) === "[object Date]") {
+      const date = value as Date;
+      if (isNaN(date.getTime())) return "Recently";
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+    
+    return "Recently";
+  } catch (error) {
+    console.warn('Date formatting error:', error);
+    return "Recently";
+  }
+}

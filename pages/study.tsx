@@ -11,6 +11,7 @@ import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { formatDate } from "@/lib/utils";
 
 interface StudySubject {
   id: number;
@@ -20,11 +21,11 @@ interface StudySubject {
   description: string;
   units: number;
   difficulty: string;
-  examDate: string | Date | { seconds: number };
+  examDate: string | number | Date | { seconds: number } | null;
   progress: number;
   masteryLevel: number;
-  lastStudied?: string | null | Date | { seconds: number };
-  dateAdded: string | null | Date | { seconds: number };
+  lastStudied?: string | number | Date | { seconds: number } | null;
+  dateAdded: string | number | Date | { seconds: number } | null;
 }
 
 interface Topic {
@@ -426,7 +427,7 @@ export default function Study() {
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-orange-600 mb-2">
-                  {currentSubject ? new Date(currentSubject.examDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
+                  {formatDate(currentSubject?.examDate)}
                 </div>
                 <div className="text-sm text-gray-600 mb-3">Exam Date</div>
                 <div className="flex items-center justify-center">

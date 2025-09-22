@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { formatDate, formatDateTime } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 
@@ -61,11 +62,11 @@ interface DashboardSubject {
   description: string;
   units: number;
   difficulty: string;
-  examDate: string | Date | { seconds: number };
+  examDate: string | number | Date | { seconds: number } | null;
   progress: number;
   masteryLevel: number;
-  lastStudied?: string | null | Date | { seconds: number };
-  dateAdded: string | null | Date | { seconds: number };
+  lastStudied?: string | number | Date | { seconds: number } | null;
+  dateAdded: string | number | Date | { seconds: number } | null;
 }
 
 const difficultyColors: Record<string, string> = {
@@ -337,7 +338,7 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center space-x-2 text-khan-gray-medium">
                               <Clock className="w-4 h-4" />
-                              <span className="text-khan-gray-dark font-medium">{subject.examDate}</span>
+                              <span className="text-khan-gray-dark font-medium">{formatDate(subject.examDate)}</span>
                             </div>
                           </div>
                           <div className="flex items-center space-x-4">
@@ -360,17 +361,7 @@ export default function Dashboard() {
                           <div className="flex items-center space-x-2 text-sm text-khan-gray-medium">
                             <Calendar className="w-4 h-4" />
                             <span>
-                              Added {(() => {
-                                const date = safeDateParse(subject.dateAdded);
-                                if (!date) return 'Recently';
-
-                                try {
-                                  return format(date, "MMM d, yyyy 'at' h:mm a");
-                                } catch (error) {
-                                  console.warn('Date formatting error:', error);
-                                  return 'Recently';
-                                }
-                              })()}
+                              Added {formatDateTime(subject.dateAdded)}
                             </span>
                           </div>
                           <Button 
