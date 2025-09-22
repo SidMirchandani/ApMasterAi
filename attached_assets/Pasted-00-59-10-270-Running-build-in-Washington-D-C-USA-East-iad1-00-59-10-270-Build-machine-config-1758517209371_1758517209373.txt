@@ -1,0 +1,43 @@
+00:59:10.270 Running build in Washington, D.C., USA (East) – iad1
+00:59:10.270 Build machine configuration: 2 cores, 8 GB
+00:59:10.307 Cloning github.com/SidMirchandani/ApMasterAi (Branch: main, Commit: 4e19d26)
+00:59:14.806 Cloning completed: 4.499s
+00:59:14.947 Restored build cache from previous deployment (5ZbE7gmwR8AxyKMRe1fizzZGSFZb)
+00:59:16.359 Running "vercel build"
+00:59:16.757 Vercel CLI 48.0.2
+00:59:17.071 WARNING: You should not upload the `.next` directory.
+00:59:17.079 Installing dependencies...
+00:59:18.905 
+00:59:18.906 removed 13 packages in 2s
+00:59:18.906 
+00:59:18.906 96 packages are looking for funding
+00:59:18.907   run `npm fund` for details
+00:59:18.937 Detected Next.js version: 14.2.3
+00:59:18.942 Running "npm run build"
+00:59:19.048 
+00:59:19.049 > rest-express@1.0.0 build
+00:59:19.049 > next build
+00:59:19.049 
+00:59:19.763   ▲ Next.js 14.2.3
+00:59:19.763   - Environments: .env.local
+00:59:19.764 
+00:59:19.764    Linting and checking validity of types ...
+00:59:31.664 Failed to compile.
+00:59:31.665 
+00:59:31.665 ./client/src/pages/dashboard.tsx:65:5
+00:59:31.665 Type error: No overload matches this call.
+00:59:31.666   Overload 1 of 3, '(options: DefinedInitialDataOptions<{ success: boolean; data: DashboardSubject[]; }, Error, { success: boolean; data: DashboardSubject[]; }, QueryKey>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<...>', gave the following error.
+00:59:31.666     Object literal may only specify known properties, and 'onError' does not exist in type 'DefinedInitialDataOptions<{ success: boolean; data: DashboardSubject[]; }, Error, { success: boolean; data: DashboardSubject[]; }, QueryKey>'.
+00:59:31.666   Overload 2 of 3, '(options: UndefinedInitialDataOptions<{ success: boolean; data: DashboardSubject[]; }, Error, { success: boolean; data: DashboardSubject[]; }, QueryKey>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+00:59:31.666     Object literal may only specify known properties, and 'onError' does not exist in type 'UndefinedInitialDataOptions<{ success: boolean; data: DashboardSubject[]; }, Error, { success: boolean; data: DashboardSubject[]; }, QueryKey>'.
+00:59:31.666   Overload 3 of 3, '(options: UseQueryOptions<{ success: boolean; data: DashboardSubject[]; }, Error, { success: boolean; data: DashboardSubject[]; }, QueryKey>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+00:59:31.667     Object literal may only specify known properties, and 'onError' does not exist in type 'UseQueryOptions<{ success: boolean; data: DashboardSubject[]; }, Error, { success: boolean; data: DashboardSubject[]; }, QueryKey>'.
+00:59:31.667 
+00:59:31.667 [0m [90m 63 |[39m     retry[33m:[39m [35m2[39m[33m,[39m[0m
+00:59:31.667 [0m [90m 64 |[39m     retryDelay[33m:[39m attemptIndex [33m=>[39m [33mMath[39m[33m.[39mmin([35m1000[39m [33m*[39m [35m2[39m [33m**[39m attemptIndex[33m,[39m [35m30000[39m)[33m,[39m[0m
+00:59:31.667 [0m[31m[1m>[22m[39m[90m 65 |[39m     onError[33m:[39m (error) [33m=>[39m {[0m
+00:59:31.667 [0m [90m    |[39m     [31m[1m^[22m[39m[0m
+00:59:31.667 [0m [90m 66 |[39m       toast({[0m
+00:59:31.667 [0m [90m 67 |[39m         title[33m:[39m [32m"Error loading subjects"[39m[33m,[39m[0m
+00:59:31.667 [0m [90m 68 |[39m         description[33m:[39m error[33m.[39mmessage [33m||[39m [32m"An unexpected error occurred."[39m[33m,[39m[0m
+00:59:31.723 Error: Command "npm run build" exited with 1
