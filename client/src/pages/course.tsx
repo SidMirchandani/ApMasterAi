@@ -1,5 +1,5 @@
+import React, { useEffect } from "react";
 import { useRouter } from "next/router";
-import { useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import Navigation from "@/components/ui/navigation";
 import { Toaster } from "@/components/ui/toaster";

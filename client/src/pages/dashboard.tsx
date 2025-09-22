@@ -327,12 +327,12 @@ export default function Dashboard() {
                                   if (dateValue && typeof dateValue === 'object' && !(typeof dateValue === 'string') && 'seconds' in dateValue) {
                                     // Firestore Timestamp
                                     date = new Date((dateValue as any).seconds * 1000);
-                                  } else if (dateValue && typeof dateValue === 'object' && dateValue instanceof Date) {
+                                  } else if (dateValue instanceof Date) {
                                     // Regular Date object
                                     date = dateValue;
                                   } else if (dateValue) {
                                     // String or number
-                                    date = new Date(dateValue);
+                                    date = new Date(dateValue as string | number);
                                   } else {
                                     // No date provided
                                     return 'Recently';

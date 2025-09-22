@@ -12,7 +12,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link"; // Changed from wouter's Link
 import { useRouter } from "next/router"; // Changed from wouter's useLocation
 import { useAuth } from "@/contexts/auth-context";
