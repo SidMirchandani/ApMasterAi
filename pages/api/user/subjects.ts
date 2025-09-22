@@ -30,16 +30,6 @@ async function getOrCreateUser(firebaseUid: string): Promise<string> {
     return user.id;
   } catch (error) {
     console.error("[subjects API] Error in getOrCreateUser:", error);
-    
-    // In development mode, create a fallback user ID
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const isReplit = process.env.REPL_ID || process.env.REPLIT_DB_URL;
-    
-    if (isDevelopment || isReplit) {
-      console.log("[subjects API] Using development fallback user");
-      return `dev-user-${firebaseUid}`;
-    }
-    
     throw error;
   }
 }

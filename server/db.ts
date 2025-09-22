@@ -30,17 +30,6 @@ export class DatabaseManager {
       console.log("Firestore connection established.");
     } catch (error) {
       console.error("Failed to initialize Firestore connection:", error);
-      
-      // In development, don't throw - just log and continue
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const isReplit = process.env.REPL_ID || process.env.REPLIT_DB_URL;
-      
-      if (isDevelopment || isReplit) {
-        console.warn("Continuing without Firestore in development mode");
-        this.db = null;
-        return;
-      }
-      
       throw error;
     }
   }
@@ -63,32 +52,12 @@ export class DatabaseManager {
       // Simple health check - try to access Firestore
       console.log("Performing Firestore health check...");
       
-      // Check if we're in development mode and handle accordingly
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      if (isDevelopment) {
-        // In development, we might be using emulators or have connectivity issues
-        // Try a simple operation with a shorter timeout
-        const healthRef = this.db.collection('_health').doc('test');
-        await healthRef.set({ timestamp: new Date(), status: 'ok' }, { merge: true });
-        console.log("Firestore health check passed (development mode)");
-        return true;
-      } else {
-        // Production health check
-        await this.db.collection('_health').limit(1).get();
-        console.log("Firestore health check passed");
-        return true;
-      }
+      // Perform health check
+      await this.db.collection('_health').limit(1).get();
+      console.log("Firestore health check passed");
+      return true;
     } catch (error) {
       console.error("Firestore health check failed:", error);
-      
-      // In development, we might want to continue without Firestore for testing
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      if (isDevelopment) {
-        console.warn("Development mode: Continuing without Firestore connection");
-        // You might want to return true here if you want to continue without DB in dev
-        return false;
-      }
-      
       return false;
     }
   }
@@ -101,14 +70,6 @@ export const databaseManager = DatabaseManager.getInstance();
 export const getDb = () => {
   const db = databaseManager.getDatabase();
   if (!db) {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const isReplit = process.env.REPL_ID || process.env.REPLIT_DB_URL;
-    
-    if (isDevelopment || isReplit) {
-      console.warn("Firestore is not available in development mode - using fallback storage");
-      return null;
-    }
-    
     throw new Error("Firestore is not available");
   }
   return db;
