@@ -299,7 +299,12 @@ export default function Dashboard() {
                           <div className="flex items-center space-x-2 text-sm text-khan-gray-medium">
                             <Calendar className="w-4 h-4" />
                             <span>
-                              Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}
+                              Added {format(
+                                subject.dateAdded instanceof Date 
+                                  ? subject.dateAdded 
+                                  : new Date(subject.dateAdded.seconds ? subject.dateAdded.seconds * 1000 : subject.dateAdded), 
+                                "MMM d, yyyy 'at' h:mm a"
+                              )}
                             </span>
                           </div>
                           <Button 
