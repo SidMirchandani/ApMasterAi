@@ -1,66 +1,58 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
-import { db } from "../lib/firebase";
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { storage } from "../../server/storage";
+import { z } from "zod";
+
+// Schema validation for incoming email
+const emailSchema = z.string().email();
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
-    return res.status(405).json({
-      success: false,
-      message: "Method not allowed",
-    });
-  }
+  switch (req.method) {
+    case "POST":
+      try {
+        const { email } = req.body;
 
-  try {
-    const { email } = req.body;
+        // Validate input using zod
+        const parsedEmail = emailSchema.parse(email.toLowerCase().trim());
 
-    if (!email || typeof email !== "string") {
-      return res.status(400).json({
+        try {
+          const added = await storage.addToWaitlist({ email: parsedEmail });
+          return res.status(201).json({
+            success: true,
+            message: "Successfully added to waitlist",
+            data: added,
+          });
+        } catch (error: any) {
+          if (error.message.includes("already registered")) {
+            return res.status(409).json({
+              success: false,
+              message: "Email already exists in waitlist",
+            });
+          }
+          throw error;
+        }
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid email format",
+            errors: error.errors,
+          });
+        }
+        console.error("Waitlist API Error:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+      }
+
+    default:
+      res.setHeader("Allow", ["POST"]);
+      return res.status(405).json({
         success: false,
-        message: "Valid email is required",
+        message: `Method ${req.method} not allowed`,
       });
-    }
-
-    if (!db) {
-      return res.status(500).json({
-        success: false,
-        message: "Firebase not initialized",
-      });
-    }
-
-    // Check if email already exists
-    const waitlistRef = collection(db, "waitlist");
-    const q = query(waitlistRef, where("email", "==", email));
-    const existingSnapshot = await getDocs(q);
-
-    if (!existingSnapshot.empty) {
-      return res.status(409).json({
-        success: false,
-        message: "Email already registered for waitlist",
-      });
-    }
-
-    // Add to waitlist
-    const waitlistData = {
-      email,
-      signedUpAt: new Date().toISOString(),
-    };
-
-    await addDoc(waitlistRef, waitlistData);
-
-    return res.status(201).json({
-      success: true,
-      message: "Successfully added to waitlist!",
-    });
-  } catch (error) {
-    console.error("Waitlist API error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to add to waitlist",
-    });
   }
 }

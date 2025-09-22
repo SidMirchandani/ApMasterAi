@@ -3,6 +3,5 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/dashboard": "pages/dashboard.js",
-  "/api/user/subjects": "pages/api/user/subjects.js"
+  "/dashboard": "pages/dashboard.js"
 }
