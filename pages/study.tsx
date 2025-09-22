@@ -25,7 +25,7 @@ interface StudySubject {
   progress: number;
   masteryLevel: number;
   lastStudied?: string | number | Date | { seconds: number } | null;
-  dateAdded: string | number | Date | { seconds: number } | null;
+  dateAdded?: string | number | Date | { seconds: number } | null;
 }
 
 interface Topic {
@@ -40,6 +40,7 @@ interface Topic {
   articles: number;
   exercises: number;
   dateAdded?: string | number | Date | { seconds: number } | null;
+  lastStudied?: string | number | Date | { seconds: number } | null;
 }
 
 interface Unit {

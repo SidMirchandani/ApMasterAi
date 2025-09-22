@@ -27,7 +27,7 @@ interface DashboardSubject {
   progress: number;
   masteryLevel: number;
   lastStudied?: string | number | Date | { seconds: number } | null;
-  dateAdded: string | number | Date | { seconds: number } | null;
+  dateAdded?: string | number | Date | { seconds: number } | null;
 }
 
 const difficultyColors: Record<string, string> = {

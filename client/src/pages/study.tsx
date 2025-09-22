@@ -37,7 +37,7 @@ interface StudySubject {
   progress: number;
   masteryLevel: number;
   lastStudied?: string | number | Date | { seconds: number } | null;
-  dateAdded: string | null | Date | { seconds: number };
+  dateAdded?: string | number | Date | { seconds: number } | null;
 }
 
 interface Topic {
@@ -49,6 +49,7 @@ interface Topic {
   completed: boolean;
   practiceQuestions: number;
   dateAdded?: string | number | Date | { seconds: number } | null;
+  lastStudied?: string | number | Date | { seconds: number } | null;
 }
 
 interface Unit {

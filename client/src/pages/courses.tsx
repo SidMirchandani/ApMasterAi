@@ -57,6 +57,8 @@ interface Course {
   units: number;
   examDate: string | number | Date | { seconds: number } | null;
   isAdded?: boolean;
+  dateAdded?: string | number | Date | { seconds: number } | null;
+  lastStudied?: string | number | Date | { seconds: number } | null;
 }
 
 export default function Courses() {
