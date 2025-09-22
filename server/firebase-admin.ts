@@ -26,13 +26,31 @@ export function getFirebaseAdmin() {
       }
 
       try {
-        // For development with Firebase emulator or using Application Default Credentials
-        adminApp = initializeApp({
-          projectId,
-          // This will work with Firebase emulators or Google Cloud default credentials
-        });
+        // Check if we have a service account key
+        const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
         
-        console.log('Firebase Admin initialized with project:', projectId);
+        if (serviceAccountKey) {
+          // Use service account key for authentication
+          const serviceAccount = JSON.parse(serviceAccountKey);
+          adminApp = initializeApp({
+            credential: cert(serviceAccount),
+            projectId,
+          });
+          console.log('Firebase Admin initialized with service account for project:', projectId);
+        } else if (useEmulator) {
+          // For development/emulator mode, we can initialize without credentials
+          // This will work with Firebase emulators
+          adminApp = initializeApp({
+            projectId,
+          });
+          console.log('Firebase Admin initialized for emulator mode with project:', projectId);
+        } else {
+          // Fallback for production with Application Default Credentials
+          adminApp = initializeApp({
+            projectId,
+          });
+          console.log('Firebase Admin initialized with default credentials for project:', projectId);
+        }
       } catch (error) {
         console.error('Failed to initialize Firebase Admin:', error);
         throw error;

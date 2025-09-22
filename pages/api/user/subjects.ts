@@ -103,10 +103,15 @@ export default async function handler(
     
     // Check if it's a database connection error
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('Database') || errorMessage.includes('connection')) {
+    if (errorMessage.includes('Database') || 
+        errorMessage.includes('connection') || 
+        errorMessage.includes('Firestore') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('access token')) {
       return res.status(503).json({
         success: false,
-        message: "Database temporarily unavailable. Please try again in a moment.",
+        message: "Database temporarily unavailable. This is likely due to Firebase configuration in development mode.",
+        error: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
         retryAfter: 5000
       });
     }
