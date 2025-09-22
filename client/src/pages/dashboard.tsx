@@ -61,18 +61,22 @@ export default function Dashboard() {
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
     retry: 2,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-    onError: (error) => {
-      toast({
-        title: "Error loading subjects",
-        description: error.message || "An unexpected error occurred.",
-        variant: "destructive",
-      });
-    }
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
 
   // Memoize subjects array to prevent unnecessary re-renders
   const subjects = useMemo(() => subjectsResponse?.data || [], [subjectsResponse?.data]);
+
+  // Handle query errors with useEffect since onError is deprecated in v5
+  useEffect(() => {
+    if (subjectsError && !subjectsLoading) {
+      toast({
+        title: "Error loading subjects",
+        description: subjectsError.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
+  }, [subjectsError, subjectsLoading, toast]);
 
   // Track if we have initial data or are still loading for the first time
   const isInitialLoading = subjectsLoading && !subjectsResponse;
