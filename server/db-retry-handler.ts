@@ -1,9 +1,9 @@
+
 import { databaseManager } from "./db";
-import type { NeonDatabase } from "drizzle-orm/neon-serverless";
-import * as schema from "@shared/schema";
+import type { FirebaseFirestore } from 'firebase-admin/firestore';
 
 /**
- * Provides retry and resilience mechanisms for database operations
+ * Provides retry and resilience mechanisms for Firestore operations
  */
 export class DatabaseRetryHandler {
   private static readonly DEFAULT_MAX_RETRIES = 3;
@@ -23,31 +23,19 @@ export class DatabaseRetryHandler {
       try {
         // Ensure DB health before executing
         const isHealthy = await databaseManager.healthCheck();
-        if (!isHealthy && attempt === 1) {
-          console.warn(
-            "Database unhealthy on first attempt, forcing reconnect...",
-          );
-          await databaseManager.forceReconnect();
+        if (!isHealthy) {
+          throw new Error("Firestore is not available");
         }
 
         return await operation();
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));
         console.warn(
-          `Database operation failed (attempt ${attempt}/${maxRetries + 1}):`,
+          `Firestore operation failed (attempt ${attempt}/${maxRetries + 1}):`,
           lastError.message,
         );
 
         if (attempt > maxRetries) break;
-
-        if (this.isConnectionError(lastError)) {
-          console.log("Connection error detected, forcing reconnection...");
-          try {
-            await databaseManager.forceReconnect();
-          } catch (reconnectError) {
-            console.error("Reconnection failed:", reconnectError);
-          }
-        }
 
         // Backoff with jitter
         const delay =
@@ -58,57 +46,33 @@ export class DatabaseRetryHandler {
       }
     }
 
-    throw lastError || new Error("Database operation failed after retries");
-  }
-
-  /**
-   * Check whether error looks like a connection issue
-   */
-  private static isConnectionError(error: Error): boolean {
-    const patterns = [
-      /connection/i,
-      /network/i,
-      /timeout/i,
-      /ECONNRESET/i,
-      /ENOTFOUND/i,
-      /ETIMEDOUT/i,
-      /socket/i,
-      /pool/i,
-      /SELF_SIGNED_CERT_IN_CHAIN/i,
-      /certificate/i,
-    ];
-    return patterns.some(
-      (pattern) => pattern.test(error.message) || pattern.test(error.name),
-    );
+    throw lastError || new Error("Firestore operation failed after retries");
   }
 
   /**
    * Run a transaction with retry logic
    */
   static async withTransaction<T>(
-    operation: (tx: NeonDatabase<typeof schema>) => Promise<T>,
+    operation: (db: FirebaseFirestore.Firestore) => Promise<T>,
     maxRetries = 2,
   ): Promise<T> {
     return this.withRetry(async () => {
-      const db = await databaseManager.getDatabase();
-      return db.transaction(operation);
+      const db = databaseManager.getDatabase();
+      return db.runTransaction(async (transaction) => {
+        // Pass the db instance to the operation for transaction operations
+        return operation(db);
+      });
     }, maxRetries);
   }
 
   /**
-   * Perform a health check and try recovery if needed
+   * Perform a health check
    */
   static async healthCheckWithRecovery(): Promise<boolean> {
     try {
-      let isHealthy = await databaseManager.healthCheck();
-      if (!isHealthy) {
-        console.log("Health check failed, forcing recovery...");
-        await databaseManager.forceReconnect();
-        isHealthy = await databaseManager.healthCheck();
-      }
-      return isHealthy;
+      return await databaseManager.healthCheck();
     } catch (error) {
-      console.error("Health check with recovery failed:", error);
+      console.error("Health check failed:", error);
       return false;
     }
   }
@@ -120,6 +84,6 @@ export class DatabaseRetryHandler {
 export async function ensureDatabaseHealth(): Promise<void> {
   const isHealthy = await DatabaseRetryHandler.healthCheckWithRecovery();
   if (!isHealthy) {
-    throw new Error("Database is not available after recovery attempts");
+    throw new Error("Firestore is not available");
   }
 }

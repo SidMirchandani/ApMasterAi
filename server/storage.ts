@@ -1,179 +1,180 @@
-import {
-  users,
-  waitlistEmails,
-  userSubjects,
-  type User,
-  type InsertUser,
-  type WaitlistEmail,
-  type InsertWaitlistEmail,
-  type UserSubject,
-  type InsertUserSubject,
-} from "@shared/schema";
-import { getDb, databaseManager } from "./db"; // ✅ import both
-import { eq, and, desc } from "drizzle-orm";
-import { DatabaseRetryHandler } from "./db-retry-handler";
 
-export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  addToWaitlist(email: InsertWaitlistEmail): Promise<WaitlistEmail>;
-  getWaitlistEmails(): Promise<WaitlistEmail[]>;
-  isEmailInWaitlist(email: string): Promise<boolean>;
-  getUserSubjects(userId: number): Promise<UserSubject[]>;
-  addUserSubject(userSubject: InsertUserSubject): Promise<UserSubject>;
-  removeUserSubject(userId: number, subjectId: string): Promise<void>;
-  hasUserSubject(userId: number, subjectId: string): Promise<boolean>;
-  updateSubjectMasteryLevel(
-    userId: number,
-    subjectId: string,
-    masteryLevel: number,
-  ): Promise<UserSubject | null>;
+import { getDb } from './db';
+import { DatabaseRetryHandler } from './db-retry-handler';
+
+export interface UserSubject {
+  id: string;
+  userId: string;
+  subjectId: string;
+  name: string;
+  description: string;
+  units: number;
+  difficulty: string;
+  examDate: string;
+  progress: number;
+  masteryLevel: number;
+  lastStudied?: Date;
+  dateAdded: Date;
 }
 
-export class DatabaseStorage implements IStorage {
-  async getUser(id: number): Promise<User | undefined> {
-    return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      const [user] = await db.select().from(users).where(eq(users.id, id));
-      return user || undefined;
-    });
-  }
+export interface WaitlistEntry {
+  id: string;
+  email: string;
+  signedUpAt: Date;
+}
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.username, username));
-      return user || undefined;
-    });
-  }
+export interface User {
+  id: string;
+  firebaseUid: string;
+  email: string;
+  username?: string;
+  createdAt: Date;
+}
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      const [user] = await db.insert(users).values(insertUser).returning();
-      return user;
-    });
-  }
+export class Storage {
+  private db = getDb();
 
-  async addToWaitlist(
-    insertEmail: InsertWaitlistEmail,
-  ): Promise<WaitlistEmail> {
+  async addToWaitlist(email: string): Promise<WaitlistEntry> {
     return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      try {
-        const [waitlistEmail] = await db
-          .insert(waitlistEmails)
-          .values(insertEmail)
-          .returning();
-        return waitlistEmail;
-      } catch (error: any) {
-        if (error.code === "23505") {
-          throw new Error("Email already registered for waitlist");
-        }
-        throw error;
+      // Check if email already exists
+      const existingQuery = await this.db.collection('waitlist_emails')
+        .where('email', '==', email)
+        .limit(1)
+        .get();
+
+      if (!existingQuery.empty) {
+        throw new Error('Email already exists in waitlist');
       }
+
+      const docRef = this.db.collection('waitlist_emails').doc();
+      const entry: Omit<WaitlistEntry, 'id'> = {
+        email,
+        signedUpAt: new Date(),
+      };
+
+      await docRef.set(entry);
+
+      return {
+        id: docRef.id,
+        ...entry,
+      };
     });
   }
 
-  async getWaitlistEmails(): Promise<WaitlistEmail[]> {
+  async getWaitlistStats(): Promise<{ total: number }> {
     return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      return db.select().from(waitlistEmails);
+      const snapshot = await this.db.collection('waitlist_emails').get();
+      return { total: snapshot.size };
     });
   }
 
-  async isEmailInWaitlist(email: string): Promise<boolean> {
+  async createUser(firebaseUid: string, email: string, username?: string): Promise<User> {
     return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      const [result] = await db
-        .select()
-        .from(waitlistEmails)
-        .where(eq(waitlistEmails.email, email));
-      return !!result;
+      const docRef = this.db.collection('users').doc();
+      const user: Omit<User, 'id'> = {
+        firebaseUid,
+        email,
+        username,
+        createdAt: new Date(),
+      };
+
+      await docRef.set(user);
+
+      return {
+        id: docRef.id,
+        ...user,
+      };
     });
   }
 
-  async getUserSubjects(userId: number): Promise<UserSubject[]> {
+  async getUserByFirebaseUid(firebaseUid: string): Promise<User | null> {
     return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      return db
-        .select()
-        .from(userSubjects)
-        .where(eq(userSubjects.userId, userId))
-        .orderBy(desc(userSubjects.dateAdded));
+      const query = await this.db.collection('users')
+        .where('firebaseUid', '==', firebaseUid)
+        .limit(1)
+        .get();
+
+      if (query.empty) {
+        return null;
+      }
+
+      const doc = query.docs[0];
+      return {
+        id: doc.id,
+        ...doc.data(),
+      } as User;
     });
   }
 
-  async addUserSubject(userSubject: InsertUserSubject): Promise<UserSubject> {
+  async getUserSubjects(userId: string): Promise<UserSubject[]> {
     return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      const [subject] = await db
-        .insert(userSubjects)
-        .values(userSubject)
-        .returning();
-      return subject;
+      const query = await this.db.collection('user_subjects')
+        .where('userId', '==', userId)
+        .orderBy('dateAdded', 'desc')
+        .get();
+
+      return query.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as UserSubject[];
     });
   }
 
-  async removeUserSubject(userId: number, subjectId: string): Promise<void> {
+  async addUserSubject(subject: Omit<UserSubject, 'id' | 'dateAdded'>): Promise<UserSubject> {
     return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      await db
-        .delete(userSubjects)
-        .where(
-          and(
-            eq(userSubjects.userId, userId),
-            eq(userSubjects.subjectId, subjectId),
-          ),
-        );
+      const docRef = this.db.collection('user_subjects').doc();
+      const subjectData: Omit<UserSubject, 'id'> = {
+        ...subject,
+        dateAdded: new Date(),
+      };
+
+      await docRef.set(subjectData);
+
+      return {
+        id: docRef.id,
+        ...subjectData,
+      };
     });
   }
 
-  async hasUserSubject(userId: number, subjectId: string): Promise<boolean> {
+  async updateUserSubject(subjectId: string, updates: Partial<UserSubject>): Promise<UserSubject> {
     return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      const [result] = await db
-        .select()
-        .from(userSubjects)
-        .where(
-          and(
-            eq(userSubjects.userId, userId),
-            eq(userSubjects.subjectId, subjectId),
-          ),
-        );
-      return !!result;
+      const docRef = this.db.collection('user_subjects').doc(subjectId);
+      
+      await docRef.update(updates);
+      
+      const doc = await docRef.get();
+      if (!doc.exists) {
+        throw new Error('Subject not found');
+      }
+
+      return {
+        id: doc.id,
+        ...doc.data(),
+      } as UserSubject;
     });
   }
 
-  async updateSubjectMasteryLevel(
-    userId: number,
-    subjectId: string,
-    masteryLevel: number,
-  ): Promise<UserSubject | null> {
+  async deleteUserSubject(subjectId: string): Promise<void> {
     return DatabaseRetryHandler.withRetry(async () => {
-      const db = await getDb();
-      const [updatedSubject] = await db
-        .update(userSubjects)
-        .set({ masteryLevel })
-        .where(
-          and(
-            eq(userSubjects.userId, userId),
-            eq(userSubjects.subjectId, subjectId),
-          ),
-        )
-        .returning();
-      return updatedSubject || null;
+      await this.db.collection('user_subjects').doc(subjectId).delete();
+    });
+  }
+
+  async getUserSubject(subjectId: string): Promise<UserSubject | null> {
+    return DatabaseRetryHandler.withRetry(async () => {
+      const doc = await this.db.collection('user_subjects').doc(subjectId).get();
+      
+      if (!doc.exists) {
+        return null;
+      }
+
+      return {
+        id: doc.id,
+        ...doc.data(),
+      } as UserSubject;
     });
   }
 }
 
-export const storage = new DatabaseStorage();
-
-// ✅ Compatibility export for legacy usage
-export const getDbCompat = async () => {
-  return databaseManager.getDatabase();
-};
+export const storage = new Storage();

@@ -1,18 +1,26 @@
 
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
-let adminApp: any = null;
+let adminApp: App | null = null;
 
 export function getFirebaseAdmin() {
   if (!adminApp) {
     const apps = getApps();
     
     if (apps.length === 0) {
-      // For now, we'll use a simplified setup
-      // In production, you'd want to add proper service account credentials
+      // Initialize with project ID from environment
+      const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      
+      if (!projectId) {
+        throw new Error('NEXT_PUBLIC_FIREBASE_PROJECT_ID environment variable is required');
+      }
+
       adminApp = initializeApp({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        projectId,
+        // In development, this will use the default credentials
+        // In production, you'd want to add proper service account credentials
       });
     } else {
       adminApp = apps[0];
@@ -21,6 +29,7 @@ export function getFirebaseAdmin() {
   
   return {
     auth: getAuth(adminApp),
+    firestore: getFirestore(adminApp),
     app: adminApp
   };
 }
