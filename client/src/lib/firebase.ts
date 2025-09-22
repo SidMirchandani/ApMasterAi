@@ -43,14 +43,10 @@ function initializeFirebase(): { app: FirebaseApp | null, auth: Auth | null, db:
   try {
     // Initialize Firebase app (ensure single instance)
     const existingApps = getApps();
-    if (existingApps.length > 0) {
-      app = existingApps[0];
-      auth = getAuth(app);
-      db = getFirestore(app);
-    } else {
-      app = initializeApp(firebaseConfig);
-      // Initialize Firebase Authentication with persistence and error handling
-      auth = getAuth(app);
+    app = existingApps.length > 0 ? existingApps[0] : initializeApp(firebaseConfig);
+    
+    // Initialize Firebase Authentication with persistence and error handling
+    auth = getAuth(app);
     
     // Configure auth settings for cross-origin compatibility
     if (auth) {
@@ -70,8 +66,7 @@ function initializeFirebase(): { app: FirebaseApp | null, auth: Auth | null, db:
     }
     
     // Initialize Firestore
-      db = getFirestore(app);
-    }
+    db = getFirestore(app);
     
     console.log('Firebase initialized successfully');
     return { app, auth, db };

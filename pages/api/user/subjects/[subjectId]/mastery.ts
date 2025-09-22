@@ -1,7 +1,7 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { verifyFirebaseToken } from "../../../../../server/firebase-admin";
-import { db } from "../../../../../lib/firebase";
+import { verifyFirebaseToken } from "../../../../server/firebase-admin";
+import { db } from "../../../../lib/firebase";
 import { collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 
 export default async function handler(

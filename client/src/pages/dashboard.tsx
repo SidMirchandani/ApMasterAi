@@ -10,7 +10,6 @@ import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 
 interface DashboardSubject {
   id: number;
@@ -29,7 +28,7 @@ interface DashboardSubject {
 
 const difficultyColors = {
   "Easy": "bg-green-100 text-green-800 border-green-200",
-  "Medium": "bg-yellow-100 text-yellow-800 border-yellow-200",
+  "Medium": "bg-yellow-100 text-yellow-800 border-yellow-200", 
   "Hard": "bg-orange-100 text-orange-800 border-orange-200",
   "Very Hard": "bg-red-100 text-red-800 border-red-200"
 };
@@ -38,11 +37,10 @@ export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   // Optimized data fetching with better loading states
-  const {
-    data: subjectsResponse,
+  const { 
+    data: subjectsResponse, 
     isLoading: subjectsLoading,
     error: subjectsError,
     refetch: refetchSubjects,
@@ -74,17 +72,6 @@ export default function Dashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
-      toast({
-        title: "Subject removed",
-        description: "The subject has been removed from your dashboard.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove subject",
-        variant: "destructive",
-      });
     },
   });
 
@@ -135,9 +122,9 @@ export default function Dashboard() {
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription className="text-khan-red">
                 Failed to load your subjects. Please try again.
-                <Button
-                  variant="outline"
-                  size="sm"
+                <Button 
+                  variant="outline" 
+                  size="sm" 
                   onClick={() => refetchSubjects()}
                   className="ml-4 border-khan-red text-khan-red hover:bg-khan-red hover:text-white"
                 >
@@ -182,7 +169,7 @@ export default function Dashboard() {
               <p className="text-khan-gray-medium mb-8">
                 Add AP subjects to your dashboard to start your preparation journey
               </p>
-              <Button
+              <Button 
                 onClick={() => router.push('/learn')}
                 className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
               >
@@ -194,7 +181,7 @@ export default function Dashboard() {
             <>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-khan-gray-dark">My Subjects</h2>
-                <Button
+                <Button 
                   onClick={() => router.push('/learn')}
                   variant="outline"
                   className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold"
@@ -222,15 +209,15 @@ export default function Dashboard() {
                             {subject.name}
                           </CardTitle>
                           <div className="flex items-center space-x-2">
-                            <Badge
-                              variant="outline"
+                            <Badge 
+                              variant="outline" 
                               className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
                             >
                               {subject.difficulty}
                             </Badge>
                             {subject.masteryLevel && (
-                              <Badge
-                                variant="outline"
+                              <Badge 
+                                variant="outline" 
                                 className={
                                   subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
                                   subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
@@ -272,7 +259,7 @@ export default function Dashboard() {
                             </div>
                             <div className="w-24">
                               <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div
+                                <div 
                                   className="bg-khan-green h-2 rounded-full transition-all duration-300"
                                   style={{ width: `${subject.progress}%` }}
                                 ></div>
@@ -288,7 +275,7 @@ export default function Dashboard() {
                               Added {format(new Date(subject.dateAdded), "MMM d, yyyy 'at' h:mm a")}
                             </span>
                           </div>
-                          <Button
+                          <Button 
                             onClick={() => handleStartStudying(subject.subjectId)}
                             className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
                           >
