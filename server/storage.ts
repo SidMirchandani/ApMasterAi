@@ -277,19 +277,26 @@ export class Storage {
   }
 
   async deleteUserSubject(subjectId: string): Promise<void> {
+    console.log("[Storage] deleteUserSubject called with ID:", subjectId);
+    
     if (isDevelopmentMode()) {
       // Development mode fallback
       if (!devStorage.userSubjects.has(subjectId)) {
+        console.log("[Storage] Subject not found in dev storage:", subjectId);
         throw new Error('Subject not found');
       }
       devStorage.userSubjects.delete(subjectId);
+      console.log("[Storage] Deleted from dev storage:", subjectId);
       return;
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
+      
+      console.log("[Storage] Attempting to delete from Firestore:", subjectId);
       await db.collection('user_subjects').doc(subjectId).delete();
+      console.log("[Storage] Successfully deleted from Firestore:", subjectId);
     });
   }
 

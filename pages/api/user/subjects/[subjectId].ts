@@ -52,7 +52,9 @@ export default async function handler(
     switch (req.method) {
       case "DELETE": {
         try {
+          console.log("[subjectId API][DELETE] Attempting to delete subject with ID:", subjectId);
           await storage.deleteUserSubject(subjectId);
+          console.log("[subjectId API][DELETE] Successfully deleted subject:", subjectId);
           return res.status(200).json({
             success: true,
             message: "Subject removed successfully",
