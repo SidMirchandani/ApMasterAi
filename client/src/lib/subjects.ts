@@ -1,9 +1,9 @@
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebaseConfig"; // Assuming firebaseConfig.ts exports db
 import { getAuthHeaders } from "./queryClient"; // Import from queryClient where it's actually defined
-import { Subject } from "@/types"; // Assuming Subject type is defined in types.ts
+import { UserSubject } from '../../../shared/schema'; // Assuming Subject type is defined in types.ts
 
-export async function getSubjects(): Promise<Subject[]> {
+export async function getSubjects(): Promise<UserSubject[]> {
   try {
     // Try API first
     const authHeaders = await getAuthHeaders();
@@ -39,7 +39,7 @@ export async function getSubjects(): Promise<Subject[]> {
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    } as Subject));
+    } as UserSubject));
   } catch (error) {
     console.error("Error fetching subjects:", error);
     // Return empty array instead of throwing to prevent app crash
@@ -47,7 +47,7 @@ export async function getSubjects(): Promise<Subject[]> {
   }
 }
 
-export async function addSubject(subject: Subject): Promise<void> {
+export async function addSubject(subject: UserSubject): Promise<void> {
   try {
     if (!db) {
       throw new Error("Firebase not initialized");
@@ -76,7 +76,7 @@ export async function addSubject(subject: Subject): Promise<void> {
   }
 }
 
-export async function updateSubject(subject: Subject): Promise<void> {
+export async function updateSubject(subject: UserSubject): Promise<void> {
   try {
     if (!db) {
       throw new Error("Firebase not initialized");
@@ -120,7 +120,7 @@ export async function deleteSubject(subjectId: string): Promise<void> {
   }
 }
 
-export async function getSubjectById(subjectId: string): Promise<Subject | null> {
+export async function getSubjectById(subjectId: string): Promise<UserSubject | null> {
   try {
     if (!db) {
       throw new Error("Firebase not initialized");
@@ -137,7 +137,7 @@ export async function getSubjectById(subjectId: string): Promise<Subject | null>
       return {
         id: docSnap.id,
         ...docSnap.data()
-      } as Subject;
+      } as UserSubject;
     } else {
       console.warn(`No such document with ID: ${subjectId}`);
       return null;
