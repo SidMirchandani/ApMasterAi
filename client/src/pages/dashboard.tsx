@@ -23,8 +23,8 @@ interface DashboardSubject {
   examDate: string;
   progress: number;
   masteryLevel: number;
-  lastStudied?: string;
-  dateAdded: string;
+  lastStudied?: string | null;
+  dateAdded: string | null;
 }
 
 const difficultyColors = {
@@ -324,18 +324,19 @@ export default function Dashboard() {
                                   let date: Date;
                                   const dateValue = subject.dateAdded;
                                   
-                                  if (dateValue && typeof dateValue === 'object' && !(typeof dateValue === 'string') && 'seconds' in dateValue) {
+                                  if (!dateValue) {
+                                    return 'Recently';
+                                  }
+                                  
+                                  if (typeof dateValue === 'object' && !(typeof dateValue === 'string') && dateValue !== null && 'seconds' in dateValue) {
                                     // Firestore Timestamp
                                     date = new Date((dateValue as any).seconds * 1000);
                                   } else if (dateValue instanceof Date) {
                                     // Regular Date object
                                     date = dateValue;
-                                  } else if (dateValue) {
+                                  } else {
                                     // String or number
                                     date = new Date(dateValue as string | number);
-                                  } else {
-                                    // No date provided
-                                    return 'Recently';
                                   }
                                   
                                   // Check if date is valid

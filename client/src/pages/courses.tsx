@@ -47,6 +47,17 @@ const masteryLevels = [
   }
 ];
 
+// Interface for a course, including optional isAdded status
+interface Course {
+  id: string;
+  name: string;
+  description: string;
+  difficulty: string;
+  units: number;
+  examDate: string;
+  isAdded?: boolean | null;
+}
+
 export default function Courses() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter(); // Changed from useLocation()

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,8 +35,8 @@ interface StudySubject {
   examDate: string;
   progress: number;
   masteryLevel: number;
-  lastStudied?: string;
-  dateAdded: string;
+  lastStudied?: string | null;
+  dateAdded: string | null;
 }
 
 interface Topic {
