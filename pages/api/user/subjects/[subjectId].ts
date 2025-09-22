@@ -1,14 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../../server/storage";
 
-async function getOrCreateUser(firebaseUid: string): Promise<number> {
-  let user = await storage.getUserByUsername(firebaseUid);
+async function getOrCreateUser(firebaseUid: string): Promise<string> {
+  let user = await storage.getUserByFirebaseUid(firebaseUid);
 
   if (!user) {
-    user = await storage.createUser({
-      username: firebaseUid,
-      password: "firebase_auth", // placeholder since Firebase handles auth
-    });
+    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`);
     console.log(
       "[subjectId API] Created new user for Firebase UID:",
       firebaseUid,
@@ -55,7 +52,7 @@ export default async function handler(
     switch (req.method) {
       case "DELETE": {
         try {
-          await storage.removeUserSubject(userId, subjectId);
+          await storage.deleteUserSubject(subjectId);
           return res.status(200).json({
             success: true,
             message: "Subject removed successfully",

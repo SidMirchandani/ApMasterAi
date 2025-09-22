@@ -307,10 +307,19 @@ export default function Dashboard() {
                                   } else if (subject.dateAdded && typeof subject.dateAdded === 'object' && 'seconds' in subject.dateAdded) {
                                     // Firestore Timestamp
                                     date = new Date(subject.dateAdded.seconds * 1000);
-                                  } else {
+                                  } else if (subject.dateAdded) {
                                     // String or number
                                     date = new Date(subject.dateAdded);
+                                  } else {
+                                    // No date provided
+                                    return 'Recently';
                                   }
+                                  
+                                  // Check if date is valid
+                                  if (isNaN(date.getTime())) {
+                                    return 'Recently';
+                                  }
+                                  
                                   return format(date, "MMM d, yyyy 'at' h:mm a");
                                 } catch (error) {
                                   console.warn('Date formatting error:', error);
