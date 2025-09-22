@@ -78,6 +78,17 @@ export default function Dashboard() {
     }
   }, [subjectsError, subjectsLoading, toast]);
 
+  // Handle mutation errors
+  useEffect(() => {
+    if (removeSubjectMutation.error && !removeSubjectMutation.isPending) {
+      toast({
+        title: "Error removing subject",
+        description: removeSubjectMutation.error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
+  }, [removeSubjectMutation.error, removeSubjectMutation.isPending, toast]);
+
   // Track if we have initial data or are still loading for the first time
   const isInitialLoading = subjectsLoading && !subjectsResponse;
 
@@ -107,13 +118,6 @@ export default function Dashboard() {
       toast({
         title: "Subject removed",
         description: "Your subject has been successfully removed.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error removing subject",
-        description: error.message || "An unexpected error occurred.",
-        variant: "destructive",
       });
     }
   });
@@ -318,14 +322,17 @@ export default function Dashboard() {
                               Added {(() => {
                                 try {
                                   let date: Date;
-                                  if (subject.dateAdded instanceof Date) {
-                                    date = subject.dateAdded;
-                                  } else if (subject.dateAdded && typeof subject.dateAdded === 'object' && 'seconds' in subject.dateAdded) {
+                                  const dateValue = subject.dateAdded;
+                                  
+                                  if (dateValue && typeof dateValue === 'object' && !(typeof dateValue === 'string') && 'seconds' in dateValue) {
                                     // Firestore Timestamp
-                                    date = new Date(subject.dateAdded.seconds * 1000);
-                                  } else if (subject.dateAdded) {
+                                    date = new Date((dateValue as any).seconds * 1000);
+                                  } else if (dateValue && typeof dateValue === 'object' && dateValue instanceof Date) {
+                                    // Regular Date object
+                                    date = dateValue;
+                                  } else if (dateValue) {
                                     // String or number
-                                    date = new Date(subject.dateAdded);
+                                    date = new Date(dateValue);
                                   } else {
                                     // No date provided
                                     return 'Recently';
