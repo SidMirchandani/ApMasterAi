@@ -1,5 +1,5 @@
 
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
@@ -16,8 +16,9 @@ const firebaseConfig = {
   measurementId: "G-05S2K1MXDJ"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase only if no apps exist
+const apps = getApps();
+const app = apps.length === 0 ? initializeApp(firebaseConfig) : apps[0];
 
 // Initialize Firebase services
 export const db = getFirestore(app);
