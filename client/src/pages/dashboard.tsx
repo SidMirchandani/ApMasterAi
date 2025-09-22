@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DashboardSubject {
   id: number;
@@ -37,6 +38,7 @@ export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Optimized data fetching with better loading states
   const {
@@ -72,6 +74,17 @@ export default function Dashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      toast({
+        title: "Subject removed",
+        description: "The subject has been removed from your dashboard.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove subject",
+        variant: "destructive",
+      });
     },
   });
 
