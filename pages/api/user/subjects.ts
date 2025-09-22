@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../server/storage";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { z } from "zod";
+import { UserSubject } from "../../../shared/schema";
 
 // Define the schema inline since the shared schema import is not working
 const insertUserSubjectSchema = z.object({
@@ -40,7 +41,7 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   const { method } = req;
-  
+
   // Verify Firebase token first
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -133,7 +134,7 @@ export default async function handler(
     }
   } catch (error) {
     console.error(`[subjects API][${req.method}] Unhandled error:`, error);
-    
+
     // Check if it's a database connection error
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.includes('Database') || 
@@ -148,7 +149,7 @@ export default async function handler(
         retryAfter: 5000
       });
     }
-    
+
     return res.status(500).json({
       success: false,
       message: "Internal server error",

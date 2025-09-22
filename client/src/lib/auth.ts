@@ -43,8 +43,9 @@ export const signUpWithEmail = async ({
       password,
     );
     return userCredential;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to create account");
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to create account";
+    throw new Error(errorMessage);
   }
 };
 
@@ -66,8 +67,9 @@ export const loginWithEmail = async ({
       password,
     );
     return userCredential;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to login");
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to login";
+    throw new Error(errorMessage);
   }
 };
 
@@ -83,8 +85,9 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
     const provider = new GoogleAuthProvider();
     const userCredential = await signInWithPopup(auth, provider);
     return userCredential;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to sign in with Google");
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to sign in with Google";
+    throw new Error(errorMessage);
   }
 };
 
@@ -98,8 +101,9 @@ export const logout = async (): Promise<void> => {
 
   try {
     await signOut(auth);
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to logout");
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to logout";
+    throw new Error(errorMessage);
   }
 };
 
