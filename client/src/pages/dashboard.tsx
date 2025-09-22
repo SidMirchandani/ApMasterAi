@@ -78,17 +78,6 @@ export default function Dashboard() {
     }
   }, [subjectsError, subjectsLoading, toast]);
 
-  // Handle mutation errors
-  useEffect(() => {
-    if (removeSubjectMutation.error && !removeSubjectMutation.isPending) {
-      toast({
-        title: "Error removing subject",
-        description: removeSubjectMutation.error.message || "An unexpected error occurred.",
-        variant: "destructive",
-      });
-    }
-  }, [removeSubjectMutation.error, removeSubjectMutation.isPending, toast]);
-
   // Track if we have initial data or are still loading for the first time
   const isInitialLoading = subjectsLoading && !subjectsResponse;
 
@@ -121,6 +110,17 @@ export default function Dashboard() {
       });
     }
   });
+
+  // Handle mutation errors
+  useEffect(() => {
+    if (removeSubjectMutation.error && !removeSubjectMutation.isPending) {
+      toast({
+        title: "Error removing subject",
+        description: removeSubjectMutation.error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
+  }, [removeSubjectMutation.error, removeSubjectMutation.isPending, toast]);
 
   // Simple auth redirect
   useEffect(() => {
