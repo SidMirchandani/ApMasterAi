@@ -4,17 +4,32 @@ import { insertUserSubjectSchema } from "@shared/schema";
 import { z } from "zod";
 
 async function getOrCreateUser(firebaseUid: string): Promise<string> {
-  let user = await storage.getUserByFirebaseUid(firebaseUid);
+  try {
+    let user = await storage.getUserByFirebaseUid(firebaseUid);
 
-  if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid);
-    console.log(
-      "[subjects API] Created new user for Firebase UID:",
-      firebaseUid,
-    );
+    if (!user) {
+      user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid);
+      console.log(
+        "[subjects API] Created new user for Firebase UID:",
+        firebaseUid,
+      );
+    }
+
+    return user.id;
+  } catch (error) {
+    console.error("[subjects API] Error in getOrCreateUser:", error);
+    
+    // In development mode, create a fallback user ID
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isReplit = process.env.REPL_ID || process.env.REPLIT_DB_URL;
+    
+    if (isDevelopment || isReplit) {
+      console.log("[subjects API] Using development fallback user");
+      return `dev-user-${firebaseUid}`;
+    }
+    
+    throw error;
   }
-
-  return user.id;
 }
 
 export default async function handler(

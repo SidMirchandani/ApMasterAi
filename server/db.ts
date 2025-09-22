@@ -17,19 +17,37 @@ export class DatabaseManager {
 
   private initializeConnection(): void {
     try {
-      const { app } = getFirebaseAdmin();
+      const firebaseAdmin = getFirebaseAdmin();
+      
+      if (!firebaseAdmin) {
+        console.warn("Firebase Admin not available - database operations will be limited in development");
+        this.db = null;
+        return;
+      }
+      
+      const { app } = firebaseAdmin;
       this.db = getFirestore(app);
       console.log("Firestore connection established.");
     } catch (error) {
       console.error("Failed to initialize Firestore connection:", error);
+      
+      // In development, don't throw - just log and continue
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const isReplit = process.env.REPL_ID || process.env.REPLIT_DB_URL;
+      
+      if (isDevelopment || isReplit) {
+        console.warn("Continuing without Firestore in development mode");
+        this.db = null;
+        return;
+      }
+      
       throw error;
     }
   }
 
-  getDatabase(): FirebaseFirestore.Firestore {
+  getDatabase(): FirebaseFirestore.Firestore | null {
     if (!this.db) {
       this.initializeConnection();
-      if (!this.db) throw new Error("Firestore initialization failed.");
     }
     return this.db;
   }
@@ -80,4 +98,10 @@ export class DatabaseManager {
 export const databaseManager = DatabaseManager.getInstance();
 
 // Compatibility exports
-export const getDb = () => databaseManager.getDatabase();
+export const getDb = () => {
+  const db = databaseManager.getDatabase();
+  if (!db) {
+    throw new Error("Firestore is not available in development mode");
+  }
+  return db;
+};
