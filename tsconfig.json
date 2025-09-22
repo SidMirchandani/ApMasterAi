@@ -2,12 +2,18 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "skipLibCheck": true, // ✅ ignore node_modules type mismatches
     "baseUrl": ".",
     "paths": {
-      "@/*": ["client/src/*"]
+      "@/*": [
+        "client/src/*"
+      ]
     },
     "allowJs": true, // ✅ lets you mix .js and .ts files
     "forceConsistentCasingInFileNames": true,
@@ -15,14 +21,18 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "isolatedModules": false, // ✅ avoids Next.js "every file must be a module" errors
+    "isolatedModules": true, // ✅ avoids Next.js "every file must be a module" errors
     "jsx": "preserve",
     "incremental": true,
     "strict": false, // ✅ disables strict null checks, etc.
     "noImplicitAny": false, // 🔑 (extra looseness: allow implicit any)
     "suppressImplicitAnyIndexErrors": true // 🔑 prevents index signature errors
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
   "exclude": [
     "node_modules",
     ".next",
