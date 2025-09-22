@@ -332,9 +332,9 @@ export default function Dashboard() {
                                   if (typeof dateValue === 'object' && dateValue !== null && !Array.isArray(dateValue) && 'seconds' in dateValue) {
                                     // Firestore Timestamp
                                     date = new Date((dateValue as any).seconds * 1000);
-                                  } else if (typeof dateValue === 'object' && dateValue !== null && dateValue instanceof Date) {
-                                    // Regular Date object
-                                    date = dateValue;
+                                  } else if (dateValue && Object.prototype.toString.call(dateValue) === '[object Date]') {
+                                    // Regular Date object using more reliable Date check
+                                    date = dateValue as Date;
                                   } else if (typeof dateValue === 'string' || typeof dateValue === 'number') {
                                     // String or number
                                     date = new Date(dateValue);
