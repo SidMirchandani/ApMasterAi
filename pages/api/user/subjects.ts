@@ -3,14 +3,11 @@ import { storage } from "../../../server/storage";
 import { insertUserSubjectSchema } from "@shared/schema";
 import { z } from "zod";
 
-async function getOrCreateUser(firebaseUid: string): Promise<number> {
-  let user = await storage.getUserByUsername(firebaseUid);
+async function getOrCreateUser(firebaseUid: string): Promise<string> {
+  let user = await storage.getUserByFirebaseUid(firebaseUid);
 
   if (!user) {
-    user = await storage.createUser({
-      username: firebaseUid,
-      password: "firebase_auth", // placeholder since Firebase handles auth
-    });
+    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid);
     console.log(
       "[subjects API] Created new user for Firebase UID:",
       firebaseUid,
@@ -57,10 +54,8 @@ export default async function handler(
 
       case "POST": {
         try {
-          const hasSubject = await storage.hasUserSubject(
-            userId,
-            req.body.subjectId,
-          );
+          const existingSubjects = await storage.getUserSubjects(userId);
+          const hasSubject = existingSubjects.some(s => s.subjectId === req.body.subjectId);
           if (hasSubject) {
             return res.status(409).json({
               success: false,

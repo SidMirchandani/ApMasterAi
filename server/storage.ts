@@ -175,6 +175,18 @@ export class Storage {
       } as UserSubject;
     });
   }
+
+  async hasUserSubject(userId: string, subjectId: string): Promise<boolean> {
+    return DatabaseRetryHandler.withRetry(async () => {
+      const query = await this.db.collection('user_subjects')
+        .where('userId', '==', userId)
+        .where('subjectId', '==', subjectId)
+        .limit(1)
+        .get();
+
+      return !query.empty;
+    });
+  }
 }
 
 export const storage = new Storage();
