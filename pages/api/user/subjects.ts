@@ -1,7 +1,19 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../server/storage";
-import { insertUserSubjectSchema } from "@shared/schema";
 import { z } from "zod";
+
+// Define the schema inline since the shared schema import is not working
+const insertUserSubjectSchema = z.object({
+  userId: z.string(),
+  subjectId: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  units: z.number().min(1).max(8),
+  difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+  examDate: z.string(),
+  progress: z.number().min(0).max(100).default(0),
+  masteryLevel: z.number().min(0).max(100).default(0),
+});
 
 async function getOrCreateUser(firebaseUid: string): Promise<string> {
   try {

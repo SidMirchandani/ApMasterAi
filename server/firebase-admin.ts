@@ -41,8 +41,7 @@ export function getFirebaseAdmin() {
           console.log('Development/Replit environment detected - initializing without server credentials');
           adminApp = initializeApp({
             projectId,
-            // Don't attempt to use server credentials in development
-            credential: undefined
+            // Don't pass credential property at all in development
           });
           console.log('Firebase Admin initialized for development with project:', projectId);
         } else {
