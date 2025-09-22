@@ -1,6 +1,6 @@
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebaseConfig"; // Assuming firebaseConfig.ts exports db
-import { getAuthHeaders } from "./auth-retry"; // Correct import from auth-retry module
+import { getAuthHeaders } from "./queryClient"; // Import from queryClient where it's actually defined
 import { Subject } from "@/types"; // Assuming Subject type is defined in types.ts
 
 export async function getSubjects(): Promise<Subject[]> {
