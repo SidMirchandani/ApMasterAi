@@ -88,7 +88,20 @@ export default function Courses() {
           description: "This subject is already in your dashboard.",
           variant: "default"
         });
-      } else {
+      } else if (errorMessage.includes("Invalid difficulty")) {
+        toast({
+          title: "Invalid difficulty",
+          description: "The difficulty level provided is not valid. Please choose from Easy, Medium, or Hard.",
+          variant: "destructive"
+        });
+      } else if (errorMessage.includes("Units exceed maximum")) {
+        toast({
+          title: "Too many units",
+          description: "The number of units for this subject exceeds the allowed limit.",
+          variant: "destructive"
+        });
+      }
+       else {
         toast({
           title: "Error",
           description: "Failed to add subject. Please try again.",
@@ -112,8 +125,52 @@ export default function Courses() {
   const handleConfirmAddSubject = () => {
     if (!selectedSubject) return;
 
+    // Map difficulty to accepted values
+    let adjustedDifficulty = selectedSubject.difficulty;
+    if (selectedSubject.difficulty === "Very Hard") {
+      adjustedDifficulty = "Hard";
+    }
+
+    // Adjust units if it exceeds the limit
+    let adjustedUnits = selectedSubject.units;
+    if (selectedSubject.units > 8) {
+      adjustedUnits = 8;
+    }
+
+    // Format examDate to YYYY-MM-DD
+    let formattedExamDate = selectedSubject.examDate;
+    try {
+      const date = new Date(selectedSubject.examDate);
+      if (!isNaN(date.getTime())) {
+        formattedExamDate = date.toISOString().split('T')[0];
+      } else {
+        console.error("Invalid date format for examDate:", selectedSubject.examDate);
+        // Handle invalid date case, perhaps by not adding the subject or showing an error
+        toast({
+          title: "Invalid Date",
+          description: `The exam date for ${selectedSubject.name} is invalid.`,
+          variant: "destructive",
+        });
+        return; // Prevent mutation with invalid date
+      }
+    } catch (e) {
+      console.error("Error parsing date:", e);
+      toast({
+        title: "Date Parsing Error",
+        description: `Could not parse the exam date for ${selectedSubject.name}.`,
+        variant: "destructive",
+      });
+      return; // Prevent mutation with invalid date
+    }
+
+
     addSubjectMutation.mutate({ 
-      subject: selectedSubject, 
+      subject: {
+        ...selectedSubject,
+        difficulty: adjustedDifficulty,
+        units: adjustedUnits,
+        examDate: formattedExamDate
+      }, 
       masteryLevel: selectedMastery 
     });
   };

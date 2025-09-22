@@ -11,8 +11,8 @@ export const apSubjects = [
     id: "calculus-bc",
     name: "AP Calculus BC",
     description: "Advanced calculus including series, parametric equations, and polar coordinates",
-    units: 10,
-    difficulty: "Very Hard",
+    units: 8,
+    difficulty: "Hard",
     examDate: "May 5, 2025"
   },
   {
@@ -27,8 +27,8 @@ export const apSubjects = [
     id: "chemistry",
     name: "AP Chemistry",
     description: "Atomic structure, chemical bonds, reactions, kinetics, thermodynamics, and equilibrium",
-    units: 9,
-    difficulty: "Very Hard",
+    units: 8,
+    difficulty: "Hard",
     examDate: "May 6, 2025"
   },
   {
@@ -44,7 +44,7 @@ export const apSubjects = [
     name: "AP Physics C: Mechanics",
     description: "Calculus-based mechanics including kinematics, dynamics, energy, and momentum",
     units: 6,
-    difficulty: "Very Hard",
+    difficulty: "Hard",
     examDate: "May 12, 2025"
   },
   {
@@ -59,7 +59,7 @@ export const apSubjects = [
     id: "us-history",
     name: "AP U.S. History",
     description: "American history from 1491 to present with document analysis and essay writing",
-    units: 9,
+    units: 8,
     difficulty: "Medium",
     examDate: "May 8, 2025"
   },
@@ -67,7 +67,7 @@ export const apSubjects = [
     id: "european-history",
     name: "AP European History",
     description: "European history from 1450 to present focusing on cultural, political, and social developments",
-    units: 9,
+    units: 8,
     difficulty: "Hard",
     examDate: "May 14, 2025"
   },
@@ -83,8 +83,8 @@ export const apSubjects = [
     id: "computer-science-a",
     name: "AP Computer Science A",
     description: "Java programming, object-oriented design, data structures, and algorithms",
-    units: 10,
-    difficulty: "Hard",
+    units: 8,
+    difficulty: "Medium",
     examDate: "May 8, 2025"
   },
   {
