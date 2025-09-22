@@ -1,5 +1,5 @@
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
-import { db } from "./firebaseConfig"; // Assuming firebaseConfig.ts exports db
+import { db } from "@/lib/firebaseConfig"; // Assuming firebaseConfig.ts exports db
 import { getAuthHeaders } from "./auth"; // Assuming auth.ts exports getAuthHeaders
 import { Subject } from "@/types"; // Assuming Subject type is defined in types.ts
 
