@@ -261,7 +261,7 @@ const getTopicsForSubject = (subjectId: string): Unit[] => {
   }
 };
 
-const difficultyColors = {
+const difficultyColors: Record<string, string> = {
   Beginner: "bg-green-100 text-green-800 border-green-200",
   Intermediate: "bg-yellow-100 text-yellow-800 border-yellow-200",
   Advanced: "bg-red-100 text-red-800 border-red-200",
@@ -274,9 +274,9 @@ export default function Study() {
 
   // ✅ Safe handling of query param
   const rawSubject = router.query.subject;
-  const subjectId = Array.isArray(rawSubject)
-    ? rawSubject[0] || undefined
-    : rawSubject || undefined;
+  const subjectId: string | undefined = Array.isArray(rawSubject)
+    ? (rawSubject[0] || undefined)
+    : (rawSubject || undefined);
 
   // Fetch user subjects
   const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{
@@ -294,8 +294,8 @@ export default function Study() {
     enabled: isAuthenticated && !!user,
   });
 
-  const subjects = subjectsResponse?.data || [];
-  const currentSubject = subjects.find((s) => s.subjectId === subjectId);
+  const subjects: StudySubject[] = subjectsResponse?.data || [];
+  const currentSubject: StudySubject | undefined = subjects.find((s) => s.subjectId === subjectId);
   const topics = currentSubject
     ? getTopicsForSubject(currentSubject.subjectId)
     : [];

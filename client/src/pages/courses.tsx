@@ -69,7 +69,7 @@ export default function Courses() {
 
   // Add subject to dashboard mutation
   const addSubjectMutation = useMutation({
-    mutationFn: async ({ subject, masteryLevel }: { subject: typeof apSubjects[0], masteryLevel: string }) => {
+    mutationFn: async ({ subject, masteryLevel }: { subject: typeof apSubjects[0]; masteryLevel: string }) => {
       const response = await apiRequest("POST", "/api/user/subjects", {
         subjectId: subject.id,
         name: subject.name,
@@ -140,7 +140,7 @@ export default function Courses() {
     if (!selectedSubject) return;
 
     // Map difficulty to accepted values
-    let adjustedDifficulty = selectedSubject.difficulty;
+    let adjustedDifficulty: string = selectedSubject.difficulty;
     if (selectedSubject.difficulty === "Very Hard") {
       adjustedDifficulty = "Hard";
     }
@@ -152,20 +152,19 @@ export default function Courses() {
     }
 
     // Format examDate to YYYY-MM-DD
-    let formattedExamDate = selectedSubject.examDate;
+    let formattedExamDate: string = selectedSubject.examDate;
     try {
       const date = new Date(selectedSubject.examDate);
       if (!isNaN(date.getTime())) {
         formattedExamDate = date.toISOString().split('T')[0];
       } else {
         console.error("Invalid date format for examDate:", selectedSubject.examDate);
-        // Handle invalid date case, perhaps by not adding the subject or showing an error
         toast({
           title: "Invalid Date",
           description: `The exam date for ${selectedSubject.name} is invalid.`,
           variant: "destructive",
         });
-        return; // Prevent mutation with invalid date
+        return;
       }
     } catch (e) {
       console.error("Error parsing date:", e);
@@ -174,7 +173,7 @@ export default function Courses() {
         description: `Could not parse the exam date for ${selectedSubject.name}.`,
         variant: "destructive",
       });
-      return; // Prevent mutation with invalid date
+      return;
     }
 
 

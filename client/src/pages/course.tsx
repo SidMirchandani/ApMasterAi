@@ -54,8 +54,8 @@ export default function Course() {
   };
 
   // ✅ Normalize id into a string
-  const courseId = Array.isArray(id) ? (id[0] || "") : (id || "");
-  const courseName = getCourseName(courseId);
+  const courseId: string = Array.isArray(id) ? (id[0] || "") : (id || "");
+  const courseName: string = getCourseName(courseId);
 
   return (
     <div className="min-h-screen bg-khan-background">

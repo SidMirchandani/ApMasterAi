@@ -27,7 +27,7 @@ interface DashboardSubject {
   dateAdded: string | null;
 }
 
-const difficultyColors = {
+const difficultyColors: Record<string, string> = {
   "Easy": "bg-green-100 text-green-800 border-green-200",
   "Medium": "bg-yellow-100 text-yellow-800 border-yellow-200", 
   "Hard": "bg-orange-100 text-orange-800 border-orange-200",
@@ -193,7 +193,7 @@ export default function Dashboard() {
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-khan-gray-dark mb-2">
-              Welcome back, {user?.email?.split('@')[0]}!
+              Welcome back, {user?.email?.split('@')[0] || 'Student'}!
             </h1>
             <p className="text-xl text-khan-gray-medium">
               Continue your AP preparation journey
@@ -258,7 +258,7 @@ export default function Dashboard() {
                           <div className="flex items-center space-x-2">
                             <Badge 
                               variant="outline" 
-                              className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
+                              className={difficultyColors[subject.difficulty] || "bg-gray-100 text-gray-800 border-gray-200"}
                             >
                               {subject.difficulty}
                             </Badge>

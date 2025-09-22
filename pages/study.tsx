@@ -259,7 +259,7 @@ const getTopicsForSubject = (subjectId: string): Unit[] => {
   }
 };
 
-const difficultyColors = {
+const difficultyColors: Record<string, string> = {
   "Beginner": "bg-green-100 text-green-800 border-green-200",
   "Intermediate": "bg-yellow-100 text-yellow-800 border-yellow-200",
   "Advanced": "bg-red-100 text-red-800 border-red-200"
@@ -272,7 +272,7 @@ export default function Study() {
 
   // Get subject ID from URL params  
   const rawSubject = router.query.subject;
-  const subjectId = Array.isArray(rawSubject) ? (rawSubject[0] || undefined) : (rawSubject || undefined);
+  const subjectId: string | undefined = Array.isArray(rawSubject) ? (rawSubject[0] || undefined) : (rawSubject || undefined);
 
   // Fetch user subjects to get the specific subject details
   const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{success: boolean, data: StudySubject[]}>({
@@ -287,9 +287,9 @@ export default function Study() {
     enabled: isAuthenticated && !!user,
   });
 
-  const subjects = subjectsResponse?.data || [];
-  const currentSubject = subjects.find(s => s.subjectId === subjectId);
-  const units = currentSubject ? getTopicsForSubject(currentSubject.subjectId) : [];
+  const subjects: StudySubject[] = subjectsResponse?.data || [];
+  const currentSubject: StudySubject | undefined = subjects.find(s => s.subjectId === subjectId);
+  const units: Unit[] = currentSubject ? getTopicsForSubject(currentSubject.subjectId) : [];
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -426,7 +426,7 @@ export default function Study() {
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-orange-600 mb-2">
-                  {new Date(currentSubject.examDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {currentSubject ? new Date(currentSubject.examDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
                 </div>
                 <div className="text-sm text-gray-600 mb-3">Exam Date</div>
                 <div className="flex items-center justify-center">
