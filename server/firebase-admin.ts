@@ -1,4 +1,3 @@
-
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -8,25 +7,25 @@ let adminApp: App | null = null;
 export function getFirebaseAdmin() {
   if (!adminApp) {
     const apps = getApps();
-    
+
     if (apps.length === 0) {
       // Initialize with project ID from environment
       const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-      
+
       if (!projectId) {
         throw new Error('NEXT_PUBLIC_FIREBASE_PROJECT_ID environment variable is required');
       }
-      
+
       console.log('Initializing Firebase Admin with project ID:', projectId);
-      
+
       // Check if we're in development mode (Replit)
       const isDevelopment = process.env.NODE_ENV === 'development';
       const isReplit = process.env.REPL_ID || process.env.REPLIT_DB_URL;
-      
+
       try {
         // Check if we have a service account key
         const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-        
+
         if (serviceAccountKey) {
           // Use service account key for authentication
           const serviceAccount = JSON.parse(serviceAccountKey);
@@ -50,7 +49,7 @@ export function getFirebaseAdmin() {
       adminApp = apps[0];
     }
   }
-  
+
   return adminApp ? {
     auth: getAuth(adminApp),
     firestore: getFirestore(adminApp),
@@ -61,11 +60,11 @@ export function getFirebaseAdmin() {
 export async function verifyFirebaseToken(token: string) {
   try {
     const firebaseAdmin = getFirebaseAdmin();
-    
+
     if (!firebaseAdmin) {
       throw new Error('Firebase Admin not available');
     }
-    
+
     const { auth } = firebaseAdmin;
     return await auth.verifyIdToken(token);
   } catch (error) {
@@ -73,3 +72,15 @@ export async function verifyFirebaseToken(token: string) {
     throw new Error('Invalid authentication token');
   }
 }
+
+export async function verifyAuthToken(token: string) {
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    return decodedToken;
+  } catch (error) {
+    console.error('Error verifying auth token:', error);
+    return null;
+  }
+}
+
+export { admin };

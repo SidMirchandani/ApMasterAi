@@ -1,5 +1,29 @@
 import { getDb, databaseManager } from './db';
 import { DatabaseRetryHandler } from './db-retry-handler';
+import { eq, and } from 'drizzle-orm'; // Assuming drizzle-orm is used for database operations
+
+// Placeholder for schema definition, assuming it's available or defined elsewhere
+// const schema = {
+//   userSubjects: {
+//     id: { type: 'string' },
+//     userId: { type: 'string' },
+//     subjectId: { type: 'string' },
+//     name: { type: 'string' },
+//     description: { type: 'string' },
+//     units: { type: 'number' },
+//     difficulty: { type: 'string' },
+//     examDate: { type: 'string' },
+//     progress: { type: 'number' },
+//     masteryLevel: { type: 'number' },
+//     lastStudied: { type: 'Date' },
+//     dateAdded: { type: 'Date' },
+//   },
+//   // other schema definitions...
+// };
+
+
+// Placeholder for types, assuming they are defined in a separate file or globally
+// If not, these interfaces would need to be defined here or imported.
 
 export interface UserSubject {
   id: string;
@@ -49,15 +73,30 @@ const isDevelopmentMode = () => {
 };
 
 export class Storage {
+  // Assuming 'db' and 'schema' are initialized elsewhere or passed to the constructor
+  // private db: any;
+  // private schema: any;
+
+  // constructor(db: any, schema: any) {
+  //   this.db = db;
+  //   this.schema = schema;
+  // }
+
   private getDbInstance() {
     if (isDevelopmentMode()) {
       return null;
     }
     try {
-      return getDb();
+      // Ensure getDb() returns a valid database connection or throws an error
+      const db = getDb();
+      if (!db) {
+        throw new Error("Database connection is not established.");
+      }
+      return db;
     } catch (error) {
       console.warn("Failed to get database instance:", error);
-      return null;
+      // Rethrow or handle the error appropriately
+      throw error;
     }
   }
 

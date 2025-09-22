@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, onAuthStateChanged, onIdTokenChanged } from "firebase/auth";
-import { auth, isFirebaseEnabled, waitForAuth } from "@/lib/firebase";
+import { auth, isFirebaseEnabled, waitForAuth } from "../lib/firebase";
 import { AuthUser, convertFirebaseUser } from "@/lib/auth";
 import { initializeAuthPersistence, monitorAuthStability } from "@/lib/auth-persistence";
 import { AuthDomainHandler, initializeCrossDomainAuth } from "@/lib/auth-domain-handler";
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshAuth = async () => {
     if (!auth?.currentUser) return;
-    
+
     try {
       // Force token refresh to ensure we have the latest token
       await auth.currentUser.getIdToken(true);
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     let mounted = true;
     let stabilityCleanup: (() => void) | undefined;
-    
+
     const initializeAuth = async () => {
       if (!isFirebaseEnabled) {
         console.warn('Firebase is not enabled or configured properly');
@@ -56,26 +56,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         // Initialize cross-domain auth handling
         initializeCrossDomainAuth();
-        
+
         // Initialize auth persistence first
         await initializeAuthPersistence();
-        
+
         // Monitor auth state stability
         stabilityCleanup = monitorAuthStability();
-        
+
         // Try to restore auth from storage (for cross-domain scenarios)
         await AuthDomainHandler.restoreAuthFromStorage();
-        
+
         // Wait for auth to be ready
         const authInstance = await waitForAuth();
-        
+
         if (!mounted) return;
 
         // Set up enhanced auth state listener with cross-domain support
         const unsubscribe = AuthDomainHandler.monitorAuthStateForDomain(
           (firebaseUser: User | null) => {
             if (!mounted) return;
-            
+
             try {
               const authUser = convertFirebaseUser(firebaseUser);
               setUser(authUser);
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const standardUnsubscribe = onAuthStateChanged(authInstance, 
           (firebaseUser: User | null) => {
             if (!mounted) return;
-            
+
             try {
               const authUser = convertFirebaseUser(firebaseUser);
               setUser(authUser);
@@ -131,11 +131,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const tokenUnsubscribe = onIdTokenChanged(authInstance, 
           (firebaseUser: User | null) => {
             if (!mounted) return;
-            
+
             // Only update if there's a significant change
             const currentUserId = user?.uid;
             const newUserId = firebaseUser?.uid;
-            
+
             if (currentUserId !== newUserId) {
               const authUser = convertFirebaseUser(firebaseUser);
               setUser(authUser);
@@ -156,7 +156,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             stabilityCleanup();
           }
         };
-        
+
       } catch (error) {
         if (!mounted) return;
         console.error('Auth initialization failed:', error);
@@ -166,7 +166,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     const cleanup = initializeAuth();
-    
+
     return () => {
       mounted = false;
       cleanup?.then(cleanupFn => cleanupFn?.());
