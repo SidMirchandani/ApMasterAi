@@ -299,12 +299,24 @@ export default function Dashboard() {
                           <div className="flex items-center space-x-2 text-sm text-khan-gray-medium">
                             <Calendar className="w-4 h-4" />
                             <span>
-                              Added {format(
-                                subject.dateAdded instanceof Date 
-                                  ? subject.dateAdded 
-                                  : new Date(subject.dateAdded.seconds ? subject.dateAdded.seconds * 1000 : subject.dateAdded), 
-                                "MMM d, yyyy 'at' h:mm a"
-                              )}
+                              Added {(() => {
+                                try {
+                                  let date: Date;
+                                  if (subject.dateAdded instanceof Date) {
+                                    date = subject.dateAdded;
+                                  } else if (subject.dateAdded && typeof subject.dateAdded === 'object' && 'seconds' in subject.dateAdded) {
+                                    // Firestore Timestamp
+                                    date = new Date(subject.dateAdded.seconds * 1000);
+                                  } else {
+                                    // String or number
+                                    date = new Date(subject.dateAdded);
+                                  }
+                                  return format(date, "MMM d, yyyy 'at' h:mm a");
+                                } catch (error) {
+                                  console.warn('Date formatting error:', error);
+                                  return 'Recently';
+                                }
+                              })()}
                             </span>
                           </div>
                           <Button 
