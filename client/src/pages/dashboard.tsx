@@ -102,7 +102,7 @@ export default function Dashboard() {
         if (!oldData?.data) return oldData;
         return {
           ...oldData,
-          data: oldData.data.filter((subject: DashboardSubject) => subject.id !== parseInt(subjectId))
+          data: oldData.data.filter((subject: DashboardSubject) => subject.id.toString() !== subjectId)
         };
       });
 
