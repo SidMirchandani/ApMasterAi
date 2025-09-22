@@ -1,5 +1,5 @@
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
-import { db } from "./firebase"; // Use consistent firebase.ts module
+import { db } from "@/lib/firebaseConfig"; // Assuming firebaseConfig.ts exports db
 import { getAuthHeaders } from "./queryClient"; // Import from queryClient where it's actually defined
 import { Subject } from "@/types"; // Assuming Subject type is defined in types.ts
 

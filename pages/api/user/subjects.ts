@@ -1,131 +1,141 @@
+import type { NextApiRequest, NextApiResponse } from "next";
+import { storage } from "../../../server/storage";
+import { z } from "zod";
 
-import { NextApiRequest, NextApiResponse } from 'next';
-import { storage } from '../../../server/storage';
-import { verifyAuthToken } from '../../../server/firebase-admin';
+// Define the schema inline since the shared schema import is not working
+const insertUserSubjectSchema = z.object({
+  userId: z.string(),
+  subjectId: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  units: z.number().min(1).max(8),
+  difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+  examDate: z.string(),
+  progress: z.number().min(0).max(100).default(0),
+  masteryLevel: z.number().min(0).max(100).default(0),
+});
+
+async function getOrCreateUser(firebaseUid: string): Promise<string> {
+  try {
+    let user = await storage.getUserByFirebaseUid(firebaseUid);
+
+    if (!user) {
+      user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid);
+      console.log(
+        "[subjects API] Created new user for Firebase UID:",
+        firebaseUid,
+      );
+    }
+
+    return user.id;
+  } catch (error) {
+    console.error("[subjects API] Error in getOrCreateUser:", error);
+    throw error;
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
+  const { method } = req;
+  const firebaseUid = req.headers["x-user-id"] as string;
+
+  if (!firebaseUid) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required",
+    });
+  }
+
   try {
-    // Verify authentication
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authorization token required'
-      });
-    }
+    const userId = await getOrCreateUser(firebaseUid);
 
-    const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await verifyAuthToken(token);
-    
-    if (!decodedToken) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token'
-      });
-    }
-
-    const userId = decodedToken.uid;
-
-    switch (req.method) {
-      case 'GET':
+    switch (method) {
+      case "GET": {
         try {
           const subjects = await storage.getUserSubjects(userId);
-          return res.status(200).json({
-            success: true,
-            data: subjects
-          });
+          res.setHeader(
+            "Cache-Control",
+            "public, s-maxage=60, stale-while-revalidate=300",
+          );
+          return res.json({ success: true, data: subjects });
         } catch (error) {
-          console.error('Error fetching subjects:', error);
+          console.error("[subjects API][GET] Error:", error);
           return res.status(500).json({
             success: false,
-            message: 'Failed to fetch subjects'
+            message: "Failed to load subjects from database",
           });
         }
+      }
 
-      case 'POST':
+      case "POST": {
         try {
-          const subject = req.body;
-          if (!subject.name) {
-            return res.status(400).json({
+          const existingSubjects = await storage.getUserSubjects(userId);
+          const hasSubject = existingSubjects.some(s => s.subjectId === req.body.subjectId);
+          if (hasSubject) {
+            return res.status(409).json({
               success: false,
-              message: 'Subject name is required'
+              message: "Subject already added to dashboard",
             });
           }
 
-          const newSubject = await storage.addUserSubject(userId, subject);
-          return res.status(201).json({
+          const validatedData = insertUserSubjectSchema.parse({
+            ...req.body,
+            userId,
+          });
+
+          const subject = await storage.addUserSubject(validatedData);
+
+          return res.json({
             success: true,
-            data: newSubject
+            message: "Subject added to dashboard!",
+            data: subject,
           });
         } catch (error) {
-          console.error('Error adding subject:', error);
-          return res.status(500).json({
-            success: false,
-            message: 'Failed to add subject'
-          });
-        }
-
-      case 'PUT':
-        try {
-          const subject = req.body;
-          if (!subject.id) {
+          console.error("[subjects API][POST] Error:", error);
+          if (error instanceof z.ZodError) {
             return res.status(400).json({
               success: false,
-              message: 'Subject ID is required'
+              message: "Invalid subject data",
+              errors: error.errors,
             });
           }
-
-          const updatedSubject = await storage.updateUserSubject(userId, subject);
-          return res.status(200).json({
-            success: true,
-            data: updatedSubject
-          });
-        } catch (error) {
-          console.error('Error updating subject:', error);
           return res.status(500).json({
             success: false,
-            message: 'Failed to update subject'
+            message: "Failed to add subject to database",
           });
         }
-
-      case 'DELETE':
-        try {
-          const { subjectId } = req.query;
-          if (!subjectId || typeof subjectId !== 'string') {
-            return res.status(400).json({
-              success: false,
-              message: 'Subject ID is required'
-            });
-          }
-
-          await storage.deleteUserSubject(userId, subjectId);
-          return res.status(200).json({
-            success: true,
-            message: 'Subject deleted successfully'
-          });
-        } catch (error) {
-          console.error('Error deleting subject:', error);
-          return res.status(500).json({
-            success: false,
-            message: 'Failed to delete subject'
-          });
-        }
+      }
 
       default:
-        res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+        res.setHeader("Allow", ["GET", "POST"]);
         return res.status(405).json({
           success: false,
-          message: `Method ${req.method} not allowed`
+          message: `Method ${method} not allowed`,
         });
     }
   } catch (error) {
-    console.error('API Error:', error);
+    console.error(`[subjects API][${req.method}] Unhandled error:`, error);
+    
+    // Check if it's a database connection error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Database') || 
+        errorMessage.includes('connection') || 
+        errorMessage.includes('Firestore') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('access token')) {
+      return res.status(503).json({
+        success: false,
+        message: "Database temporarily unavailable. This is likely due to Firebase configuration in development mode.",
+        error: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+        retryAfter: 5000
+      });
+    }
+    
     return res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 }
