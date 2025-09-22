@@ -332,12 +332,14 @@ export default function Dashboard() {
                                   if (typeof dateValue === 'object' && dateValue !== null && !Array.isArray(dateValue) && 'seconds' in dateValue) {
                                     // Firestore Timestamp
                                     date = new Date((dateValue as any).seconds * 1000);
-                                  } else if (dateValue instanceof Date) {
+                                  } else if (typeof dateValue === 'object' && dateValue !== null && dateValue instanceof Date) {
                                     // Regular Date object
                                     date = dateValue;
-                                  } else {
+                                  } else if (typeof dateValue === 'string' || typeof dateValue === 'number') {
                                     // String or number
-                                    date = new Date(dateValue as string | number);
+                                    date = new Date(dateValue);
+                                  } else {
+                                    return 'Recently';
                                   }
                                   
                                   // Check if date is valid
