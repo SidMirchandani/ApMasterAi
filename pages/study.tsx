@@ -11,7 +11,7 @@ import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "../utils/date-utils";
 
 interface StudySubject {
   id: number;

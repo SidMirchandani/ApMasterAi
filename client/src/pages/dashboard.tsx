@@ -9,49 +9,11 @@ import { useAuth } from "@/contexts/auth-context";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate } from "../../utils/date-utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 
-// --- Utility Function for Safe Date Parsing ---
-// This function handles various date formats including Firestore Timestamps,
-// Date objects, strings, and numbers, providing a more robust way to parse dates.
-function safeDateParse(dateValue: any): Date | null {
-  if (!dateValue) {
-    return null;
-  }
 
-  try {
-    let date: Date;
-
-    // Type guard for Firestore Timestamp: { seconds: number, nanoseconds: number }
-    if (typeof dateValue === 'object' && dateValue !== null && !Array.isArray(dateValue) && 'seconds' in dateValue) {
-      date = new Date(dateValue.seconds * 1000);
-    }
-    // Safe runtime check for Date objects
-    else if (Object.prototype.toString.call(dateValue) === "[object Date]") {
-      date = dateValue as unknown as Date;
-    }
-    // Handle strings and numbers
-    else if (typeof dateValue === 'string' || typeof dateValue === 'number') {
-      date = new Date(dateValue);
-    } else {
-      // If the type is unexpected, return null
-      return null;
-    }
-
-    // Check if the parsed date is valid
-    if (isNaN(date.getTime())) {
-      return null;
-    }
-
-    return date;
-  } catch (error) {
-    console.warn('safeDateParse encountered an error:', error);
-    return null; // Return null if any parsing error occurs
-  }
-}
-// --- End Utility Function ---
 
 
 interface DashboardSubject {
@@ -361,7 +323,7 @@ export default function Dashboard() {
                           <div className="flex items-center space-x-2 text-sm text-khan-gray-medium">
                             <Calendar className="w-4 h-4" />
                             <span>
-                              Added {formatDateTime(subject.dateAdded)}
+                              Added {formatDate(subject.dateAdded, "MMM d, yyyy 'at' h:mm a")}
                             </span>
                           </div>
                           <Button 

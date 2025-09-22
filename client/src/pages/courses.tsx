@@ -24,7 +24,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { formatDate } from "@/lib/utils";
+import { formatDate, safeDateParse } from "../../utils/date-utils";
 
 
 const masteryLevels = [
@@ -153,24 +153,11 @@ export default function Courses() {
     }
 
     // Format examDate to YYYY-MM-DD with safe date handling
-    let formattedExamDate: string = selectedSubject.examDate;
+    let formattedExamDate: string;
     try {
-      const dateValue = selectedSubject.examDate;
-      let date: Date;
-      
-      if (typeof dateValue === 'object' && dateValue !== null && !Array.isArray(dateValue) && 'seconds' in dateValue) {
-        // Firestore Timestamp
-        date = new Date((dateValue as any).seconds * 1000);
-      } else if (dateValue && Object.prototype.toString.call(dateValue) === '[object Date]') {
-        // Regular Date object using safe runtime check
-        date = dateValue as unknown as Date;
-      } else {
-        // String or other format
-        date = new Date(dateValue as string);
-      }
-      
-      if (!isNaN(date.getTime())) {
-        formattedExamDate = date.toISOString().split('T')[0];
+      const parsedDate = safeDateParse(selectedSubject.examDate);
+      if (parsedDate) {
+        formattedExamDate = parsedDate.toISOString().split('T')[0];
       } else {
         console.error("Invalid date format for examDate:", selectedSubject.examDate);
         toast({
