@@ -48,6 +48,7 @@ interface Topic {
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   completed: boolean;
   practiceQuestions: number;
+  dateAdded?: string | number | Date | { seconds: number } | null;
 }
 
 interface Unit {
@@ -526,9 +527,6 @@ export default function Study() {
                                 data-testid={`text-practice-questions-${topic.id}`}
                               >
                                 {topic.practiceQuestions} practice questions
-                              </div>
-                              <div>
-                                Added: {formatDateTime(topic.dateAdded)}
                               </div>
                             </div>
                           </div>
