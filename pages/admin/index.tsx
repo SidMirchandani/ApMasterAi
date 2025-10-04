@@ -40,6 +40,10 @@ export default function AdminPage() {
   const [subject, setSubject] = useState("");
   const [section, setSection] = useState("");
 
+  // CSV upload state
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -60,11 +64,16 @@ export default function AdminPage() {
     return allowedEmails.includes(user.email.toLowerCase());
   }, [user, allowedEmails]);
 
-  async function handleCSVUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleCSVSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    setCsvFile(file || null);
+  }
 
-    Papa.parse(file, {
+  async function handleCSVUpload() {
+    if (!csvFile || !token) return;
+
+    setUploading(true);
+    Papa.parse(csvFile, {
       header: true,
       complete: async (results) => {
         const rows = results.data as any[];
@@ -81,10 +90,16 @@ export default function AdminPage() {
 
         if (res.ok) {
           alert("✅ Bulk upload success");
+          setCsvFile(null);
           fetchFiltered();
         } else {
           alert("❌ Bulk upload failed");
         }
+        setUploading(false);
+      },
+      error: () => {
+        alert("❌ CSV parsing failed");
+        setUploading(false);
       },
     });
   }
@@ -169,7 +184,21 @@ export default function AdminPage() {
       {/* CSV Upload */}
       <div className="border p-4 rounded">
         <h2 className="font-semibold mb-3">Bulk Upload via CSV</h2>
-        <input type="file" accept=".csv" onChange={handleCSVUpload} />
+        <div className="flex gap-3 items-center">
+          <input type="file" accept=".csv" onChange={handleCSVSelect} />
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            onClick={handleCSVUpload}
+            disabled={!csvFile || uploading}
+          >
+            {uploading ? "Uploading..." : "Upload CSV"}
+          </button>
+          {csvFile && !uploading && (
+            <span className="text-sm text-gray-600">
+              Ready to upload: {csvFile.name}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Filter by Subject & Section */}
