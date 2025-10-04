@@ -47,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let count = 0;
 
     rows.forEach((r) => {
-      if (!r.subject_code || !r.section_code) return;
+      if (!r.subject_code || !r.section_code || !r.prompt) return;
       
       // Convert choiceA, choiceB, etc. to choices array
       const choices = [
@@ -62,9 +62,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const correctLetters = ['A', 'B', 'C', 'D', 'E'];
       const answerIndex = correctLetters.indexOf(r.correct?.toUpperCase());
 
-      const docId = `${r.subject_code}_${r.section_code}_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2)}`;
+      // Create deterministic ID to prevent duplicates
+      const promptKey = r.prompt.substring(0, 100);
+      const docId = `${r.subject_code}_${r.section_code}_${promptKey}`;
 
       batch.set(firestore.collection("questions").doc(docId), {
         subject_code: r.subject_code,
