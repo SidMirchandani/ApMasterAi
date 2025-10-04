@@ -3,7 +3,13 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../server/firebase-admin";
 
 function isAllowed(email?: string | null) {
-  const allow = (process.env.ADMIN_EMAILS || "").split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+  // Try multiple possible env var names for Replit compatibility
+  const adminEmails = process.env.ADMIN_EMAILS || process.env.NEXT_PUBLIC_ADMIN_EMAILS || "";
+  console.log("Raw ADMIN_EMAILS value:", adminEmails);
+  
+  const allow = adminEmails.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+  console.log("Allowed emails:", allow);
+  
   return !!email && allow.includes(email.toLowerCase());
 }
 
