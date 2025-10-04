@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -55,8 +54,10 @@ export default function AdminPage() {
 
   const allowedEmails = useMemo(
     () =>
-      (process.env.NEXT_PUBLIC_ADMIN_HINT || "").split(",").map((e) => e.trim().toLowerCase()),
-    []
+      (process.env.NEXT_PUBLIC_ADMIN_HINT || "")
+        .split(",")
+        .map((e) => e.trim().toLowerCase()),
+    [],
   );
   const isAllowed = useMemo(() => {
     if (!user?.email) return false;
@@ -108,7 +109,7 @@ export default function AdminPage() {
     if (!token) return;
     const res = await fetch(
       `/api/admin/questions/query?subject=${subject}&section=${section}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` } },
     );
     const data = await res.json();
     setItems(data.items || []);
@@ -162,7 +163,10 @@ export default function AdminPage() {
     return (
       <div className="p-6">
         <p>Signed in as {user.email} but not whitelisted.</p>
-        <button className="mt-3 px-4 py-2 border rounded" onClick={() => signOut(auth)}>
+        <button
+          className="mt-3 px-4 py-2 border rounded"
+          onClick={() => signOut(auth)}
+        >
           Sign out
         </button>
       </div>
@@ -175,7 +179,10 @@ export default function AdminPage() {
         <h1 className="text-2xl font-bold">Questions Admin - CSV Manager</h1>
         <div className="text-sm">
           {user.email}{" "}
-          <button className="ml-3 px-3 py-1 border rounded" onClick={() => signOut(auth)}>
+          <button
+            className="ml-3 px-3 py-1 border rounded"
+            onClick={() => signOut(auth)}
+          >
             Sign out
           </button>
         </div>
@@ -186,13 +193,16 @@ export default function AdminPage() {
         <h2 className="font-semibold mb-3">Bulk Upload via CSV</h2>
         <div className="flex flex-wrap gap-3 items-center">
           <input type="file" accept=".csv" onChange={handleCSVSelect} />
+
           <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 
+                       disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
             onClick={handleCSVUpload}
             disabled={!csvFile || uploading}
           >
             {uploading ? "Uploading..." : "Upload CSV"}
           </button>
+
           {csvFile && !uploading && (
             <span className="text-sm text-gray-600">
               Ready to upload: {csvFile.name}
@@ -239,7 +249,12 @@ export default function AdminPage() {
           </thead>
           <tbody>
             {items.map((q) => (
-              <Row key={q.id} q={q} onSave={updateQuestion} onDelete={deleteQuestion} />
+              <Row
+                key={q.id}
+                q={q}
+                onSave={updateQuestion}
+                onDelete={deleteQuestion}
+              />
             ))}
           </tbody>
         </table>
@@ -277,7 +292,10 @@ function Row({
       subject_code: form.subject_code,
       section_code: form.section_code,
       prompt: form.prompt,
-      choices: form.choicesText.split("\n").map((s) => s.trim()).filter(Boolean),
+      choices: form.choicesText
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
       answerIndex: Number(form.answerIndex),
       explanation: form.explanation,
     };
@@ -293,18 +311,23 @@ function Row({
         <td className="p-2 align-top">{q.prompt}</td>
         <td className="p-2 align-top">
           <ol className="list-decimal list-inside">
-            {Array.isArray(q.choices) && q.choices.map((c, i) => (
-              <li key={i}>{c}</li>
-            ))}
+            {Array.isArray(q.choices) &&
+              q.choices.map((c, i) => <li key={i}>{c}</li>)}
           </ol>
         </td>
         <td className="p-2 text-center align-top">{q.answerIndex}</td>
         <td className="p-2 align-top">{q.explanation}</td>
         <td className="p-2 text-center align-top">
-          <button className="px-2 py-1 border rounded mr-2" onClick={() => setEdit(true)}>
+          <button
+            className="px-2 py-1 border rounded mr-2"
+            onClick={() => setEdit(true)}
+          >
             Update
           </button>
-          <button className="px-2 py-1 border rounded" onClick={() => onDelete(q.id)}>
+          <button
+            className="px-2 py-1 border rounded"
+            onClick={() => onDelete(q.id)}
+          >
             Delete
           </button>
         </td>
@@ -318,14 +341,18 @@ function Row({
         <input
           className="w-full border rounded p-2"
           value={form.subject_code}
-          onChange={(e) => setForm((s) => ({ ...s, subject_code: e.target.value }))}
+          onChange={(e) =>
+            setForm((s) => ({ ...s, subject_code: e.target.value }))
+          }
         />
       </td>
       <td className="p-2">
         <input
           className="w-full border rounded p-2"
           value={form.section_code}
-          onChange={(e) => setForm((s) => ({ ...s, section_code: e.target.value }))}
+          onChange={(e) =>
+            setForm((s) => ({ ...s, section_code: e.target.value }))
+          }
         />
       </td>
       <td className="p-2">
@@ -339,7 +366,9 @@ function Row({
         <textarea
           className="w-full border rounded p-2"
           value={form.choicesText}
-          onChange={(e) => setForm((s) => ({ ...s, choicesText: e.target.value }))}
+          onChange={(e) =>
+            setForm((s) => ({ ...s, choicesText: e.target.value }))
+          }
         />
       </td>
       <td className="p-2 text-center">
@@ -347,21 +376,28 @@ function Row({
           className="border rounded p-1 w-16 text-center"
           type="number"
           value={form.answerIndex}
-          onChange={(e) => setForm((s) => ({ ...s, answerIndex: Number(e.target.value) }))}
+          onChange={(e) =>
+            setForm((s) => ({ ...s, answerIndex: Number(e.target.value) }))
+          }
         />
       </td>
       <td className="p-2">
         <textarea
           className="w-full border rounded p-2"
           value={form.explanation}
-          onChange={(e) => setForm((s) => ({ ...s, explanation: e.target.value }))}
+          onChange={(e) =>
+            setForm((s) => ({ ...s, explanation: e.target.value }))
+          }
         />
       </td>
       <td className="p-2 text-center">
         <button className="px-2 py-1 border rounded mr-2" onClick={save}>
           Save
         </button>
-        <button className="px-2 py-1 border rounded" onClick={() => setEdit(false)}>
+        <button
+          className="px-2 py-1 border rounded"
+          onClick={() => setEdit(false)}
+        >
           Cancel
         </button>
       </td>
