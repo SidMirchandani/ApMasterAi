@@ -184,10 +184,10 @@ export default function AdminPage() {
       {/* CSV Upload */}
       <div className="border p-4 rounded">
         <h2 className="font-semibold mb-3">Bulk Upload via CSV</h2>
-        <div className="flex gap-3 items-center">
+        <div className="flex flex-wrap gap-3 items-center">
           <input type="file" accept=".csv" onChange={handleCSVSelect} />
           <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
             onClick={handleCSVUpload}
             disabled={!csvFile || uploading}
           >
