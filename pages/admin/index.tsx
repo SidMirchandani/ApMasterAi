@@ -463,7 +463,9 @@ function Row({
               ))}
           </div>
         </td>
-        <td className="p-3 text-center align-top font-semibold">{q.answerIndex}</td>
+        <td className="p-3 text-center align-top font-semibold">
+          ({String.fromCharCode(65 + q.answerIndex)})
+        </td>
         <td className="p-3 align-top max-w-xs truncate text-xs">{q.explanation}</td>
         <td className="p-3 text-center align-top">
           <div className="flex gap-2 justify-center">
