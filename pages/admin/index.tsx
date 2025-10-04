@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -11,6 +12,12 @@ import {
 } from "firebase/auth";
 import Papa from "papaparse";
 import toast, { Toaster } from "react-hot-toast";
+import { BookOpen, Upload, Search, LogOut, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { Button } from "../../client/src/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../client/src/components/ui/card";
+import { Input } from "../../client/src/components/ui/input";
+import { Alert, AlertDescription } from "../../client/src/components/ui/alert";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -176,130 +183,230 @@ export default function AdminPage() {
     });
   }
 
-  if (loading) return <div className="p-6">Loading…</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-khan-background flex items-center justify-center">
+        <div className="text-khan-gray-dark">Loading...</div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
-      <div className="p-6">
-        <h1 className="text-xl font-bold mb-3">Admin Login</h1>
-        <button
-          className="px-4 py-2 border rounded"
-          onClick={() => signInWithPopup(auth, googleProvider)}
-        >
-          Sign in with Google
-        </button>
+      <div className="min-h-screen bg-khan-background flex items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Link href="/" className="inline-flex items-center justify-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center">
+                <BookOpen className="w-7 h-7 text-white" />
+              </div>
+              <span className="text-3xl font-bold text-khan-gray-dark">APMaster</span>
+            </Link>
+            <CardTitle className="text-2xl">Admin Login</CardTitle>
+            <CardDescription>Sign in to access the admin dashboard</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={() => signInWithPopup(auth, googleProvider)}
+              className="w-full bg-khan-green hover:bg-khan-green-light text-white"
+            >
+              Sign in with Google
+            </Button>
+            <div className="mt-4 text-center">
+              <Link href="/" className="text-khan-blue hover:text-khan-purple transition-colors text-sm">
+                ← Back to home
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (!isAllowed) {
     return (
-      <div className="p-6">
-        <p>Signed in as {user.email} but not whitelisted.</p>
-        <button
-          className="mt-3 px-4 py-2 border rounded"
-          onClick={() => signOut(auth)}
-        >
-          Sign out
-        </button>
+      <div className="min-h-screen bg-khan-background flex items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Link href="/" className="inline-flex items-center justify-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center">
+                <BookOpen className="w-7 h-7 text-white" />
+              </div>
+              <span className="text-3xl font-bold text-khan-gray-dark">APMaster</span>
+            </Link>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Authentication Failed</strong>
+                <br />
+                You are not authorized to access the admin dashboard. Your account ({user.email}) does not have admin privileges.
+              </AlertDescription>
+            </Alert>
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => signOut(auth)}
+                variant="outline"
+                className="w-full"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign out
+              </Button>
+              <Link href="/" className="w-full">
+                <Button variant="default" className="w-full bg-khan-green hover:bg-khan-green-light">
+                  Go to Home
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-khan-background">
       <Toaster position="top-right" />
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Questions Admin - CSV Manager</h1>
-        <div className="text-sm">
-          {user.email}{" "}
-          <button
-            className="ml-3 px-3 py-1 border rounded"
-            onClick={() => signOut(auth)}
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
-
-      {/* CSV Upload */}
-      <div className="border p-4 rounded">
-        <h2 className="font-semibold mb-3">Bulk Upload via CSV</h2>
-        <div className="space-y-3">
-          <div className="flex gap-3 items-center">
-            <input type="file" accept=".csv" onChange={handleCSVSelect} />
-            {csvFile && (
-              <span className="text-sm text-gray-600">
-                Selected: {csvFile.name}
-              </span>
-            )}
+      
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-khan-green rounded-lg flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-khan-gray-dark">APMaster Admin</h1>
+                <p className="text-sm text-khan-gray-medium">Question Management</p>
+              </div>
+            </Link>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-khan-gray-medium">{user.email}</span>
+              <Button
+                onClick={() => signOut(auth)}
+                variant="outline"
+                size="sm"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign out
+              </Button>
+            </div>
           </div>
-          {csvFile && (
-            <button
-              className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 
-                         disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors
-                         shadow-md hover:shadow-lg"
-              onClick={handleCSVUpload}
-              disabled={uploading}
-            >
-              {uploading ? "Uploading..." : "📤 Upload CSV"}
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Filter by Subject & Section */}
-      <div className="border p-4 rounded">
-        <h2 className="font-semibold mb-3">Filter by Subject & Section</h2>
-        <div className="flex gap-2">
-          <input
-            className="border p-2"
-            placeholder="Subject code"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-          />
-          <input
-            className="border p-2"
-            placeholder="Section code"
-            value={section}
-            onChange={(e) => setSection(e.target.value)}
-          />
-          <button className="px-4 py-2 border rounded" onClick={fetchFiltered}>
-            Search
-          </button>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="border rounded overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 text-left">Subject</th>
-              <th className="p-2 text-left">Section</th>
-              <th className="p-2 text-left">Prompt</th>
-              <th className="p-2 text-left">Choices</th>
-              <th className="p-2">AnswerIdx</th>
-              <th className="p-2 text-left">Explanation</th>
-              <th className="p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((q) => (
-              <Row
-                key={q.id}
-                q={q}
-                onSave={updateQuestion}
-                onDelete={deleteQuestion}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* CSV Upload Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Bulk Upload via CSV
+            </CardTitle>
+            <CardDescription>Upload questions in bulk using a CSV file</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input
+                type="file"
+                accept=".csv"
+                onChange={handleCSVSelect}
+                className="flex-1"
               />
-            ))}
-          </tbody>
-        </table>
-        {items.length === 0 && (
-          <div className="p-4 text-center text-gray-500">
-            No questions found. Upload a CSV or adjust filters.
-          </div>
-        )}
+              {csvFile && (
+                <Button
+                  onClick={handleCSVUpload}
+                  disabled={uploading}
+                  className="bg-khan-green hover:bg-khan-green-light text-white"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {uploading ? "Uploading..." : "Upload CSV"}
+                </Button>
+              )}
+            </div>
+            {csvFile && (
+              <p className="text-sm text-khan-gray-medium">
+                Selected: {csvFile.name}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Filter Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="w-5 h-5" />
+              Filter Questions
+            </CardTitle>
+            <CardDescription>Search by subject and section code</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input
+                placeholder="Subject code (e.g., APMACRO)"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="flex-1"
+              />
+              <Input
+                placeholder="Section code (e.g., NIPD)"
+                value={section}
+                onChange={(e) => setSection(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                onClick={fetchFiltered}
+                className="bg-khan-blue hover:bg-khan-purple text-white"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Search
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Questions Table Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Questions ({items.length})</CardTitle>
+            <CardDescription>View and manage your questions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="p-3 text-left font-semibold text-khan-gray-dark">Subject</th>
+                    <th className="p-3 text-left font-semibold text-khan-gray-dark">Section</th>
+                    <th className="p-3 text-left font-semibold text-khan-gray-dark">Prompt</th>
+                    <th className="p-3 text-left font-semibold text-khan-gray-dark">Choices</th>
+                    <th className="p-3 text-center font-semibold text-khan-gray-dark">Answer</th>
+                    <th className="p-3 text-left font-semibold text-khan-gray-dark">Explanation</th>
+                    <th className="p-3 text-center font-semibold text-khan-gray-dark">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((q) => (
+                    <Row
+                      key={q.id}
+                      q={q}
+                      onSave={updateQuestion}
+                      onDelete={deleteQuestion}
+                    />
+                  ))}
+                </tbody>
+              </table>
+              {items.length === 0 && (
+                <div className="p-8 text-center text-khan-gray-medium">
+                  No questions found. Upload a CSV or adjust filters.
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -342,41 +449,44 @@ function Row({
 
   if (!edit) {
     return (
-      <tr className="border-t">
-        <td className="p-2 align-top">{q.subject_code || "-"}</td>
-        <td className="p-2 align-top">{q.section_code || "-"}</td>
-        <td className="p-2 align-top">{q.prompt}</td>
-        <td className="p-2 align-top">
-          <ol className="list-decimal list-inside">
+      <tr className="border-b hover:bg-gray-50">
+        <td className="p-3 align-top">{q.subject_code || "-"}</td>
+        <td className="p-3 align-top">{q.section_code || "-"}</td>
+        <td className="p-3 align-top max-w-xs truncate">{q.prompt}</td>
+        <td className="p-3 align-top">
+          <ol className="list-decimal list-inside text-xs">
             {Array.isArray(q.choices) &&
               q.choices.map((c, i) => <li key={i}>{c}</li>)}
           </ol>
         </td>
-        <td className="p-2 text-center align-top">{q.answerIndex}</td>
-        <td className="p-2 align-top">{q.explanation}</td>
-        <td className="p-2 text-center align-top">
-          <button
-            className="px-2 py-1 border rounded mr-2"
-            onClick={() => setEdit(true)}
-          >
-            Update
-          </button>
-          <button
-            className="px-2 py-1 border rounded"
-            onClick={() => onDelete(q.id)}
-          >
-            Delete
-          </button>
+        <td className="p-3 text-center align-top font-semibold">{q.answerIndex}</td>
+        <td className="p-3 align-top max-w-xs truncate text-xs">{q.explanation}</td>
+        <td className="p-3 text-center align-top">
+          <div className="flex gap-2 justify-center">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEdit(true)}
+            >
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onDelete(q.id)}
+            >
+              Delete
+            </Button>
+          </div>
         </td>
       </tr>
     );
   }
 
   return (
-    <tr className="border-t bg-yellow-50">
+    <tr className="border-b bg-blue-50">
       <td className="p-2">
-        <input
-          className="w-full border rounded p-2"
+        <Input
           value={form.subject_code}
           onChange={(e) =>
             setForm((s) => ({ ...s, subject_code: e.target.value }))
@@ -384,8 +494,7 @@ function Row({
         />
       </td>
       <td className="p-2">
-        <input
-          className="w-full border rounded p-2"
+        <Input
           value={form.section_code}
           onChange={(e) =>
             setForm((s) => ({ ...s, section_code: e.target.value }))
@@ -394,14 +503,14 @@ function Row({
       </td>
       <td className="p-2">
         <textarea
-          className="w-full border rounded p-2"
+          className="w-full border rounded p-2 min-h-[80px]"
           value={form.prompt}
           onChange={(e) => setForm((s) => ({ ...s, prompt: e.target.value }))}
         />
       </td>
       <td className="p-2">
         <textarea
-          className="w-full border rounded p-2"
+          className="w-full border rounded p-2 min-h-[80px]"
           value={form.choicesText}
           onChange={(e) =>
             setForm((s) => ({ ...s, choicesText: e.target.value }))
@@ -409,18 +518,18 @@ function Row({
         />
       </td>
       <td className="p-2 text-center">
-        <input
-          className="border rounded p-1 w-16 text-center"
+        <Input
           type="number"
           value={form.answerIndex}
           onChange={(e) =>
             setForm((s) => ({ ...s, answerIndex: Number(e.target.value) }))
           }
+          className="w-16 mx-auto text-center"
         />
       </td>
       <td className="p-2">
         <textarea
-          className="w-full border rounded p-2"
+          className="w-full border rounded p-2 min-h-[80px]"
           value={form.explanation}
           onChange={(e) =>
             setForm((s) => ({ ...s, explanation: e.target.value }))
@@ -428,15 +537,18 @@ function Row({
         />
       </td>
       <td className="p-2 text-center">
-        <button className="px-2 py-1 border rounded mr-2" onClick={save}>
-          Save
-        </button>
-        <button
-          className="px-2 py-1 border rounded"
-          onClick={() => setEdit(false)}
-        >
-          Cancel
-        </button>
+        <div className="flex gap-2 justify-center flex-col">
+          <Button size="sm" onClick={save} className="bg-khan-green hover:bg-khan-green-light text-white">
+            Save
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setEdit(false)}
+          >
+            Cancel
+          </Button>
+        </div>
       </td>
     </tr>
   );
