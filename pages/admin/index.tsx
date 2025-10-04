@@ -454,10 +454,14 @@ function Row({
         <td className="p-3 align-top">{q.section_code || "-"}</td>
         <td className="p-3 align-top max-w-xs truncate">{q.prompt}</td>
         <td className="p-3 align-top">
-          <ol className="list-decimal list-inside text-xs">
+          <div className="text-xs space-y-1">
             {Array.isArray(q.choices) &&
-              q.choices.map((c, i) => <li key={i}>{c}</li>)}
-          </ol>
+              q.choices.map((c, i) => (
+                <div key={i}>
+                  {String.fromCharCode(65 + i)}. {c}
+                </div>
+              ))}
+          </div>
         </td>
         <td className="p-3 text-center align-top font-semibold">{q.answerIndex}</td>
         <td className="p-3 align-top max-w-xs truncate text-xs">{q.explanation}</td>
