@@ -16,7 +16,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!token) return res.status(401).json({ error: "Missing token" });
 
     const decoded = await verifyFirebaseToken(token);
-    if (!isAllowed(decoded.email)) return res.status(403).json({ error: "Not an admin" });
+    console.log("Decoded user email:", decoded.email);
+    console.log("ADMIN_EMAILS env:", process.env.ADMIN_EMAILS);
+    
+    if (!isAllowed(decoded.email)) {
+      return res.status(403).json({ 
+        error: "Not an admin", 
+        email: decoded.email,
+        hint: "Add your email to ADMIN_EMAILS environment variable"
+      });
+    }
 
     const firebaseAdmin = getFirebaseAdmin();
     if (!firebaseAdmin) {

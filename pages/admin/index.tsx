@@ -10,6 +10,7 @@ import {
   User,
 } from "firebase/auth";
 import Papa from "papaparse";
+import toast, { Toaster } from "react-hot-toast";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -74,34 +75,52 @@ export default function AdminPage() {
     if (!csvFile || !token) return;
 
     setUploading(true);
-    Papa.parse(csvFile, {
-      header: true,
-      complete: async (results) => {
-        const rows = results.data as any[];
-        console.log("Parsed CSV rows:", rows);
+    const uploadPromise = new Promise(async (resolve, reject) => {
+      Papa.parse(csvFile, {
+        header: true,
+        complete: async (results) => {
+          const rows = results.data as any[];
+          console.log("Parsed CSV rows:", rows);
 
-        const res = await fetch("/api/admin/questions/bulk", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ rows }),
-        });
+          try {
+            const res = await fetch("/api/admin/questions/bulk", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ rows }),
+            });
 
-        if (res.ok) {
-          alert("✅ Bulk upload success");
-          setCsvFile(null);
-          fetchFiltered();
-        } else {
-          alert("❌ Bulk upload failed");
-        }
-        setUploading(false);
-      },
-      error: () => {
-        alert("❌ CSV parsing failed");
-        setUploading(false);
-      },
+            if (res.ok) {
+              const data = await res.json();
+              setCsvFile(null);
+              fetchFiltered();
+              resolve(data);
+            } else {
+              const error = await res.json();
+              console.error("Upload failed:", error);
+              reject(new Error(error.error || "Upload failed"));
+            }
+          } catch (err) {
+            console.error("Upload error:", err);
+            reject(err);
+          } finally {
+            setUploading(false);
+          }
+        },
+        error: (err) => {
+          console.error("CSV parsing error:", err);
+          reject(new Error("CSV parsing failed"));
+          setUploading(false);
+        },
+      });
+    });
+
+    toast.promise(uploadPromise, {
+      loading: "Uploading questions...",
+      success: (data: any) => `Successfully uploaded ${data.count} questions!`,
+      error: (err) => `Upload failed: ${err.message}`,
     });
   }
 
@@ -117,30 +136,44 @@ export default function AdminPage() {
 
   async function updateQuestion(id: string, patch: Partial<Question>) {
     if (!token) return;
-    const res = await fetch(`/api/admin/questions/${id}`, {
+    const updatePromise = fetch(`/api/admin/questions/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(patch),
+    }).then((res) => {
+      if (!res.ok) throw new Error("Update failed");
+      return res;
     });
-    if (!res.ok) alert("Update failed");
-    else fetchFiltered();
+
+    toast.promise(updatePromise, {
+      loading: "Updating question...",
+      success: "Question updated successfully!",
+      error: "Failed to update question",
+    });
+
+    await updatePromise.then(() => fetchFiltered()).catch(() => {});
   }
 
   async function deleteQuestion(id: string) {
     if (!token) return;
-    if (!confirm("Delete this question?")) return;
-    const res = await fetch(`/api/admin/questions/${id}`, {
+    
+    const deletePromise = fetch(`/api/admin/questions/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
+    }).then((res) => {
+      if (!res.ok) throw new Error("Delete failed");
       setItems((prev) => prev.filter((q) => q.id !== id));
-    } else {
-      alert("Delete failed");
-    }
+      return res;
+    });
+
+    toast.promise(deletePromise, {
+      loading: "Deleting question...",
+      success: "Question deleted successfully!",
+      error: "Failed to delete question",
+    });
   }
 
   if (loading) return <div className="p-6">Loading…</div>;
@@ -175,6 +208,7 @@ export default function AdminPage() {
 
   return (
     <div className="p-6 space-y-6">
+      <Toaster position="top-right" />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Questions Admin - CSV Manager</h1>
         <div className="text-sm">
