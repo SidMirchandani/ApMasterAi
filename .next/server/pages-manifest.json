@@ -3,6 +3,6 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/api/admin/questions/bulk": "pages/api/admin/questions/bulk.js",
-  "/admin": "pages/admin.js"
+  "/admin": "pages/admin.js",
+  "/api/admin/questions/bulk": "pages/api/admin/questions/bulk.js"
 }
