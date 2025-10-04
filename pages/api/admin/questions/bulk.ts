@@ -34,12 +34,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     rows.forEach((r) => {
       if (!r.subject_code || !r.section_code) return;
       
+      // Convert choiceA, choiceB, etc. to choices array
+      const choices = [
+        r.choiceA,
+        r.choiceB,
+        r.choiceC,
+        r.choiceD,
+        r.choiceE
+      ].filter(Boolean); // Remove empty choices
+
+      // Convert correct answer letter to index
+      const correctLetters = ['A', 'B', 'C', 'D', 'E'];
+      const answerIndex = correctLetters.indexOf(r.correct?.toUpperCase());
+
       const docId = `${r.subject_code}_${r.section_code}_${Date.now()}_${Math.random()
         .toString(36)
         .slice(2)}`;
 
       batch.set(firestore.collection("questions").doc(docId), {
-        ...r,
+        subject_code: r.subject_code,
+        section_code: r.section_code,
+        prompt: r.prompt || "",
+        choices: choices,
+        answerIndex: answerIndex >= 0 ? answerIndex : 0,
+        explanation: r.explanation || "",
+        difficulty: r.difficulty || "",
+        tags: r.tags ? r.tags.split(',').map((t: string) => t.trim()) : [],
+        mode: r.mode || "",
+        test_slug: r.test_slug || "",
+        question_id: r.question_id || "",
+        image_url: r.image_url || "",
         rand: Math.random(),
         createdAt: new Date(),
         updatedAt: new Date(),

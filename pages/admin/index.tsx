@@ -202,12 +202,13 @@ export default function AdminPage() {
           </div>
           {csvFile && (
             <button
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 
-                         disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 
+                         disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors
+                         shadow-md hover:shadow-lg"
               onClick={handleCSVUpload}
               disabled={uploading}
             >
-              {uploading ? "Uploading..." : "Upload CSV"}
+              {uploading ? "Uploading..." : "📤 Upload CSV"}
             </button>
           )}
         </div>
