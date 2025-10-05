@@ -1,0 +1,276 @@
+Perfect 👍 thanks for clarifying your requirements. Let’s refactor the **Admin Dashboard** so it’s a **bulk CSV manager** instead of a single-question entry form.
+
+---
+
+## 🔹 What you want
+
+1. **Upload CSV** → bulk insert/update Firestore.
+
+   * Your CSV has at least `subject_code` and `section_code` columns.
+   * We’ll parse the CSV client-side and send JSON to your API.
+2. **Query by subject_code + section_code** → fetch existing questions.
+3. Display results in a **table**:
+
+   * Each row = one question.
+   * Has an **Update** button → makes that row editable.
+   * Save changes back to Firestore.
+4. No “manual add new question” form — everything is CSV or table-edit.
+
+---
+
+## 🔹 Step 1 — CSV Upload Component on Admin Page
+
+Install a parser:
+
+```bash
+npm i papaparse
+```
+
+Then, in `pages/admin/index.tsx`, replace the old “Add Question” form with a **CSV uploader**:
+
+```tsx
+import Papa from "papaparse";
+
+// Inside AdminPage component
+function handleCSVUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true,
+    complete: async (results) => {
+      const rows = results.data as any[];
+      console.log("Parsed CSV rows:", rows);
+
+      const res = await fetch("/api/admin/questions/bulk", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ rows }),
+      });
+
+      if (res.ok) {
+        alert("✅ Bulk upload success");
+        fetchPage(null); // reload data
+      } else {
+        alert("❌ Bulk upload failed");
+      }
+    },
+  });
+}
+```
+
+And add this to your JSX:
+
+```tsx
+<div className="border p-4 rounded">
+  <h2 className="font-semibold mb-3">Bulk Upload via CSV</h2>
+  <input type="file" accept=".csv" onChange={handleCSVUpload} />
+</div>
+```
+
+---
+
+## 🔹 Step 2 — API Endpoint for Bulk Upload
+
+Create `pages/api/admin/questions/bulk.ts`:
+
+```ts
+import type { NextApiRequest, NextApiResponse } from "next";
+import { getFirebaseAdmin, verifyFirebaseToken } from "@/lib/firebaseAdmin";
+
+function isAllowed(email?: string | null) {
+  const allow = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return !!email && (allow.length === 0 || allow.includes(email.toLowerCase()));
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (req.method !== "POST") return res.status(405).end();
+
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) return res.status(401).json({ error: "Missing token" });
+
+    const decoded = await verifyFirebaseToken(token);
+    if (!isAllowed(decoded.email)) return res.status(403).json({ error: "Not an admin" });
+
+    const { firestore } = getFirebaseAdmin();
+    const { rows } = req.body;
+
+    if (!Array.isArray(rows)) return res.status(400).json({ error: "Rows required" });
+
+    const batch = firestore.batch();
+    rows.forEach((r) => {
+      if (!r.subject_code || !r.section_code) return; // skip bad rows
+      const docId = `${r.subject_code}_${r.section_code}_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2)}`;
+
+      batch.set(firestore.collection("questions").doc(docId), {
+        ...r,
+        rand: Math.random(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    });
+
+    await batch.commit();
+    return res.status(200).json({ success: true, count: rows.length });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Bulk insert failed" });
+  }
+}
+```
+
+---
+
+## 🔹 Step 3 — Query by subject_code + section_code
+
+On the Admin page, add a form:
+
+```tsx
+const [subject, setSubject] = useState("");
+const [section, setSection] = useState("");
+
+async function fetchFiltered() {
+  if (!token) return;
+  const res = await fetch(
+    `/api/admin/questions/query?subject=${subject}&section=${section}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const data = await res.json();
+  setItems(data.items || []);
+}
+```
+
+Add UI:
+
+```tsx
+<div className="border p-4 rounded">
+  <h2 className="font-semibold mb-3">Filter by Subject & Section</h2>
+  <input className="border p-2 mr-2" placeholder="Subject code" value={subject} onChange={e => setSubject(e.target.value)} />
+  <input className="border p-2 mr-2" placeholder="Section code" value={section} onChange={e => setSection(e.target.value)} />
+  <button className="px-4 py-2 border rounded" onClick={fetchFiltered}>Search</button>
+</div>
+```
+
+---
+
+## 🔹 Step 4 — Query API
+
+`pages/api/admin/questions/query.ts`:
+
+```ts
+import type { NextApiRequest, NextApiResponse } from "next";
+import { getFirebaseAdmin, verifyFirebaseToken } from "@/lib/firebaseAdmin";
+
+function isAllowed(email?: string | null) {
+  const allow = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return !!email && (allow.length === 0 || allow.includes(email.toLowerCase()));
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (req.method !== "GET") return res.status(405).end();
+
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) return res.status(401).json({ error: "Missing token" });
+
+    const decoded = await verifyFirebaseToken(token);
+    if (!isAllowed(decoded.email)) return res.status(403).json({ error: "Not an admin" });
+
+    const { firestore } = getFirebaseAdmin();
+    const subject = req.query.subject as string;
+    const section = req.query.section as string;
+
+    let q = firestore.collection("questions") as FirebaseFirestore.Query;
+    if (subject) q = q.where("subject_code", "==", subject);
+    if (section) q = q.where("section_code", "==", section);
+
+    const snap = await q.limit(200).get();
+    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return res.status(200).json({ items });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Query failed" });
+  }
+}
+```
+
+---
+
+## 🔹 Step 5 — Table with “Update” button per row
+
+In your AdminPage table renderer:
+
+```tsx
+{items.map((q) => (
+  <Row key={q.id} q={q} onSave={updateQuestion} />
+))}
+```
+
+And `Row` component (edit inline):
+
+```tsx
+function Row({ q, onSave }: { q: any; onSave: (id: string, patch: any) => Promise<void> }) {
+  const [edit, setEdit] = useState(false);
+  const [form, setForm] = useState(q);
+
+  async function save() {
+    await onSave(q.id, form);
+    setEdit(false);
+  }
+
+  if (!edit) {
+    return (
+      <tr>
+        <td>{q.subject_code}</td>
+        <td>{q.section_code}</td>
+        <td>{q.prompt}</td>
+        <td>
+          <button onClick={() => setEdit(true)}>Update</button>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr>
+      <td>{form.subject_code}</td>
+      <td>{form.section_code}</td>
+      <td>
+        <textarea value={form.prompt} onChange={(e) => setForm({ ...form, prompt: e.target.value })} />
+      </td>
+      <td>
+        <button onClick={save}>Save</button>
+        <button onClick={() => setEdit(false)}>Cancel</button>
+      </td>
+    </tr>
+  );
+}
+```
+
+`updateQuestion` just calls your existing `PUT /api/admin/questions/[id]`.
+
+---
+
+✅ With this setup:
+
+* Upload CSV → `/api/admin/questions/bulk` inserts records.
+* Search by subject/section → table lists results.
+* Each row can be edited inline + updated.
+
+---
+
+Would you like me to **rewrite the bulk uploader** so it checks if `(subject_code, section_code)` already exists → **update instead of inserting a new doc**? That way CSV uploads can be **idempotent updates**, not just new inserts.
