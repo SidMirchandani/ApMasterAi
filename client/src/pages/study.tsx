@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,13 +17,14 @@ import {
   CheckCircle,
   PlayCircle,
   ArrowLeft,
+  Trophy,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { apSubjects } from "@/lib/ap-subjects";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 interface StudySubject {
   id: number;
@@ -40,248 +41,184 @@ interface StudySubject {
   dateAdded?: string | number | Date | { seconds: number } | null;
 }
 
-interface Topic {
-  id: string;
-  title: string;
-  description: string;
-  estimatedTime: string;
-  difficulty: "Beginner" | "Intermediate" | "Advanced";
-  completed: boolean;
-  practiceQuestions: number;
-  dateAdded?: string | number | Date | { seconds: number } | null;
-  lastStudied?: string | number | Date | { seconds: number } | null;
-}
-
 interface Unit {
   id: string;
   title: string;
   description: string;
-  topics: Topic[];
+  progress: number;
 }
 
-const calcSubjectTopics: Unit[] = [
+const macroeconomicsUnits: Unit[] = [
+  {
+    id: "unit1",
+    title: "Basic Economic Concepts",
+    description: "Scarcity, opportunity cost, production possibilities, comparative advantage, and economic systems",
+    progress: 0,
+  },
+  {
+    id: "unit2",
+    title: "Economic Indicators and the Business Cycle",
+    description: "Circular flow, GDP, unemployment, price indices, and business cycles",
+    progress: 0,
+  },
+  {
+    id: "unit3",
+    title: "National Income and Price Determination",
+    description: "Aggregate demand and supply, multipliers, and fiscal policy",
+    progress: 0,
+  },
+  {
+    id: "unit4",
+    title: "Financial Sector",
+    description: "Money, banking, monetary policy, and the loanable funds market",
+    progress: 0,
+  },
+  {
+    id: "unit5",
+    title: "Long-Run Consequences of Stabilization Policies",
+    description: "Phillips curve, money growth, inflation, and fiscal/monetary policy",
+    progress: 0,
+  },
+  {
+    id: "unit6",
+    title: "Open Economy - International Trade and Finance",
+    description: "Balance of payments, exchange rates, and trade policies",
+    progress: 0,
+  },
+];
+
+const calculusUnits: Unit[] = [
   {
     id: "unit1",
     title: "Limits and Continuity",
     description: "Introduction to limits, one-sided limits, and continuity",
-    topics: [
-      {
-        id: "limits-intro",
-        title: "Introduction to Limits",
-        description: "Understanding the concept of limits and limit notation",
-        estimatedTime: "45 min",
-        difficulty: "Beginner",
-        completed: false,
-        practiceQuestions: 15,
-      },
-      {
-        id: "limit-laws",
-        title: "Limit Laws",
-        description: "Properties and rules for evaluating limits",
-        estimatedTime: "30 min",
-        difficulty: "Beginner",
-        completed: false,
-        practiceQuestions: 12,
-      },
-      {
-        id: "continuity",
-        title: "Continuity",
-        description: "Definition of continuity and types of discontinuities",
-        estimatedTime: "40 min",
-        difficulty: "Intermediate",
-        completed: false,
-        practiceQuestions: 18,
-      },
-    ],
+    progress: 0,
   },
   {
     id: "unit2",
-    title: "Differentiation",
+    title: "Differentiation: Definition and Fundamental Properties",
     description: "Derivatives and their applications",
-    topics: [
-      {
-        id: "derivative-definition",
-        title: "Definition of Derivative",
-        description: "Understanding derivatives as rates of change",
-        estimatedTime: "50 min",
-        difficulty: "Intermediate",
-        completed: false,
-        practiceQuestions: 20,
-      },
-      {
-        id: "derivative-rules",
-        title: "Derivative Rules",
-        description: "Power rule, product rule, quotient rule, and chain rule",
-        estimatedTime: "60 min",
-        difficulty: "Intermediate",
-        completed: false,
-        practiceQuestions: 25,
-      },
-      {
-        id: "implicit-differentiation",
-        title: "Implicit Differentiation",
-        description: "Finding derivatives of implicitly defined functions",
-        estimatedTime: "45 min",
-        difficulty: "Advanced",
-        completed: false,
-        practiceQuestions: 16,
-      },
-    ],
+    progress: 0,
   },
   {
     id: "unit3",
-    title: "Integration",
+    title: "Differentiation: Composite, Implicit, and Inverse Functions",
+    description: "Chain rule, implicit differentiation, and inverse functions",
+    progress: 0,
+  },
+  {
+    id: "unit4",
+    title: "Contextual Applications of Differentiation",
+    description: "Related rates, optimization, and curve sketching",
+    progress: 0,
+  },
+  {
+    id: "unit5",
+    title: "Analytical Applications of Differentiation",
+    description: "Mean value theorem and L'Hôpital's rule",
+    progress: 0,
+  },
+  {
+    id: "unit6",
+    title: "Integration and Accumulation of Change",
     description: "Antiderivatives and the Fundamental Theorem of Calculus",
-    topics: [
-      {
-        id: "antiderivatives",
-        title: "Antiderivatives",
-        description: "Basic integration techniques and rules",
-        estimatedTime: "55 min",
-        difficulty: "Intermediate",
-        completed: false,
-        practiceQuestions: 22,
-      },
-      {
-        id: "fundamental-theorem",
-        title: "Fundamental Theorem of Calculus",
-        description: "Connecting derivatives and integrals",
-        estimatedTime: "50 min",
-        difficulty: "Advanced",
-        completed: false,
-        practiceQuestions: 18,
-      },
-      {
-        id: "integration-techniques",
-        title: "Integration Techniques",
-        description: "Substitution and integration by parts",
-        estimatedTime: "70 min",
-        difficulty: "Advanced",
-        completed: false,
-        practiceQuestions: 28,
-      },
-    ],
+    progress: 0,
+  },
+  {
+    id: "unit7",
+    title: "Differential Equations",
+    description: "Slope fields and separation of variables",
+    progress: 0,
+  },
+  {
+    id: "unit8",
+    title: "Applications of Integration",
+    description: "Area, volume, and average value",
+    progress: 0,
   },
 ];
 
-const biologySubjectTopics: Unit[] = [
+const biologyUnits: Unit[] = [
   {
     id: "unit1",
     title: "Chemistry of Life",
     description: "Basic chemistry concepts and biological molecules",
-    topics: [
-      {
-        id: "water-properties",
-        title: "Properties of Water",
-        description: "Water's role in biological systems",
-        estimatedTime: "40 min",
-        difficulty: "Beginner",
-        completed: false,
-        practiceQuestions: 14,
-      },
-      {
-        id: "macromolecules",
-        title: "Biological Macromolecules",
-        description: "Carbohydrates, lipids, proteins, and nucleic acids",
-        estimatedTime: "60 min",
-        difficulty: "Intermediate",
-        completed: false,
-        practiceQuestions: 24,
-      },
-    ],
+    progress: 0,
   },
   {
     id: "unit2",
     title: "Cell Structure and Function",
     description: "Cell theory, organelles, and cellular processes",
-    topics: [
-      {
-        id: "cell-theory",
-        title: "Cell Theory",
-        description: "Fundamental principles of cell biology",
-        estimatedTime: "35 min",
-        difficulty: "Beginner",
-        completed: false,
-        practiceQuestions: 12,
-      },
-      {
-        id: "organelles",
-        title: "Cell Organelles",
-        description: "Structure and function of cellular components",
-        estimatedTime: "55 min",
-        difficulty: "Intermediate",
-        completed: false,
-        practiceQuestions: 20,
-      },
-    ],
+    progress: 0,
+  },
+  {
+    id: "unit3",
+    title: "Cellular Energetics",
+    description: "Photosynthesis and cellular respiration",
+    progress: 0,
+  },
+  {
+    id: "unit4",
+    title: "Cell Communication and Cell Cycle",
+    description: "Cell signaling and the cell cycle",
+    progress: 0,
+  },
+  {
+    id: "unit5",
+    title: "Heredity",
+    description: "Mendelian genetics and inheritance patterns",
+    progress: 0,
+  },
+  {
+    id: "unit6",
+    title: "Gene Expression and Regulation",
+    description: "DNA structure, replication, and gene regulation",
+    progress: 0,
+  },
+  {
+    id: "unit7",
+    title: "Natural Selection",
+    description: "Evolution and natural selection",
+    progress: 0,
+  },
+  {
+    id: "unit8",
+    title: "Ecology",
+    description: "Population dynamics, communities, and ecosystems",
+    progress: 0,
   },
 ];
 
-const getTopicsForSubject = (subjectId: string): Unit[] => {
+const getUnitsForSubject = (subjectId: string): Unit[] => {
   switch (subjectId) {
+    case "macroeconomics":
+      return macroeconomicsUnits;
     case "calculus-ab":
     case "calculus-bc":
-      return calcSubjectTopics;
+      return calculusUnits;
     case "biology":
-      return biologySubjectTopics;
+      return biologyUnits;
     default:
       return [
         {
-          id: "general",
-          title: "General Topics",
-          description: "Core concepts and practice materials",
-          topics: [
-            {
-              id: "fundamentals",
-              title: "Fundamental Concepts",
-              description: "Core principles and basic understanding",
-              estimatedTime: "45 min",
-              difficulty: "Beginner",
-              completed: false,
-              practiceQuestions: 15,
-            },
-            {
-              id: "intermediate-topics",
-              title: "Intermediate Topics",
-              description: "Building on the fundamentals",
-              estimatedTime: "60 min",
-              difficulty: "Intermediate",
-              completed: false,
-              practiceQuestions: 20,
-            },
-            {
-              id: "advanced-applications",
-              title: "Advanced Applications",
-              description: "Complex problem solving and applications",
-              estimatedTime: "75 min",
-              difficulty: "Advanced",
-              completed: false,
-              practiceQuestions: 25,
-            },
-          ],
+          id: "unit1",
+          title: "Core Concepts",
+          description: "Fundamental concepts and principles",
+          progress: 0,
         },
       ];
   }
 };
 
-const difficultyColors: Record<string, string> = {
-  Beginner: "bg-green-100 text-green-800 border-green-200",
-  Intermediate: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  Advanced: "bg-red-100 text-red-800 border-red-200",
-};
-
 export default function Study() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
 
-  // ✅ Safe handling of query param
   const rawSubject = router.query.subject;
   const subjectId: string | undefined = Array.isArray(rawSubject)
     ? (rawSubject[0] || undefined)
     : (rawSubject || undefined);
 
-  // Fetch user subjects
   const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{
     success: boolean;
     data: StudySubject[];
@@ -298,10 +235,10 @@ export default function Study() {
   });
 
   const subjects: StudySubject[] = subjectsResponse?.data || [];
-  const currentSubject: StudySubject | undefined = subjects.find((s) => s.subjectId === subjectId);
-  const topics = currentSubject
-    ? getTopicsForSubject(currentSubject.subjectId)
-    : [];
+  const currentSubject: StudySubject | undefined = subjects.find(
+    (s) => s.subjectId === subjectId
+  );
+  const units = currentSubject ? getUnitsForSubject(currentSubject.subjectId) : [];
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -314,22 +251,6 @@ export default function Study() {
       router.push("/dashboard");
     }
   }, [subjectId, router]);
-
-  const handleStartTopic = (topicId: string) => {
-    router.push(`/practice-test/${subjectId}?topic=${topicId}`);
-  };
-
-  const handleContinueStudying = () => {
-    const nextTopic = topics
-      .flatMap((unit) => unit.topics)
-      .find((topic) => !topic.completed);
-
-    if (nextTopic) {
-      handleStartTopic(nextTopic.id);
-    } else {
-      router.push(`/practice-test/${subjectId}`);
-    }
-  };
 
   if (loading || subjectsLoading) {
     return (
@@ -367,13 +288,8 @@ export default function Study() {
     );
   }
 
-  const totalTopics = topics.reduce((sum, unit) => sum + unit.topics.length, 0);
-  const completedTopics = topics.reduce(
-    (sum, unit) => sum + unit.topics.filter((t) => t.completed).length,
-    0,
-  );
-  const overallProgress =
-    totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
+  const topicsMastered = 0; // Will be calculated based on actual progress
+  const totalTopics = units.length;
 
   return (
     <div className="min-h-screen bg-khan-background">
@@ -391,168 +307,128 @@ export default function Study() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1
-                className="text-3xl font-bold text-gray-900"
-                data-testid="text-subject-name"
-              >
+              <h1 className="text-3xl font-bold text-gray-900">
                 {currentSubject.name}
               </h1>
-              <p
-                className="text-gray-600 mt-1"
-                data-testid="text-subject-description"
-              >
+              <p className="text-gray-600 mt-1">
                 {currentSubject.description}
               </p>
             </div>
           </div>
-          <Button
-            onClick={handleContinueStudying}
-            size="lg"
-            className="bg-khan-green hover:bg-khan-green/90"
-            data-testid="button-continue-studying"
-          >
-            <PlayCircle className="mr-2 h-5 w-5" />
-            Continue Studying
-          </Button>
         </div>
 
-        {/* Progress Overview */}
+        {/* Your Learning Journey */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-khan-green" />
-              Your Progress
+              Your Learning Journey
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center">
-                <div
-                  className="text-2xl font-bold text-khan-green"
-                  data-testid="text-progress-percentage"
-                >
-                  {Math.round(overallProgress)}%
+                <div className="text-3xl font-bold text-blue-600">
+                  {topicsMastered}/{totalTopics}
                 </div>
-                <div className="text-sm text-gray-600">Overall Progress</div>
-                <Progress value={overallProgress} className="mt-2" />
+                <div className="text-sm text-gray-600 mt-1">Topics Mastered</div>
+                <div className="flex justify-center mt-2">
+                  <Trophy className="h-5 w-5 text-blue-600" />
+                </div>
               </div>
               <div className="text-center">
-                <div
-                  className="text-2xl font-bold text-blue-600"
-                  data-testid="text-completed-topics"
-                >
-                  {completedTopics}/{totalTopics}
+                <div className="text-3xl font-bold text-purple-600">4</div>
+                <div className="text-sm text-gray-600 mt-1">Expected Score</div>
+                <div className="flex justify-center mt-2">
+                  <Target className="h-5 w-5 text-purple-600" />
                 </div>
-                <div className="text-sm text-gray-600">Topics Completed</div>
               </div>
               <div className="text-center">
-                <div
-                  className="text-2xl font-bold text-purple-600"
-                  data-testid="text-mastery-level"
-                >
-                  {currentSubject.masteryLevel}
-                </div>
-                <div className="text-sm text-gray-600">Target Score</div>
-              </div>
-              <div className="text-center">
-                <div
-                  className="text-2xl font-bold text-orange-600"
-                  data-testid="text-exam-date"
-                >
+                <div className="text-3xl font-bold text-orange-600">
                   {formatDate(currentSubject.examDate)}
                 </div>
-                <div className="text-sm text-gray-600">Exam Date</div>
+                <div className="text-sm text-gray-600 mt-1">Exam Date</div>
+                <div className="flex justify-center mt-2">
+                  <Clock className="h-5 w-5 text-orange-600" />
+                </div>
               </div>
+            </div>
+
+            {/* Practice Test Buttons */}
+            <div className="mt-8 flex flex-col gap-3 max-w-md mx-auto">
+              <Button
+                onClick={() => router.push(`/practice-test/${subjectId}?type=mcq`)}
+                className="bg-khan-green hover:bg-khan-green/90 w-full h-12"
+              >
+                <BookOpen className="mr-2 h-5 w-5" />
+                Full AP Practice Test
+              </Button>
+              <Button
+                onClick={() => router.push(`/practice-test/${subjectId}?type=frq`)}
+                className="bg-khan-blue hover:bg-khan-blue/90 w-full h-12"
+              >
+                <PlayCircle className="mr-2 h-5 w-5" />
+                Full AP FRQ Practice Test
+              </Button>
             </div>
           </CardContent>
         </Card>
 
         {/* Study Units */}
         <div className="space-y-6">
-          {topics.map((unit, unitIndex) => (
-            <Card key={unit.id}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-khan-green" />
-                  Unit {unitIndex + 1}: {unit.title}
-                </CardTitle>
-                <CardDescription>{unit.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  {unit.topics.map((topic) => (
-                    <Card
-                      key={topic.id}
-                      className="border-l-4 border-l-khan-green/20"
-                    >
-                      <CardContent className="pt-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3
-                                className="font-semibold text-lg"
-                                data-testid={`text-topic-${topic.id}`}
-                              >
-                                {topic.title}
-                              </h3>
-                              {topic.completed && (
-                                <CheckCircle
-                                  className="h-5 w-5 text-green-500"
-                                  data-testid={`icon-completed-${topic.id}`}
-                                />
-                              )}
-                              <Badge
-                                variant="outline"
-                                className={difficultyColors[topic.difficulty]}
-                                data-testid={`badge-difficulty-${topic.id}`}
-                              >
-                                {topic.difficulty}
-                              </Badge>
-                            </div>
-                            <p
-                              className="text-gray-600 mb-3"
-                              data-testid={`text-topic-description-${topic.id}`}
-                            >
-                              {topic.description}
-                            </p>
-                            <div className="flex items-center gap-4 text-sm text-gray-500">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                <span
-                                  data-testid={`text-estimated-time-${topic.id}`}
-                                >
-                                  {topic.estimatedTime}
-                                </span>
-                              </div>
-                              <div
-                                data-testid={`text-practice-questions-${topic.id}`}
-                              >
-                                {topic.practiceQuestions} practice questions
-                              </div>
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <Button
-                              onClick={() => handleStartTopic(topic.id)}
-                              variant={topic.completed ? "outline" : "default"}
-                              data-testid={`button-start-topic-${topic.id}`}
-                            >
-                              <PlayCircle className="mr-2 h-4 w-4" />
-                              {topic.completed ? "Review" : "Start"}
-                            </Button>
-                          </div>
+          {units.map((unit, index) => (
+            <div key={unit.id}>
+              <Card className="border-l-4 border-l-khan-green">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-khan-green text-white flex items-center justify-center font-bold flex-shrink-0">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-900 mb-1">
+                          {unit.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-3">
+                          {unit.description}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Progress value={unit.progress} className="flex-1 max-w-xs" />
+                          <span className="text-sm font-medium text-gray-700">
+                            {unit.progress}% Complete
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Unit Practice Test Buttons */}
+              <div className="mt-3 flex gap-3 ml-14">
+                <Button
+                  onClick={() => router.push(`/practice-test/${subjectId}?unit=${unit.id}&type=mcq`)}
+                  variant="outline"
+                  className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white"
+                >
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Unit MCQ Practice Test
+                </Button>
+                <Button
+                  onClick={() => router.push(`/practice-test/${subjectId}?unit=${unit.id}&type=frq`)}
+                  variant="outline"
+                  className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
+                >
+                  <PlayCircle className="mr-2 h-4 w-4" />
+                  Unit FRQ Practice Test
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
 
-        {/* Action Buttons */}
-        <div className="mt-8 flex justify-center gap-4">
+        {/* Back Button */}
+        <div className="mt-8 flex justify-center">
           <Button
             variant="outline"
             onClick={() => router.push("/dashboard")}
@@ -560,14 +436,6 @@ export default function Study() {
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
-          </Button>
-          <Button
-            onClick={handleContinueStudying}
-            className="bg-khan-green hover:bg-khan-green/90"
-            data-testid="button-continue-studying-bottom"
-          >
-            <PlayCircle className="mr-2 h-5 w-5" />
-            Continue Studying
           </Button>
         </div>
       </div>
