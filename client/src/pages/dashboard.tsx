@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Clock, Trash2, Plus, Calendar, AlertTriangle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
@@ -33,7 +33,7 @@ interface DashboardSubject {
 
 const difficultyColors: Record<string, string> = {
   "Easy": "bg-green-100 text-green-800 border-green-200",
-  "Medium": "bg-yellow-100 text-yellow-800 border-yellow-200", 
+  "Medium": "bg-yellow-100 text-yellow-800 border-yellow-200",
   "Hard": "bg-orange-100 text-orange-800 border-orange-200",
   "Very Hard": "bg-red-100 text-red-800 border-red-200"
 };
@@ -46,8 +46,8 @@ export default function Dashboard() {
   const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
 
   // Optimized data fetching with better loading states
-  const { 
-    data: subjectsResponse, 
+  const {
+    data: subjectsResponse,
     isLoading: subjectsLoading,
     error: subjectsError,
     refetch: refetchSubjects,
@@ -110,7 +110,7 @@ export default function Dashboard() {
         title: "Subject removed",
         description: "Your subject has been successfully removed.",
       });
-      
+
       setSubjectToRemove(null);
     }
   });
@@ -179,9 +179,9 @@ export default function Dashboard() {
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription className="text-khan-red">
                 Failed to load your subjects. Please try again.
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => refetchSubjects()}
                   className="ml-4 border-khan-red text-khan-red hover:bg-khan-red hover:text-white"
                 >
@@ -226,7 +226,7 @@ export default function Dashboard() {
               <p className="text-khan-gray-medium mb-8">
                 Add AP subjects to your dashboard to start your preparation journey
               </p>
-              <Button 
+              <Button
                 onClick={() => router.push('/learn')}
                 className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
               >
@@ -238,7 +238,7 @@ export default function Dashboard() {
             <>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-khan-gray-dark">My Subjects</h2>
-                <Button 
+                <Button
                   onClick={() => router.push('/learn')}
                   variant="outline"
                   className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold"
@@ -283,7 +283,7 @@ export default function Dashboard() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
+                                <AlertDialogAction
                                   onClick={confirmRemoveSubject}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
@@ -317,7 +317,7 @@ export default function Dashboard() {
                             </div>
                             <div className="w-24">
                               <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div 
+                                <div
                                   className="bg-khan-green h-2 rounded-full transition-all duration-300"
                                   style={{ width: `${subject.progress}%` }}
                                 ></div>
@@ -333,7 +333,7 @@ export default function Dashboard() {
                               Added {formatDateTime(subject.dateAdded)}
                             </span>
                           </div>
-                          <Button 
+                          <Button
                             onClick={() => handleStartStudying(subject.subjectId)}
                             className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
                           >
