@@ -266,24 +266,6 @@ export default function Dashboard() {
                             {subject.name}
                           </CardTitle>
                           <div className="flex items-center space-x-2">
-                            <Badge 
-                              variant="outline" 
-                              className={difficultyColors[subject.difficulty] || "bg-gray-100 text-gray-800 border-gray-200"}
-                            >
-                              {subject.difficulty}
-                            </Badge>
-                            {subject.masteryLevel && (
-                              <Badge 
-                                variant="outline" 
-                                className={
-                                  subject.masteryLevel === 3 ? "bg-yellow-100 text-yellow-800 border-yellow-200" :
-                                  subject.masteryLevel === 4 ? "bg-blue-100 text-blue-800 border-blue-200" :
-                                  "bg-green-100 text-green-800 border-green-200"
-                                }
-                              >
-                                Goal: {subject.masteryLevel}
-                              </Badge>
-                            )}
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <button
@@ -357,7 +339,7 @@ export default function Dashboard() {
                             onClick={() => handleStartStudying(subject.subjectId)}
                             className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
                           >
-                            Continue Studying
+                            Continue Practice
                           </Button>
                         </div>
                       </CardContent>
