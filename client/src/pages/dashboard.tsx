@@ -265,35 +265,33 @@ export default function Dashboard() {
                           <CardTitle className="text-xl font-bold text-khan-gray-dark">
                             {subject.name}
                           </CardTitle>
-                          <div className="flex items-center space-x-2">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <button
-                                  onClick={() => handleRemoveSubject(subject)}
-                                  className="text-khan-gray-light hover:text-khan-red transition-colors"
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <button
+                                onClick={() => handleRemoveSubject(subject)}
+                                className="text-khan-gray-light hover:text-khan-red transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remove Subject</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to remove "{subject.name}" from your dashboard? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={confirmRemoveSubject}
+                                  className="bg-red-600 hover:bg-red-700"
                                 >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Remove Subject</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to remove "{subject.name}" from your dashboard? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={confirmRemoveSubject}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Remove
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
+                                  Remove
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                         <p className="text-khan-gray-medium text-base leading-relaxed">
                           {subject.description}
