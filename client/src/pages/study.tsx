@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ interface Unit {
   id: string;
   title: string;
   description: string;
+  examWeight: string;
   progress: number;
 }
 
@@ -54,6 +56,7 @@ const macroeconomicsUnits: Unit[] = [
     title: "Basic Economic Concepts",
     description:
       "Scarcity, opportunity cost, production possibilities, comparative advantage, and economic systems",
+    examWeight: "5-10%",
     progress: 0,
   },
   {
@@ -61,12 +64,14 @@ const macroeconomicsUnits: Unit[] = [
     title: "Economic Indicators and the Business Cycle",
     description:
       "Circular flow, GDP, unemployment, price indices, and business cycles",
+    examWeight: "12-17%",
     progress: 0,
   },
   {
     id: "unit3",
     title: "National Income and Price Determination",
     description: "Aggregate demand and supply, multipliers, and fiscal policy",
+    examWeight: "17-27%",
     progress: 0,
   },
   {
@@ -74,6 +79,7 @@ const macroeconomicsUnits: Unit[] = [
     title: "Financial Sector",
     description:
       "Money, banking, monetary policy, and the loanable funds market",
+    examWeight: "18-23%",
     progress: 0,
   },
   {
@@ -81,12 +87,14 @@ const macroeconomicsUnits: Unit[] = [
     title: "Long-Run Consequences of Stabilization Policies",
     description:
       "Phillips curve, money growth, inflation, and fiscal/monetary policy",
+    examWeight: "20-30%",
     progress: 0,
   },
   {
     id: "unit6",
     title: "Open Economy - International Trade and Finance",
     description: "Balance of payments, exchange rates, and trade policies",
+    examWeight: "10-13%",
     progress: 0,
   },
 ];
@@ -96,48 +104,56 @@ const calculusUnits: Unit[] = [
     id: "unit1",
     title: "Limits and Continuity",
     description: "Introduction to limits, one-sided limits, and continuity",
+    examWeight: "10-12%",
     progress: 0,
   },
   {
     id: "unit2",
     title: "Differentiation: Definition and Fundamental Properties",
     description: "Derivatives and their applications",
+    examWeight: "10-12%",
     progress: 0,
   },
   {
     id: "unit3",
     title: "Differentiation: Composite, Implicit, and Inverse Functions",
     description: "Chain rule, implicit differentiation, and inverse functions",
+    examWeight: "9-13%",
     progress: 0,
   },
   {
     id: "unit4",
     title: "Contextual Applications of Differentiation",
     description: "Related rates, optimization, and curve sketching",
+    examWeight: "10-15%",
     progress: 0,
   },
   {
     id: "unit5",
     title: "Analytical Applications of Differentiation",
     description: "Mean value theorem and L'Hôpital's rule",
+    examWeight: "15-18%",
     progress: 0,
   },
   {
     id: "unit6",
     title: "Integration and Accumulation of Change",
     description: "Antiderivatives and the Fundamental Theorem of Calculus",
+    examWeight: "17-20%",
     progress: 0,
   },
   {
     id: "unit7",
     title: "Differential Equations",
     description: "Slope fields and separation of variables",
+    examWeight: "6-12%",
     progress: 0,
   },
   {
     id: "unit8",
     title: "Applications of Integration",
     description: "Area, volume, and average value",
+    examWeight: "10-15%",
     progress: 0,
   },
 ];
@@ -147,48 +163,56 @@ const biologyUnits: Unit[] = [
     id: "unit1",
     title: "Chemistry of Life",
     description: "Basic chemistry concepts and biological molecules",
+    examWeight: "8-11%",
     progress: 0,
   },
   {
     id: "unit2",
     title: "Cell Structure and Function",
     description: "Cell theory, organelles, and cellular processes",
+    examWeight: "10-13%",
     progress: 0,
   },
   {
     id: "unit3",
     title: "Cellular Energetics",
     description: "Photosynthesis and cellular respiration",
+    examWeight: "12-16%",
     progress: 0,
   },
   {
     id: "unit4",
     title: "Cell Communication and Cell Cycle",
     description: "Cell signaling and the cell cycle",
+    examWeight: "10-15%",
     progress: 0,
   },
   {
     id: "unit5",
     title: "Heredity",
     description: "Mendelian genetics and inheritance patterns",
+    examWeight: "8-11%",
     progress: 0,
   },
   {
     id: "unit6",
     title: "Gene Expression and Regulation",
     description: "DNA structure, replication, and gene regulation",
+    examWeight: "12-16%",
     progress: 0,
   },
   {
     id: "unit7",
     title: "Natural Selection",
     description: "Evolution and natural selection",
+    examWeight: "13-20%",
     progress: 0,
   },
   {
     id: "unit8",
     title: "Ecology",
     description: "Population dynamics, communities, and ecosystems",
+    examWeight: "10-15%",
     progress: 0,
   },
 ];
@@ -208,6 +232,7 @@ const getUnitsForSubject = (subjectId: string): Unit[] => {
           id: "unit1",
           title: "Core Concepts",
           description: "Fundamental concepts and principles",
+          examWeight: "100%",
           progress: 0,
         },
       ];
@@ -294,7 +319,7 @@ export default function Study() {
     );
   }
 
-  const topicsMastered = 0; // Will be calculated based on actual progress
+  const topicsMastered = 0;
   const totalTopics = units.length;
 
   return (
@@ -360,7 +385,7 @@ export default function Study() {
               </div>
             </div>
 
-            {/* Practice Test Buttons */}
+            {/* Full-Length Practice Test Buttons */}
             <div className="mt-8 flex flex-col gap-3 max-w-md mx-auto">
               <Button
                 onClick={() =>
@@ -369,7 +394,7 @@ export default function Study() {
                 className="bg-khan-green hover:bg-khan-green/90 w-full h-12"
               >
                 <BookOpen className="mr-2 h-5 w-5" />
-                Full AP Practice Test
+                MCQ Full-Length Test
               </Button>
               <Button
                 onClick={() =>
@@ -378,73 +403,63 @@ export default function Study() {
                 className="bg-khan-blue hover:bg-khan-blue/90 w-full h-12"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
-                Full AP FRQ Practice Test
+                FRQ Full-Length Test
               </Button>
             </div>
           </CardContent>
         </Card>
 
         {/* Study Units */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {units.map((unit, index) => (
-            <div key={unit.id}>
-              <Card className="border-l-4 border-l-khan-green">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="w-10 h-10 rounded-full bg-khan-green text-white flex items-center justify-center font-bold flex-shrink-0">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-gray-900 mb-1">
-                          {unit.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-3">
-                          {unit.description}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Progress
-                            value={unit.progress}
-                            className="flex-1 max-w-xs"
-                          />
-                          <span className="text-sm font-medium text-gray-700">
-                            {unit.progress}% Complete
-                          </span>
-                        </div>
-                      </div>
+            <Card key={unit.id} className="border-l-4 border-l-khan-green">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="w-10 h-10 rounded-full bg-khan-green text-white flex items-center justify-center font-bold flex-shrink-0">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">
+                        {unit.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {unit.description}
+                      </p>
+                      <Badge variant="outline" className="text-xs">
+                        Exam Weight: {unit.examWeight}
+                      </Badge>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Unit Practice Test Buttons */}
-              <div className="mt-3 flex gap-3 ml-14">
-                <Button
-                  onClick={() =>
-                    router.push(
-                      `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
-                    )
-                  }
-                  variant="outline"
-                  className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white"
-                >
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Unit MCQ Practice Test
-                </Button>
-                <Button
-                  onClick={() =>
-                    router.push(
-                      `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
-                    )
-                  }
-                  variant="outline"
-                  className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
-                >
-                  <PlayCircle className="mr-2 h-4 w-4" />
-                  Unit FRQ Practice Test
-                </Button>
-              </div>
-            </div>
+                </div>
+                <div className="flex gap-3 ml-14">
+                  <Button
+                    onClick={() =>
+                      router.push(
+                        `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
+                      )
+                    }
+                    variant="outline"
+                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white"
+                  >
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Unit MCQ Practice Test
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      router.push(
+                        `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
+                      )
+                    }
+                    variant="outline"
+                    className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
+                  >
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    Unit FRQ Practice Test
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
