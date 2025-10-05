@@ -187,19 +187,13 @@ export default function Courses() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {apSubjects.map((subject) => (
+            {[...apSubjects].sort((a, b) => a.name.localeCompare(b.name)).map((subject) => (
               <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 hover:border-khan-green/30">
                 <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="mb-2">
                     <CardTitle className="text-lg font-bold text-khan-gray-dark">
                       {subject.name}
                     </CardTitle>
-                    <Badge
-                      variant="outline"
-                      className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
-                    >
-                      {subject.difficulty}
-                    </Badge>
                   </div>
                   <CardDescription className="text-khan-gray-medium leading-relaxed text-sm">
                     {subject.description}
