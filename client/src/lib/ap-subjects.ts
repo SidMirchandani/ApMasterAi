@@ -94,6 +94,14 @@ export const apSubjects = [
     units: 8,
     difficulty: "Medium",
     examDate: "May 15, 2025"
+  },
+  {
+    id: "macroeconomics",
+    name: "AP Macroeconomics",
+    description: "National income, price determination, economic performance measures, and fiscal/monetary policy",
+    units: 6,
+    difficulty: "Medium",
+    examDate: "May 14, 2025"
   }
 ];
 
