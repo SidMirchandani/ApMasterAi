@@ -1,7 +1,6 @@
 import { BookOpen } from "lucide-react";
 import { Clock } from "lucide-react";
 import { ArrowRight } from "lucide-react";
-import { Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,32 +20,7 @@ import Navigation from "@/components/ui/navigation";
 import { apSubjects, difficultyColors } from "@/lib/ap-subjects";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { formatDate, formatDateTime, safeDateParse } from "@/lib/utils";
-
-
-const masteryLevels = [
-  {
-    level: 3,
-    title: "Pass (3)",
-    description: "I want to pass the AP exam and earn college credit",
-    color: "bg-yellow-100 text-yellow-800 border-yellow-200"
-  },
-  {
-    level: 4,
-    title: "Well Qualified (4)", 
-    description: "I want to demonstrate strong understanding and skills",
-    color: "bg-blue-100 text-blue-800 border-blue-200"
-  },
-  {
-    level: 5,
-    title: "Extremely Well Qualified (5)",
-    description: "I want to achieve the highest possible score",
-    color: "bg-green-100 text-green-800 border-green-200"
-  }
-];
+import { formatDate, safeDateParse } from "@/lib/utils";
 
 // Interface for a course, including optional isAdded status
 interface Course {
@@ -66,13 +40,9 @@ export default function Courses() {
   const router = useRouter(); // Changed from useLocation()
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showMasteryModal, setShowMasteryModal] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState<typeof apSubjects[0] | null>(null);
-  const [selectedMastery, setSelectedMastery] = useState<string>("4");
-
   // Add subject to dashboard mutation
   const addSubjectMutation = useMutation({
-    mutationFn: async ({ subject, masteryLevel }: { subject: typeof apSubjects[0]; masteryLevel: string }) => {
+    mutationFn: async (subject: typeof apSubjects[0]) => {
       const response = await apiRequest("POST", "/api/user/subjects", {
         subjectId: subject.id,
         name: subject.name,
@@ -81,17 +51,16 @@ export default function Courses() {
         difficulty: subject.difficulty,
         examDate: subject.examDate,
         progress: 0,
-        masteryLevel: parseInt(masteryLevel),
+        masteryLevel: 4, // Default mastery level
       });
       return response.json();
     },
-    onSuccess: (data, { subject }) => {
+    onSuccess: (data, subject) => {
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
       toast({
         title: "Subject added!",
         description: `${subject.name} has been added to your dashboard.`,
       });
-      setShowMasteryModal(false);
       router.push('/dashboard');
     },
   });
@@ -135,36 +104,29 @@ export default function Courses() {
       return;
     }
 
-    setSelectedSubject(subject);
-    setShowMasteryModal(true);
-  };
-
-  const handleConfirmAddSubject = () => {
-    if (!selectedSubject) return;
-
     // Map difficulty to accepted values
-    let adjustedDifficulty: string = selectedSubject.difficulty;
-    if (selectedSubject.difficulty === "Very Hard") {
+    let adjustedDifficulty: string = subject.difficulty;
+    if (subject.difficulty === "Very Hard") {
       adjustedDifficulty = "Hard";
     }
 
     // Adjust units if it exceeds the limit
-    let adjustedUnits = selectedSubject.units;
-    if (selectedSubject.units > 8) {
+    let adjustedUnits = subject.units;
+    if (subject.units > 8) {
       adjustedUnits = 8;
     }
 
     // Format examDate to YYYY-MM-DD with safe date handling
     let formattedExamDate: string;
     try {
-      const parsedDate = safeDateParse(selectedSubject.examDate);
+      const parsedDate = safeDateParse(subject.examDate);
       if (parsedDate) {
         formattedExamDate = parsedDate.toISOString().split('T')[0];
       } else {
-        console.error("Invalid date format for examDate:", selectedSubject.examDate);
+        console.error("Invalid date format for examDate:", subject.examDate);
         toast({
           title: "Invalid Date",
-          description: `The exam date for ${selectedSubject.name} is invalid.`,
+          description: `The exam date for ${subject.name} is invalid.`,
           variant: "destructive",
         });
         return;
@@ -173,21 +135,17 @@ export default function Courses() {
       console.error("Error parsing date:", e);
       toast({
         title: "Date Parsing Error",
-        description: `Could not parse the exam date for ${selectedSubject.name}.`,
+        description: `Could not parse the exam date for ${subject.name}.`,
         variant: "destructive",
       });
       return;
     }
 
-
-    addSubjectMutation.mutate({ 
-      subject: {
-        ...selectedSubject,
-        difficulty: adjustedDifficulty,
-        units: adjustedUnits,
-        examDate: formattedExamDate
-      }, 
-      masteryLevel: selectedMastery 
+    addSubjectMutation.mutate({
+      ...subject,
+      difficulty: adjustedDifficulty,
+      units: adjustedUnits,
+      examDate: formattedExamDate
     });
   };
 
@@ -277,74 +235,6 @@ export default function Courses() {
 
         </div>
       </div>
-
-      {/* Mastery Level Selection Modal */}
-      <Dialog open={showMasteryModal} onOpenChange={setShowMasteryModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <Target className="w-6 h-6 text-khan-green" />
-              <span>What's your AP goal?</span>
-            </DialogTitle>
-            <DialogDescription>
-              Choose the score you're aiming for in {selectedSubject?.name}. This helps us customize your study plan.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <RadioGroup 
-              value={selectedMastery} 
-              onValueChange={setSelectedMastery}
-              className="space-y-3"
-            >
-              {masteryLevels.map((level) => (
-                <div key={level.level} className="flex items-start space-x-3">
-                  <RadioGroupItem 
-                    value={level.level.toString()} 
-                    id={level.level.toString()}
-                    className="mt-1"
-                    data-testid={`mastery-level-${level.level}`}
-                  />
-                  <Label 
-                    htmlFor={level.level.toString()} 
-                    className="flex-1 cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Badge className={level.color}>
-                        Score {level.level}
-                      </Badge>
-                      <span className="font-semibold text-khan-gray-dark">
-                        {level.title}
-                      </span>
-                    </div>
-                    <p className="text-sm text-khan-gray-medium leading-relaxed">
-                      {level.description}
-                    </p>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowMasteryModal(false)}
-                data-testid="button-cancel"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleConfirmAddSubject}
-                disabled={addSubjectMutation.isPending}
-                className="bg-khan-green text-white hover:bg-khan-green-light"
-                data-testid="button-add-subject"
-              >
-                {addSubjectMutation.isPending ? "Adding..." : "Add Subject"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
