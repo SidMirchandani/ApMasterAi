@@ -52,13 +52,15 @@ const macroeconomicsUnits: Unit[] = [
   {
     id: "unit1",
     title: "Basic Economic Concepts",
-    description: "Scarcity, opportunity cost, production possibilities, comparative advantage, and economic systems",
+    description:
+      "Scarcity, opportunity cost, production possibilities, comparative advantage, and economic systems",
     progress: 0,
   },
   {
     id: "unit2",
     title: "Economic Indicators and the Business Cycle",
-    description: "Circular flow, GDP, unemployment, price indices, and business cycles",
+    description:
+      "Circular flow, GDP, unemployment, price indices, and business cycles",
     progress: 0,
   },
   {
@@ -70,13 +72,15 @@ const macroeconomicsUnits: Unit[] = [
   {
     id: "unit4",
     title: "Financial Sector",
-    description: "Money, banking, monetary policy, and the loanable funds market",
+    description:
+      "Money, banking, monetary policy, and the loanable funds market",
     progress: 0,
   },
   {
     id: "unit5",
     title: "Long-Run Consequences of Stabilization Policies",
-    description: "Phillips curve, money growth, inflation, and fiscal/monetary policy",
+    description:
+      "Phillips curve, money growth, inflation, and fiscal/monetary policy",
     progress: 0,
   },
   {
@@ -216,8 +220,8 @@ export default function Study() {
 
   const rawSubject = router.query.subject;
   const subjectId: string | undefined = Array.isArray(rawSubject)
-    ? (rawSubject[0] || undefined)
-    : (rawSubject || undefined);
+    ? rawSubject[0] || undefined
+    : rawSubject || undefined;
 
   const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{
     success: boolean;
@@ -236,9 +240,11 @@ export default function Study() {
 
   const subjects: StudySubject[] = subjectsResponse?.data || [];
   const currentSubject: StudySubject | undefined = subjects.find(
-    (s) => s.subjectId === subjectId
+    (s) => s.subjectId === subjectId,
   );
-  const units = currentSubject ? getUnitsForSubject(currentSubject.subjectId) : [];
+  const units = currentSubject
+    ? getUnitsForSubject(currentSubject.subjectId)
+    : [];
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -310,9 +316,7 @@ export default function Study() {
               <h1 className="text-3xl font-bold text-gray-900">
                 {currentSubject.name}
               </h1>
-              <p className="text-gray-600 mt-1">
-                {currentSubject.description}
-              </p>
+              <p className="text-gray-600 mt-1">{currentSubject.description}</p>
             </div>
           </div>
         </div>
@@ -331,7 +335,9 @@ export default function Study() {
                 <div className="text-3xl font-bold text-blue-600">
                   {topicsMastered}/{totalTopics}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">Topics Mastered</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  Topics Mastered
+                </div>
                 <div className="flex justify-center mt-2">
                   <Trophy className="h-5 w-5 text-blue-600" />
                 </div>
@@ -357,14 +363,18 @@ export default function Study() {
             {/* Practice Test Buttons */}
             <div className="mt-8 flex flex-col gap-3 max-w-md mx-auto">
               <Button
-                onClick={() => router.push(`/practice-test/${subjectId}?type=mcq`)}
+                onClick={() =>
+                  router.push(`/practice-test/${subjectId}?type=mcq`)
+                }
                 className="bg-khan-green hover:bg-khan-green/90 w-full h-12"
               >
                 <BookOpen className="mr-2 h-5 w-5" />
                 Full AP Practice Test
               </Button>
               <Button
-                onClick={() => router.push(`/practice-test/${subjectId}?type=frq`)}
+                onClick={() =>
+                  router.push(`/practice-test/${subjectId}?type=frq`)
+                }
                 className="bg-khan-blue hover:bg-khan-blue/90 w-full h-12"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
@@ -393,7 +403,10 @@ export default function Study() {
                           {unit.description}
                         </p>
                         <div className="flex items-center gap-2">
-                          <Progress value={unit.progress} className="flex-1 max-w-xs" />
+                          <Progress
+                            value={unit.progress}
+                            className="flex-1 max-w-xs"
+                          />
                           <span className="text-sm font-medium text-gray-700">
                             {unit.progress}% Complete
                           </span>
@@ -407,7 +420,11 @@ export default function Study() {
               {/* Unit Practice Test Buttons */}
               <div className="mt-3 flex gap-3 ml-14">
                 <Button
-                  onClick={() => router.push(`/practice-test/${subjectId}?unit=${unit.id}&type=mcq`)}
+                  onClick={() =>
+                    router.push(
+                      `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
+                    )
+                  }
                   variant="outline"
                   className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white"
                 >
@@ -415,7 +432,11 @@ export default function Study() {
                   Unit MCQ Practice Test
                 </Button>
                 <Button
-                  onClick={() => router.push(`/practice-test/${subjectId}?unit=${unit.id}&type=frq`)}
+                  onClick={() =>
+                    router.push(
+                      `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
+                    )
+                  }
                   variant="outline"
                   className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
                 >
