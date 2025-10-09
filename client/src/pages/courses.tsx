@@ -1,6 +1,7 @@
 import { BookOpen } from "lucide-react";
 import { Clock } from "lucide-react";
 import { ArrowRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,7 +19,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/ui/navigation";
 import { apSubjects, difficultyColors } from "@/lib/ap-subjects";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate, safeDateParse } from "@/lib/utils";
 
@@ -40,6 +41,24 @@ export default function Courses() {
   const router = useRouter(); // Changed from useLocation()
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch user's subjects to check which are already added
+  const { data: subjectsResponse } = useQuery<{success: boolean, data: any[]}>({
+    queryKey: ["subjects"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/subjects");
+      if (!response.ok) {
+        throw new Error("Failed to fetch subjects");
+      }
+      return response.json();
+    },
+    enabled: isAuthenticated,
+  });
+
+  const addedSubjectIds = new Set(
+    (subjectsResponse?.data || []).map((subject: any) => subject.subjectId)
+  );
+
   // Add subject to dashboard mutation
   const addSubjectMutation = useMutation({
     mutationFn: async (subject: typeof apSubjects[0]) => {
@@ -61,7 +80,6 @@ export default function Courses() {
         title: "Subject added!",
         description: `${subject.name} has been added to your dashboard.`,
       });
-      router.push('/dashboard');
     },
   });
 
@@ -189,6 +207,8 @@ export default function Courses() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...apSubjects].sort((a, b) => a.name.localeCompare(b.name)).map((subject) => {
               const isActive = ['computer-science-principles', 'macroeconomics', 'microeconomics'].includes(subject.id);
+              const isAdded = addedSubjectIds.has(subject.id);
+              const isAdding = addSubjectMutation.isPending && addSubjectMutation.variables?.id === subject.id;
               
               return (
                 <Card key={subject.id} className={`bg-white transition-all border-2 ${isActive ? 'hover:shadow-md border-gray-100 hover:border-khan-green/30' : 'border-gray-200 opacity-75'}`}>
@@ -216,20 +236,28 @@ export default function Courses() {
                     </div>
 
                     <div className="flex flex-col space-y-3">
-                      {isActive ? (
+                      {!isActive ? (
+                        <Button 
+                          disabled
+                          className="w-full bg-gray-400 text-white cursor-not-allowed font-semibold"
+                        >
+                          Coming Soon
+                        </Button>
+                      ) : isAdded || isAdding ? (
+                        <Button 
+                          disabled
+                          className="w-full bg-green-100 text-green-700 cursor-not-allowed font-semibold border-2 border-green-200"
+                        >
+                          <Check className="mr-2 w-4 h-4" />
+                          Added to Dashboard
+                        </Button>
+                      ) : (
                         <Button 
                           onClick={() => handleAddToDashboard(subject)}
                           className="w-full bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold"
                         >
                           Add to Dashboard
                           <ArrowRight className="ml-2 w-4 h-4" />
-                        </Button>
-                      ) : (
-                        <Button 
-                          disabled
-                          className="w-full bg-gray-400 text-white cursor-not-allowed font-semibold"
-                        >
-                          Coming Soon
                         </Button>
                       )}
                     </div>
