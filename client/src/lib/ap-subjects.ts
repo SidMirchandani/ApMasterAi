@@ -102,6 +102,22 @@ export const apSubjects = [
     units: 6,
     difficulty: "Medium",
     examDate: "May 14, 2025"
+  },
+  {
+    id: "microeconomics",
+    name: "AP Microeconomics",
+    description: "Supply and demand, market structures, factor markets, and market failure",
+    units: 6,
+    difficulty: "Medium",
+    examDate: "May 15, 2025"
+  },
+  {
+    id: "computer-science-principles",
+    name: "AP Computer Science Principles",
+    description: "Computational thinking, programming, internet, data analysis, and impact of computing",
+    units: 7,
+    difficulty: "Medium",
+    examDate: "May 9, 2025"
   }
 ];
 

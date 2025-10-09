@@ -187,43 +187,56 @@ export default function Courses() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...apSubjects].sort((a, b) => a.name.localeCompare(b.name)).map((subject) => (
-              <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 hover:border-khan-green/30">
-                <CardHeader className="pb-4">
-                  <div className="mb-2">
-                    <CardTitle className="text-lg font-bold text-khan-gray-dark">
-                      {subject.name}
-                    </CardTitle>
-                  </div>
-                  <CardDescription className="text-khan-gray-medium leading-relaxed text-sm">
-                    {subject.description}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm text-khan-gray-medium mb-6">
-                    <div className="flex items-center space-x-1">
-                      <BookOpen className="w-4 h-4" />
-                      <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
+            {[...apSubjects].sort((a, b) => a.name.localeCompare(b.name)).map((subject) => {
+              const isActive = ['computer-science-principles', 'macroeconomics', 'microeconomics'].includes(subject.id);
+              
+              return (
+                <Card key={subject.id} className={`bg-white transition-all border-2 ${isActive ? 'hover:shadow-md border-gray-100 hover:border-khan-green/30' : 'border-gray-200 opacity-75'}`}>
+                  <CardHeader className="pb-4">
+                    <div className="mb-2">
+                      <CardTitle className="text-lg font-bold text-khan-gray-dark">
+                        {subject.name}
+                      </CardTitle>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-khan-gray-dark font-medium">{formatDate(subject.examDate)}</span>
-                    </div>
-                  </div>
+                    <CardDescription className="text-khan-gray-medium leading-relaxed text-sm">
+                      {subject.description}
+                    </CardDescription>
+                  </CardHeader>
 
-                  <div className="flex flex-col space-y-3">
-                    <Button 
-                      onClick={() => handleAddToDashboard(subject)}
-                      className="w-full bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold"
-                    >
-                      Add to Dashboard
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <CardContent>
+                    <div className="flex items-center justify-between text-sm text-khan-gray-medium mb-6">
+                      <div className="flex items-center space-x-1">
+                        <BookOpen className="w-4 h-4" />
+                        <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-4 h-4" />
+                        <span className="text-khan-gray-dark font-medium">{formatDate(subject.examDate)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col space-y-3">
+                      {isActive ? (
+                        <Button 
+                          onClick={() => handleAddToDashboard(subject)}
+                          className="w-full bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold"
+                        >
+                          Add to Dashboard
+                          <ArrowRight className="ml-2 w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <Button 
+                          disabled
+                          className="w-full bg-gray-400 text-white cursor-not-allowed font-semibold"
+                        >
+                          Coming Soon
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
 
