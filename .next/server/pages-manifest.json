@@ -4,6 +4,7 @@
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
   "/dashboard": "pages/dashboard.js",
+  "/api/user/subjects": "pages/api/user/subjects.js",
   "/study": "pages/study.js",
-  "/api/user/subjects": "pages/api/user/subjects.js"
+  "/learn": "pages/learn.js"
 }
