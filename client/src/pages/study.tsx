@@ -481,22 +481,18 @@ export default function Study() {
             {/* Full-Length Practice Test Buttons */}
             <div className="mt-8 flex flex-col md:flex-row gap-3 max-w-2xl mx-auto items-center">
               <Button
-                onClick={() =>
-                  router.push(`/practice-test/${subjectId}?type=mcq`)
-                }
-                className="bg-khan-green hover:bg-khan-green/90 w-full md:flex-1 h-12 min-h-[44px]"
+                disabled
+                className="bg-khan-green w-full md:flex-1 h-12 min-h-[44px] opacity-50 cursor-not-allowed"
               >
                 <BookOpen className="mr-2 h-5 w-5" />
-                MCQ Full-Length Test
+                MCQ Full-Length Test (Coming Soon)
               </Button>
               <Button
-                onClick={() =>
-                  router.push(`/practice-test/${subjectId}?type=frq`)
-                }
-                className="bg-khan-blue hover:bg-khan-blue/90 w-full md:flex-1 h-12 min-h-[44px]"
+                disabled
+                className="bg-khan-blue w-full md:flex-1 h-12 min-h-[44px] opacity-50 cursor-not-allowed"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
-                FRQ Full-Length Test
+                FRQ Full-Length Test (Coming Soon)
               </Button>
             </div>
           </CardContent>
@@ -587,7 +583,7 @@ export default function Study() {
                     <Button
                       onClick={() =>
                         router.push(
-                          `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
+                          `/quiz/${subjectId}?unit=${unit.id}`,
                         )
                       }
                       variant="outline"
@@ -597,16 +593,12 @@ export default function Study() {
                       Unit MCQ Practice Test
                     </Button>
                     <Button
-                      onClick={() =>
-                        router.push(
-                          `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
-                        )
-                      }
+                      disabled
                       variant="outline"
-                      className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white w-full min-h-[44px]"
+                      className="border-2 border-khan-blue text-khan-blue w-full min-h-[44px] opacity-50 cursor-not-allowed"
                     >
                       <PlayCircle className="mr-2 h-4 w-4" />
-                      Unit FRQ Practice Test
+                      Unit FRQ Practice Test (Coming Soon)
                     </Button>
                   </div>
                 </div>
