@@ -386,7 +386,7 @@ export class Storage {
     unitId: string,
     mcqScore: number
   ): Promise<any> {
-    const db = getDb(); // Assuming getDb() is available and returns a Firestore instance
+    const db = getDb();
     const subjectsRef = db.collection("user_subjects");
 
     const snapshot = await subjectsRef
@@ -401,28 +401,51 @@ export class Storage {
     const doc = snapshot.docs[0];
     const data = doc.data();
     const unitProgress = data.unitProgress || {};
+    const currentUnit = unitProgress[unitId] || { scores: [], highestScore: 0 };
 
     // Determine status based on score
-    let status = "attempted"; // Default to attempted
+    let status = "attempted";
     if (mcqScore >= 90) {
       status = "mastered";
     } else if (mcqScore >= 80) {
       status = "proficient";
     } else if (mcqScore >= 70) {
       status = "familiar";
-    } else if (mcqScore < 50) { // Explicitly handle "Not stared" or "attempted" with score < 50
-      status = "attempted"; // Or you might have a separate 'not_started' status
+    }
+
+    // Add new score to history
+    const newScore = {
+      score: mcqScore,
+      date: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    const scores = currentUnit.scores || [];
+    scores.push(newScore);
+
+    // Calculate highest score
+    const highestScore = Math.max(mcqScore, currentUnit.highestScore || 0);
+    
+    // Determine status based on highest score
+    let highestStatus = "attempted";
+    if (highestScore >= 90) {
+      highestStatus = "mastered";
+    } else if (highestScore >= 80) {
+      highestStatus = "proficient";
+    } else if (highestScore >= 70) {
+      highestStatus = "familiar";
     }
 
     unitProgress[unitId] = {
-      status,
+      status: highestStatus,
       mcqScore,
+      highestScore,
+      scores,
       lastPracticed: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     await doc.ref.update({
       unitProgress,
-      lastStudied: admin.firestore.FieldValue.serverTimestamp(), // Update lastStudied for the whole subject
+      lastStudied: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     const updated = await doc.ref.get();

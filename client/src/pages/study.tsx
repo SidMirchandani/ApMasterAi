@@ -412,7 +412,11 @@ export default function Study() {
     );
   }
 
-  const topicsMastered = 0;
+  // Calculate topics mastered based on unit progress
+  const topicsMastered = units.filter((unit) => {
+    const unitData = (currentSubject as any).unitProgress?.[unit.id];
+    return unitData?.status === "mastered";
+  }).length;
   const totalTopics = units.length;
 
   return (
@@ -517,8 +521,11 @@ export default function Study() {
                         {(() => {
                           const unitData = (currentSubject as any).unitProgress?.[unit.id];
                           const status = unitData?.status || "not-started";
+                          const highestScore = unitData?.highestScore || 0;
+                          const scores = unitData?.scores || [];
+                          const lastScore = scores.length > 0 ? scores[scores.length - 1] : null;
                           
-                          let badgeColor = "bg-gray-200 text-gray-700"; // not-started
+                          let badgeColor = "bg-gray-200 text-gray-700";
                           let badgeText = "Not Started";
                           
                           if (status === "mastered") {
@@ -534,9 +541,25 @@ export default function Study() {
                             badgeColor = "bg-orange-400 text-white";
                             badgeText = "Attempted";
                           }
+
+                          const getDateFromTimestamp = (timestamp: any) => {
+                            if (!timestamp) return null;
+                            if (timestamp.toDate) return timestamp.toDate();
+                            if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+                            return new Date(timestamp);
+                          };
+
+                          const lastScoreDate = lastScore?.date ? getDateFromTimestamp(lastScore.date) : null;
+                          const tooltipText = highestScore > 0 
+                            ? `Highest Score: ${highestScore}%${lastScoreDate ? ` (${lastScoreDate.toLocaleDateString()})` : ''}`
+                            : "No attempts yet";
                           
                           return (
-                            <Badge className={`text-xs md:hidden ${badgeColor} border border-black`}>
+                            <Badge 
+                              className={`text-xs md:hidden ${badgeColor} border border-black`}
+                              title={tooltipText}
+                            >
+                              {status === "mastered" && "👑 "}
                               {badgeText}
                             </Badge>
                           );
@@ -556,8 +579,11 @@ export default function Study() {
                     {(() => {
                       const unitData = (currentSubject as any).unitProgress?.[unit.id];
                       const status = unitData?.status || "not-started";
+                      const highestScore = unitData?.highestScore || 0;
+                      const scores = unitData?.scores || [];
+                      const lastScore = scores.length > 0 ? scores[scores.length - 1] : null;
                       
-                      let badgeColor = "bg-gray-200 text-gray-700"; // not-started
+                      let badgeColor = "bg-gray-200 text-gray-700";
                       let badgeText = "Not Started";
                       
                       if (status === "mastered") {
@@ -573,9 +599,25 @@ export default function Study() {
                         badgeColor = "bg-orange-400 text-white";
                         badgeText = "Attempted";
                       }
+
+                      const getDateFromTimestamp = (timestamp: any) => {
+                        if (!timestamp) return null;
+                        if (timestamp.toDate) return timestamp.toDate();
+                        if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
+                        return new Date(timestamp);
+                      };
+
+                      const lastScoreDate = lastScore?.date ? getDateFromTimestamp(lastScore.date) : null;
+                      const tooltipText = highestScore > 0 
+                        ? `Highest Score: ${highestScore}%${lastScoreDate ? ` (${lastScoreDate.toLocaleDateString()})` : ''}`
+                        : "No attempts yet";
                       
                       return (
-                        <Badge className={`text-xs hidden md:inline-flex ${badgeColor} border border-black mb-1`}>
+                        <Badge 
+                          className={`text-xs hidden md:inline-flex ${badgeColor} border border-black mb-1`}
+                          title={tooltipText}
+                        >
+                          {status === "mastered" && "👑 "}
                           {badgeText}
                         </Badge>
                       );

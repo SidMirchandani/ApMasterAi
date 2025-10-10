@@ -223,6 +223,27 @@ export default function Quiz() {
     setQuestions([...questions].sort(() => Math.random() - 0.5));
   };
 
+  // Save score when quiz is completed
+  useEffect(() => {
+    const saveScore = async () => {
+      if (quizCompleted && subjectId && unit) {
+        const percentage = Math.round((score / questions.length) * 100);
+        try {
+          await apiRequest(
+            "PUT",
+            `/api/user/subjects/${subjectId}/unit-progress`,
+            { unitId: unit, mcqScore: percentage }
+          );
+          console.log("Score saved successfully:", percentage);
+        } catch (error) {
+          console.error("Failed to save score:", error);
+        }
+      }
+    };
+    
+    saveScore();
+  }, [quizCompleted, subjectId, unit, score, questions.length]);
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-khan-background">
@@ -254,6 +275,26 @@ export default function Quiz() {
 
   if (quizCompleted) {
     const percentage = Math.round((score / questions.length) * 100);
+    
+    // Save the score to the backend
+    const saveScore = async () => {
+      try {
+        await apiRequest(
+          "PUT",
+          `/api/user/subjects/${subjectId}/unit-progress`,
+          { unitId: unit, mcqScore: percentage }
+        );
+        console.log("Score saved successfully");
+      } catch (error) {
+        console.error("Failed to save score:", error);
+      }
+    };
+    
+    // Save score when quiz completes
+    if (!score) {
+      saveScore();
+    }
+    
     return (
       <div className="min-h-screen bg-khan-background">
         <Navigation />
