@@ -513,9 +513,38 @@ export default function Study() {
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">
-                        {unit.title}
-                      </h3>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="text-lg font-bold text-gray-900">
+                          {unit.title}
+                        </h3>
+                        {(() => {
+                          const unitData = (currentSubject as any).unitProgress?.[unit.id];
+                          const status = unitData?.status || "not-started";
+                          
+                          let badgeColor = "bg-gray-200 text-gray-700"; // not-started
+                          let badgeText = "Not Started";
+                          
+                          if (status === "mastered") {
+                            badgeColor = "bg-green-600 text-white";
+                            badgeText = "Mastered";
+                          } else if (status === "proficient") {
+                            badgeColor = "bg-green-400 text-white";
+                            badgeText = "Proficient";
+                          } else if (status === "familiar") {
+                            badgeColor = "bg-yellow-400 text-gray-900";
+                            badgeText = "Familiar";
+                          } else if (status === "attempted") {
+                            badgeColor = "bg-orange-400 text-white";
+                            badgeText = "Attempted";
+                          }
+                          
+                          return (
+                            <Badge className={`text-xs ${badgeColor} border-0`}>
+                              {badgeText}
+                            </Badge>
+                          );
+                        })()}
+                      </div>
                       <p className="text-sm text-gray-600 mb-2">
                         {unit.description}
                       </p>

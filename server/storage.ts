@@ -1,5 +1,6 @@
 import { getDb, databaseManager } from './db';
 import { DatabaseRetryHandler } from './db-retry-handler';
+import * as admin from 'firebase-admin'; // Assuming admin is needed for FieldValue
 
 export interface UserSubject {
   id: string;
@@ -14,6 +15,7 @@ export interface UserSubject {
   masteryLevel: number;
   lastStudied?: Date;
   dateAdded: Date;
+  unitProgress?: { [unitId: string]: { status: string; mcqScore: number; lastPracticed: Date } };
 }
 
 export interface WaitlistEntry {
@@ -54,6 +56,8 @@ export class Storage {
       return null;
     }
     try {
+      // Ensure getDb is properly imported or defined and returns a Firestore instance
+      // If getDb() relies on admin.initializeApp(), that should be handled elsewhere.
       return getDb();
     } catch (error) {
       console.warn("Failed to get database instance:", error);
@@ -213,13 +217,14 @@ export class Storage {
     });
   }
 
-  async addUserSubject(subject: Omit<UserSubject, 'id' | 'dateAdded'>): Promise<UserSubject> {
+  async addUserSubject(subject: Omit<UserSubject, 'id' | 'dateAdded' | 'unitProgress'>): Promise<UserSubject> {
     if (isDevelopmentMode()) {
       // Development mode fallback
       const subjectId = `dev-subject-${devStorage.nextSubjectId++}`;
       const subjectData: Omit<UserSubject, 'id'> = {
         ...subject,
         dateAdded: new Date(),
+        unitProgress: {}, // Initialize unitProgress in dev mode
       };
       devStorage.userSubjects.set(subjectId, subjectData);
       return { id: subjectId, ...subjectData } as UserSubject;
@@ -233,6 +238,7 @@ export class Storage {
       const subjectData: Omit<UserSubject, 'id'> = {
         ...subject,
         dateAdded: new Date(),
+        unitProgress: {}, // Initialize unitProgress
       };
 
       await docRef.set(subjectData);
@@ -278,7 +284,7 @@ export class Storage {
 
   async deleteUserSubject(subjectId: string): Promise<void> {
     console.log("[Storage] deleteUserSubject called with ID:", subjectId);
-    
+
     if (isDevelopmentMode()) {
       // Development mode fallback
       if (!devStorage.userSubjects.has(subjectId)) {
@@ -293,7 +299,7 @@ export class Storage {
     return DatabaseRetryHandler.withRetry(async () => {
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
-      
+
       console.log("[Storage] Attempting to delete from Firestore:", subjectId);
       await db.collection('user_subjects').doc(subjectId).delete();
       console.log("[Storage] Successfully deleted from Firestore:", subjectId);
@@ -343,6 +349,105 @@ export class Storage {
 
       return !query.empty;
     });
+  }
+
+  async updateSubjectMasteryLevel(
+    userId: string,
+    subjectId: string,
+    masteryLevel: number
+  ): Promise<any> {
+    const db = getDb(); // Assuming getDb() is available and returns a Firestore instance
+    const subjectsRef = db.collection("user_subjects");
+
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (snapshot.empty) {
+      throw new Error("Subject not found");
+    }
+
+    const doc = snapshot.docs[0];
+    await doc.ref.update({
+      masteryLevel: masteryLevel,
+      lastStudied: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    const updated = await doc.ref.get();
+    return { id: updated.id, ...updated.data() };
+  }
+
+  async updateUnitProgress(
+    userId: string,
+    subjectId: string,
+    unitId: string,
+    mcqScore: number
+  ): Promise<any> {
+    const db = getDb(); // Assuming getDb() is available and returns a Firestore instance
+    const subjectsRef = db.collection("user_subjects");
+
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (snapshot.empty) {
+      throw new Error("Subject not found");
+    }
+
+    const doc = snapshot.docs[0];
+    const data = doc.data();
+    const unitProgress = data.unitProgress || {};
+
+    // Determine status based on score
+    let status = "attempted"; // Default to attempted
+    if (mcqScore >= 90) {
+      status = "mastered";
+    } else if (mcqScore >= 80) {
+      status = "proficient";
+    } else if (mcqScore >= 70) {
+      status = "familiar";
+    } else if (mcqScore < 50) { // Explicitly handle "Not stared" or "attempted" with score < 50
+      status = "attempted"; // Or you might have a separate 'not_started' status
+    }
+
+    unitProgress[unitId] = {
+      status,
+      mcqScore,
+      lastPracticed: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    await doc.ref.update({
+      unitProgress,
+      lastStudied: admin.firestore.FieldValue.serverTimestamp(), // Update lastStudied for the whole subject
+    });
+
+    const updated = await doc.ref.get();
+    return { id: updated.id, ...updated.data() };
+  }
+
+  async getUnitProgress(
+    userId: string,
+    subjectId: string
+  ): Promise<any> {
+    const db = getDb(); // Assuming getDb() is available and returns a Firestore instance
+    const subjectsRef = db.collection("user_subjects");
+
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (snapshot.empty) {
+      // Return empty object if subject not found, or null depending on desired behavior
+      return {};
+    }
+
+    const doc = snapshot.docs[0];
+    const data = doc.data();
+    // Ensure unitProgress exists and is an object, otherwise return empty object
+    return data.unitProgress && typeof data.unitProgress === 'object' ? data.unitProgress : {};
   }
 }
 

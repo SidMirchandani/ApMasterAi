@@ -310,28 +310,70 @@ export default function Dashboard() {
                               <span className="text-khan-gray-dark font-medium">{formatDate(subject.examDate)}</span>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between space-x-4 w-full sm:w-auto">
-                            <div className="text-right">
-                              <div className="text-sm text-khan-gray-medium">Progress</div>
-                              <div className="text-lg font-bold text-khan-gray-dark">{subject.progress}%</div>
-                            </div>
-                            <div className="w-24">
-                              <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="flex items-center space-x-2 group relative">
+                            {Array.from({ length: subject.units }).map((_, index) => {
+                              const unitId = `unit${index + 1}`;
+                              const unitData = (subject as any).unitProgress?.[unitId];
+                              const status = unitData?.status || "not-started";
+                              
+                              let bgColor = "bg-gray-200"; // not-started
+                              if (status === "mastered") bgColor = "bg-green-600";
+                              else if (status === "proficient") bgColor = "bg-green-400";
+                              else if (status === "familiar") bgColor = "bg-yellow-400";
+                              else if (status === "attempted") bgColor = "bg-orange-400";
+                              
+                              return (
                                 <div
-                                  className="bg-khan-green h-2 rounded-full transition-all duration-300"
-                                  style={{ width: `${subject.progress}%` }}
-                                ></div>
+                                  key={unitId}
+                                  className={`w-6 h-6 rounded ${bgColor} transition-all`}
+                                  title={`Unit ${index + 1}: ${status.replace('-', ' ')}`}
+                                />
+                              );
+                            })}
+                            
+                            {/* Legend on hover */}
+                            <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
+                              <div className="text-xs font-semibold mb-2">Unit Progress Legend</div>
+                              <div className="space-y-1 text-xs">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-4 h-4 rounded bg-green-600"></div>
+                                  <span>Mastered (90%+)</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-4 h-4 rounded bg-green-400"></div>
+                                  <span>Proficient (80%+)</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-4 h-4 rounded bg-yellow-400"></div>
+                                  <span>Familiar (70%+)</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-4 h-4 rounded bg-orange-400"></div>
+                                  <span>Attempted (&lt;70%)</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-4 h-4 rounded bg-gray-200"></div>
+                                  <span>Not Started</span>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
 
                         <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-                          <div className="flex items-center space-x-2 text-sm text-khan-gray-medium">
-                            <Calendar className="w-4 h-4" />
-                            <span>
-                              Added {formatDateTime(subject.dateAdded)}
-                            </span>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-sm text-khan-gray-medium">
+                            <div className="flex items-center space-x-2">
+                              <Calendar className="w-4 h-4" />
+                              <span>
+                                Added: {formatDate(subject.dateAdded)}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Clock className="w-4 h-4" />
+                              <span>
+                                Last Practice: {subject.lastStudied ? formatDate(subject.lastStudied) : 'Never'}
+                              </span>
+                            </div>
                           </div>
                           <Button
                             onClick={() => handleStartStudying(subject.subjectId)}

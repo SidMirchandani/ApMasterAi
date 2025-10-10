@@ -67,40 +67,44 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  body?: any
 ): Promise<Response> {
-  console.log(`Making API request: ${method} ${url}`);
+  const headers = await getAuthHeaders();
 
-  // Get auth headers asynchronously to ensure fresh tokens
-  const authHeaders = await getAuthHeaders();
-  console.log('Auth headers keys:', Object.keys(authHeaders));
+  console.log("Making API request:", method, url);
 
-  const headers = {
-    ...authHeaders,
-    ...(data ? { "Content-Type": "application/json" } : {}),
+  const options: RequestInit = {
+    method,
+    headers,
   };
 
-  try {
-    const res = await fetch(url, {
-      method,
-      headers,
-      body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
-    });
-
-    console.log(`API response status: ${res.status} for ${method} ${url}`);
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error(`API error response:`, errorText);
-      throw new Error(`${res.status}: ${errorText}`);
-    }
-
-    return res;
-  } catch (error) {
-    console.error(`API request failed: ${method} ${url}`, error);
-    throw error;
+  if (body) {
+    options.body = JSON.stringify(body);
   }
+
+  const response = await fetch(url, options);
+
+  console.log(`API response status: ${response.status} for ${method} ${url}`);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    console.error("API error response:", JSON.stringify(errorData));
+    throw new Error(errorData.message || `API request failed: ${method} ${url}`);
+  }
+
+  return response;
+}
+
+export async function updateUnitProgress(
+  subjectId: string,
+  unitId: string,
+  mcqScore: number
+): Promise<void> {
+  await apiRequest(
+    "PUT",
+    `/api/user/subjects/${subjectId}/unit-progress`,
+    { unitId, mcqScore }
+  );
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
