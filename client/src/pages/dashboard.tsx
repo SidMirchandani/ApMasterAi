@@ -134,7 +134,7 @@ export default function Dashboard() {
         variant: "destructive",
       });
     },
-    onSuccess: async (data, subjectDocId) => {
+    onSuccess: (data, subjectDocId) => {
       console.log('[Dashboard] Remove subject succeeded');
       
       toast({
@@ -144,11 +144,9 @@ export default function Dashboard() {
 
       setSubjectToRemove(null);
 
-      // Wait a bit for Firestore to process the deletion, then invalidate
-      // This ensures the server has committed the change before we refetch
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["subjects"] });
-      }, 300);
+      // Don't invalidate queries - the optimistic update already removed the subject
+      // Invalidating would refetch and potentially get stale data from Firestore
+      // The next natural refetch (on page load, etc.) will sync with server
     }
   });
 
