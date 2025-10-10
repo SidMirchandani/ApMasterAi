@@ -77,6 +77,24 @@ export default function Courses() {
       return response.json();
     },
     onSuccess: (data, subject) => {
+      // Optimistically update the cache immediately
+      queryClient.setQueryData(["subjects"], (oldData: any) => {
+        if (!oldData?.data) return oldData;
+        return {
+          ...oldData,
+          data: [...oldData.data, {
+            subjectId: subject.id,
+            name: subject.name,
+            description: subject.description,
+            units: subject.units,
+            difficulty: subject.difficulty,
+            examDate: subject.examDate,
+            progress: 0,
+            masteryLevel: 4
+          }]
+        };
+      });
+      
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
       toast({
         title: "Subject added!",
@@ -211,6 +229,7 @@ export default function Courses() {
               const isActive = ['computer-science-principles', 'macroeconomics', 'microeconomics'].includes(subject.id);
               const isAdded = addedSubjectIds.has(subject.id);
               const isAdding = addSubjectMutation.isPending && addSubjectMutation.variables?.id === subject.id;
+              const shouldShowAsAdded = isAdded || isAdding;
               
               return (
                 <Card key={subject.id} className={`bg-white transition-all border-2 ${isActive ? 'hover:shadow-md border-gray-100 hover:border-khan-green/30' : 'border-gray-200 opacity-75'}`}>
@@ -245,13 +264,13 @@ export default function Courses() {
                         >
                           Coming Soon
                         </Button>
-                      ) : isAdded || isAdding ? (
+                      ) : shouldShowAsAdded ? (
                         <Button 
                           disabled
                           className="w-full bg-green-100 text-green-700 cursor-not-allowed font-semibold border-2 border-green-200"
                         >
                           <Check className="mr-2 w-4 h-4" />
-                          Added to Dashboard
+                          {isAdding ? 'Adding...' : 'Added to Dashboard'}
                         </Button>
                       ) : (
                         <Button 

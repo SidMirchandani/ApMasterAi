@@ -88,24 +88,40 @@ export default function Dashboard() {
 
   // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
-    mutationFn: async (subjectId: string) => {
-      const response = await apiRequest("DELETE", `/api/user/subjects/${subjectId}`);
+    mutationFn: async (subjectDocId: string) => {
+      const response = await apiRequest("DELETE", `/api/user/subjects/${subjectDocId}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to remove subject");
       }
       return response.json();
     },
-    onSuccess: (data, subjectId) => {
-      // Optimistically remove from cache immediately for instant UI update
-      queryClient.setQueryData(["subjects"], (oldData: any) => {
-        if (!oldData?.data) return oldData;
+    onMutate: async (subjectDocId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["subjects"] });
+
+      // Snapshot the previous value
+      const previousSubjects = queryClient.getQueryData(["subjects"]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(["subjects"], (old: any) => {
+        if (!old?.data) return old;
         return {
-          ...oldData,
-          data: oldData.data.filter((subject: DashboardSubject) => subject.id.toString() !== subjectId)
+          ...old,
+          data: old.data.filter((subject: DashboardSubject) => subject.id.toString() !== subjectDocId)
         };
       });
 
+      // Return a context object with the snapshotted value
+      return { previousSubjects };
+    },
+    onError: (err, subjectDocId, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousSubjects) {
+        queryClient.setQueryData(["subjects"], context.previousSubjects);
+      }
+    },
+    onSuccess: (data, subjectDocId) => {
       // Invalidate queries to update all dependent pages (like courses page)
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
 
