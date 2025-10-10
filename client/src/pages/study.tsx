@@ -539,7 +539,7 @@ export default function Study() {
                           }
                           
                           return (
-                            <Badge className={`text-xs ${badgeColor} border-0`}>
+                            <Badge className={`text-xs ${badgeColor} border border-black`}>
                               {badgeText}
                             </Badge>
                           );

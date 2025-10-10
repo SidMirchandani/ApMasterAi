@@ -325,7 +325,7 @@ export default function Dashboard() {
                               return (
                                 <div
                                   key={unitId}
-                                  className={`w-6 h-6 rounded ${bgColor} transition-all`}
+                                  className={`w-6 h-6 rounded ${bgColor} border border-black transition-all`}
                                   title={`Unit ${index + 1}: ${status.replace('-', ' ')}`}
                                 />
                               );

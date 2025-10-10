@@ -218,12 +218,14 @@ export class Storage {
   }
 
   async addUserSubject(subject: Omit<UserSubject, 'id' | 'dateAdded' | 'unitProgress'>): Promise<UserSubject> {
+    const now = new Date();
+    
     if (isDevelopmentMode()) {
       // Development mode fallback
       const subjectId = `dev-subject-${devStorage.nextSubjectId++}`;
       const subjectData: Omit<UserSubject, 'id'> = {
         ...subject,
-        dateAdded: new Date(),
+        dateAdded: now,
         unitProgress: {}, // Initialize unitProgress in dev mode
       };
       devStorage.userSubjects.set(subjectId, subjectData);
@@ -237,7 +239,7 @@ export class Storage {
       const docRef = db.collection('user_subjects').doc();
       const subjectData: Omit<UserSubject, 'id'> = {
         ...subject,
-        dateAdded: new Date(),
+        dateAdded: now,
         unitProgress: {}, // Initialize unitProgress
       };
 
