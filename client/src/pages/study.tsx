@@ -507,7 +507,8 @@ export default function Study() {
           {units.map((unit, index) => (
             <Card key={unit.id} className="border-l-4 border-l-khan-green">
               <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                  {/* Left side: Content */}
                   <div className="flex items-start gap-4 flex-1">
                     <div className="w-10 h-10 rounded-full bg-khan-green text-white flex items-center justify-center font-bold flex-shrink-0">
                       {index + 1}
@@ -539,7 +540,7 @@ export default function Study() {
                           }
                           
                           return (
-                            <Badge className={`text-xs ${badgeColor} border border-black`}>
+                            <Badge className={`text-xs md:hidden ${badgeColor} border border-black`}>
                               {badgeText}
                             </Badge>
                           );
@@ -553,32 +554,61 @@ export default function Study() {
                       </Badge>
                     </div>
                   </div>
-                </div>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-3 mx-auto items-center justify-center max-w-2xl">
-                  <Button
-                    onClick={() =>
-                      router.push(
-                        `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
-                      )
-                    }
-                    variant="outline"
-                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white min-h-[44px] w-full md:flex-1"
-                  >
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Unit MCQ Practice Test
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      router.push(
-                        `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
-                      )
-                    }
-                    variant="outline"
-                    className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white w-full md:flex-1 min-h-[44px]"
-                  >
-                    <PlayCircle className="mr-2 h-4 w-4" />
-                    Unit FRQ Practice Test
-                  </Button>
+                  
+                  {/* Right side: Buttons stacked vertically on desktop */}
+                  <div className="flex flex-col gap-3 md:min-w-[340px] md:items-end">
+                    {(() => {
+                      const unitData = (currentSubject as any).unitProgress?.[unit.id];
+                      const status = unitData?.status || "not-started";
+                      
+                      let badgeColor = "bg-gray-200 text-gray-700"; // not-started
+                      let badgeText = "Not Started";
+                      
+                      if (status === "mastered") {
+                        badgeColor = "bg-green-600 text-white";
+                        badgeText = "Mastered";
+                      } else if (status === "proficient") {
+                        badgeColor = "bg-green-400 text-white";
+                        badgeText = "Proficient";
+                      } else if (status === "familiar") {
+                        badgeColor = "bg-yellow-400 text-gray-900";
+                        badgeText = "Familiar";
+                      } else if (status === "attempted") {
+                        badgeColor = "bg-orange-400 text-white";
+                        badgeText = "Attempted";
+                      }
+                      
+                      return (
+                        <Badge className={`text-xs hidden md:inline-flex ${badgeColor} border border-black mb-1`}>
+                          {badgeText}
+                        </Badge>
+                      );
+                    })()}
+                    <Button
+                      onClick={() =>
+                        router.push(
+                          `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
+                        )
+                      }
+                      variant="outline"
+                      className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white min-h-[44px] w-full"
+                    >
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Unit MCQ Practice Test
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        router.push(
+                          `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
+                        )
+                      }
+                      variant="outline"
+                      className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white w-full min-h-[44px]"
+                    >
+                      <PlayCircle className="mr-2 h-4 w-4" />
+                      Unit FRQ Practice Test
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
