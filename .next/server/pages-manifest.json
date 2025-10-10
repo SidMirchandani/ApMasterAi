@@ -3,8 +3,8 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/dashboard": "pages/dashboard.js",
+  "/learn": "pages/learn.js",
   "/api/user/subjects": "pages/api/user/subjects.js",
-  "/study": "pages/study.js",
-  "/learn": "pages/learn.js"
+  "/login": "pages/login.js",
+  "/dashboard": "pages/dashboard.js"
 }
