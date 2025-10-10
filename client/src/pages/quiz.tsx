@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 interface Question {
   id: number;
   question: string;
+  prompt: string; // Added prompt field
   optionA: string;
   optionB: string;
   optionC: string;
@@ -156,7 +156,7 @@ export default function Quiz() {
         }
 
         const data = await response.json();
-        
+
         console.log("📥 Questions API response:", {
           success: data.success,
           questionCount: data.data?.length || 0,
@@ -166,7 +166,7 @@ export default function Quiz() {
             hasOptions: !!(data.data[0].optionA && data.data[0].optionB)
           } : null
         });
-        
+
         if (data.success && data.data && data.data.length > 0) {
           // Shuffle and select up to 25 questions
           const shuffled = [...data.data].sort(() => Math.random() - 0.5);
@@ -336,7 +336,7 @@ export default function Quiz() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg font-medium leading-relaxed">
-              {currentQuestion.question}
+              {currentQuestion.prompt}
             </CardTitle>
           </CardHeader>
           <CardContent>
