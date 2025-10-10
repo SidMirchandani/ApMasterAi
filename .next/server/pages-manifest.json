@@ -6,5 +6,5 @@
   "/learn": "pages/learn.js",
   "/api/user/subjects": "pages/api/user/subjects.js",
   "/dashboard": "pages/dashboard.js",
-  "/api/user/subjects/[subjectId]": "pages/api/user/subjects/[subjectId].js"
+  "/study": "pages/study.js"
 }
