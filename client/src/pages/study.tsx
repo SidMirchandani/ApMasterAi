@@ -473,12 +473,12 @@ export default function Study() {
             </div>
 
             {/* Full-Length Practice Test Buttons */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
+            <div className="mt-8 flex flex-col gap-3 max-w-2xl mx-auto">
               <Button
                 onClick={() =>
                   router.push(`/practice-test/${subjectId}?type=mcq`)
                 }
-                className="bg-khan-green hover:bg-khan-green/90 w-full sm:flex-1 h-12 min-h-[44px]"
+                className="bg-khan-green hover:bg-khan-green/90 w-full h-12 min-h-[44px]"
               >
                 <BookOpen className="mr-2 h-5 w-5" />
                 MCQ Full-Length Test
@@ -487,7 +487,7 @@ export default function Study() {
                 onClick={() =>
                   router.push(`/practice-test/${subjectId}?type=frq`)
                 }
-                className="bg-khan-blue hover:bg-khan-blue/90 w-full sm:flex-1 h-12 min-h-[44px]"
+                className="bg-khan-blue hover:bg-khan-blue/90 w-full h-12 min-h-[44px]"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 FRQ Full-Length Test
@@ -519,7 +519,7 @@ export default function Study() {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 ml-0 sm:ml-14">
+                <div className="flex flex-col gap-3 ml-0 sm:ml-14">
                   <Button
                     onClick={() =>
                       router.push(
@@ -527,7 +527,7 @@ export default function Study() {
                       )
                     }
                     variant="outline"
-                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white min-h-[44px] w-full sm:w-auto"
+                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white min-h-[44px] w-full"
                   >
                     <BookOpen className="mr-2 h-4 w-4" />
                     Unit MCQ Practice Test
@@ -539,7 +539,7 @@ export default function Study() {
                       )
                     }
                     variant="outline"
-                    className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white w-full sm:w-auto min-h-[44px]"
+                    className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white w-full min-h-[44px]"
                   >
                     <PlayCircle className="mr-2 h-4 w-4" />
                     Unit FRQ Practice Test
