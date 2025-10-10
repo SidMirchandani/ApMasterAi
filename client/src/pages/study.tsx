@@ -449,7 +449,7 @@ export default function Study() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              <div className="text-center p-6 rounded-lg border bg-white shadow">
+              <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">
                   {topicsMastered}/{totalTopics}
                 </div>
@@ -460,14 +460,14 @@ export default function Study() {
                   <Trophy className="h-5 w-5 text-blue-600" />
                 </div>
               </div>
-              <div className="text-center p-6 rounded-lg border bg-white shadow">
+              <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600">4</div>
                 <div className="text-sm text-gray-600 mt-1">Expected Score</div>
                 <div className="flex justify-center mt-2">
                   <Target className="h-5 w-5 text-purple-600" />
                 </div>
               </div>
-              <div className="text-center p-6 rounded-lg border bg-white shadow">
+              <div className="text-center">
                 <div className="text-3xl font-bold text-orange-600">
                   {formatDate(currentSubject.examDate)}
                 </div>
@@ -484,7 +484,7 @@ export default function Study() {
                 onClick={() =>
                   router.push(`/practice-test/${subjectId}?type=mcq`)
                 }
-                className="bg-khan-green hover:bg-khan-green w-full md:flex-1 h-12 min-h-[44px]"
+                className="bg-khan-green hover:bg-khan-green/90 w-full md:flex-1 h-12 min-h-[44px]"
               >
                 <BookOpen className="mr-2 h-5 w-5" />
                 MCQ Full-Length Test
@@ -493,7 +493,7 @@ export default function Study() {
                 onClick={() =>
                   router.push(`/practice-test/${subjectId}?type=frq`)
                 }
-                className="bg-khan-blue hover:bg-khan-blue w-full md:flex-1 h-12 min-h-[44px]"
+                className="bg-khan-blue hover:bg-khan-blue/90 w-full md:flex-1 h-12 min-h-[44px]"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 FRQ Full-Length Test
@@ -505,16 +505,15 @@ export default function Study() {
         {/* Study Units */}
         <div className="space-y-4">
           {units.map((unit, index) => (
-            <Card key={unit.id} className="border-l-4 border-l-khan-green hover:shadow-lg transition-shadow">
+            <Card key={unit.id} className="border-l-4 border-l-khan-green">
               <CardContent className="pt-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                  {/* Left side: Unit info */}
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-khan-green to-khan-green-light text-white flex items-center justify-center font-bold flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-khan-green text-white flex items-center justify-center font-bold flex-shrink-0">
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-start justify-between gap-2 mb-1">
                         <h3 className="text-lg font-bold text-gray-900">
                           {unit.title}
                         </h3>
@@ -540,13 +539,13 @@ export default function Study() {
                           }
                           
                           return (
-                            <Badge className={`text-xs ${badgeColor}`}>
+                            <Badge className={`text-xs ${badgeColor} border border-black`}>
                               {badgeText}
                             </Badge>
                           );
                         })()}
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">
+                      <p className="text-sm text-gray-600 mb-2">
                         {unit.description}
                       </p>
                       <Badge variant="outline" className="text-xs">
@@ -554,32 +553,32 @@ export default function Study() {
                       </Badge>
                     </div>
                   </div>
-
-                  {/* Right side: Action buttons - stacked on mobile, side by side on desktop */}
-                  <div className="flex flex-col gap-3 lg:min-w-[340px]">
-                    <Button
-                      onClick={() =>
-                        router.push(
-                          `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
-                        )
-                      }
-                      className="bg-khan-green hover:bg-khan-green text-white min-h-[44px] w-full"
-                    >
-                      <BookOpen className="mr-2 h-4 w-4" />
-                      Unit MCQ Practice Test
-                    </Button>
-                    <Button
-                      onClick={() =>
-                        router.push(
-                          `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
-                        )
-                      }
-                      className="bg-khan-blue hover:bg-khan-blue text-white w-full min-h-[44px]"
-                    >
-                      <PlayCircle className="mr-2 h-4 w-4" />
-                      Unit FRQ Practice Test
-                    </Button>
-                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 mx-auto items-center justify-center max-w-2xl">
+                  <Button
+                    onClick={() =>
+                      router.push(
+                        `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
+                      )
+                    }
+                    variant="outline"
+                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white min-h-[44px] w-full md:flex-1"
+                  >
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Unit MCQ Practice Test
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      router.push(
+                        `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
+                      )
+                    }
+                    variant="outline"
+                    className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white w-full md:flex-1 min-h-[44px]"
+                  >
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    Unit FRQ Practice Test
+                  </Button>
                 </div>
               </CardContent>
             </Card>

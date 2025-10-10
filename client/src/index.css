@@ -105,81 +105,28 @@ html, body {
   .text-khan-gray-dark { color: var(--khan-gray-dark); }
   .text-khan-gray-medium { color: var(--khan-gray-medium); }
   .text-khan-gray-light { color: var(--khan-gray-light); }
-
-  /* Light background buttons with colored borders/text that invert on hover */
-  .bg-khan-green { 
-    background-color: hsl(116, 100%, 97%);
-    color: var(--khan-green);
-    border: 2px solid var(--khan-green);
-  }
-  .bg-khan-blue { 
-    background-color: hsl(216, 85%, 97%);
-    color: var(--khan-blue);
-    border: 2px solid var(--khan-blue);
-  }
-  .bg-khan-purple { 
-    background-color: hsl(248, 100%, 97%);
-    color: var(--khan-purple);
-    border: 2px solid var(--khan-purple);
-  }
-  .bg-khan-orange { 
-    background-color: hsl(28, 96%, 97%);
-    color: var(--khan-orange);
-    border: 2px solid var(--khan-orange);
-  }
-  .bg-khan-red { 
-    background-color: hsl(6, 78%, 97%);
-    color: var(--khan-red);
-    border: 2px solid var(--khan-red);
-  }
-
+  
+  .bg-khan-green { background-color: var(--khan-green); }
   .bg-khan-green-light { background-color: var(--khan-green-light); }
+  .bg-khan-blue { background-color: var(--khan-blue); }
+  .bg-khan-purple { background-color: var(--khan-purple); }
+  .bg-khan-orange { background-color: var(--khan-orange); }
+  .bg-khan-red { background-color: var(--khan-red); }
   .bg-khan-gray-dark { background-color: var(--khan-gray-dark); }
   .bg-khan-gray-medium { background-color: var(--khan-gray-medium); }
   .bg-khan-gray-light { background-color: var(--khan-gray-light); }
   .bg-khan-background { background-color: var(--khan-background); }
-
+  
   .border-khan-green { border-color: var(--khan-green); }
   .border-khan-blue { border-color: var(--khan-blue); }
   .border-khan-purple { border-color: var(--khan-purple); }
   .border-khan-orange { border-color: var(--khan-orange); }
   .border-khan-gray-light { border-color: var(--khan-gray-light); }
 
-  /* Invert colors on hover and active - solid background with white text */
-  .hover\:bg-khan-green:hover,
-  .hover\:bg-khan-green:active { 
-    background-color: var(--khan-green);
-    color: white;
-    border-color: var(--khan-green);
-  }
-  .hover\:bg-khan-blue:hover,
-  .hover\:bg-khan-blue:active { 
-    background-color: var(--khan-blue);
-    color: white;
-    border-color: var(--khan-blue);
-  }
-  .hover\:bg-khan-purple:hover,
-  .hover\:bg-khan-purple:active { 
-    background-color: var(--khan-purple);
-    color: white;
-    border-color: var(--khan-purple);
-  }
-  .hover\:bg-khan-orange:hover,
-  .hover\:bg-khan-orange:active { 
-    background-color: var(--khan-orange);
-    color: white;
-    border-color: var(--khan-orange);
-  }
-  
-  /* Disabled state keeps light background but reduces opacity */
-  .bg-khan-green:disabled,
-  .bg-khan-blue:disabled,
-  .bg-khan-purple:disabled,
-  .bg-khan-orange:disabled,
-  .bg-khan-red:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  .hover\:bg-khan-green:hover { background-color: var(--khan-green); }
+  .hover\:bg-khan-blue:hover { background-color: var(--khan-blue); }
+  .hover\:bg-khan-purple:hover { background-color: var(--khan-purple); }
+  .hover\:bg-khan-orange:hover { background-color: var(--khan-orange); }
 
   .hover\:text-khan-green:hover { color: var(--khan-green); }
   .hover\:text-khan-blue:hover { color: var(--khan-blue); }
