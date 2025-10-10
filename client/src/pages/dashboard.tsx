@@ -45,6 +45,27 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
 
+  // Fetch user profile
+  const { data: userProfile } = useQuery<{
+    success: boolean;
+    data: {
+      firstName: string;
+      lastName: string;
+      displayName: string;
+      email: string;
+    };
+  }>({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/me");
+      if (!response.ok) {
+        throw new Error("Failed to fetch user profile");
+      }
+      return response.json();
+    },
+    enabled: isAuthenticated && !!user,
+  });
+
   // Optimized data fetching with better loading states
   const {
     data: subjectsResponse,
@@ -229,7 +250,7 @@ export default function Dashboard() {
         <div className="max-w-6xl mx-auto w-full">
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-khan-gray-dark mb-2">
-              Welcome back, {user?.email?.split('@')[0] || 'Student'}!
+              Welcome back, {userProfile?.data?.firstName || user?.email?.split('@')[0] || 'Student'}!
             </h1>
             <p className="text-xl text-khan-gray-medium">
               Continue your AP preparation journey

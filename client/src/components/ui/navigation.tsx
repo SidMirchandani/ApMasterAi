@@ -128,6 +128,14 @@ export default function Navigation() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
+                    onClick={() => router.push("/profile")}
+                    className="cursor-pointer"
+                    data-testid="button-profile"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
                     onClick={handleLogout}
                     className="cursor-pointer text-khan-red focus:text-khan-red"
                     data-testid="button-logout"
