@@ -43,6 +43,17 @@ export default async function handler(
       queriedFor: { subject, section }
     });
 
+    // If empty, let's check what data exists in the collection
+    if (snapshot.empty) {
+      const sampleSnapshot = await questionsRef.limit(3).get();
+      const sampleDocs = sampleSnapshot.docs.map(doc => ({
+        id: doc.id,
+        subject_code: doc.data().subject_code,
+        section_code: doc.data().section_code
+      }));
+      console.log("📋 Sample documents in mcqQuestions collection:", sampleDocs);
+    }
+
     if (snapshot.empty) {
       return res.status(200).json({
         success: true,
