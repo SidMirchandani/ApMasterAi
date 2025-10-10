@@ -21,13 +21,71 @@ interface Question {
   explanation: string;
 }
 
-const UNIT_SECTION_MAP: Record<string, string> = {
-  unit1: "BEC",
-  unit2: "EIBC",
-  unit3: "NIPD",
-  unit4: "FS",
-  unit5: "LRCSP",
-  unit6: "OEITF",
+// Map subject IDs to their API codes
+const SUBJECT_API_CODES: Record<string, string> = {
+  "macroeconomics": "APMACRO",
+  "microeconomics": "APMICRO",
+  "computer-science-principles": "APCSP",
+  "calculus-ab": "APCALCAB",
+  "calculus-bc": "APCALCBC",
+  "biology": "APBIO",
+};
+
+// Map subject IDs to their unit-section mappings
+const SUBJECT_UNIT_MAPS: Record<string, Record<string, string>> = {
+  "macroeconomics": {
+    unit1: "BEC",
+    unit2: "EIBC",
+    unit3: "NIPD",
+    unit4: "FS",
+    unit5: "LRCSP",
+    unit6: "OEITF",
+  },
+  "microeconomics": {
+    unit1: "BEC",
+    unit2: "SD",
+    unit3: "PCCPM",
+    unit4: "IC",
+    unit5: "FM",
+    unit6: "MFROG",
+  },
+  "computer-science-principles": {
+    bigidea1: "CD",
+    bigidea2: "DATA",
+    bigidea3: "AAP",
+    bigidea4: "CSN",
+    bigidea5: "IOC",
+  },
+  "calculus-ab": {
+    unit1: "LC",
+    unit2: "DDFP",
+    unit3: "DCIF",
+    unit4: "CAD",
+    unit5: "AAD",
+    unit6: "IAC",
+    unit7: "DE",
+    unit8: "AI",
+  },
+  "calculus-bc": {
+    unit1: "LC",
+    unit2: "DDFP",
+    unit3: "DCIF",
+    unit4: "CAD",
+    unit5: "AAD",
+    unit6: "IAC",
+    unit7: "DE",
+    unit8: "AI",
+  },
+  "biology": {
+    unit1: "COL",
+    unit2: "CSF",
+    unit3: "CE",
+    unit4: "CCCC",
+    unit5: "HER",
+    unit6: "GER",
+    unit7: "NS",
+    unit8: "ECO",
+  },
 };
 
 export default function Quiz() {
@@ -52,13 +110,21 @@ export default function Quiz() {
 
   useEffect(() => {
     const fetchQuestions = async () => {
-      if (!unit || !subjectId || subjectId !== "macroeconomics") {
+      if (!unit || !subjectId) {
         setError("Invalid quiz parameters");
         setIsLoading(false);
         return;
       }
 
-      const sectionCode = UNIT_SECTION_MAP[unit as string];
+      // Get the unit map for this subject
+      const unitMap = SUBJECT_UNIT_MAPS[subjectId as string];
+      if (!unitMap) {
+        setError(`Quiz not yet available for ${subjectId}`);
+        setIsLoading(false);
+        return;
+      }
+
+      const sectionCode = unitMap[unit as string];
       if (!sectionCode) {
         setError("Invalid unit");
         setIsLoading(false);
@@ -66,9 +132,16 @@ export default function Quiz() {
       }
 
       try {
+        const subjectApiCode = SUBJECT_API_CODES[subjectId as string];
+        if (!subjectApiCode) {
+          setError(`Quiz not yet available for ${subjectId}`);
+          setIsLoading(false);
+          return;
+        }
+
         const response = await apiRequest(
           "GET",
-          `/api/questions?subject=APMACRO&section=${sectionCode}&limit=25`
+          `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`
         );
 
         if (!response.ok) {
