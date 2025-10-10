@@ -219,7 +219,7 @@ export class Storage {
 
   async addUserSubject(subject: Omit<UserSubject, 'id' | 'dateAdded' | 'unitProgress'>): Promise<UserSubject> {
     const now = new Date();
-    
+
     if (isDevelopmentMode()) {
       // Development mode fallback
       const subjectId = `dev-subject-${devStorage.nextSubjectId++}`;

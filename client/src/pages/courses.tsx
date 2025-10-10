@@ -165,8 +165,7 @@ export default function Courses() {
       ...subject,
       difficulty: adjustedDifficulty,
       units: adjustedUnits,
-      examDate: formattedExamDate,
-      dateAdded: new Date().toISOString() // Explicitly set dateAdded
+      examDate: formattedExamDate
     });
   };
 
