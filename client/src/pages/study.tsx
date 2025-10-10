@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import {
   PlayCircle,
   ArrowLeft,
   Trophy,
+  HelpCircle,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -410,7 +410,7 @@ export default function Study() {
   const totalTopics = units.length;
 
   return (
-    <div className="min-h-screen bg-khan-background">
+    <div className="min-h-screen bg-khan-background overflow-x-hidden">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -519,7 +519,7 @@ export default function Study() {
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-3 ml-14">
+                <div className="flex flex-col sm:flex-row gap-3 ml-14">
                   <Button
                     onClick={() =>
                       router.push(
@@ -527,7 +527,7 @@ export default function Study() {
                       )
                     }
                     variant="outline"
-                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white"
+                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white min-h-[44px]"
                   >
                     <BookOpen className="mr-2 h-4 w-4" />
                     Unit MCQ Practice Test
@@ -539,7 +539,7 @@ export default function Study() {
                       )
                     }
                     variant="outline"
-                    className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
+                    className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white sm:w-auto w-full min-h-[44px]"
                   >
                     <PlayCircle className="mr-2 h-4 w-4" />
                     Unit FRQ Practice Test

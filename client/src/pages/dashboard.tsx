@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Clock, Trash2, Plus, Calendar, AlertTriangle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuth } from "@/contexts/auth-auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate, formatDateTime } from "@/lib/utils";
@@ -196,11 +196,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-khan-background">
+    <div className="min-h-screen bg-khan-background overflow-x-hidden">
       <Navigation />
 
-      <div className="py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+      <main className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto w-full">
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-khan-gray-dark mb-2">
               Welcome back, {user?.email?.split('@')[0] || 'Student'}!
@@ -299,8 +299,8 @@ export default function Dashboard() {
                       </CardHeader>
 
                       <CardContent>
-                        <div className="flex items-center justify-between mb-6">
-                          <div className="flex items-center space-x-6">
+                        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 space-y-4 sm:space-y-0 sm:space-x-6">
+                          <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 w-full sm:w-auto">
                             <div className="flex items-center space-x-2 text-khan-gray-medium">
                               <BookOpen className="w-4 h-4" />
                               <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
@@ -310,7 +310,7 @@ export default function Dashboard() {
                               <span className="text-khan-gray-dark font-medium">{formatDate(subject.examDate)}</span>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-4">
+                          <div className="flex items-center justify-between space-x-4 w-full sm:w-auto">
                             <div className="text-right">
                               <div className="text-sm text-khan-gray-medium">Progress</div>
                               <div className="text-lg font-bold text-khan-gray-dark">{subject.progress}%</div>
@@ -326,7 +326,7 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
                           <div className="flex items-center space-x-2 text-sm text-khan-gray-medium">
                             <Calendar className="w-4 h-4" />
                             <span>
@@ -335,7 +335,7 @@ export default function Dashboard() {
                           </div>
                           <Button
                             onClick={() => handleStartStudying(subject.subjectId)}
-                            className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
+                            className="w-full sm:w-auto bg-khan-green hover:bg-khan-green-light text-white min-h-[44px]"
                           >
                             Continue Practice
                           </Button>
@@ -348,7 +348,7 @@ export default function Dashboard() {
             </>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

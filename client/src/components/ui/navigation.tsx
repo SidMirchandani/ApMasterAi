@@ -36,8 +36,8 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="border-b border-khan-gray-light bg-white sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="border-b border-khan-gray-light bg-white sticky top-0 z-50 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex justify-between items-center h-16">
           <Link
             href={isAuthenticated ? "/dashboard" : "/"}
