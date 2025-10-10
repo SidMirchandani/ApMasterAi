@@ -583,7 +583,7 @@ export default function Study() {
                     <Button
                       onClick={() =>
                         router.push(
-                          `/quiz/${subjectId}?unit=${unit.id}`,
+                          `/quiz?subject=${subjectId}&unit=${unit.id}`,
                         )
                       }
                       variant="outline"

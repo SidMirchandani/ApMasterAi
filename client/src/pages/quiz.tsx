@@ -33,7 +33,7 @@ const UNIT_SECTION_MAP: Record<string, string> = {
 export default function Quiz() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const { id: subjectId, unit } = router.query;
+  const { subject: subjectId, unit } = router.query;
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
