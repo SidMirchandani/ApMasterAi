@@ -134,17 +134,21 @@ export default function Dashboard() {
         variant: "destructive",
       });
     },
-    onSuccess: (data, subjectDocId) => {
+    onSuccess: async (data, subjectDocId) => {
       console.log('[Dashboard] Remove subject succeeded');
-      // Invalidate queries to update all dependent pages (like courses page)
-      queryClient.invalidateQueries({ queryKey: ["subjects"] });
-
+      
       toast({
         title: "Subject removed",
         description: "Your subject has been successfully removed.",
       });
 
       setSubjectToRemove(null);
+
+      // Wait a bit for Firestore to process the deletion, then invalidate
+      // This ensures the server has committed the change before we refetch
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      }, 300);
     }
   });
 
