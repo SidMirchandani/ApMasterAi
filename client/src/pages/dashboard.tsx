@@ -144,9 +144,11 @@ export default function Dashboard() {
 
       setSubjectToRemove(null);
 
-      // Don't invalidate queries - the optimistic update already removed the subject
-      // Invalidating would refetch and potentially get stale data from Firestore
-      // The next natural refetch (on page load, etc.) will sync with server
+      // Invalidate queries to update courses page in real-time
+      // Use a small delay to ensure Firestore has committed the deletion
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      }, 500);
     }
   });
 
