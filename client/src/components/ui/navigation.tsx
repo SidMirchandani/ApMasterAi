@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { logout } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Navigation() {
   const router = useRouter();
