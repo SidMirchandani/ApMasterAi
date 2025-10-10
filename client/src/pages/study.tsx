@@ -542,26 +542,47 @@ export default function Study() {
                             badgeText = "Attempted";
                           }
 
-                          const getDateFromTimestamp = (timestamp: any) => {
-                            if (!timestamp) return null;
-                            if (timestamp.toDate) return timestamp.toDate();
-                            if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
-                            return new Date(timestamp);
-                          };
-
-                          const lastScoreDate = lastScore?.date ? getDateFromTimestamp(lastScore.date) : null;
-                          const tooltipText = highestScore > 0 
-                            ? `Highest Score: ${highestScore}%${lastScoreDate ? ` (${lastScoreDate.toLocaleDateString()})` : ''}`
-                            : "No attempts yet";
+                          // Add highest score to badge text if available
+                          if (highestScore > 0) {
+                            badgeText += `: Highest Score: ${Math.round(highestScore * 25 / 100)}/25`;
+                          }
                           
                           return (
-                            <Badge 
-                              className={`text-xs md:hidden ${badgeColor} border border-black`}
-                              title={tooltipText}
-                            >
-                              {status === "mastered" && "👑 "}
-                              {badgeText}
-                            </Badge>
+                            <div className="relative group md:hidden">
+                              <Badge 
+                                className={`text-xs ${badgeColor} border border-black cursor-help`}
+                              >
+                                {status === "mastered" && "👑 "}
+                                {badgeText}
+                              </Badge>
+                              
+                              {/* Legend on hover */}
+                              <div className="absolute top-full left-0 mt-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
+                                <div className="text-xs font-semibold mb-2">Unit Progress Legend</div>
+                                <div className="space-y-1 text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-green-600"></div>
+                                    <span>Mastered (90%+)</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-green-400"></div>
+                                    <span>Proficient (80%+)</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-yellow-400"></div>
+                                    <span>Familiar (70%+)</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-orange-400"></div>
+                                    <span>Attempted (&lt;70%)</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-gray-200"></div>
+                                    <span>Not Started</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           );
                         })()}
                       </div>
@@ -607,19 +628,47 @@ export default function Study() {
                         return new Date(timestamp);
                       };
 
-                      const lastScoreDate = lastScore?.date ? getDateFromTimestamp(lastScore.date) : null;
-                      const tooltipText = highestScore > 0 
-                        ? `Highest Score: ${highestScore}%${lastScoreDate ? ` (${lastScoreDate.toLocaleDateString()})` : ''}`
-                        : "No attempts yet";
+                      // Add highest score to badge text if available
+                      if (highestScore > 0) {
+                        badgeText += `: Highest Score: ${Math.round(highestScore * 25 / 100)}/25`;
+                      }
                       
                       return (
-                        <Badge 
-                          className={`text-xs hidden md:inline-flex ${badgeColor} border border-black mb-1`}
-                          title={tooltipText}
-                        >
-                          {status === "mastered" && "👑 "}
-                          {badgeText}
-                        </Badge>
+                        <div className="relative group hidden md:block mb-1">
+                          <Badge 
+                            className={`text-xs ${badgeColor} border border-black cursor-help`}
+                          >
+                            {status === "mastered" && "👑 "}
+                            {badgeText}
+                          </Badge>
+                          
+                          {/* Legend on hover */}
+                          <div className="absolute top-full right-0 mt-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
+                            <div className="text-xs font-semibold mb-2">Unit Progress Legend</div>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded bg-green-600"></div>
+                                <span>Mastered (90%+)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded bg-green-400"></div>
+                                <span>Proficient (80%+)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded bg-yellow-400"></div>
+                                <span>Familiar (70%+)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded bg-orange-400"></div>
+                                <span>Attempted (&lt;70%)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded bg-gray-200"></div>
+                                <span>Not Started</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       );
                     })()}
                     <Button
