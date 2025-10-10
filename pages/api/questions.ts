@@ -32,8 +32,8 @@ export default async function handler(
     // Query Firestore for MCQ questions
     const questionsRef = db.collection('mcqQuestions');
     const snapshot = await questionsRef
-      .where('subjectCode', '==', subject as string)
-      .where('sectionCode', '==', section as string)
+      .where('subject_code', '==', subject as string)
+      .where('section_code', '==', section as string)
       .limit(questionLimit * 2) // Get more than needed for randomization
       .get();
 
@@ -64,8 +64,8 @@ export default async function handler(
       totalFound: allQuestions.length,
       returning: questions.length,
       firstQuestionId: questions[0]?.id,
-      firstQuestionSubject: questions[0]?.subjectCode,
-      firstQuestionSection: questions[0]?.sectionCode
+      firstQuestionSubject: questions[0]?.subject_code,
+      firstQuestionSection: questions[0]?.section_code
     });
 
     return res.status(200).json({
