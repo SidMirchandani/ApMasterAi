@@ -36,25 +36,25 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="border-b border-khan-gray-light bg-white sticky top-0 z-50 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+    <nav className="border-b border-khan-gray-light bg-white sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link
             href={isAuthenticated ? "/dashboard" : "/"}
-            className="flex items-center space-x-3"
+            className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0"
           >
-            <div className="w-10 h-10 bg-khan-green rounded-lg flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-white" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-khan-green rounded-lg flex items-center justify-center">
+              <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-khan-gray-dark">APMaster</span>
+            <span className="text-xl sm:text-2xl font-bold text-khan-gray-dark">APMaster</span>
           </Link>
 
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-6">
             {isAuthenticated && (
               <>
                 <Link
                   href="/learn"
-                  className={`text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
+                  className={`text-sm sm:text-base text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
                     location === "/learn"
                       ? "text-khan-green"
                       : ""
@@ -66,7 +66,7 @@ export default function Navigation() {
 
                 <Link
                   href="/dashboard"
-                  className={`text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
+                  className={`text-sm sm:text-base text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
                     location === "/dashboard"
                       ? "text-khan-green"
                       : ""
@@ -79,17 +79,17 @@ export default function Navigation() {
             )}
 
             {loading ? (
-              <div className="w-20 h-9 bg-gray-200 animate-pulse rounded" />
+              <div className="w-16 sm:w-20 h-8 sm:h-9 bg-gray-200 animate-pulse rounded" />
             ) : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="border-2 border-khan-gray-light text-khan-gray-dark hover:bg-khan-background font-medium"
+                    className="border-2 border-khan-gray-light text-khan-gray-dark hover:bg-khan-background font-medium text-sm sm:text-base px-2 sm:px-4"
                     data-testid="button-user-menu"
                   >
-                    <User className="w-4 h-4 mr-2" />
-                    Account
+                    <User className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Account</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -108,15 +108,14 @@ export default function Navigation() {
                 <Link href="/login">
                   <Button
                     variant="outline"
-                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold"
-                    asChild
+                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold text-sm sm:text-base px-3 sm:px-4"
                     data-testid="button-login"
                   >
                     Login
                   </Button>
                 </Link>
                 <Link href="/signup">
-                  <Button className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold" asChild data-testid="button-sign-up">
+                  <Button className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold text-sm sm:text-base px-3 sm:px-4" data-testid="button-sign-up">
                     Sign Up
                   </Button>
                 </Link>
