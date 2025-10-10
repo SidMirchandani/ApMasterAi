@@ -139,6 +139,13 @@ export default function Quiz() {
           return;
         }
 
+        console.log("📤 Fetching questions with params:", {
+          subject: subjectApiCode,
+          section: sectionCode,
+          unit: unit,
+          limit: 25
+        });
+
         const response = await apiRequest(
           "GET",
           `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`
@@ -149,6 +156,16 @@ export default function Quiz() {
         }
 
         const data = await response.json();
+        
+        console.log("📥 Questions API response:", {
+          success: data.success,
+          questionCount: data.data?.length || 0,
+          firstQuestion: data.data?.[0] ? {
+            id: data.data[0].id,
+            question: data.data[0].question?.substring(0, 50) + "...",
+            hasOptions: !!(data.data[0].optionA && data.data[0].optionB)
+          } : null
+        });
         
         if (data.success && data.data && data.data.length > 0) {
           // Shuffle and select up to 25 questions

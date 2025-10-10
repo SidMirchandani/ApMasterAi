@@ -23,6 +23,12 @@ export default async function handler(
     const db = getDb();
     const questionLimit = limit ? parseInt(limit as string) : 25;
 
+    console.log("🔍 Querying questions with:", {
+      subject,
+      section,
+      limit: questionLimit
+    });
+
     // Query Firestore for MCQ questions
     const questionsRef = db.collection('mcqQuestions');
     const snapshot = await questionsRef
@@ -30,6 +36,12 @@ export default async function handler(
       .where('sectionCode', '==', section as string)
       .limit(questionLimit * 2) // Get more than needed for randomization
       .get();
+
+    console.log("📊 Firestore query result:", {
+      isEmpty: snapshot.empty,
+      size: snapshot.size,
+      queriedFor: { subject, section }
+    });
 
     if (snapshot.empty) {
       return res.status(200).json({
@@ -47,6 +59,14 @@ export default async function handler(
     // Shuffle and limit
     const shuffled = allQuestions.sort(() => Math.random() - 0.5);
     const questions = shuffled.slice(0, questionLimit);
+
+    console.log("✅ Returning questions:", {
+      totalFound: allQuestions.length,
+      returning: questions.length,
+      firstQuestionId: questions[0]?.id,
+      firstQuestionSubject: questions[0]?.subjectCode,
+      firstQuestionSection: questions[0]?.sectionCode
+    });
 
     return res.status(200).json({
       success: true,
