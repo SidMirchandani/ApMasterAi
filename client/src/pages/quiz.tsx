@@ -9,16 +9,13 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 
 interface Question {
-  id: number;
-  question: string;
-  prompt: string; // Added prompt field
-  optionA: string;
-  optionB: string;
-  optionC: string;
-  optionD: string;
-  optionE: string;
-  correctAnswer: string;
+  id: string;
+  prompt: string;
+  choices: string[];
+  answerIndex: number;
   explanation: string;
+  subject_code?: string;
+  section_code?: string;
 }
 
 // Map subject IDs to their API codes
@@ -162,8 +159,8 @@ export default function Quiz() {
           questionCount: data.data?.length || 0,
           firstQuestion: data.data?.[0] ? {
             id: data.data[0].id,
-            question: data.data[0].question?.substring(0, 50) + "...",
-            hasOptions: !!(data.data[0].optionA && data.data[0].optionB)
+            prompt: data.data[0].prompt?.substring(0, 50) + "...",
+            hasChoices: Array.isArray(data.data[0].choices) && data.data[0].choices.length > 0
           } : null
         });
 
@@ -200,7 +197,8 @@ export default function Quiz() {
     if (!selectedAnswer || !currentQuestion) return;
 
     setIsAnswerSubmitted(true);
-    if (selectedAnswer === currentQuestion.correctAnswer) {
+    const correctAnswerLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
+    if (selectedAnswer === correctAnswerLabel) {
       setScore(score + 1);
     }
   };
@@ -299,13 +297,10 @@ export default function Quiz() {
     return null;
   }
 
-  const options = [
-    { label: "A", value: currentQuestion.optionA },
-    { label: "B", value: currentQuestion.optionB },
-    { label: "C", value: currentQuestion.optionC },
-    { label: "D", value: currentQuestion.optionD },
-    { label: "E", value: currentQuestion.optionE },
-  ];
+  const options = currentQuestion.choices.map((choice, index) => ({
+    label: String.fromCharCode(65 + index), // A, B, C, D, E
+    value: choice,
+  }));
 
   return (
     <div className="min-h-screen bg-khan-background">
@@ -343,7 +338,8 @@ export default function Quiz() {
             <div className="space-y-3">
               {options.map((option) => {
                 const isSelected = selectedAnswer === option.label;
-                const isCorrect = option.label === currentQuestion.correctAnswer;
+                const correctAnswerLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
+                const isCorrect = option.label === correctAnswerLabel;
                 const showCorrect = isAnswerSubmitted && isCorrect;
                 const showIncorrect = isAnswerSubmitted && isSelected && !isCorrect;
 
