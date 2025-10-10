@@ -519,7 +519,7 @@ export default function Study() {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-3 ml-0 sm:ml-14">
+                <div className="flex flex-col gap-3 ml-0 sm:ml-14 max-w-2xl mx-auto">
                   <Button
                     onClick={() =>
                       router.push(
