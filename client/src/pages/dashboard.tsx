@@ -144,11 +144,9 @@ export default function Dashboard() {
 
       setSubjectToRemove(null);
 
-      // Invalidate queries to update courses page in real-time
-      // Use a small delay to ensure Firestore has committed the deletion
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["subjects"] });
-      }, 500);
+      // Don't invalidate - the optimistic update in onMutate already updated the cache
+      // Both dashboard and courses page use the same ["subjects"] query key,
+      // so the optimistic update will reflect in both pages automatically
     }
   });
 
