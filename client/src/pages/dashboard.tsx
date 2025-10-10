@@ -103,12 +103,19 @@ export default function Dashboard() {
       // Snapshot the previous value
       const previousSubjects = queryClient.getQueryData(["subjects"]);
 
-      // Optimistically update to the new value
+      // Optimistically update to the new value - remove the subject immediately
       queryClient.setQueryData(["subjects"], (old: any) => {
         if (!old?.data) return old;
+        console.log('[Dashboard] Removing subject with ID:', subjectDocId);
+        console.log('[Dashboard] Current subjects:', old.data.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
+        const filtered = old.data.filter((subject: DashboardSubject) => {
+          const subjectIdStr = typeof subject.id === 'number' ? subject.id.toString() : subject.id;
+          return subjectIdStr !== subjectDocId;
+        });
+        console.log('[Dashboard] After filter:', filtered.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
         return {
           ...old,
-          data: old.data.filter((subject: DashboardSubject) => subject.id.toString() !== subjectDocId)
+          data: filtered
         };
       });
 
@@ -117,11 +124,18 @@ export default function Dashboard() {
     },
     onError: (err, subjectDocId, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
+      console.error('[Dashboard] Remove subject failed:', err);
       if (context?.previousSubjects) {
         queryClient.setQueryData(["subjects"], context.previousSubjects);
       }
+      toast({
+        title: "Error removing subject",
+        description: err.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
     },
     onSuccess: (data, subjectDocId) => {
+      console.log('[Dashboard] Remove subject succeeded');
       // Invalidate queries to update all dependent pages (like courses page)
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
 
@@ -134,16 +148,7 @@ export default function Dashboard() {
     }
   });
 
-  // Handle mutation errors
-  useEffect(() => {
-    if (removeSubjectMutation.error && !removeSubjectMutation.isPending) {
-      toast({
-        title: "Error removing subject",
-        description: removeSubjectMutation.error.message || "An unexpected error occurred.",
-        variant: "destructive",
-      });
-    }
-  }, [removeSubjectMutation.error, removeSubjectMutation.isPending, toast]);
+  // Error handling is now done in the mutation's onError callback
 
   // Simple auth redirect
   useEffect(() => {
