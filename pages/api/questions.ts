@@ -1,8 +1,6 @@
 
 import { NextApiRequest, NextApiResponse } from "next";
-import { db } from "@/server/db";
-import { mcqQuestions } from "@/server/db";
-import { eq, and, sql } from "drizzle-orm";
+import { getDb } from "../../server/db";
 
 export default async function handler(
   req: NextApiRequest,
@@ -22,19 +20,33 @@ export default async function handler(
   }
 
   try {
+    const db = getDb();
     const questionLimit = limit ? parseInt(limit as string) : 25;
 
-    const questions = await db
-      .select()
-      .from(mcqQuestions)
-      .where(
-        and(
-          eq(mcqQuestions.subjectCode, subject as string),
-          eq(mcqQuestions.sectionCode, section as string)
-        )
-      )
-      .orderBy(sql`RANDOM()`)
-      .limit(questionLimit);
+    // Query Firestore for MCQ questions
+    const questionsRef = db.collection('mcqQuestions');
+    const snapshot = await questionsRef
+      .where('subjectCode', '==', subject as string)
+      .where('sectionCode', '==', section as string)
+      .limit(questionLimit * 2) // Get more than needed for randomization
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
+    // Convert to array and shuffle
+    const allQuestions = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // Shuffle and limit
+    const shuffled = allQuestions.sort(() => Math.random() - 0.5);
+    const questions = shuffled.slice(0, questionLimit);
 
     return res.status(200).json({
       success: true,
@@ -45,6 +57,7 @@ export default async function handler(
     return res.status(500).json({
       success: false,
       message: "Failed to fetch questions",
+      error: error instanceof Error ? error.message : "Unknown error"
     });
   }
 }
