@@ -13,12 +13,34 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import { logout } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/api";
 
 export default function Navigation() {
   const router = useRouter();
   const location = router.pathname;
   const { user, isAuthenticated, loading } = useAuth();
   const { toast } = useToast();
+
+  const { data: userProfile } = useQuery<{
+    success: boolean;
+    data: {
+      firstName: string;
+      lastName: string;
+      displayName: string;
+      email: string;
+    };
+  }>({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/me");
+      if (!response.ok) {
+        throw new Error("Failed to fetch user profile");
+      }
+      return response.json();
+    },
+    enabled: isAuthenticated && !!user,
+  });
 
   const handleLogout = async () => {
     try {
@@ -97,7 +119,7 @@ export default function Navigation() {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        Welcome back{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}
+                        Welcome back{userProfile?.data?.firstName ? `, ${userProfile.data.firstName}` : ''}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user?.email}
