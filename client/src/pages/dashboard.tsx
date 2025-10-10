@@ -106,6 +106,9 @@ export default function Dashboard() {
         };
       });
 
+      // Invalidate queries to update all dependent pages (like courses page)
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+
       toast({
         title: "Subject removed",
         description: "Your subject has been successfully removed.",

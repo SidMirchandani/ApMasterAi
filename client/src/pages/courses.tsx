@@ -53,6 +53,8 @@ export default function Courses() {
       return response.json();
     },
     enabled: isAuthenticated,
+    refetchOnMount: "always", // Always refetch when mounting to catch deletions
+    staleTime: 0, // Consider data immediately stale
   });
 
   const addedSubjectIds = new Set(
@@ -163,7 +165,8 @@ export default function Courses() {
       ...subject,
       difficulty: adjustedDifficulty,
       units: adjustedUnits,
-      examDate: formattedExamDate
+      examDate: formattedExamDate,
+      dateAdded: new Date().toISOString() // Explicitly set dateAdded
     });
   };
 
