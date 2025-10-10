@@ -126,4 +126,17 @@
   .hover\:text-khan-blue:hover { color: var(--khan-blue); }
   .hover\:text-khan-purple:hover { color: var(--khan-purple); }
   .hover\:text-khan-orange:hover { color: var(--khan-orange); }
+
+  /* Mobile-first responsive utilities */
+  @media (max-width: 640px) {
+    .mobile-full-width {
+      width: 100%;
+    }
+  }
+
+  /* Touch-friendly spacing for mobile */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
