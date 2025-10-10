@@ -221,14 +221,16 @@ const microeconomicsUnits: Unit[] = [
   {
     id: "unit1",
     title: "Basic Economic Concepts",
-    description: "Scarcity, opportunity cost, production possibilities, and comparative advantage",
+    description:
+      "Scarcity, opportunity cost, production possibilities, and comparative advantage",
     examWeight: "12-15%",
     progress: 0,
   },
   {
     id: "unit2",
     title: "Supply and Demand",
-    description: "Market equilibrium, consumer and producer surplus, and price controls",
+    description:
+      "Market equilibrium, consumer and producer surplus, and price controls",
     examWeight: "20-25%",
     progress: 0,
   },
@@ -242,7 +244,8 @@ const microeconomicsUnits: Unit[] = [
   {
     id: "unit4",
     title: "Imperfect Competition",
-    description: "Monopoly, oligopoly, monopolistic competition, and game theory",
+    description:
+      "Monopoly, oligopoly, monopolistic competition, and game theory",
     examWeight: "15-22%",
     progress: 0,
   },
@@ -273,14 +276,16 @@ const computerSciencePrinciplesUnits: Unit[] = [
   {
     id: "bigidea2",
     title: "Data",
-    description: "Data representation, compression, and extraction of information",
+    description:
+      "Data representation, compression, and extraction of information",
     examWeight: "17-22%",
     progress: 0,
   },
   {
     id: "bigidea3",
     title: "Algorithms and Programming",
-    description: "Variables, control structures, procedures, and program development",
+    description:
+      "Variables, control structures, procedures, and program development",
     examWeight: "30-35%",
     progress: 0,
   },
@@ -294,7 +299,8 @@ const computerSciencePrinciplesUnits: Unit[] = [
   {
     id: "bigidea5",
     title: "Impact of Computing",
-    description: "Beneficial and harmful effects, digital divide, and computing innovations",
+    description:
+      "Beneficial and harmful effects, digital divide, and computing innovations",
     examWeight: "21-26%",
     progress: 0,
   },
@@ -519,7 +525,7 @@ export default function Study() {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col md:flex-row gap-3 ml-0 sm:ml-14 max-w-2xl mx-auto items-center">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 mx-auto items-center justify-center max-w-2xl">
                   <Button
                     onClick={() =>
                       router.push(
