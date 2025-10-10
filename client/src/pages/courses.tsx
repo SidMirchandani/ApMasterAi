@@ -53,8 +53,8 @@ export default function Courses() {
       return response.json();
     },
     enabled: isAuthenticated,
-    refetchOnMount: "always", // Always refetch when mounting to catch deletions
-    staleTime: 0, // Consider data immediately stale
+    refetchOnMount: false, // Trust the cache - optimistic updates will sync both pages
+    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes
   });
 
   const addedSubjectIds = new Set(
