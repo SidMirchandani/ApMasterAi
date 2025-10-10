@@ -2,10 +2,13 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/api/user/profile": "pages/api/user/profile.js",
+  "/dashboard": "pages/dashboard.js",
   "/api/user/me": "pages/api/user/me.js",
   "/api/user/subjects": "pages/api/user/subjects.js",
-  "/dashboard": "pages/dashboard.js",
-  "/login": "pages/login.js",
-  "/": "pages/index.js"
+  "/profile": "pages/profile.js",
+  "/admin": "pages/admin.js",
+  "/api/user/profile": "pages/api/user/profile.js",
+  "/study": "pages/study.js",
+  "/quiz": "pages/quiz.js",
+  "/api/questions": "pages/api/questions.js"
 }
