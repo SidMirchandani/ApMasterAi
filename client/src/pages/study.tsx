@@ -416,7 +416,7 @@ export default function Study() {
   const totalTopics = units.length;
 
   return (
-    <div className="min-h-screen bg-khan-background overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-khan-background via-white to-gray-50 overflow-x-hidden">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -440,7 +440,7 @@ export default function Study() {
         </div>
 
         {/* Your Learning Journey */}
-        <Card className="mb-8">
+        <Card className="mb-8 backdrop-blur-lg bg-gradient-to-br from-white/90 to-white/70 border-2 border-gray-200/50 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-khan-green" />
@@ -449,29 +449,29 @@ export default function Study() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">
+              <div className="text-center p-4 rounded-xl backdrop-blur-sm bg-gradient-to-br from-blue-50/80 to-blue-100/60 border border-blue-200/50 shadow-sm">
+                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
                   {topicsMastered}/{totalTopics}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-700 mt-1">
                   Topics Mastered
                 </div>
                 <div className="flex justify-center mt-2">
                   <Trophy className="h-5 w-5 text-blue-600" />
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">4</div>
-                <div className="text-sm text-gray-600 mt-1">Expected Score</div>
+              <div className="text-center p-4 rounded-xl backdrop-blur-sm bg-gradient-to-br from-purple-50/80 to-purple-100/60 border border-purple-200/50 shadow-sm">
+                <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent">4</div>
+                <div className="text-sm text-gray-700 mt-1">Expected Score</div>
                 <div className="flex justify-center mt-2">
                   <Target className="h-5 w-5 text-purple-600" />
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600">
+              <div className="text-center p-4 rounded-xl backdrop-blur-sm bg-gradient-to-br from-orange-50/80 to-orange-100/60 border border-orange-200/50 shadow-sm">
+                <div className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">
                   {formatDate(currentSubject.examDate)}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">Exam Date</div>
+                <div className="text-sm text-gray-700 mt-1">Exam Date</div>
                 <div className="flex justify-center mt-2">
                   <Clock className="h-5 w-5 text-orange-600" />
                 </div>
@@ -484,7 +484,7 @@ export default function Study() {
                 onClick={() =>
                   router.push(`/practice-test/${subjectId}?type=mcq`)
                 }
-                className="bg-khan-green hover:bg-khan-green/90 w-full md:flex-1 h-12 min-h-[44px]"
+                className="bg-gradient-to-r from-khan-green to-khan-green-light hover:shadow-lg backdrop-blur-sm w-full md:flex-1 h-12 min-h-[44px] shadow-md transition-all"
               >
                 <BookOpen className="mr-2 h-5 w-5" />
                 MCQ Full-Length Test
@@ -493,7 +493,7 @@ export default function Study() {
                 onClick={() =>
                   router.push(`/practice-test/${subjectId}?type=frq`)
                 }
-                className="bg-khan-blue hover:bg-khan-blue/90 w-full md:flex-1 h-12 min-h-[44px]"
+                className="bg-gradient-to-r from-khan-blue to-blue-600 hover:shadow-lg backdrop-blur-sm w-full md:flex-1 h-12 min-h-[44px] shadow-md transition-all"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 FRQ Full-Length Test
@@ -505,15 +505,16 @@ export default function Study() {
         {/* Study Units */}
         <div className="space-y-4">
           {units.map((unit, index) => (
-            <Card key={unit.id} className="border-l-4 border-l-khan-green">
+            <Card key={unit.id} className="border-l-4 border-l-khan-green backdrop-blur-sm bg-white/80 hover:bg-white/90 transition-all shadow-lg">
               <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                  {/* Left side: Unit info */}
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="w-10 h-10 rounded-full bg-khan-green text-white flex items-center justify-center font-bold flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-khan-green to-khan-green-light text-white flex items-center justify-center font-bold flex-shrink-0 shadow-md">
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-start justify-between gap-2 mb-2">
                         <h3 className="text-lg font-bold text-gray-900">
                           {unit.title}
                         </h3>
@@ -521,64 +522,64 @@ export default function Study() {
                           const unitData = (currentSubject as any).unitProgress?.[unit.id];
                           const status = unitData?.status || "not-started";
                           
-                          let badgeColor = "bg-gray-200 text-gray-700"; // not-started
+                          let badgeColor = "bg-gray-200/80 text-gray-700 backdrop-blur-sm"; // not-started
                           let badgeText = "Not Started";
                           
                           if (status === "mastered") {
-                            badgeColor = "bg-green-600 text-white";
+                            badgeColor = "bg-green-600/90 text-white backdrop-blur-sm";
                             badgeText = "Mastered";
                           } else if (status === "proficient") {
-                            badgeColor = "bg-green-400 text-white";
+                            badgeColor = "bg-green-400/90 text-white backdrop-blur-sm";
                             badgeText = "Proficient";
                           } else if (status === "familiar") {
-                            badgeColor = "bg-yellow-400 text-gray-900";
+                            badgeColor = "bg-yellow-400/90 text-gray-900 backdrop-blur-sm";
                             badgeText = "Familiar";
                           } else if (status === "attempted") {
-                            badgeColor = "bg-orange-400 text-white";
+                            badgeColor = "bg-orange-400/90 text-white backdrop-blur-sm";
                             badgeText = "Attempted";
                           }
                           
                           return (
-                            <Badge className={`text-xs ${badgeColor} border border-black`}>
+                            <Badge className={`text-xs ${badgeColor} border border-gray-300/50 shadow-sm`}>
                               {badgeText}
                             </Badge>
                           );
                         })()}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
+                      <p className="text-sm text-gray-600 mb-3">
                         {unit.description}
                       </p>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs backdrop-blur-sm bg-white/50 border-gray-300/50">
                         Exam Weight: {unit.examWeight}
                       </Badge>
                     </div>
                   </div>
-                </div>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-3 mx-auto items-center justify-center max-w-2xl">
-                  <Button
-                    onClick={() =>
-                      router.push(
-                        `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
-                      )
-                    }
-                    variant="outline"
-                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white min-h-[44px] w-full md:flex-1"
-                  >
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Unit MCQ Practice Test
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      router.push(
-                        `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
-                      )
-                    }
-                    variant="outline"
-                    className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white w-full md:flex-1 min-h-[44px]"
-                  >
-                    <PlayCircle className="mr-2 h-4 w-4" />
-                    Unit FRQ Practice Test
-                  </Button>
+
+                  {/* Right side: Action buttons - stacked on mobile, side by side on desktop */}
+                  <div className="flex flex-col gap-3 lg:min-w-[340px]">
+                    <Button
+                      onClick={() =>
+                        router.push(
+                          `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
+                        )
+                      }
+                      className="bg-khan-green/90 hover:bg-khan-green text-white backdrop-blur-sm shadow-md hover:shadow-lg transition-all min-h-[44px] w-full"
+                    >
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Unit MCQ Practice Test
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        router.push(
+                          `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
+                        )
+                      }
+                      className="bg-khan-blue/90 hover:bg-khan-blue text-white backdrop-blur-sm shadow-md hover:shadow-lg transition-all w-full min-h-[44px]"
+                    >
+                      <PlayCircle className="mr-2 h-4 w-4" />
+                      Unit FRQ Practice Test
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
