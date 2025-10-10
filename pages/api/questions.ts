@@ -30,7 +30,7 @@ export default async function handler(
     });
 
     // Query Firestore for MCQ questions
-    const questionsRef = db.collection('mcqQuestions');
+    const questionsRef = db.collection('questions');
     const snapshot = await questionsRef
       .where('subject_code', '==', subject as string)
       .where('section_code', '==', section as string)
@@ -51,7 +51,7 @@ export default async function handler(
         subject_code: doc.data().subject_code,
         section_code: doc.data().section_code
       }));
-      console.log("📋 Sample documents in mcqQuestions collection:", sampleDocs);
+      console.log("📋 Sample documents in questions collection:", sampleDocs);
     }
 
     if (snapshot.empty) {
