@@ -484,7 +484,7 @@ export default function Study() {
                 onClick={() =>
                   router.push(`/practice-test/${subjectId}?type=mcq`)
                 }
-                className="bg-khan-green hover:bg-khan-green/90 w-full md:flex-1 h-12 min-h-[44px]"
+                className="bg-khan-green hover:bg-khan-green w-full md:flex-1 h-12 min-h-[44px]"
               >
                 <BookOpen className="mr-2 h-5 w-5" />
                 MCQ Full-Length Test
@@ -493,7 +493,7 @@ export default function Study() {
                 onClick={() =>
                   router.push(`/practice-test/${subjectId}?type=frq`)
                 }
-                className="bg-khan-blue hover:bg-khan-blue/90 w-full md:flex-1 h-12 min-h-[44px]"
+                className="bg-khan-blue hover:bg-khan-blue w-full md:flex-1 h-12 min-h-[44px]"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 FRQ Full-Length Test
@@ -563,7 +563,7 @@ export default function Study() {
                           `/practice-test/${subjectId}?unit=${unit.id}&type=mcq`,
                         )
                       }
-                      className="bg-khan-green hover:bg-khan-green/90 text-white min-h-[44px] w-full"
+                      className="bg-khan-green hover:bg-khan-green text-white min-h-[44px] w-full"
                     >
                       <BookOpen className="mr-2 h-4 w-4" />
                       Unit MCQ Practice Test
@@ -574,7 +574,7 @@ export default function Study() {
                           `/practice-test/${subjectId}?unit=${unit.id}&type=frq`,
                         )
                       }
-                      className="bg-khan-blue hover:bg-khan-blue/90 text-white w-full min-h-[44px]"
+                      className="bg-khan-blue hover:bg-khan-blue text-white w-full min-h-[44px]"
                     >
                       <PlayCircle className="mr-2 h-4 w-4" />
                       Unit FRQ Practice Test
