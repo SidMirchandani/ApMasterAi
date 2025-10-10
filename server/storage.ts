@@ -386,6 +386,8 @@ export class Storage {
     unitId: string,
     mcqScore: number
   ): Promise<any> {
+    console.log("📝 [updateUnitProgress] Starting with:", { userId, subjectId, unitId, mcqScore });
+    
     const db = getDb();
     const subjectsRef = db.collection("user_subjects");
 
@@ -393,6 +395,11 @@ export class Storage {
       .where("userId", "==", userId)
       .where("subjectId", "==", subjectId)
       .get();
+
+    console.log("📊 [updateUnitProgress] Query result:", { 
+      empty: snapshot.empty, 
+      size: snapshot.size 
+    });
 
     if (snapshot.empty) {
       throw new Error("Subject not found");
@@ -402,6 +409,12 @@ export class Storage {
     const data = doc.data();
     const unitProgress = data.unitProgress || {};
     const currentUnit = unitProgress[unitId] || { scores: [], highestScore: 0 };
+
+    console.log("📖 [updateUnitProgress] Current unit data:", { 
+      unitId, 
+      currentScores: currentUnit.scores?.length || 0,
+      currentHighestScore: currentUnit.highestScore || 0
+    });
 
     // Determine status based on score
     let status = "attempted";
@@ -413,10 +426,10 @@ export class Storage {
       status = "familiar";
     }
 
-    // Add new score to history
+    // Add new score to history - use regular Date instead of serverTimestamp in arrays
     const newScore = {
       score: mcqScore,
-      date: admin.firestore.FieldValue.serverTimestamp(),
+      date: new Date(), // Changed from serverTimestamp()
     };
 
     const scores = currentUnit.scores || [];
@@ -435,6 +448,13 @@ export class Storage {
       highestStatus = "familiar";
     }
 
+    console.log("🎯 [updateUnitProgress] Calculated status:", { 
+      mcqScore, 
+      highestScore, 
+      status: highestStatus,
+      totalScores: scores.length
+    });
+
     unitProgress[unitId] = {
       status: highestStatus,
       mcqScore,
@@ -443,12 +463,21 @@ export class Storage {
       lastPracticed: admin.firestore.FieldValue.serverTimestamp(),
     };
 
+    console.log("💾 [updateUnitProgress] Updating Firestore with:", { 
+      unitId,
+      status: highestStatus,
+      mcqScore,
+      highestScore
+    });
+
     await doc.ref.update({
       unitProgress,
       lastStudied: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     const updated = await doc.ref.get();
+    console.log("✅ [updateUnitProgress] Update successful");
+    
     return { id: updated.id, ...updated.data() };
   }
 

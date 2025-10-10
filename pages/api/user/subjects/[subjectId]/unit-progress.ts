@@ -54,7 +54,15 @@ export default async function handler(
       case "PUT": {
         const { unitId, mcqScore } = req.body;
 
+        console.log("🔄 [unit-progress API] PUT request received:", { 
+          userId, 
+          subjectId, 
+          unitId, 
+          mcqScore 
+        });
+
         if (!unitId || typeof unitId !== "string") {
+          console.log("❌ [unit-progress API] Invalid unitId");
           return res.status(400).json({
             success: false,
             message: "Valid unit ID is required",
@@ -62,6 +70,7 @@ export default async function handler(
         }
 
         if (typeof mcqScore !== "number" || mcqScore < 0 || mcqScore > 100) {
+          console.log("❌ [unit-progress API] Invalid mcqScore:", mcqScore);
           return res.status(400).json({
             success: false,
             message: "MCQ score must be a number between 0 and 100",
@@ -74,6 +83,8 @@ export default async function handler(
           unitId,
           mcqScore,
         );
+
+        console.log("✅ [unit-progress API] Progress updated successfully");
 
         return res.status(200).json({
           success: true,

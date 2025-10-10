@@ -228,15 +228,23 @@ export default function Quiz() {
     const saveScore = async () => {
       if (quizCompleted && subjectId && unit) {
         const percentage = Math.round((score / questions.length) * 100);
+        console.log("💾 [Quiz] Attempting to save score:", { 
+          subjectId, 
+          unit, 
+          score, 
+          total: questions.length, 
+          percentage 
+        });
         try {
-          await apiRequest(
+          const response = await apiRequest(
             "PUT",
             `/api/user/subjects/${subjectId}/unit-progress`,
             { unitId: unit, mcqScore: percentage }
           );
-          console.log("Score saved successfully:", percentage);
+          console.log("✅ [Quiz] Score saved successfully:", percentage);
+          console.log("📊 [Quiz] Response data:", response);
         } catch (error) {
-          console.error("Failed to save score:", error);
+          console.error("❌ [Quiz] Failed to save score:", error);
         }
       }
     };
