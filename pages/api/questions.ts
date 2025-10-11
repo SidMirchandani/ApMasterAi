@@ -39,7 +39,7 @@ export default async function handler(
     }
     
     const snapshot = await query
-      .limit(questionLimit * 2) // Get more than needed for randomization
+      .limit(questionLimit * 4) // Get more for better randomization (especially for 50-question tests)
       .get();
 
     console.log("📊 Firestore query result:", {

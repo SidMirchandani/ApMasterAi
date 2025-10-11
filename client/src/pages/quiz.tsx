@@ -112,6 +112,7 @@ export default function Quiz() {
   const [currentPage, setCurrentPage] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [isReviewMode, setIsReviewMode] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -122,7 +123,7 @@ export default function Quiz() {
   // Add beforeunload handler to warn about losing progress
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!quizCompleted && questions.length > 0) {
+      if (!quizCompleted && questions.length > 0 && !isReviewMode) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -130,11 +131,11 @@ export default function Quiz() {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [quizCompleted, questions.length]);
+  }, [quizCompleted, questions.length, isReviewMode]);
 
   const handleBackClick = () => {
     // For full-length quiz or any incomplete quiz with questions, show warning
-    if (!quizCompleted && questions.length > 0) {
+    if (!quizCompleted && questions.length > 0 && !isReviewMode) {
       setShowExitDialog(true);
     } else {
       router.push(`/study?subject=${subjectId}`);
@@ -163,7 +164,7 @@ export default function Quiz() {
 
         // Check if this is a full-length quiz
         const isFullLength = unit === "full-length";
-        
+
         if (isFullLength) {
           // For full-length quiz, fetch ALL questions without section filter
           console.log("📤 Fetching ALL questions for full-length quiz:", {
@@ -259,19 +260,21 @@ export default function Quiz() {
   }, [isAuthenticated, unit, subjectId]);
 
   const isFullLength = unit === "full-length";
-  const questionsPerPage = isFullLength ? 10 : 1;
+  const questionsPerPage = isFullLength ? 5 : 1; // Set to 5 questions per page for full-length
   const totalPages = Math.ceil(questions.length / questionsPerPage);
-  
+
   const currentQuestions = isFullLength 
     ? questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage)
     : [questions[currentQuestionIndex]];
-  
+
   const currentQuestion = questions[currentQuestionIndex];
   const progress = isFullLength 
     ? ((currentPage + 1) / totalPages) * 100
     : ((currentQuestionIndex + 1) / questions.length) * 100;
 
   const handleAnswerSelect = (answer: string, questionIndex?: number) => {
+    if (isReviewMode) return; // Disable selection in review mode
+
     if (isFullLength && questionIndex !== undefined) {
       const globalIndex = currentPage * questionsPerPage + questionIndex;
       setUserAnswers(prev => ({ ...prev, [globalIndex]: answer }));
@@ -303,6 +306,13 @@ export default function Quiz() {
   const handleNextPage = () => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(currentPage + 1);
+      if (isFullLength) {
+        // Reset selections for the new page if not in review mode
+        if (!isReviewMode) {
+          setSelectedAnswer(null);
+          setIsAnswerSubmitted(false);
+        }
+      }
     }
   };
 
@@ -324,6 +334,7 @@ export default function Quiz() {
     setScore(correctCount);
     setQuizCompleted(true);
     setShowSubmitConfirm(false);
+    setIsReviewMode(true); // Enter review mode after submission
   };
 
   const handleRetakeQuiz = () => {
@@ -332,6 +343,9 @@ export default function Quiz() {
     setIsAnswerSubmitted(false);
     setScore(0);
     setQuizCompleted(false);
+    setIsReviewMode(false); // Exit review mode
+    setUserAnswers({}); // Clear user answers
+    setCurrentPage(0); // Reset to first page
     // Reshuffle questions
     setQuestions([...questions].sort(() => Math.random() - 0.5));
   };
@@ -364,7 +378,7 @@ export default function Quiz() {
         }
       }
     };
-    
+
     saveScore();
   }, [quizCompleted, subjectId, unit, score, questions.length, isFullLength]);
 
@@ -397,9 +411,9 @@ export default function Quiz() {
     );
   }
 
-  if (quizCompleted) {
+  if (quizCompleted && !isReviewMode) {
     const percentage = Math.round((score / questions.length) * 100);
-    
+
     // Save the score to the backend
     const saveScore = async () => {
       try {
@@ -413,12 +427,12 @@ export default function Quiz() {
         console.error("Failed to save score:", error);
       }
     };
-    
+
     // Save score when quiz completes
     if (!score) {
       saveScore();
     }
-    
+
     return (
       <div className="min-h-screen bg-khan-background">
         <Navigation />
@@ -450,9 +464,153 @@ export default function Quiz() {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to Study
                 </Button>
+                {isFullLength && (
+                  <Button onClick={() => setIsReviewMode(true)} className="bg-khan-blue hover:bg-khan-blue/90">
+                    Review Test
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Review mode for full-length test
+  if (isReviewMode && isFullLength) {
+    return (
+      <div className="min-h-screen bg-khan-background">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-semibold">
+                Review - Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
+              </h2>
+              <div className="text-lg font-semibold text-khan-green">
+                Final Score: {score}/{questions.length}
+              </div>
+            </div>
+            <Progress value={((currentPage + 1) / totalPages) * 100} className="h-2" />
+          </div>
+
+          {/* Review Questions */}
+          <div className="space-y-6 mb-6">
+            {currentQuestions.map((q, idx) => {
+              const globalIndex = currentPage * questionsPerPage + idx;
+              const options = q.choices.map((choice, i) => ({
+                label: String.fromCharCode(65 + i),
+                value: choice,
+              }));
+              const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
+              const userAnswer = userAnswers[globalIndex];
+              const isCorrect = userAnswer === correctAnswerLabel;
+
+              return (
+                <Card key={globalIndex} className="border-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-medium leading-relaxed">
+                      {globalIndex + 1}. {q.prompt}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 mb-4">
+                      {options.map((option) => {
+                        const isUserAnswer = userAnswer === option.label;
+                        const isCorrectAnswer = option.label === correctAnswerLabel;
+
+                        return (
+                          <div
+                            key={option.label}
+                            className={`w-full text-left p-4 rounded-lg border-2 ${
+                              isCorrectAnswer
+                                ? "border-green-500 bg-green-50"
+                                : isUserAnswer && !isCorrect
+                                ? "border-red-500 bg-red-50"
+                                : "border-gray-200"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                                  isCorrectAnswer
+                                    ? "bg-green-500 text-white"
+                                    : isUserAnswer && !isCorrect
+                                    ? "bg-red-500 text-white"
+                                    : "bg-gray-200 text-gray-700"
+                                }`}
+                              >
+                                {option.label}
+                              </div>
+                              <div className="flex-1 pt-1">{option.value}</div>
+                              {isCorrectAnswer && <CheckCircle className="text-green-500 flex-shrink-0" />}
+                              {isUserAnswer && !isCorrect && <XCircle className="text-red-500 flex-shrink-0" />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Show user's answer status */}
+                    <div className={`p-3 rounded-lg mb-3 ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
+                      <p className="font-semibold">
+                        Your answer: {userAnswer || "Not answered"} 
+                        {isCorrect ? " ✓ Correct" : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
+                      </p>
+                    </div>
+
+                    {/* Explanation */}
+                    {q.explanation && (
+                      <Card className="border-khan-blue bg-blue-50">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <CheckCircle className="text-khan-blue h-5 w-5" />
+                            Explanation
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <p className="text-gray-700">{q.explanation}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Review Navigation */}
+          <div className="flex justify-between gap-4">
+            <Button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 0}
+              variant="outline"
+              className="px-8"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Previous
+            </Button>
+
+            {currentPage === totalPages - 1 ? (
+              <Button
+                onClick={() => router.push(`/study?subject=${subjectId}`)}
+                className="bg-khan-green hover:bg-khan-green/90 px-8"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Study
+              </Button>
+            ) : (
+              <Button
+                onClick={handleNextPage}
+                className="bg-khan-blue hover:bg-khan-blue/90 px-8"
+              >
+                Next
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -515,7 +673,7 @@ export default function Quiz() {
                   label: String.fromCharCode(65 + i),
                   value: choice,
                 }));
-                
+
                 return (
                   <Card key={globalIndex} className="border-2">
                     <CardHeader>
@@ -527,7 +685,7 @@ export default function Quiz() {
                       <div className="space-y-3">
                         {options.map((option) => {
                           const isSelected = userAnswers[globalIndex] === option.label;
-                          
+
                           return (
                             <button
                               key={option.label}
@@ -536,7 +694,7 @@ export default function Quiz() {
                                 isSelected
                                   ? "border-khan-blue bg-blue-50"
                                   : "border-gray-200 hover:border-gray-300"
-                              } cursor-pointer`}
+                              } ${isAnswerSubmitted || isReviewMode ? "cursor-not-allowed" : "cursor-pointer"}`}
                             >
                               <div className="flex items-start gap-3">
                                 <div
@@ -590,7 +748,7 @@ export default function Quiz() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Previous
               </Button>
-              
+
               {currentPage === totalPages - 1 ? (
                 <Button
                   onClick={() => setShowSubmitConfirm(true)}
@@ -625,7 +783,7 @@ export default function Quiz() {
                       label: String.fromCharCode(65 + index),
                       value: choice,
                     }));
-                    
+
                     return options.map((option) => {
                       const isSelected = selectedAnswer === option.label;
                       const correctAnswerLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
@@ -637,7 +795,7 @@ export default function Quiz() {
                         <button
                           key={option.label}
                           onClick={() => handleAnswerSelect(option.label)}
-                          disabled={isAnswerSubmitted}
+                          disabled={isAnswerSubmitted || isReviewMode}
                           className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                             showCorrect
                               ? "border-green-500 bg-green-50"
@@ -646,7 +804,7 @@ export default function Quiz() {
                               : isSelected
                               ? "border-khan-blue bg-blue-50"
                               : "border-gray-200 hover:border-gray-300"
-                          } ${isAnswerSubmitted ? "cursor-not-allowed" : "cursor-pointer"}`}
+                          } ${isAnswerSubmitted || isReviewMode ? "cursor-not-allowed" : "cursor-pointer"}`}
                         >
                           <div className="flex items-start gap-3">
                             <div
