@@ -12,10 +12,10 @@ export default async function handler(
 
   const { subject, section, limit } = req.query;
 
-  if (!subject || !section) {
+  if (!subject) {
     return res.status(400).json({
       success: false,
-      message: "Subject and section are required",
+      message: "Subject is required",
     });
   }
 
@@ -25,22 +25,27 @@ export default async function handler(
 
     console.log("🔍 Querying questions with:", {
       subject,
-      section,
+      section: section || "ALL",
       limit: questionLimit
     });
 
     // Query Firestore for MCQ questions
     const questionsRef = db.collection('questions');
-    const snapshot = await questionsRef
-      .where('subject_code', '==', subject as string)
-      .where('section_code', '==', section as string)
+    let query = questionsRef.where('subject_code', '==', subject as string);
+    
+    // Only filter by section if provided (for unit quizzes)
+    if (section) {
+      query = query.where('section_code', '==', section as string);
+    }
+    
+    const snapshot = await query
       .limit(questionLimit * 2) // Get more than needed for randomization
       .get();
 
     console.log("📊 Firestore query result:", {
       isEmpty: snapshot.empty,
       size: snapshot.size,
-      queriedFor: { subject, section }
+      queriedFor: { subject, section: section || "ALL" }
     });
 
     // If empty, let's check what data exists in the collection
