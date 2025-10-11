@@ -44,6 +44,9 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [showSecondConfirm, setShowSecondConfirm] = useState(false);
+  const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
 
   // Fetch user profile
   const { data: userProfile } = useQuery<{
@@ -92,6 +95,10 @@ export default function Dashboard() {
 
   // Memoize subjects array to prevent unnecessary re-renders
   const subjects = useMemo(() => subjectsResponse?.data || [], [subjectsResponse?.data]);
+  
+  // Split into active and archived
+  const activeSubjects = useMemo(() => subjects.filter(s => !(s as any).archived), [subjects]);
+  const archivedSubjects = useMemo(() => subjects.filter(s => (s as any).archived), [subjects]);
 
   // Handle query errors with useEffect since onError is deprecated in v5
   useEffect(() => {
@@ -106,6 +113,32 @@ export default function Dashboard() {
 
   // Track if we have initial data or are still loading for the first time
   const isInitialLoading = subjectsLoading && !subjectsResponse;
+
+  // Archive subject mutation
+  const archiveSubjectMutation = useMutation({
+    mutationFn: async ({ subjectDocId, archive }: { subjectDocId: string; archive: boolean }) => {
+      const response = await apiRequest("PUT", `/api/user/subjects/${subjectDocId}`, { archived: archive });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to archive subject");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      toast({
+        title: "Subject archived",
+        description: "Your subject has been moved to the archive.",
+      });
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Error archiving subject",
+        description: err.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
+  });
 
   // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
@@ -185,9 +218,25 @@ export default function Dashboard() {
   };
 
   const confirmRemoveSubject = () => {
+    if (deleteConfirmText.toLowerCase() === "delete") {
+      setShowSecondConfirm(true);
+    }
+  };
+
+  const finalConfirmRemove = () => {
     if (subjectToRemove) {
       removeSubjectMutation.mutate(subjectToRemove.id.toString());
+      setShowSecondConfirm(false);
+      setDeleteConfirmText("");
+      setSubjectToRemove(null);
     }
+  };
+
+  const handleArchiveSubject = (subject: DashboardSubject) => {
+    archiveSubjectMutation.mutate({
+      subjectDocId: subject.id.toString(),
+      archive: !(subject as any).archived
+    });
   };
 
   const handleStartStudying = (subjectId: string) => {
@@ -305,40 +354,89 @@ export default function Dashboard() {
               )}
               {(
                 <div className="space-y-4">
-                  {subjects.map((subject: DashboardSubject) => (
+                  {activeSubjects.map((subject: DashboardSubject) => (
                     <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 w-full">
                       <CardHeader className="pb-4">
                         <div className="flex items-start justify-between mb-2">
                           <CardTitle className="text-xl font-bold text-khan-gray-dark">
                             {subject.name}
                           </CardTitle>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <button
-                                onClick={() => handleRemoveSubject(subject)}
-                                className="text-khan-gray-light hover:text-khan-red transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Remove Subject</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to remove "{subject.name}" from your dashboard? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={confirmRemoveSubject}
-                                  className="bg-red-600 hover:bg-red-700"
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleArchiveSubject(subject)}
+                              className="border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
+                            >
+                              Archive
+                            </Button>
+                            <AlertDialog open={subjectToRemove?.id === subject.id && !showSecondConfirm} onOpenChange={(open) => {
+                              if (!open) {
+                                setSubjectToRemove(null);
+                                setDeleteConfirmText("");
+                              }
+                            }}>
+                              <AlertDialogTrigger asChild>
+                                <button
+                                  onClick={() => handleRemoveSubject(subject)}
+                                  className="text-khan-gray-light hover:text-khan-red transition-colors"
                                 >
-                                  Remove
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Permanently Delete Subject</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. All your progress for "{subject.name}" will be permanently deleted.
+                                    <div className="mt-4">
+                                      <p className="mb-2 font-medium text-gray-900">Type "delete" to confirm:</p>
+                                      <input
+                                        type="text"
+                                        value={deleteConfirmText}
+                                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                                        placeholder="Type delete here"
+                                      />
+                                    </div>
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={confirmRemoveSubject}
+                                    disabled={deleteConfirmText.toLowerCase() !== "delete"}
+                                    className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    Continue
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            <AlertDialog open={showSecondConfirm} onOpenChange={setShowSecondConfirm}>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Final Confirmation</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you absolutely sure? This will permanently delete all data for "{subjectToRemove?.name}". This action is irreversible.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel onClick={() => {
+                                    setShowSecondConfirm(false);
+                                    setDeleteConfirmText("");
+                                    setSubjectToRemove(null);
+                                  }}>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={finalConfirmRemove}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Yes, Delete Forever
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </div>
                         <p className="text-khan-gray-medium text-base leading-relaxed">
                           {subject.description}
@@ -365,8 +463,7 @@ export default function Dashboard() {
                               
                               let bgColor = "bg-gray-200"; // not-started
                               if (status === "mastered") bgColor = "bg-green-600";
-                              else if (status === "proficient") bgColor = "bg-green-400";
-                              else if (status === "familiar") bgColor = "bg-yellow-400";
+                              else if (status === "proficient") bgColor = "bg-yellow-400";
                               else if (status === "attempted") bgColor = "bg-orange-400";
                               
                               return (
@@ -384,19 +481,15 @@ export default function Dashboard() {
                               <div className="space-y-1 text-xs">
                                 <div className="flex items-center gap-2">
                                   <div className="w-4 h-4 rounded bg-green-600"></div>
-                                  <span>Mastered (90%+)</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-4 h-4 rounded bg-green-400"></div>
-                                  <span>Proficient (80%+)</span>
+                                  <span>Mastered (80%+)</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="w-4 h-4 rounded bg-yellow-400"></div>
-                                  <span>Familiar (70%+)</span>
+                                  <span>Proficient (60%+)</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="w-4 h-4 rounded bg-orange-400"></div>
-                                  <span>Attempted (&lt;70%)</span>
+                                  <span>Attempted (&lt;60%)</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="w-4 h-4 rounded bg-gray-200"></div>
@@ -432,6 +525,57 @@ export default function Dashboard() {
                       </CardContent>
                     </Card>
                   ))}
+                </div>
+              )}
+
+              {/* Archived Subjects Section */}
+              {archivedSubjects.length > 0 && (
+                <div className="mt-8">
+                  <button
+                    onClick={() => setIsArchiveExpanded(!isArchiveExpanded)}
+                    className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <h3 className="text-lg font-semibold text-khan-gray-dark">
+                      Archived Subjects ({archivedSubjects.length})
+                    </h3>
+                    <svg
+                      className={`w-5 h-5 transition-transform ${isArchiveExpanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {isArchiveExpanded && (
+                    <div className="mt-4 space-y-4">
+                      {archivedSubjects.map((subject: DashboardSubject) => (
+                        <Card key={subject.id} className="bg-gray-50 border-2 border-gray-200 w-full opacity-75">
+                          <CardHeader className="pb-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <CardTitle className="text-xl font-bold text-khan-gray-dark">
+                                {subject.name}
+                              </CardTitle>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleArchiveSubject(subject)}
+                                  className="border-khan-green text-khan-green hover:bg-khan-green hover:text-white"
+                                >
+                                  Restore
+                                </Button>
+                              </div>
+                            </div>
+                            <p className="text-khan-gray-medium text-base leading-relaxed">
+                              {subject.description}
+                            </p>
+                          </CardHeader>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </>

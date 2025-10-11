@@ -387,7 +387,7 @@ export class Storage {
     mcqScore: number
   ): Promise<any> {
     console.log("📝 [updateUnitProgress] Starting with:", { userId, subjectId, unitId, mcqScore });
-    
+
     const db = getDb();
     const subjectsRef = db.collection("user_subjects");
 
@@ -416,16 +416,6 @@ export class Storage {
       currentHighestScore: currentUnit.highestScore || 0
     });
 
-    // Determine status based on score
-    let status = "attempted";
-    if (mcqScore >= 90) {
-      status = "mastered";
-    } else if (mcqScore >= 80) {
-      status = "proficient";
-    } else if (mcqScore >= 70) {
-      status = "familiar";
-    }
-
     // Add new score to history - use regular Date instead of serverTimestamp in arrays
     const newScore = {
       score: mcqScore,
@@ -437,27 +427,20 @@ export class Storage {
 
     // Calculate highest score
     const highestScore = Math.max(mcqScore, currentUnit.highestScore || 0);
-    
-    // Determine status based on highest score
-    let highestStatus = "attempted";
-    if (highestScore >= 90) {
-      highestStatus = "mastered";
-    } else if (highestScore >= 80) {
-      highestStatus = "proficient";
-    } else if (highestScore >= 70) {
-      highestStatus = "familiar";
-    }
+
+    // Determine status based on highest score using the updated calculateUnitStatus logic
+    const status = calculateUnitStatus(highestScore);
 
     console.log("🎯 [updateUnitProgress] Calculated status:", { 
       mcqScore, 
       highestScore, 
-      status: highestStatus,
+      status: status,
       totalScores: scores.length
     });
 
     unitProgress[unitId] = {
-      status: highestStatus,
-      mcqScore,
+      status: status,
+      mcqScore: highestScore, // Store highest score as current mcqScore for simplicity, or could keep separate
       highestScore,
       scores,
       lastPracticed: admin.firestore.FieldValue.serverTimestamp(),
@@ -465,8 +448,8 @@ export class Storage {
 
     console.log("💾 [updateUnitProgress] Updating Firestore with:", { 
       unitId,
-      status: highestStatus,
-      mcqScore,
+      status: status,
+      mcqScore: highestScore,
       highestScore
     });
 
@@ -477,7 +460,7 @@ export class Storage {
 
     const updated = await doc.ref.get();
     console.log("✅ [updateUnitProgress] Update successful");
-    
+
     return { id: updated.id, ...updated.data() };
   }
 
@@ -506,3 +489,10 @@ export class Storage {
 }
 
 export const storage = new Storage();
+
+export function calculateUnitStatus(mcqScore: number): string {
+  if (mcqScore >= 80) return "mastered";
+  if (mcqScore >= 60) return "proficient";
+  if (mcqScore > 0) return "attempted";
+  return "not-started";
+}

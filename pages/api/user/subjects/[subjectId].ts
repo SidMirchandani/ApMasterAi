@@ -69,8 +69,38 @@ export default async function handler(
         }
       }
 
+      case "PUT": {
+        try {
+          // Verify subject ownership before proceeding with updates
+          const subject = await storage.getUserSubject(userId, subjectId);
+          if (!subject) {
+            return res.status(404).json({
+              success: false,
+              message: "Subject not found or does not belong to the user.",
+            });
+          }
+
+          const updates = req.body;
+          // Ensure that we are not overwriting essential fields with empty values if not provided
+          const sanitizedUpdates = Object.fromEntries(
+            Object.entries(updates).filter(([_, value]) => value !== undefined && value !== null)
+          );
+
+          await storage.updateUserSubject(userId, subjectId, sanitizedUpdates);
+          console.log(`[subjectId API][PUT] Successfully updated subject ${subjectId} for user ${userId}`);
+          return res.status(200).json({ success: true, message: "Subject updated successfully" });
+        } catch (error) {
+          console.error(`[subjectId API][PUT] Error updating subject ${subjectId} for user ${userId}:`, error);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to update subject",
+            error: error.message,
+          });
+        }
+      }
+
       default:
-        res.setHeader("Allow", ["DELETE"]);
+        res.setHeader("Allow", ["DELETE", "PUT"]);
         return res.status(405).json({
           success: false,
           message: `Method ${req.method} not allowed`,

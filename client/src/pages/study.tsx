@@ -40,6 +40,7 @@ interface StudySubject {
   masteryLevel: number;
   lastStudied?: string | number | Date | { seconds: number } | null;
   dateAdded?: string | number | Date | { seconds: number } | null;
+  unitProgress?: { [unitId: string]: { status: string; highestScore: number; scores: number[] } };
 }
 
 interface Unit {
@@ -335,13 +336,14 @@ const getUnitsForSubject = (subjectId: string): Unit[] => {
 export default function Study() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
 
   const rawSubject = router.query.subject;
   const subjectId: string | undefined = Array.isArray(rawSubject)
     ? rawSubject[0] || undefined
     : rawSubject || undefined;
 
-  const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery<{
+  const { data: subjectsResponse, isLoading: subjectsLoading, refetch } = useQuery<{
     success: boolean;
     data: StudySubject[];
   }>({
@@ -375,6 +377,76 @@ export default function Study() {
       router.push("/dashboard");
     }
   }, [subjectId, router]);
+
+  const handleExitConfirmation = (url: string) => {
+    setShowExitConfirmation(true);
+    // Store the intended next URL
+    sessionStorage.setItem('nextUrl', url);
+  };
+
+  const proceedWithNavigation = () => {
+    const nextUrl = sessionStorage.getItem('nextUrl');
+    if (nextUrl) {
+      router.push(nextUrl);
+      sessionStorage.removeItem('nextUrl');
+    }
+    setShowExitConfirmation(false);
+  };
+
+  const cancelNavigation = () => {
+    setShowExitConfirmation(false);
+  };
+
+  const getProgressLevel = (score: number): string => {
+    if (score >= 80) return "Mastered";
+    if (score >= 60) return "Proficient";
+    if (score >= 0) return "Attempted"; // Covers scores below 60 and greater than or equal to 0
+    return "Not Started";
+  };
+
+  const getProgressBadgeColor = (level: string): string => {
+    switch (level) {
+      case "Mastered":
+        return "bg-green-600 text-white";
+      case "Proficient":
+        return "bg-green-400 text-white";
+      case "Attempted":
+        return "bg-orange-400 text-white";
+      default:
+        return "bg-gray-200 text-gray-700";
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    const confirmDelete = prompt(
+      `Type "DELETE" to confirm deletion of this course. This action is irreversible.`
+    );
+    if (confirmDelete === "DELETE") {
+      const secondConfirm = confirm(
+        "Are you absolutely sure you want to permanently delete this course? This cannot be undone."
+      );
+      if (secondConfirm) {
+        try {
+          await apiRequest("DELETE", `/api/user/subjects/${courseId}`);
+          refetch(); // Refetch subjects to update the dashboard
+          router.push("/dashboard"); // Redirect to dashboard after deletion
+        } catch (error) {
+          console.error("Failed to delete course:", error);
+          alert("An error occurred while deleting the course. Please try again.");
+        }
+      }
+    }
+  };
+
+  const handleArchiveCourse = async (courseId: string) => {
+    try {
+      await apiRequest("PATCH", `/api/user/subjects/${courseId}`, { archived: true });
+      refetch(); // Refetch subjects to update the dashboard
+    } catch (error) {
+      console.error("Failed to archive course:", error);
+      alert("An error occurred while archiving the course. Please try again.");
+    }
+  };
 
   if (loading || subjectsLoading) {
     return (
@@ -414,10 +486,13 @@ export default function Study() {
 
   // Calculate topics mastered based on unit progress
   const topicsMastered = units.filter((unit) => {
-    const unitData = (currentSubject as any).unitProgress?.[unit.id];
-    return unitData?.status === "mastered";
+    const unitData = currentSubject.unitProgress?.[unit.id];
+    const score = unitData?.highestScore || 0;
+    return getProgressLevel(score) === "Mastered";
   }).length;
   const totalTopics = units.length;
+
+  const archivedSubjects = subjects.filter(s => s.id !== currentSubject.id && s.archived);
 
   return (
     <div className="min-h-screen bg-khan-background overflow-x-hidden">
@@ -428,7 +503,7 @@ export default function Study() {
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => router.push("/dashboard")}
+              onClick={() => handleExitConfirmation("/dashboard")}
               className="p-2"
               data-testid="button-back"
             >
@@ -485,11 +560,11 @@ export default function Study() {
             {/* Full-Length Practice Test Buttons */}
             <div className="mt-8 flex flex-col md:flex-row gap-3 max-w-2xl mx-auto items-center">
               <Button
-                disabled
-                className="bg-khan-green w-full md:flex-1 h-12 min-h-[44px] opacity-50 cursor-not-allowed"
+                onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
+                className="bg-khan-green w-full md:flex-1 h-12 min-h-[44px]"
               >
                 <BookOpen className="mr-2 h-5 w-5" />
-                MCQ Full-Length Test (Coming Soon)
+                MCQ Full-Length Test
               </Button>
               <Button
                 disabled
@@ -501,6 +576,29 @@ export default function Study() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Full-Length Quiz for AP Macro */}
+        {subjectId === "macroeconomics" && (
+          <Card className="mb-6 border-2 border-khan-green bg-green-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-khan-green">
+                <BookOpen className="h-5 w-5" />
+                Full-Length Practice Exam
+              </CardTitle>
+              <CardDescription>
+                Take a complete 50-question practice exam with randomly selected questions from all units
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
+                className="bg-khan-green hover:bg-khan-green-light text-white w-full"
+              >
+                Start Full-Length Quiz (50 Questions)
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Study Units */}
         <div className="space-y-4">
@@ -519,62 +617,38 @@ export default function Study() {
                           {unit.title}
                         </h3>
                         {(() => {
-                          const unitData = (currentSubject as any).unitProgress?.[unit.id];
-                          const status = unitData?.status || "not-started";
-                          const highestScore = unitData?.highestScore || 0;
-                          const scores = unitData?.scores || [];
-                          const lastScore = scores.length > 0 ? scores[scores.length - 1] : null;
-                          
-                          let badgeColor = "bg-gray-200 text-gray-700";
-                          let badgeText = "Not Started";
-                          
-                          if (status === "mastered") {
-                            badgeColor = "bg-green-600 text-white";
-                            badgeText = "Mastered";
-                          } else if (status === "proficient") {
-                            badgeColor = "bg-green-400 text-white";
-                            badgeText = "Proficient";
-                          } else if (status === "familiar") {
-                            badgeColor = "bg-yellow-400 text-gray-900";
-                            badgeText = "Familiar";
-                          } else if (status === "attempted") {
-                            badgeColor = "bg-orange-400 text-white";
-                            badgeText = "Attempted";
-                          }
+                          const unitData = currentSubject.unitProgress?.[unit.id];
+                          const score = unitData?.highestScore || 0;
+                          const level = getProgressLevel(score);
+                          const badgeColor = getProgressBadgeColor(level);
 
                           // Add highest score to badge text if available
-                          if (highestScore > 0) {
-                            badgeText += `: Highest Score: ${Math.round(highestScore * 25 / 100)}/25`;
-                          }
-                          
+                          const scoreDisplay = score > 0 ? `: Highest Score: ${Math.round(score)}/100` : '';
+
                           return (
                             <div className="relative group md:hidden">
-                              <Badge 
+                              <Badge
                                 className={`text-xs ${badgeColor} border border-black cursor-help`}
                               >
-                                {status === "mastered" && "👑 "}
-                                {badgeText}
+                                {level === "Mastered" && "👑 "}
+                                {level} {scoreDisplay}
                               </Badge>
-                              
+
                               {/* Legend on hover */}
                               <div className="absolute top-full left-0 mt-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
                                 <div className="text-xs font-semibold mb-2">Unit Progress Legend</div>
                                 <div className="space-y-1 text-xs">
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded bg-green-600"></div>
-                                    <span>Mastered (90%+)</span>
+                                    <span>Mastered (80%+)</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded bg-green-400"></div>
-                                    <span>Proficient (80%+)</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-yellow-400"></div>
-                                    <span>Familiar (70%+)</span>
+                                    <span>Proficient (60%+)</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded bg-orange-400"></div>
-                                    <span>Attempted (&lt;70%)</span>
+                                    <span>Attempted (&lt;60%)</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded bg-gray-200"></div>
@@ -594,73 +668,41 @@ export default function Study() {
                       </Badge>
                     </div>
                   </div>
-                  
+
                   {/* Right side: Buttons stacked vertically on desktop */}
                   <div className="flex flex-col gap-3 md:min-w-[340px] md:items-end">
                     {(() => {
-                      const unitData = (currentSubject as any).unitProgress?.[unit.id];
-                      const status = unitData?.status || "not-started";
-                      const highestScore = unitData?.highestScore || 0;
-                      const scores = unitData?.scores || [];
-                      const lastScore = scores.length > 0 ? scores[scores.length - 1] : null;
-                      
-                      let badgeColor = "bg-gray-200 text-gray-700";
-                      let badgeText = "Not Started";
-                      
-                      if (status === "mastered") {
-                        badgeColor = "bg-green-600 text-white";
-                        badgeText = "Mastered";
-                      } else if (status === "proficient") {
-                        badgeColor = "bg-green-400 text-white";
-                        badgeText = "Proficient";
-                      } else if (status === "familiar") {
-                        badgeColor = "bg-yellow-400 text-gray-900";
-                        badgeText = "Familiar";
-                      } else if (status === "attempted") {
-                        badgeColor = "bg-orange-400 text-white";
-                        badgeText = "Attempted";
-                      }
+                      const unitData = currentSubject.unitProgress?.[unit.id];
+                      const score = unitData?.highestScore || 0;
+                      const level = getProgressLevel(score);
+                      const badgeColor = getProgressBadgeColor(level);
 
-                      const getDateFromTimestamp = (timestamp: any) => {
-                        if (!timestamp) return null;
-                        if (timestamp.toDate) return timestamp.toDate();
-                        if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
-                        return new Date(timestamp);
-                      };
+                      const scoreDisplay = score > 0 ? `: Highest Score: ${Math.round(score)}/100` : '';
 
-                      // Add highest score to badge text if available
-                      if (highestScore > 0) {
-                        badgeText += `: Highest Score: ${Math.round(highestScore * 25 / 100)}/25`;
-                      }
-                      
                       return (
                         <div className="relative group hidden md:block mb-1">
-                          <Badge 
+                          <Badge
                             className={`text-xs ${badgeColor} border border-black cursor-help`}
                           >
-                            {status === "mastered" && "👑 "}
-                            {badgeText}
+                            {level === "Mastered" && "👑 "}
+                            {level} {scoreDisplay}
                           </Badge>
-                          
+
                           {/* Legend on hover */}
                           <div className="absolute top-full right-0 mt-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
                             <div className="text-xs font-semibold mb-2">Unit Progress Legend</div>
                             <div className="space-y-1 text-xs">
                               <div className="flex items-center gap-2">
                                 <div className="w-4 h-4 rounded bg-green-600"></div>
-                                <span>Mastered (90%+)</span>
+                                <span>Mastered (80%+)</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className="w-4 h-4 rounded bg-green-400"></div>
-                                <span>Proficient (80%+)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded bg-yellow-400"></div>
-                                <span>Familiar (70%+)</span>
+                                <span>Proficient (60%+)</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className="w-4 h-4 rounded bg-orange-400"></div>
-                                <span>Attempted (&lt;70%)</span>
+                                <span>Attempted (&lt;60%)</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className="w-4 h-4 rounded bg-gray-200"></div>
@@ -673,9 +715,7 @@ export default function Study() {
                     })()}
                     <Button
                       onClick={() =>
-                        router.push(
-                          `/quiz?subject=${subjectId}&unit=${unit.id}`,
-                        )
+                        handleExitConfirmation(`/quiz?subject=${subjectId}&unit=${unit.id}`)
                       }
                       variant="outline"
                       className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white min-h-[44px] w-full"
@@ -698,11 +738,58 @@ export default function Study() {
           ))}
         </div>
 
+        {/* Archived Courses Section */}
+        {archivedSubjects.length > 0 && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-gray-500" />
+                Archived Courses
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {archivedSubjects.map((archivedSubject) => (
+                  <Card key={archivedSubject.id} className="border-l-4 border-l-gray-400 bg-gray-50">
+                    <CardContent className="pt-4">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div className="flex items-start gap-4 flex-1">
+                          <div className="w-10 h-10 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold flex-shrink-0">
+                            A
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-gray-900">
+                              {archivedSubject.name}
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-2">
+                              {archivedSubject.description}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-3 md:min-w-[340px] md:items-end">
+                          <Button
+                            variant="outline"
+                            className="border-2 border-gray-400 text-gray-700 hover:bg-gray-100 min-h-[44px] w-full"
+                            onClick={() => handleArchiveCourse(archivedSubject.id.toString())}
+                          >
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            View Archived
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Back Button */}
         <div className="mt-8 flex justify-center">
           <Button
             variant="outline"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => handleExitConfirmation("/dashboard")}
             data-testid="button-back-to-dashboard-bottom"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -710,6 +797,26 @@ export default function Study() {
           </Button>
         </div>
       </div>
+
+      {/* Exit Confirmation Modal */}
+      {showExitConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg text-center">
+            <h2 className="text-xl font-bold mb-4">Hold On! You're About to Lose Progress</h2>
+            <p className="mb-6">
+              If you leave this page now, your progress on the current test or study session will be lost. Are you sure you want to continue?
+            </p>
+            <div className="flex justify-center gap-4">
+              <Button onClick={cancelNavigation} variant="outline">
+                Cancel
+              </Button>
+              <Button onClick={proceedWithNavigation} className="bg-red-500 hover:bg-red-600 text-white">
+                Leave Anyway
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

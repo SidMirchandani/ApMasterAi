@@ -7,6 +7,16 @@ import { ArrowLeft, CheckCircle, XCircle, ArrowRight } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Question {
   id: string;
@@ -98,6 +108,7 @@ export default function Quiz() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -105,25 +116,22 @@ export default function Quiz() {
     }
   }, [loading, isAuthenticated, router]);
 
+  const handleBackClick = () => {
+    if (!quizCompleted && currentQuestionIndex > 0) {
+      setShowExitDialog(true);
+    } else {
+      router.push(`/study?subject=${subjectId}`);
+    }
+  };
+
+  const confirmExit = () => {
+    router.push(`/study?subject=${subjectId}`);
+  };
+
   useEffect(() => {
     const fetchQuestions = async () => {
       if (!unit || !subjectId) {
         setError("Invalid quiz parameters");
-        setIsLoading(false);
-        return;
-      }
-
-      // Get the unit map for this subject
-      const unitMap = SUBJECT_UNIT_MAPS[subjectId as string];
-      if (!unitMap) {
-        setError(`Quiz not yet available for ${subjectId}`);
-        setIsLoading(false);
-        return;
-      }
-
-      const sectionCode = unitMap[unit as string];
-      if (!sectionCode) {
-        setError("Invalid unit");
         setIsLoading(false);
         return;
       }
@@ -136,40 +144,89 @@ export default function Quiz() {
           return;
         }
 
-        console.log("📤 Fetching questions with params:", {
-          subject: subjectApiCode,
-          section: sectionCode,
-          unit: unit,
-          limit: 25
-        });
+        // Check if this is a full-length quiz
+        const isFullLength = unit === "full-length";
+        
+        if (isFullLength) {
+          // For full-length quiz, fetch ALL questions without section filter
+          console.log("📤 Fetching ALL questions for full-length quiz:", {
+            subject: subjectApiCode
+          });
 
-        const response = await apiRequest(
-          "GET",
-          `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`
-        );
+          const response = await apiRequest(
+            "GET",
+            `/api/questions?subject=${subjectApiCode}`
+          );
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch questions");
-        }
+          if (!response.ok) {
+            throw new Error("Failed to fetch questions");
+          }
 
-        const data = await response.json();
+          const data = await response.json();
 
-        console.log("📥 Questions API response:", {
-          success: data.success,
-          questionCount: data.data?.length || 0,
-          firstQuestion: data.data?.[0] ? {
-            id: data.data[0].id,
-            prompt: data.data[0].prompt?.substring(0, 50) + "...",
-            hasChoices: Array.isArray(data.data[0].choices) && data.data[0].choices.length > 0
-          } : null
-        });
+          console.log("📥 Full-length quiz questions:", {
+            success: data.success,
+            totalQuestions: data.data?.length || 0
+          });
 
-        if (data.success && data.data && data.data.length > 0) {
-          // Shuffle and select up to 25 questions
-          const shuffled = [...data.data].sort(() => Math.random() - 0.5);
-          setQuestions(shuffled.slice(0, 25));
+          if (data.success && data.data && data.data.length > 0) {
+            // Shuffle and select 50 random questions
+            const shuffled = [...data.data].sort(() => Math.random() - 0.5);
+            setQuestions(shuffled.slice(0, 50));
+          } else {
+            setError("No questions found for this subject");
+          }
         } else {
-          setError("No questions found for this unit");
+          // Regular unit quiz - existing logic
+          const unitMap = SUBJECT_UNIT_MAPS[subjectId as string];
+          if (!unitMap) {
+            setError(`Quiz not yet available for ${subjectId}`);
+            setIsLoading(false);
+            return;
+          }
+
+          const sectionCode = unitMap[unit as string];
+          if (!sectionCode) {
+            setError("Invalid unit");
+            setIsLoading(false);
+            return;
+          }
+
+          console.log("📤 Fetching questions with params:", {
+            subject: subjectApiCode,
+            section: sectionCode,
+            unit: unit,
+            limit: 25
+          });
+
+          const response = await apiRequest(
+            "GET",
+            `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch questions");
+          }
+
+          const data = await response.json();
+
+          console.log("📥 Questions API response:", {
+            success: data.success,
+            questionCount: data.data?.length || 0,
+            firstQuestion: data.data?.[0] ? {
+              id: data.data[0].id,
+              prompt: data.data[0].prompt?.substring(0, 50) + "...",
+              hasChoices: Array.isArray(data.data[0].choices) && data.data[0].choices.length > 0
+            } : null
+          });
+
+          if (data.success && data.data && data.data.length > 0) {
+            // Shuffle and select up to 25 questions
+            const shuffled = [...data.data].sort(() => Math.random() - 0.5);
+            setQuestions(shuffled.slice(0, 25));
+          } else {
+            setError("No questions found for this unit");
+          }
         }
       } catch (err) {
         console.error("Error fetching questions:", err);
@@ -357,14 +414,30 @@ export default function Quiz() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => router.push(`/study?subject=${subjectId}`)}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Study
-          </Button>
+          <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+            <Button
+              variant="ghost"
+              onClick={handleBackClick}
+              className="mb-4"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Study
+            </Button>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Leave Quiz?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Your progress on this quiz will be lost if you leave now. Are you sure you want to exit?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Continue Quiz</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmExit} className="bg-red-600 hover:bg-red-700">
+                  Exit Quiz
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-semibold">
               Question {currentQuestionIndex + 1} of {questions.length}
