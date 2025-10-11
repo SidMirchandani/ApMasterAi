@@ -469,9 +469,11 @@ export default function Dashboard() {
                               return (
                                 <div
                                   key={unitId}
-                                  className={`w-6 h-6 rounded ${bgColor} border border-black transition-all`}
+                                  className={`w-6 h-6 rounded ${bgColor} border border-black transition-all flex items-center justify-center text-xs`}
                                   title={`Unit ${index + 1}: ${status.replace('-', ' ')}`}
-                                />
+                                >
+                                  {status === "mastered" && "👑"}
+                                </div>
                               );
                             })}
                             

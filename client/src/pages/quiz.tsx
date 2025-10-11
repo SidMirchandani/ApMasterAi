@@ -109,6 +109,8 @@ export default function Quiz() {
   const [error, setError] = useState<string | null>(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -116,8 +118,21 @@ export default function Quiz() {
     }
   }, [loading, isAuthenticated, router]);
 
+  // Add beforeunload handler to warn about losing progress
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!quizCompleted && questions.length > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [quizCompleted, questions.length]);
+
   const handleBackClick = () => {
-    if (!quizCompleted && currentQuestionIndex > 0) {
+    if (!quizCompleted && questions.length > 0) {
       setShowExitDialog(true);
     } else {
       router.push(`/study?subject=${subjectId}`);
@@ -241,11 +256,24 @@ export default function Quiz() {
     }
   }, [isAuthenticated, unit, subjectId]);
 
+  const isFullLength = unit === "full-length";
+  const questionsPerPage = isFullLength ? 10 : 1;
+  const totalPages = Math.ceil(questions.length / questionsPerPage);
+  
+  const currentQuestions = isFullLength 
+    ? questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage)
+    : [questions[currentQuestionIndex]];
+  
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const progress = isFullLength 
+    ? ((currentPage + 1) / totalPages) * 100
+    : ((currentQuestionIndex + 1) / questions.length) * 100;
 
-  const handleAnswerSelect = (answer: string) => {
-    if (!isAnswerSubmitted) {
+  const handleAnswerSelect = (answer: string, questionIndex?: number) => {
+    if (isFullLength && questionIndex !== undefined) {
+      const globalIndex = currentPage * questionsPerPage + questionIndex;
+      setUserAnswers(prev => ({ ...prev, [globalIndex]: answer }));
+    } else if (!isAnswerSubmitted) {
       setSelectedAnswer(answer);
     }
   };
@@ -270,6 +298,31 @@ export default function Quiz() {
     }
   };
 
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleSubmitFullLength = () => {
+    let correctCount = 0;
+    questions.forEach((q, idx) => {
+      const userAnswer = userAnswers[idx];
+      const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
+      if (userAnswer === correctAnswerLabel) {
+        correctCount++;
+      }
+    });
+    setScore(correctCount);
+    setQuizCompleted(true);
+  };
+
   const handleRetakeQuiz = () => {
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
@@ -290,13 +343,16 @@ export default function Quiz() {
           unit, 
           score, 
           total: questions.length, 
-          percentage 
+          percentage,
+          isFullLength
         });
         try {
+          // For full-length exams, save with special unit identifier
+          const unitToSave = isFullLength ? "full-length" : unit;
           const response = await apiRequest(
             "PUT",
             `/api/user/subjects/${subjectId}/unit-progress`,
-            { unitId: unit, mcqScore: percentage }
+            { unitId: unitToSave, mcqScore: percentage }
           );
           console.log("✅ [Quiz] Score saved successfully:", percentage);
           console.log("📊 [Quiz] Response data:", response);
@@ -307,7 +363,7 @@ export default function Quiz() {
     };
     
     saveScore();
-  }, [quizCompleted, subjectId, unit, score, questions.length]);
+  }, [quizCompleted, subjectId, unit, score, questions.length, isFullLength]);
 
   if (loading || isLoading) {
     return (
@@ -415,14 +471,6 @@ export default function Quiz() {
         {/* Header */}
         <div className="mb-6">
           <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-            <Button
-              variant="ghost"
-              onClick={handleBackClick}
-              className="mb-4"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Study
-            </Button>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Leave Quiz?</AlertDialogTitle>
@@ -440,112 +488,213 @@ export default function Quiz() {
           </AlertDialog>
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-semibold">
-              Question {currentQuestionIndex + 1} of {questions.length}
+              {isFullLength 
+                ? `Page ${currentPage + 1} of ${totalPages} (Questions ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`
+                : `Question ${currentQuestionIndex + 1} of ${questions.length}`
+              }
             </h2>
-            <div className="text-lg font-semibold text-khan-green">
-              Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
-            </div>
+            {!isFullLength && (
+              <div className="text-lg font-semibold text-khan-green">
+                Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
+              </div>
+            )}
           </div>
           <Progress value={progress} className="h-2" />
         </div>
 
-        {/* Question Card */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg font-medium leading-relaxed">
-              {currentQuestion.prompt}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {options.map((option) => {
-                const isSelected = selectedAnswer === option.label;
-                const correctAnswerLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
-                const isCorrect = option.label === correctAnswerLabel;
-                const showCorrect = isAnswerSubmitted && isCorrect;
-                const showIncorrect = isAnswerSubmitted && isSelected && !isCorrect;
-
+        {isFullLength ? (
+          <>
+            {/* Full-length exam: show multiple questions per page */}
+            <div className="space-y-6 mb-6">
+              {currentQuestions.map((q, idx) => {
+                const globalIndex = currentPage * questionsPerPage + idx;
+                const options = q.choices.map((choice, i) => ({
+                  label: String.fromCharCode(65 + i),
+                  value: choice,
+                }));
+                
                 return (
-                  <button
-                    key={option.label}
-                    onClick={() => handleAnswerSelect(option.label)}
-                    disabled={isAnswerSubmitted}
-                    className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                      showCorrect
-                        ? "border-green-500 bg-green-50"
-                        : showIncorrect
-                        ? "border-red-500 bg-red-50"
-                        : isSelected
-                        ? "border-khan-blue bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    } ${isAnswerSubmitted ? "cursor-not-allowed" : "cursor-pointer"}`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                          showCorrect
-                            ? "bg-green-500 text-white"
-                            : showIncorrect
-                            ? "bg-red-500 text-white"
-                            : isSelected
-                            ? "bg-khan-blue text-white"
-                            : "bg-gray-200 text-gray-700"
-                        }`}
-                      >
-                        {option.label}
+                  <Card key={globalIndex} className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-medium leading-relaxed">
+                        {globalIndex + 1}. {q.prompt}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {options.map((option) => {
+                          const isSelected = userAnswers[globalIndex] === option.label;
+                          
+                          return (
+                            <button
+                              key={option.label}
+                              onClick={() => handleAnswerSelect(option.label, idx)}
+                              className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                                isSelected
+                                  ? "border-khan-blue bg-blue-50"
+                                  : "border-gray-200 hover:border-gray-300"
+                              } cursor-pointer`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div
+                                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                                    isSelected
+                                      ? "bg-khan-blue text-white"
+                                      : "bg-gray-200 text-gray-700"
+                                  }`}
+                                >
+                                  {option.label}
+                                </div>
+                                <div className="flex-1 pt-1">{option.value}</div>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
-                      <div className="flex-1 pt-1">{option.value}</div>
-                      {showCorrect && <CheckCircle className="text-green-500 flex-shrink-0" />}
-                      {showIncorrect && <XCircle className="text-red-500 flex-shrink-0" />}
-                    </div>
-                  </button>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Explanation */}
-        {isAnswerSubmitted && currentQuestion.explanation && (
-          <Card className="mb-6 border-khan-blue">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <CheckCircle className="text-khan-blue" />
-                Explanation
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700">{currentQuestion.explanation}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex justify-center gap-4">
-          {!isAnswerSubmitted ? (
-            <Button
-              onClick={handleSubmitAnswer}
-              disabled={!selectedAnswer}
-              className="bg-khan-green hover:bg-khan-green/90 px-8"
-            >
-              Submit Answer
-            </Button>
-          ) : (
-            <Button
-              onClick={handleNextQuestion}
-              className="bg-khan-blue hover:bg-khan-blue/90 px-8"
-            >
-              {currentQuestionIndex < questions.length - 1 ? (
-                <>
-                  Next Question
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
+            {/* Full-length navigation */}
+            <div className="flex justify-between gap-4">
+              <Button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 0}
+                variant="outline"
+                className="px-8"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Previous
+              </Button>
+              
+              {currentPage === totalPages - 1 ? (
+                <Button
+                  onClick={handleSubmitFullLength}
+                  className="bg-khan-green hover:bg-khan-green/90 px-8"
+                >
+                  Submit Exam
+                </Button>
               ) : (
-                "Complete Quiz"
+                <Button
+                  onClick={handleNextPage}
+                  className="bg-khan-blue hover:bg-khan-blue/90 px-8"
+                >
+                  Next
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               )}
-            </Button>
-          )}
-        </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Regular quiz: show one question at a time */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="text-lg font-medium leading-relaxed">
+                  {currentQuestion.prompt}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {(() => {
+                    const options = currentQuestion.choices.map((choice, index) => ({
+                      label: String.fromCharCode(65 + index),
+                      value: choice,
+                    }));
+                    
+                    return options.map((option) => {
+                      const isSelected = selectedAnswer === option.label;
+                      const correctAnswerLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
+                      const isCorrect = option.label === correctAnswerLabel;
+                      const showCorrect = isAnswerSubmitted && isCorrect;
+                      const showIncorrect = isAnswerSubmitted && isSelected && !isCorrect;
+
+                      return (
+                        <button
+                          key={option.label}
+                          onClick={() => handleAnswerSelect(option.label)}
+                          disabled={isAnswerSubmitted}
+                          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                            showCorrect
+                              ? "border-green-500 bg-green-50"
+                              : showIncorrect
+                              ? "border-red-500 bg-red-50"
+                              : isSelected
+                              ? "border-khan-blue bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          } ${isAnswerSubmitted ? "cursor-not-allowed" : "cursor-pointer"}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                                showCorrect
+                                  ? "bg-green-500 text-white"
+                                  : showIncorrect
+                                  ? "bg-red-500 text-white"
+                                  : isSelected
+                                  ? "bg-khan-blue text-white"
+                                  : "bg-gray-200 text-gray-700"
+                              }`}
+                            >
+                              {option.label}
+                            </div>
+                            <div className="flex-1 pt-1">{option.value}</div>
+                            {showCorrect && <CheckCircle className="text-green-500 flex-shrink-0" />}
+                            {showIncorrect && <XCircle className="text-red-500 flex-shrink-0" />}
+                          </div>
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Explanation */}
+            {isAnswerSubmitted && currentQuestion.explanation && (
+              <Card className="mb-6 border-khan-blue">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CheckCircle className="text-khan-blue" />
+                    Explanation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-700">{currentQuestion.explanation}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-4">
+              {!isAnswerSubmitted ? (
+                <Button
+                  onClick={handleSubmitAnswer}
+                  disabled={!selectedAnswer}
+                  className="bg-khan-green hover:bg-khan-green/90 px-8"
+                >
+                  Submit Answer
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNextQuestion}
+                  className="bg-khan-blue hover:bg-khan-blue/90 px-8"
+                >
+                  {currentQuestionIndex < questions.length - 1 ? (
+                    <>
+                      Next Question
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  ) : (
+                    "Complete Quiz"
+                  )}
+                </Button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -336,7 +336,6 @@ const getUnitsForSubject = (subjectId: string): Unit[] => {
 export default function Study() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
 
   const rawSubject = router.query.subject;
   const subjectId: string | undefined = Array.isArray(rawSubject)
@@ -377,25 +376,6 @@ export default function Study() {
       router.push("/dashboard");
     }
   }, [subjectId, router]);
-
-  const handleExitConfirmation = (url: string) => {
-    setShowExitConfirmation(true);
-    // Store the intended next URL
-    sessionStorage.setItem('nextUrl', url);
-  };
-
-  const proceedWithNavigation = () => {
-    const nextUrl = sessionStorage.getItem('nextUrl');
-    if (nextUrl) {
-      router.push(nextUrl);
-      sessionStorage.removeItem('nextUrl');
-    }
-    setShowExitConfirmation(false);
-  };
-
-  const cancelNavigation = () => {
-    setShowExitConfirmation(false);
-  };
 
   const getProgressLevel = (score: number): string => {
     if (score >= 80) return "Mastered";
@@ -503,7 +483,7 @@ export default function Study() {
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => handleExitConfirmation("/dashboard")}
+              onClick={() => router.push("/dashboard")}
               className="p-2"
               data-testid="button-back"
             >
@@ -576,29 +556,6 @@ export default function Study() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Full-Length Quiz for AP Macro */}
-        {subjectId === "macroeconomics" && (
-          <Card className="mb-6 border-2 border-khan-green bg-green-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-khan-green">
-                <BookOpen className="h-5 w-5" />
-                Full-Length Practice Exam
-              </CardTitle>
-              <CardDescription>
-                Take a complete 50-question practice exam with randomly selected questions from all units
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-                className="bg-khan-green hover:bg-khan-green-light text-white w-full"
-              >
-                Start Full-Length Quiz (50 Questions)
-              </Button>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Study Units */}
         <div className="space-y-4">
@@ -715,7 +672,7 @@ export default function Study() {
                     })()}
                     <Button
                       onClick={() =>
-                        handleExitConfirmation(`/quiz?subject=${subjectId}&unit=${unit.id}`)
+                        router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)
                       }
                       variant="outline"
                       className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white min-h-[44px] w-full"
@@ -789,7 +746,7 @@ export default function Study() {
         <div className="mt-8 flex justify-center">
           <Button
             variant="outline"
-            onClick={() => handleExitConfirmation("/dashboard")}
+            onClick={() => router.push("/dashboard")}
             data-testid="button-back-to-dashboard-bottom"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -798,25 +755,6 @@ export default function Study() {
         </div>
       </div>
 
-      {/* Exit Confirmation Modal */}
-      {showExitConfirmation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-            <h2 className="text-xl font-bold mb-4">Hold On! You're About to Lose Progress</h2>
-            <p className="mb-6">
-              If you leave this page now, your progress on the current test or study session will be lost. Are you sure you want to continue?
-            </p>
-            <div className="flex justify-center gap-4">
-              <Button onClick={cancelNavigation} variant="outline">
-                Cancel
-              </Button>
-              <Button onClick={proceedWithNavigation} className="bg-red-500 hover:bg-red-600 text-white">
-                Leave Anyway
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
   );
 }
