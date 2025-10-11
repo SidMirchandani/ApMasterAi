@@ -1,5 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../../server/storage";
+import admin from "firebase-admin"; // Assuming admin is used elsewhere for Firebase
+
+// Helper function to get Firestore instance, assuming it's initialized
+function getDb() {
+  if (admin.apps.length === 0) {
+    // Initialize Firebase Admin if not already initialized
+    // Replace with your service account key path or other initialization method
+    // admin.initializeApp({
+    //   credential: admin.credential.cert(require("../../../../path/to/serviceAccountKey.json")),
+    // });
+    console.warn("Firebase Admin SDK not initialized. Assuming it's initialized elsewhere.");
+  }
+  return admin.firestore();
+}
+
 
 async function getOrCreateUser(firebaseUid: string): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
@@ -49,6 +64,49 @@ export default async function handler(
       });
     }
 
+    if (req.method === "PATCH") {
+      // Handle archive/unarchive
+      try {
+        const { archived } = req.body;
+
+        if (typeof archived !== 'boolean') {
+          return res.status(400).json({
+            success: false,
+            message: "archived field must be a boolean"
+          });
+        }
+
+        const db = getDb();
+        const userSubjectsRef = db.collection('user_subjects');
+
+        // Query to find the subject document
+        const snapshot = await userSubjectsRef
+          .where(admin.firestore.FieldPath.documentId(), '==', subjectId as string)
+          .get();
+
+        if (snapshot.empty) {
+          return res.status(404).json({
+            success: false,
+            message: "Subject not found"
+          });
+        }
+
+        const docRef = snapshot.docs[0].ref;
+        await docRef.update({ archived });
+
+        return res.status(200).json({
+          success: true,
+          message: archived ? "Subject archived" : "Subject restored"
+        });
+      } catch (error) {
+        console.error("Error archiving subject:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to archive subject"
+        });
+      }
+    }
+
     switch (req.method) {
       case "DELETE": {
         try {
@@ -61,9 +119,11 @@ export default async function handler(
           });
         } catch (error) {
           console.error("[subjectId API][DELETE] Error:", error);
+          // Custom message for deletion failure, potentially including subject name if available
+          const errorMessage = `Failed to remove subject${subjectId ? ` "${subjectId}"` : ""}`;
           return res.status(500).json({
             success: false,
-            message: "Failed to remove subject",
+            message: errorMessage,
             error: error.message
           });
         }
@@ -100,7 +160,7 @@ export default async function handler(
       }
 
       default:
-        res.setHeader("Allow", ["DELETE", "PUT"]);
+        res.setHeader("Allow", ["DELETE", "PUT", "PATCH"]);
         return res.status(405).json({
           success: false,
           message: `Method ${req.method} not allowed`,

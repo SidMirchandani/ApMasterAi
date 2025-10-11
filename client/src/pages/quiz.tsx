@@ -111,6 +111,7 @@ export default function Quiz() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -132,6 +133,7 @@ export default function Quiz() {
   }, [quizCompleted, questions.length]);
 
   const handleBackClick = () => {
+    // For full-length quiz or any incomplete quiz with questions, show warning
     if (!quizCompleted && questions.length > 0) {
       setShowExitDialog(true);
     } else {
@@ -310,7 +312,7 @@ export default function Quiz() {
     }
   };
 
-  const handleSubmitFullLength = () => {
+  const confirmSubmitFullLength = () => {
     let correctCount = 0;
     questions.forEach((q, idx) => {
       const userAnswer = userAnswers[idx];
@@ -321,6 +323,7 @@ export default function Quiz() {
     });
     setScore(correctCount);
     setQuizCompleted(true);
+    setShowSubmitConfirm(false);
   };
 
   const handleRetakeQuiz = () => {
@@ -473,15 +476,15 @@ export default function Quiz() {
           <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Leave Quiz?</AlertDialogTitle>
+                <AlertDialogTitle>Leave {isFullLength ? 'Exam' : 'Quiz'}?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Your progress on this quiz will be lost if you leave now. Are you sure you want to exit?
+                  Your progress on this {isFullLength ? 'full-length exam' : 'quiz'} will be lost if you leave now. Are you sure you want to exit?
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Continue Quiz</AlertDialogCancel>
+                <AlertDialogCancel>Continue {isFullLength ? 'Exam' : 'Quiz'}</AlertDialogCancel>
                 <AlertDialogAction onClick={confirmExit} className="bg-red-600 hover:bg-red-700">
-                  Exit Quiz
+                  Exit {isFullLength ? 'Exam' : 'Quiz'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -557,6 +560,25 @@ export default function Quiz() {
               })}
             </div>
 
+            {/* Submit Confirmation Dialog for Full-Length Quiz */}
+            <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Submit Full-Length Exam?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you ready to submit your exam? You have answered {Object.keys(userAnswers).length} out of {questions.length} questions. 
+                    Once submitted, you cannot change your answers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Review Answers</AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmSubmitFullLength} className="bg-khan-green hover:bg-khan-green/90">
+                    Yes, Submit Exam
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             {/* Full-length navigation */}
             <div className="flex justify-between gap-4">
               <Button
@@ -571,7 +593,7 @@ export default function Quiz() {
               
               {currentPage === totalPages - 1 ? (
                 <Button
-                  onClick={handleSubmitFullLength}
+                  onClick={() => setShowSubmitConfirm(true)}
                   className="bg-khan-green hover:bg-khan-green/90 px-8"
                 >
                   Submit Exam

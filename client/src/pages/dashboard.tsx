@@ -95,7 +95,7 @@ export default function Dashboard() {
 
   // Memoize subjects array to prevent unnecessary re-renders
   const subjects = useMemo(() => subjectsResponse?.data || [], [subjectsResponse?.data]);
-  
+
   // Split into active and archived
   const activeSubjects = useMemo(() => subjects.filter(s => !(s as any).archived), [subjects]);
   const archivedSubjects = useMemo(() => subjects.filter(s => (s as any).archived), [subjects]);
@@ -190,7 +190,7 @@ export default function Dashboard() {
     },
     onSuccess: (data, subjectDocId) => {
       console.log('[Dashboard] Remove subject succeeded');
-      
+
       toast({
         title: "Subject removed",
         description: "Your subject has been successfully removed.",
@@ -388,7 +388,7 @@ export default function Dashboard() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Permanently Delete Subject</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This action cannot be undone. All your progress for "{subject.name}" will be permanently deleted.
+                                    This action cannot be undone. All your progress for <strong>"{subject.name}"</strong> will be permanently deleted.
                                     <div className="mt-4">
                                       <p className="mb-2 font-medium text-gray-900">Type "delete" to confirm:</p>
                                       <input
@@ -418,7 +418,7 @@ export default function Dashboard() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Final Confirmation</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you absolutely sure? This will permanently delete all data for "{subjectToRemove?.name}". This action is irreversible.
+                                    Are you absolutely sure? This will permanently delete all data for <strong>"{subjectToRemove?.name}"</strong>. This action is irreversible.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -460,12 +460,12 @@ export default function Dashboard() {
                               const unitId = `unit${index + 1}`;
                               const unitData = (subject as any).unitProgress?.[unitId];
                               const status = unitData?.status || "not-started";
-                              
+
                               let bgColor = "bg-gray-200"; // not-started
                               if (status === "mastered") bgColor = "bg-green-600";
                               else if (status === "proficient") bgColor = "bg-yellow-400";
                               else if (status === "attempted") bgColor = "bg-orange-400";
-                              
+
                               return (
                                 <div
                                   key={unitId}
@@ -476,7 +476,7 @@ export default function Dashboard() {
                                 </div>
                               );
                             })}
-                            
+
                             {/* Legend on hover */}
                             <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
                               <div className="text-xs font-semibold mb-2">Unit Progress Legend</div>
@@ -549,7 +549,7 @@ export default function Dashboard() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
-                  
+
                   {isArchiveExpanded && (
                     <div className="mt-4 space-y-4">
                       {archivedSubjects.map((subject: DashboardSubject) => (
