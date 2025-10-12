@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { ArrowLeft, CheckCircle, XCircle, ArrowRight } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // Import AlertDialog
 
 interface Question {
   id: string;
@@ -26,6 +26,7 @@ export default function SectionReview() {
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [currentPage, setCurrentPage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [sectionData, setSectionData] = useState<any>(null); // State to hold section data
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -33,15 +34,31 @@ export default function SectionReview() {
     }
   }, [loading, isAuthenticated, router]);
 
+  // Consolidated useEffect for fetching section data, handling current test data
   useEffect(() => {
-    const fetchSectionQuestions = async () => {
+    const fetchSectionData = async () => {
       if (!subjectId || !testId || !sectionCode || !isAuthenticated) return;
+
+      // Handle current test data from query params
+      if (testId === 'current' && router.query.data) {
+        try {
+          const data = JSON.parse(router.query.data as string);
+          setSectionData(data);
+          setQuestions(data.questions); // Set questions from parsed data
+          setUserAnswers(data.userAnswers); // Set userAnswers from parsed data
+          setIsLoading(false);
+          return;
+        } catch (error) {
+          console.error("Error parsing current test data:", error);
+        }
+      }
 
       try {
         const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`);
         if (!response.ok) throw new Error("Failed to fetch section questions");
-        
+
         const data = await response.json();
+        setSectionData(data.data);
         setQuestions(data.data.questions);
         setUserAnswers(data.data.userAnswers);
       } catch (error) {
@@ -51,8 +68,8 @@ export default function SectionReview() {
       }
     };
 
-    fetchSectionQuestions();
-  }, [subjectId, testId, sectionCode, isAuthenticated]);
+    fetchSectionData();
+  }, [subjectId, testId, sectionCode, isAuthenticated, router.query.data]);
 
   const questionsPerPage = 5;
   const totalPages = Math.ceil(questions.length / questionsPerPage);
@@ -69,18 +86,67 @@ export default function SectionReview() {
     );
   }
 
+  // Function to handle delete confirmation and mutation
+  const handleDeleteConfirmation = async () => {
+    try {
+      await apiRequest("DELETE", `/api/user/subjects/${subjectId}/tests/${testId}`);
+      router.push(`/subject/${subjectId}`); // Redirect to subject page after deletion
+    } catch (error) {
+      console.error("Error deleting test:", error);
+      // Optionally, show an error message to the user
+    }
+  };
+
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-semibold">
-              Review - Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
-            </h2>
-          </div>
-          <Progress value={((currentPage + 1) / totalPages) * 100} className="h-2" />
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-semibold">
+            Review - Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
+          </h2>
+          {/* Save & Exit button for full-length quizzes */}
+          {testId === 'current' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="bg-khan-blue hover:bg-khan-blue/90">
+                  Save & Exit
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Save and Exit Quiz?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Your progress will be saved, and you can resume this quiz later.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={async () => {
+                    // Logic to save progress and add to history
+                    try {
+                      await apiRequest("POST", `/api/user/subjects/${subjectId}/tests/save-and-exit`, {
+                        testId: testId, // Assuming testId is relevant for saving
+                        sectionCode: sectionCode,
+                        userAnswers: userAnswers, // Save current answers
+                        // other relevant data to save progress
+                      });
+                      router.push(`/quiz-history?subject=${subjectId}&testId=${testId}`); // Redirect to quiz history
+                      alert("Quiz saved and ready to resume!");
+                    } catch (error) {
+                      console.error("Error saving and exiting quiz:", error);
+                      alert("Failed to save quiz progress. Please try again.");
+                    }
+                  }}>
+                    Save & Exit
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
+        <Progress value={((currentPage + 1) / totalPages) * 100} className="h-2" />
+
 
         <div className="space-y-6 mb-6">
           {currentQuestions.map((q, idx) => {
@@ -140,7 +206,7 @@ export default function SectionReview() {
 
                   <div className={`p-3 rounded-lg mb-3 ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
                     <p className="font-semibold">
-                      Your answer: {userAnswer || "Not answered"} 
+                      Your answer: {userAnswer || "Not answered"}
                       {isCorrect ? " ✓ Correct" : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
                     </p>
                   </div>
@@ -176,14 +242,26 @@ export default function SectionReview() {
           </Button>
 
           {currentPage === totalPages - 1 ? (
-            <Button
-              onClick={() => router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`)}
-              variant="outline"
-              className="px-8"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
+            // Final page of the review section
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this test? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteConfirmation}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           ) : (
             <Button
               onClick={() => setCurrentPage(currentPage + 1)}

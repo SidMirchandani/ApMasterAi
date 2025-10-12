@@ -113,6 +113,8 @@ export default function Quiz() {
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
+  const [showSaveExitDialog, setShowSaveExitDialog] = useState(false);
+  const [isSavedProgress, setIsSavedProgress] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -337,6 +339,58 @@ export default function Quiz() {
     // Don't set isReviewMode here - let user see summary first
   };
 
+  const handleSaveAndExit = async () => {
+    if (!subjectId || !isFullLength) return;
+    
+    try {
+      const percentage = Math.round((Object.keys(userAnswers).length / questions.length) * 100);
+      await apiRequest(
+        "POST",
+        `/api/user/subjects/${subjectId}/full-length-test`,
+        {
+          score: 0,
+          percentage,
+          totalQuestions: questions.length,
+          questions,
+          userAnswers,
+          inProgress: true,
+          currentPage
+        }
+      );
+      setIsSavedProgress(true);
+      router.push(`/full-length-history?subject=${subjectId}`);
+    } catch (error) {
+      console.error("Failed to save progress:", error);
+    }
+  };
+
+  const handleReviewUnit = (sectionCode: string) => {
+    const unitQuestions = questions.filter(q => q.section_code === sectionCode);
+    const unitAnswers: { [key: number]: string } = {};
+    
+    questions.forEach((q, idx) => {
+      if (q.section_code === sectionCode) {
+        unitAnswers[idx] = userAnswers[idx];
+      }
+    });
+    
+    // Navigate to section review with current test data
+    router.push({
+      pathname: '/section-review',
+      query: {
+        subject: subjectId,
+        testId: 'current',
+        section: sectionCode,
+        data: JSON.stringify({
+          questions: unitQuestions,
+          userAnswers: unitAnswers,
+          score,
+          totalQuestions: questions.length
+        })
+      }
+    });
+  };
+
   const handleRetakeQuiz = () => {
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
@@ -475,7 +529,7 @@ export default function Quiz() {
         section.percentage = Math.round((section.correct / section.total) * 100);
       });
 
-      return Object.values(sections).sort((a, b) => b.percentage - a.percentage);
+      return sections;
     })() : null;
 
     // Performance level indicator
@@ -523,10 +577,14 @@ export default function Quiz() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {sectionPerformance.map((section, idx) => {
+                      {Object.entries(sectionPerformance).map(([sectionCode, section], idx) => {
                         const sectionPerf = getPerformanceLevel(section.percentage);
                         return (
-                          <div key={idx} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div 
+                            key={idx} 
+                            className="border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
+                            onClick={() => sectionCode && handleReviewUnit(sectionCode)}
+                          >
                             <div className="flex justify-between items-start mb-3">
                               <div className="flex-1">
                                 <h3 className="font-semibold text-lg text-gray-900">{section.name}</h3>
@@ -610,8 +668,7 @@ export default function Quiz() {
                       variant="outline"
                       className="px-8"
                     >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back to Study
+                      <ArrowLeft className="h-4 w-4" />
                     </Button>
                   </div>
                 </CardContent>
@@ -777,8 +834,7 @@ export default function Quiz() {
                 onClick={() => router.push(`/study?subject=${subjectId}`)}
                 className="bg-khan-green hover:bg-khan-green/90 px-8"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Study
+                <ArrowLeft className="h-4 w-4" />
               </Button>
             ) : (
               <Button
@@ -826,6 +882,24 @@ export default function Quiz() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          <AlertDialog open={showSaveExitDialog} onOpenChange={setShowSaveExitDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Save Progress & Exit?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Your progress will be saved and you can resume this exam later from where you left off.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Continue Exam</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSaveAndExit} className="bg-khan-green hover:bg-khan-green/90">
+                  Save & Exit
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-semibold">
               {isFullLength
@@ -833,11 +907,23 @@ export default function Quiz() {
                 : `Question ${currentQuestionIndex + 1} of ${questions.length}`
               }
             </h2>
-            {!isFullLength && (
-              <div className="text-lg font-semibold text-khan-green">
-                Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {isFullLength && (
+                <Button
+                  onClick={() => setShowSaveExitDialog(true)}
+                  variant="outline"
+                  size="sm"
+                  className="border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
+                >
+                  Save & Exit
+                </Button>
+              )}
+              {!isFullLength && (
+                <div className="text-lg font-semibold text-khan-green">
+                  Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
+                </div>
+              )}
+            </div>
           </div>
           <Progress value={progress} className="h-2" />
         </div>

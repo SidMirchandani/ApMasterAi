@@ -271,13 +271,16 @@ export default function Dashboard() {
   };
 
   const confirmRemoveSubject = () => {
-    if (deleteConfirmText.toLowerCase() === "delete") {
+    const trimmedText = deleteConfirmText.trim().toLowerCase();
+    console.log('[Dashboard] Delete confirm text:', trimmedText);
+    if (trimmedText === "delete") {
       setShowSecondConfirm(true);
     }
   };
 
   const finalConfirmRemove = () => {
     if (subjectToRemove) {
+      console.log('[Dashboard] Final confirm - removing subject:', subjectToRemove.id);
       removeSubjectMutation.mutate(subjectToRemove.id.toString());
       setShowSecondConfirm(false);
       setDeleteConfirmText("");
