@@ -2,10 +2,12 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
+  "/": "pages/index.js",
   "/dashboard": "pages/dashboard.js",
-  "/study": "pages/study.js",
+  "/api/user/profile": "pages/api/user/profile.js",
   "/api/user/me": "pages/api/user/me.js",
   "/api/user/subjects": "pages/api/user/subjects.js",
+  "/study": "pages/study.js",
   "/quiz": "pages/quiz.js",
   "/api/questions": "pages/api/questions.js",
   "/api/user/subjects/[subjectId]/unit-progress": "pages/api/user/subjects/[subjectId]/unit-progress.js"
