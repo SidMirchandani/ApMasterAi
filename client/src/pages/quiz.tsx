@@ -842,15 +842,18 @@ export default function Quiz() {
           <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Leave {isFullLength ? 'Exam' : 'Quiz'}?</AlertDialogTitle>
+                <AlertDialogTitle>Leave {isFullLength ? 'Test' : 'Quiz'}?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Your progress on this {isFullLength ? 'full-length exam' : 'quiz'} will be lost if you leave now. Are you sure you want to exit?
+                  {isFullLength 
+                    ? 'Your progress on this full-length practice test will be lost if you leave now. Are you sure you want to exit?'
+                    : 'Your progress on this unit practice quiz will be lost if you leave now. Are you sure you want to exit?'
+                  }
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Continue {isFullLength ? 'Exam' : 'Quiz'}</AlertDialogCancel>
+                <AlertDialogCancel>Continue {isFullLength ? 'Test' : 'Quiz'}</AlertDialogCancel>
                 <AlertDialogAction onClick={confirmExit} className="bg-red-600 hover:bg-red-700">
-                  Exit {isFullLength ? 'Exam' : 'Quiz'}
+                  Yes, Exit {isFullLength ? 'Test' : 'Quiz'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -864,7 +867,7 @@ export default function Quiz() {
               }
             </h2>
             <div className="flex items-center gap-3">
-              {isFullLength && (
+              {isFullLength ? (
                 <Button
                   onClick={() => setShowExitDialog(true)}
                   variant="outline"
@@ -873,11 +876,20 @@ export default function Quiz() {
                 >
                   Exit Test
                 </Button>
-              )}
-              {!isFullLength && (
-                <div className="text-lg font-semibold text-khan-green">
-                  Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
-                </div>
+              ) : (
+                <>
+                  <div className="text-lg font-semibold text-khan-green">
+                    Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
+                  </div>
+                  <Button
+                    onClick={() => setShowExitDialog(true)}
+                    variant="outline"
+                    size="sm"
+                    className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                  >
+                    Exit Quiz
+                  </Button>
+                </>
               )}
             </div>
           </div>

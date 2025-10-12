@@ -478,23 +478,20 @@ export default function Study() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/dashboard")}
-              size="sm"
-              data-testid="button-back"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {currentSubject.name}
-              </h1>
-              <p className="text-gray-600 mt-1">{currentSubject.description}</p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {currentSubject.name}
+            </h1>
+            <p className="text-gray-600 mt-1">{currentSubject.description}</p>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/dashboard")}
+            size="sm"
+            data-testid="button-back"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+          </Button>
         </div>
 
         {/* Your Progress */}
