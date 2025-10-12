@@ -2,9 +2,10 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/dashboard": "pages/dashboard.js",
+  "/full-length-history": "pages/full-length-history.js",
+  "/quiz": "pages/quiz.js",
+  "/learn": "pages/learn.js",
   "/api/user/me": "pages/api/user/me.js",
-  "/study": "pages/study.js",
+  "/dashboard": "pages/dashboard.js",
   "/api/user/subjects": "pages/api/user/subjects.js"
 }
