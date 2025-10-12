@@ -64,7 +64,7 @@ export default async function handler(
       });
     }
 
-    if (req.method === "PATCH") {
+    if (req.method === "PUT") {
       // Handle archive/unarchive
       try {
         const { archived } = req.body;
@@ -79,15 +79,16 @@ export default async function handler(
         const db = getDb();
         const userSubjectsRef = db.collection('user_subjects');
 
-        // Query to find the subject document
+        // Query to find the subject document by numeric ID and userId
         const snapshot = await userSubjectsRef
-          .where(admin.firestore.FieldPath.documentId(), '==', subjectId as string)
+          .where('id', '==', parseInt(subjectId as string))
+          .where('userId', '==', userId)
           .get();
 
         if (snapshot.empty) {
           return res.status(404).json({
             success: false,
-            message: "Subject not found"
+            message: "Subject not found or does not belong to the user."
           });
         }
 
