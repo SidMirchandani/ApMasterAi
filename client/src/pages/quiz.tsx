@@ -189,13 +189,8 @@ export default function Quiz() {
           });
 
           if (data.success && data.data && data.data.length > 0) {
-            // Shuffle and select 50 random questions for full-length test
-            const shuffled = [...data.data].sort(() => Math.random() - 0.5);
-            const selectedQuestions = shuffled.slice(0, 50);
-            if (selectedQuestions.length < 50) {
-              console.warn(`⚠️ Only ${selectedQuestions.length} questions available, expected 50`);
-            }
-            setQuestions(selectedQuestions);
+            // Use all questions returned from proportional distribution
+            setQuestions(data.data);
           } else {
             setError("No questions found for this subject");
           }
@@ -339,7 +334,7 @@ export default function Quiz() {
     setScore(correctCount);
     setQuizCompleted(true);
     setShowSubmitConfirm(false);
-    setIsReviewMode(true); // Enter review mode after submission
+    // Don't set isReviewMode here - let user see summary first
   };
 
   const handleRetakeQuiz = () => {

@@ -50,9 +50,16 @@ export default async function handler(
       
       // Calculate questions per section based on weights
       const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
+      const sectionEntries = Object.entries(weights);
+      let remainingQuestions = questionLimit;
       
-      for (const [sectionCode, weight] of Object.entries(weights)) {
-        const sectionQuestionCount = Math.round((weight / totalWeight) * questionLimit);
+      for (let i = 0; i < sectionEntries.length; i++) {
+        const [sectionCode, weight] = sectionEntries[i];
+        
+        // For the last section, use all remaining questions to ensure we hit exactly the limit
+        const sectionQuestionCount = i === sectionEntries.length - 1 
+          ? remainingQuestions 
+          : Math.round((weight / totalWeight) * questionLimit);
         
         if (sectionQuestionCount > 0) {
           const sectionSnapshot = await questionsRef
@@ -68,9 +75,11 @@ export default async function handler(
           
           // Shuffle and select the needed amount
           const shuffled = sectionQuestions.sort(() => Math.random() - 0.5);
-          selectedQuestions.push(...shuffled.slice(0, sectionQuestionCount));
+          const selected = shuffled.slice(0, sectionQuestionCount);
+          selectedQuestions.push(...selected);
+          remainingQuestions -= selected.length;
           
-          console.log(`  📊 ${sectionCode}: ${shuffled.slice(0, sectionQuestionCount).length} questions (${weight}% weight)`);
+          console.log(`  📊 ${sectionCode}: ${selected.length} questions (${weight}% weight)`);
         }
       }
       
