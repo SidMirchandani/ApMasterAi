@@ -419,25 +419,6 @@ export default function Quiz() {
   if (quizCompleted && !isReviewMode) {
     const percentage = Math.round((score / questions.length) * 100);
 
-    // Save the score to the backend
-    const saveScore = async () => {
-      try {
-        await apiRequest(
-          "PUT",
-          `/api/user/subjects/${subjectId}/unit-progress`,
-          { unitId: unit, mcqScore: percentage }
-        );
-        console.log("Score saved successfully");
-      } catch (error) {
-        console.error("Failed to save score:", error);
-      }
-    };
-
-    // Save score when quiz completes
-    if (!score) {
-      saveScore();
-    }
-
     // Calculate section-wise performance for full-length test
     const sectionPerformance = isFullLength ? (() => {
       const sections: Record<string, { 

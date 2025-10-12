@@ -2,6 +2,19 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../server/db";
 
+// Exam weight distribution for different subjects
+const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
+  "APMACRO": {
+    "BEC": 5,      // Basic Economic Concepts: 5-10%
+    "EIBC": 12,    // Economic Indicators & Business Cycle: 12-17%
+    "NIPD": 17,    // National Income & Price Determination: 17-27%
+    "FS": 18,      // Financial Sector: 18-23%
+    "LRCSP": 20,   // Long-Run Consequences: 20-30%
+    "OEITF": 10,   // Open Economy: 10-13%
+  },
+  // Add other subjects as needed
+};
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -22,7 +35,65 @@ export default async function handler(
   try {
     const db = getDb();
     const questionLimit = limit ? parseInt(limit as string) : 25;
-    // Fetch more than needed for better randomization
+    
+    // For full-length tests without a section, use proportional distribution
+    if (!section && EXAM_WEIGHTS[subject as string]) {
+      const weights = EXAM_WEIGHTS[subject as string];
+      const questionsRef = db.collection('questions');
+      const selectedQuestions: any[] = [];
+      
+      console.log("🔍 Fetching proportional questions for full-length test:", {
+        subject,
+        totalQuestions: questionLimit,
+        weights
+      });
+      
+      // Calculate questions per section based on weights
+      const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
+      
+      for (const [sectionCode, weight] of Object.entries(weights)) {
+        const sectionQuestionCount = Math.round((weight / totalWeight) * questionLimit);
+        
+        if (sectionQuestionCount > 0) {
+          const sectionSnapshot = await questionsRef
+            .where('subject_code', '==', subject as string)
+            .where('section_code', '==', sectionCode)
+            .limit(sectionQuestionCount * 3) // Fetch extra for randomization
+            .get();
+          
+          const sectionQuestions = sectionSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          // Shuffle and select the needed amount
+          const shuffled = sectionQuestions.sort(() => Math.random() - 0.5);
+          selectedQuestions.push(...shuffled.slice(0, sectionQuestionCount));
+          
+          console.log(`  📊 ${sectionCode}: ${shuffled.slice(0, sectionQuestionCount).length} questions (${weight}% weight)`);
+        }
+      }
+      
+      // Final shuffle of all selected questions
+      const finalQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
+      
+      console.log("✅ Returning proportional questions:", {
+        requested: questionLimit,
+        returning: finalQuestions.length,
+        breakdown: Object.entries(weights).map(([section, weight]) => ({
+          section,
+          count: finalQuestions.filter(q => q.section_code === section).length,
+          weight: `${weight}%`
+        }))
+      });
+      
+      return res.status(200).json({
+        success: true,
+        data: finalQuestions,
+      });
+    }
+    
+    // Regular query logic for unit quizzes or subjects without weight config
     const fetchLimit = questionLimit * 4;
 
     console.log("🔍 Querying questions with:", {
@@ -32,11 +103,9 @@ export default async function handler(
       fetchLimit
     });
 
-    // Query Firestore for MCQ questions
     const questionsRef = db.collection('questions');
     let query = questionsRef.where('subject_code', '==', subject as string);
     
-    // Only filter by section if provided (for unit quizzes)
     if (section) {
       query = query.where('section_code', '==', section as string);
     }
@@ -51,7 +120,6 @@ export default async function handler(
       queriedFor: { subject, section: section || "ALL" }
     });
 
-    // If empty, let's check what data exists in the collection
     if (snapshot.empty) {
       const sampleSnapshot = await questionsRef.limit(3).get();
       const sampleDocs = sampleSnapshot.docs.map(doc => ({
@@ -69,13 +137,11 @@ export default async function handler(
       });
     }
 
-    // Convert to array and shuffle
     const allQuestions = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
 
-    // Shuffle and limit
     const shuffled = allQuestions.sort(() => Math.random() - 0.5);
     const questions = shuffled.slice(0, questionLimit);
 
