@@ -131,32 +131,58 @@ export default function FullLengthResults() {
 
           {/* Overall Score Card */}
           <Card className="border-t-4 border-t-khan-green">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between">
+            <CardContent className="pt-6 pb-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Test Results</h2>
+                  <p className="text-sm text-gray-500">{formatDateTime(testData.date)}</p>
+                </div>
+                
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-khan-green to-green-600">
-                    <span className="text-2xl font-bold text-white">{testData.percentage}%</span>
+                  <div className={`inline-block px-6 py-2 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold`}>
+                    {overallPerformance.label}
                   </div>
-                  <div>
-                    <div className={`inline-block px-4 py-1 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-sm mb-1`}>
-                      {overallPerformance.label}
+                  <p className="text-sm text-gray-600">
+                    {testData.score} out of {testData.totalQuestions} questions correct
+                  </p>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-4 mt-2">
+                  <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                    <div className="flex justify-center mb-2">
+                      <CheckCircle className="h-12 w-12 text-green-500" />
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {testData.score} out of {testData.totalQuestions} questions correct
-                    </p>
+                    <p className="text-3xl font-bold text-gray-900">{testData.score}</p>
+                    <p className="text-sm text-gray-600 mt-1">Correct Answers</p>
+                  </div>
+                  <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                    <div className="flex justify-center mb-2">
+                      <XCircle className="h-12 w-12 text-red-500" />
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">{testData.totalQuestions - testData.score}</p>
+                    <p className="text-sm text-gray-600 mt-1">Incorrect Answers</p>
+                  </div>
+                  <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                    <div className="flex justify-center mb-2">
+                      <div className="h-12 w-12 rounded-full bg-khan-blue flex items-center justify-center">
+                        <span className="text-white font-bold text-xl">{testData.totalQuestions}</span>
+                      </div>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">Total</p>
+                    <p className="text-sm text-gray-600 mt-1">Questions</p>
                   </div>
                 </div>
-                <p className="text-xs text-khan-gray-medium">{formatDateTime(testData.date)}</p>
               </div>
             </CardContent>
           </Card>
 
           {/* Unit Performance Breakdown */}
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
-                <BookOpen className="text-khan-blue h-4 w-4" />
-                Unit Performance Breakdown
+                <CheckCircle className="text-khan-blue h-5 w-5" />
+                Section Performance Breakdown
               </CardTitle>
             </CardHeader>
             <CardContent>

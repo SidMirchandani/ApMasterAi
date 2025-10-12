@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle, XCircle, ArrowRight } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
+import { formatDateTime } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -113,6 +114,7 @@ export default function Quiz() {
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -281,6 +283,18 @@ export default function Quiz() {
     } else if (!isAnswerSubmitted) {
       setSelectedAnswer(answer);
     }
+  };
+
+  const toggleFlag = (questionIndex: number) => {
+    setFlaggedQuestions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(questionIndex)) {
+        newSet.delete(questionIndex);
+      } else {
+        newSet.add(questionIndex);
+      }
+      return newSet;
+    });
   };
 
   const handleSubmitAnswer = () => {
@@ -523,20 +537,46 @@ export default function Quiz() {
             <div className="max-w-5xl mx-auto space-y-3">
               {/* Header Card */}
               <Card className="border-t-4 border-t-khan-green">
-                <CardContent className="pt-4 pb-4">
-                  <div className="flex items-center justify-between">
+                <CardContent className="pt-6 pb-6">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold">Test Results</h2>
+                      <p className="text-sm text-gray-500">{formatDateTime(new Date())}</p>
+                    </div>
+                    
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-khan-green to-green-600">
-                        <span className="text-2xl font-bold text-white">{percentage}%</span>
+                      <div className={`inline-block px-6 py-2 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold`}>
+                        {overallPerformance.label}
                       </div>
-                      <div>
-                        <h2 className="text-xl font-bold mb-1">Full-Length Test Complete!</h2>
-                        <div className={`inline-block px-4 py-1 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-sm mb-1`}>
-                          {overallPerformance.label}
+                      <p className="text-sm text-gray-600">
+                        {score} out of {questions.length} questions correct
+                      </p>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-4 mt-2">
+                      <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                        <div className="flex justify-center mb-2">
+                          <CheckCircle className="h-12 w-12 text-green-500" />
                         </div>
-                        <p className="text-sm text-gray-600">
-                          {score} out of {questions.length} questions correct
-                        </p>
+                        <p className="text-3xl font-bold text-gray-900">{score}</p>
+                        <p className="text-sm text-gray-600 mt-1">Correct Answers</p>
+                      </div>
+                      <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                        <div className="flex justify-center mb-2">
+                          <XCircle className="h-12 w-12 text-red-500" />
+                        </div>
+                        <p className="text-3xl font-bold text-gray-900">{questions.length - score}</p>
+                        <p className="text-sm text-gray-600 mt-1">Incorrect Answers</p>
+                      </div>
+                      <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                        <div className="flex justify-center mb-2">
+                          <div className="h-12 w-12 rounded-full bg-khan-blue flex items-center justify-center">
+                            <span className="text-white font-bold text-xl">{questions.length}</span>
+                          </div>
+                        </div>
+                        <p className="text-3xl font-bold text-gray-900">Total</p>
+                        <p className="text-sm text-gray-600 mt-1">Questions</p>
                       </div>
                     </div>
                   </div>
@@ -591,39 +631,6 @@ export default function Quiz() {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center">
-                      <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{score}</p>
-                      <p className="text-sm text-gray-600">Correct Answers</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center">
-                      <XCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{questions.length - score}</p>
-                      <p className="text-sm text-gray-600">Incorrect Answers</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center">
-                      <div className="h-12 w-12 rounded-full bg-khan-blue flex items-center justify-center mx-auto mb-2">
-                        <span className="text-white font-bold text-lg">{questions.length}</span>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">Total</p>
-                      <p className="text-sm text-gray-600">Questions</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
 
               {/* Action Buttons */}
               <Card>
@@ -711,6 +718,40 @@ export default function Quiz() {
             <Progress value={((currentPage + 1) / totalPages) * 100} className="h-2" />
           </div>
 
+          {/* Question Navigation Box */}
+          <Card className="mb-4 sticky top-0 z-10 bg-white shadow-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-khan-gray-dark">Question Navigation</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex flex-wrap gap-2">
+                {questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage).map((q, idx) => {
+                  const globalIndex = currentPage * questionsPerPage + idx;
+                  const userAnswer = userAnswers[globalIndex];
+                  const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
+                  const isCorrect = userAnswer === correctAnswerLabel;
+                  
+                  return (
+                    <button
+                      key={globalIndex}
+                      onClick={() => {
+                        const element = document.getElementById(`review-question-${globalIndex}`);
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      className={`w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
+                        isCorrect
+                          ? 'bg-green-100 border-2 border-green-500 text-green-700'
+                          : 'bg-red-100 border-2 border-red-500 text-red-700'
+                      }`}
+                    >
+                      {globalIndex + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Review Questions */}
           <div className="space-y-6 mb-6">
             {currentQuestions.map((q, idx) => {
@@ -724,7 +765,7 @@ export default function Quiz() {
               const isCorrect = userAnswer === correctAnswerLabel;
 
               return (
-                <Card key={globalIndex} className="border-2">
+                <Card key={globalIndex} id={`review-question-${globalIndex}`} className="border-2">
                   <CardHeader>
                     <CardTitle className="text-lg font-medium leading-relaxed">
                       {globalIndex + 1}. {q.prompt}
@@ -904,6 +945,41 @@ export default function Quiz() {
 
         {isFullLength ? (
           <>
+            {/* Question Navigation Box */}
+            <Card className="mb-4 sticky top-0 z-10 bg-white shadow-md">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold text-khan-gray-dark">Question Navigation</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="flex flex-wrap gap-2">
+                  {questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage).map((_, idx) => {
+                    const globalIndex = currentPage * questionsPerPage + idx;
+                    const isAnswered = userAnswers[globalIndex] !== undefined;
+                    const isFlagged = flaggedQuestions.has(globalIndex);
+                    
+                    return (
+                      <button
+                        key={globalIndex}
+                        onClick={() => {
+                          const element = document.getElementById(`question-${globalIndex}`);
+                          element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                        className={`w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
+                          isFlagged
+                            ? 'bg-red-100 border-2 border-red-500 text-red-700'
+                            : isAnswered
+                            ? 'bg-gray-200 border-2 border-gray-400 text-gray-700'
+                            : 'bg-white border-2 border-gray-300 text-gray-500'
+                        }`}
+                      >
+                        {globalIndex + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Full-length exam: show multiple questions per page */}
             <div className="space-y-6 mb-6">
               {currentQuestions.map((q, idx) => {
@@ -914,11 +990,28 @@ export default function Quiz() {
                 }));
 
                 return (
-                  <Card key={globalIndex} className="border-2">
+                  <Card key={globalIndex} id={`question-${globalIndex}`} className="border-2">
                     <CardHeader>
-                      <CardTitle className="text-lg font-medium leading-relaxed">
-                        {globalIndex + 1}. {q.prompt}
-                      </CardTitle>
+                      <div className="flex justify-between items-start gap-4">
+                        <CardTitle className="text-lg font-medium leading-relaxed flex-1">
+                          {globalIndex + 1}. {q.prompt}
+                        </CardTitle>
+                        <Button
+                          onClick={() => toggleFlag(globalIndex)}
+                          variant="outline"
+                          size="sm"
+                          className={`flex-shrink-0 ${
+                            flaggedQuestions.has(globalIndex)
+                              ? 'border-red-500 bg-red-50 text-red-700 hover:bg-red-100'
+                              : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
+                          </svg>
+                          {flaggedQuestions.has(globalIndex) ? 'Unflag' : 'Flag'}
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
