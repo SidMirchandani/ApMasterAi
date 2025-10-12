@@ -117,7 +117,7 @@ export default function FullLengthResults() {
       <Navigation />
       <div className="container mx-auto px-4 py-4 md:py-6">
         <div className="max-w-5xl mx-auto space-y-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center gap-3">
             <Button
               onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
               variant="outline"

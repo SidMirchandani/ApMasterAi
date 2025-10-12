@@ -91,8 +91,8 @@ export default function FullLengthHistory() {
       <Navigation />
       <div className="container mx-auto px-4 py-4 md:py-6">
         <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-            <div className="flex items-center gap-3">
+          <div className="mb-6">
+            <div className="flex items-center justify-center gap-3 mb-4">
               {hasSomethingToGoBackTo() && (
                 <Button
                   onClick={() => router.back()}
@@ -104,13 +104,15 @@ export default function FullLengthHistory() {
               )}
               <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark">Full-Length Test History</h1>
             </div>
-            <Button
-              onClick={handleStartNewTest}
-              className="bg-khan-green hover:bg-khan-green/90 w-full sm:w-auto"
-            >
-              <PlayCircle className="mr-2 h-5 w-5" />
-              Start New Test
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                onClick={handleStartNewTest}
+                className="bg-khan-green hover:bg-khan-green/90"
+              >
+                <PlayCircle className="mr-2 h-5 w-5" />
+                Start New Test
+              </Button>
+            </div>
           </div>
 
           {testHistory.length === 0 ? (
