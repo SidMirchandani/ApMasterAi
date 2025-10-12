@@ -4,7 +4,9 @@
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
   "/dashboard": "pages/dashboard.js",
-  "/study": "pages/study.js",
+  "/api/user/subjects": "pages/api/user/subjects.js",
   "/api/user/me": "pages/api/user/me.js",
-  "/api/user/subjects": "pages/api/user/subjects.js"
+  "/login": "pages/login.js",
+  "/full-length-results": "pages/full-length-results.js",
+  "/api/user/profile": "pages/api/user/profile.js"
 }
