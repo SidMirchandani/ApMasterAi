@@ -7,7 +7,7 @@ import { ArrowLeft, CheckCircle, XCircle, ArrowRight } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"; // Import AlertDialog
+
 
 interface Question {
   id: string;
@@ -86,14 +86,11 @@ export default function SectionReview() {
     );
   }
 
-  // Function to handle delete confirmation and mutation
-  const handleDeleteConfirmation = async () => {
-    try {
-      await apiRequest("DELETE", `/api/user/subjects/${subjectId}/tests/${testId}`);
-      router.push(`/subject/${subjectId}`); // Redirect to subject page after deletion
-    } catch (error) {
-      console.error("Error deleting test:", error);
-      // Optionally, show an error message to the user
+  const handleBackNavigation = () => {
+    if (testId === 'current') {
+      router.push(`/quiz?subject=${subjectId}&unit=full-length`);
+    } else {
+      router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
     }
   };
 
@@ -105,45 +102,6 @@ export default function SectionReview() {
           <h2 className="text-xl font-semibold">
             Review - Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
           </h2>
-          {/* Save & Exit button for full-length quizzes */}
-          {testId === 'current' && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="bg-khan-blue hover:bg-khan-blue/90">
-                  Save & Exit
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Save and Exit Quiz?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Your progress will be saved, and you can resume this quiz later.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={async () => {
-                    // Logic to save progress and add to history
-                    try {
-                      await apiRequest("POST", `/api/user/subjects/${subjectId}/tests/save-and-exit`, {
-                        testId: testId, // Assuming testId is relevant for saving
-                        sectionCode: sectionCode,
-                        userAnswers: userAnswers, // Save current answers
-                        // other relevant data to save progress
-                      });
-                      router.push(`/quiz-history?subject=${subjectId}&testId=${testId}`); // Redirect to quiz history
-                      alert("Quiz saved and ready to resume!");
-                    } catch (error) {
-                      console.error("Error saving and exiting quiz:", error);
-                      alert("Failed to save quiz progress. Please try again.");
-                    }
-                  }}>
-                    Save & Exit
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
         </div>
         <Progress value={((currentPage + 1) / totalPages) * 100} className="h-2" />
 
@@ -242,27 +200,14 @@ export default function SectionReview() {
           </Button>
 
           {currentPage === totalPages - 1 ? (
-            // Final page of the review section
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-1" />
-                  Back
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this test? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteConfirmation}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              onClick={handleBackNavigation}
+              variant="outline"
+              className="px-8"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Results
+            </Button>
           ) : (
             <Button
               onClick={() => setCurrentPage(currentPage + 1)}
