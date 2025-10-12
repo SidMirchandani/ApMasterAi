@@ -543,30 +543,28 @@ export class Storage {
     const db = this.getDbInstance();
     if (!db) throw new Error("Firestore not available");
 
-    const userRef = db.collection("users").doc(userId);
-    const subjectRef = userRef.collection("subjects").doc(subjectId);
-
     const testId = `test_${Date.now()}`;
     const timestamp = new Date();
 
     // Calculate section breakdown
-    const sectionBreakdown: { [key: string]: { name: string; correct: number; total: number; percentage: number } } = {};
-    const sectionNames: Record<string, string> = {
-      "BEC": "Basic Economic Concepts",
-      "EIBC": "Economic Indicators & Business Cycle",
-      "NIPD": "National Income & Price Determination",
-      "FS": "Financial Sector",
-      "LRCSP": "Long-Run Consequences of Stabilization Policies",
-      "OEITF": "Open Economy - International Trade & Finance",
+    const sectionBreakdown: { [key: string]: { name: string; unitNumber: number; correct: number; total: number; percentage: number } } = {};
+    const sectionInfo: Record<string, { name: string; unitNumber: number }> = {
+      "BEC": { name: "Basic Economic Concepts", unitNumber: 1 },
+      "EIBC": { name: "Economic Indicators & Business Cycle", unitNumber: 2 },
+      "NIPD": { name: "National Income & Price Determination", unitNumber: 3 },
+      "FS": { name: "Financial Sector", unitNumber: 4 },
+      "LRCSP": { name: "Long-Run Consequences of Stabilization Policies", unitNumber: 5 },
+      "OEITF": { name: "Open Economy - International Trade & Finance", unitNumber: 6 },
     };
 
     questions.forEach((q, idx) => {
       const sectionCode = q.section_code || "Unknown";
-      const sectionName = sectionNames[sectionCode] || sectionCode;
+      const info = sectionInfo[sectionCode] || { name: sectionCode, unitNumber: 0 };
 
       if (!sectionBreakdown[sectionCode]) {
         sectionBreakdown[sectionCode] = {
-          name: sectionName,
+          name: info.name,
+          unitNumber: info.unitNumber,
           correct: 0,
           total: 0,
           percentage: 0
@@ -598,25 +596,39 @@ export class Storage {
       sectionBreakdown
     };
 
-    // Update the full-length unit progress with history
-    await subjectRef.set({
-      unitProgress: {
-        "full-length": {
-          mcqScore: percentage,
-          lastUpdated: timestamp,
-          history: admin.firestore.FieldValue.arrayUnion({
-            id: testId,
-            date: timestamp,
-            score,
-            percentage,
-            totalQuestions
-          })
-        }
-      }
-    }, { merge: true });
+    // Find the user_subjects document
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
 
-    // Save complete test data in a separate collection
-    await subjectRef.collection("fullLengthTests").doc(testId).set(testData);
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      const unitProgress = data.unitProgress || {};
+
+      // Update the full-length unit progress with history
+      unitProgress["full-length"] = {
+        mcqScore: percentage,
+        lastUpdated: timestamp,
+        history: [...(unitProgress["full-length"]?.history || []), {
+          id: testId,
+          date: timestamp,
+          score,
+          percentage,
+          totalQuestions
+        }]
+      };
+
+      await doc.ref.update({
+        unitProgress,
+        lastStudied: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // Save complete test data in a subcollection
+      await doc.ref.collection("fullLengthTests").doc(testId).set(testData);
+    }
 
     return testData;
   }
@@ -626,14 +638,19 @@ export class Storage {
     const db = this.getDbInstance();
     if (!db) throw new Error("Firestore not available");
 
-    const testDoc = await db
-      .collection("users")
-      .doc(userId)
-      .collection("subjects")
-      .doc(subjectId)
-      .collection("fullLengthTests")
-      .doc(testId)
+    // Find the user_subjects document
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
       .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    const testDoc = await doc.ref.collection("fullLengthTests").doc(testId).get();
 
     if (!testDoc.exists) {
       return null;

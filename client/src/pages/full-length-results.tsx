@@ -30,6 +30,7 @@ interface TestData {
   sectionBreakdown: {
     [sectionCode: string]: {
       name: string;
+      unitNumber: number;
       correct: number;
       total: number;
       percentage: number;
@@ -146,49 +147,56 @@ export default function FullLengthResults() {
             </CardContent>
           </Card>
 
-          {/* Section Performance */}
+          {/* Unit Performance Breakdown */}
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl flex items-center gap-2">
                 <BookOpen className="text-khan-blue h-6 w-6" />
-                Performance by Unit
+                Unit Performance Breakdown
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(testData.sectionBreakdown).map(([sectionCode, section]) => {
-                  const sectionPerf = getPerformanceLevel(section.percentage);
-                  return (
-                    <Card 
-                      key={sectionCode} 
-                      className="border rounded-lg hover:shadow-md transition-all cursor-pointer"
-                      onClick={() => handleReviewSection(sectionCode)}
-                    >
-                      <CardContent className="pt-4 pb-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-lg text-gray-900">{section.name}</h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {section.correct} / {section.total} correct
-                            </p>
+                {Object.entries(testData.sectionBreakdown)
+                  .sort(([, a], [, b]) => (a.unitNumber || 0) - (b.unitNumber || 0))
+                  .map(([sectionCode, section]) => {
+                    const sectionPerf = getPerformanceLevel(section.percentage);
+                    return (
+                      <Card 
+                        key={sectionCode} 
+                        className="border rounded-lg hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
+                        onClick={() => handleReviewSection(sectionCode)}
+                      >
+                        <CardContent className="pt-4 pb-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-semibold text-khan-green bg-khan-green/10 px-2 py-1 rounded">
+                                  Unit {section.unitNumber || 0}
+                                </span>
+                                <h3 className="font-semibold text-lg text-gray-900">{section.name}</h3>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {section.correct} / {section.total} correct
+                              </p>
+                            </div>
+                            <div className={`px-3 py-1 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-sm font-medium`}>
+                              {section.percentage}%
+                            </div>
                           </div>
-                          <div className={`px-3 py-1 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-sm font-medium`}>
-                            {section.percentage}%
+                          <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
+                            <div
+                              className={`h-3 rounded-full transition-all ${
+                                section.percentage >= 75 ? 'bg-green-500' :
+                                section.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                              }`}
+                              style={{ width: `${section.percentage}%` }}
+                            />
                           </div>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
-                          <div
-                            className={`h-3 rounded-full transition-all ${
-                              section.percentage >= 75 ? 'bg-green-500' :
-                              section.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${section.percentage}%` }}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
               </div>
             </CardContent>
           </Card>
