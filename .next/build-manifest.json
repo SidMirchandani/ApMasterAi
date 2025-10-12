@@ -37,11 +37,6 @@
       "static/chunks/main.js",
       "static/chunks/pages/full-length-history.js"
     ],
-    "/full-length-results": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/full-length-results.js"
-    ],
     "/quiz": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
