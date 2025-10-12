@@ -2,11 +2,12 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
+  "/study": "pages/study.js",
+  "/quiz": "pages/quiz.js",
+  "/full-length-results": "pages/full-length-results.js",
   "/": "pages/index.js",
+  "/api/user/profile": "pages/api/user/profile.js",
   "/dashboard": "pages/dashboard.js",
   "/api/user/subjects": "pages/api/user/subjects.js",
-  "/api/user/me": "pages/api/user/me.js",
-  "/login": "pages/login.js",
-  "/full-length-results": "pages/full-length-results.js",
-  "/api/user/profile": "pages/api/user/profile.js"
+  "/api/user/me": "pages/api/user/me.js"
 }
