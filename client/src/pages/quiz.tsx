@@ -354,13 +354,13 @@ export default function Quiz() {
   const handleReviewUnit = (sectionCode: string) => {
     const unitQuestions = questions.filter(q => q.section_code === sectionCode);
     const unitAnswers: { [key: number]: string } = {};
-    
+
     questions.forEach((q, idx) => {
       if (q.section_code === sectionCode) {
         unitAnswers[idx] = userAnswers[idx];
       }
     });
-    
+
     // Navigate to section review with current test data
     router.push({
       pathname: '/section-review',
@@ -543,7 +543,7 @@ export default function Quiz() {
                       <h2 className="text-2xl font-bold">Test Results</h2>
                       <p className="text-sm text-gray-500">{formatDateTime(new Date())}</p>
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                       <div className={`inline-block px-6 py-2 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold`}>
                         {overallPerformance.label}
@@ -597,8 +597,8 @@ export default function Quiz() {
                       {Object.entries(sectionPerformance).map(([sectionCode, section], idx) => {
                         const sectionPerf = getPerformanceLevel(section.percentage);
                         return (
-                          <div 
-                            key={idx} 
+                          <div
+                            key={idx}
                             className="border rounded-lg p-3 hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
                             onClick={() => sectionCode && handleReviewUnit(sectionCode)}
                           >
@@ -730,7 +730,7 @@ export default function Quiz() {
                   const userAnswer = userAnswers[globalIndex];
                   const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
                   const isCorrect = userAnswer === correctAnswerLabel;
-                  
+
                   return (
                     <button
                       key={globalIndex}
@@ -738,13 +738,18 @@ export default function Quiz() {
                         const element = document.getElementById(`review-question-${globalIndex}`);
                         element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                       }}
-                      className={`w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
+                      className={`relative w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
                         isCorrect
                           ? 'bg-green-100 border-2 border-green-500 text-green-700'
                           : 'bg-red-100 border-2 border-red-500 text-red-700'
                       }`}
                     >
-                      {globalIndex + 1}
+                      <span className="relative z-10">{globalIndex + 1}</span>
+                      {flaggedQuestions.has(globalIndex) && (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="absolute top-0 right-0 h-3.5 w-3.5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
+                        </svg>
+                      )}
                     </button>
                   );
                 })}
@@ -891,7 +896,7 @@ export default function Quiz() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Leave {isFullLength ? 'Test' : 'Quiz'}?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {isFullLength 
+                  {isFullLength
                     ? 'Your progress on this full-length practice test will be lost if you leave now. Are you sure you want to exit?'
                     : 'Your progress on this unit practice quiz will be lost if you leave now. Are you sure you want to exit?'
                   }
@@ -956,7 +961,7 @@ export default function Quiz() {
                     const globalIndex = currentPage * questionsPerPage + idx;
                     const isAnswered = userAnswers[globalIndex] !== undefined;
                     const isFlagged = flaggedQuestions.has(globalIndex);
-                    
+
                     return (
                       <button
                         key={globalIndex}
@@ -964,7 +969,7 @@ export default function Quiz() {
                           const element = document.getElementById(`question-${globalIndex}`);
                           element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }}
-                        className={`w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
+                        className={`relative w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
                           isFlagged
                             ? 'bg-red-100 border-2 border-red-500 text-red-700'
                             : isAnswered
@@ -972,7 +977,12 @@ export default function Quiz() {
                             : 'bg-white border-2 border-gray-300 text-gray-500'
                         }`}
                       >
-                        {globalIndex + 1}
+                        <span className="relative z-10">{globalIndex + 1}</span>
+                        {isFlagged && (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="absolute top-0 right-0 h-3.5 w-3.5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
+                          </svg>
+                        )}
                       </button>
                     );
                   })}
