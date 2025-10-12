@@ -127,18 +127,48 @@ export default function Dashboard() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subjects"] });
-      toast({
-        title: "Subject archived",
-        description: "Your subject has been moved to the archive.",
+    onMutate: async ({ subjectDocId, archive }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["subjects"] });
+
+      // Snapshot the previous value
+      const previousSubjects = queryClient.getQueryData(["subjects"]);
+
+      // Optimistically update the subject's archived status
+      queryClient.setQueryData(["subjects"], (old: any) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.map((subject: DashboardSubject) => {
+            const subjectIdStr = typeof subject.id === 'number' ? subject.id.toString() : subject.id;
+            if (subjectIdStr === subjectDocId) {
+              return { ...subject, archived: archive };
+            }
+            return subject;
+          })
+        };
       });
+
+      // Return context for rollback
+      return { previousSubjects, archive };
     },
-    onError: (err: Error) => {
+    onError: (err: Error, variables, context) => {
+      // Rollback on error
+      if (context?.previousSubjects) {
+        queryClient.setQueryData(["subjects"], context.previousSubjects);
+      }
       toast({
-        title: "Error archiving subject",
+        title: context?.archive ? "Error archiving subject" : "Error restoring subject",
         description: err.message || "An unexpected error occurred.",
         variant: "destructive",
+      });
+    },
+    onSuccess: (data, variables, context) => {
+      toast({
+        title: context?.archive ? "Subject archived" : "Subject restored",
+        description: context?.archive 
+          ? "Your subject has been moved to the archive." 
+          : "Your subject has been restored.",
       });
     }
   });
