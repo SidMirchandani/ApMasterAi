@@ -540,7 +540,7 @@ export default function Study() {
             {/* Full-Length Practice Test Buttons */}
             <div className="mt-8 flex flex-col md:flex-row gap-3 max-w-2xl mx-auto items-center">
               <Button
-                onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
+                onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
                 className="bg-khan-green w-full md:flex-1 h-12 min-h-[44px]"
               >
                 <BookOpen className="mr-2 h-5 w-5" />

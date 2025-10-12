@@ -364,15 +364,29 @@ export default function Quiz() {
           isFullLength
         });
         try {
-          // For full-length exams, save with special unit identifier
-          const unitToSave = isFullLength ? "full-length" : unit;
-          const response = await apiRequest(
-            "PUT",
-            `/api/user/subjects/${subjectId}/unit-progress`,
-            { unitId: unitToSave, mcqScore: percentage }
-          );
-          console.log("✅ [Quiz] Score saved successfully:", percentage);
-          console.log("📊 [Quiz] Response data:", response);
+          // For full-length exams, save complete test data
+          if (isFullLength) {
+            const response = await apiRequest(
+              "POST",
+              `/api/user/subjects/${subjectId}/full-length-test`,
+              { 
+                score,
+                percentage,
+                totalQuestions: questions.length,
+                questions,
+                userAnswers
+              }
+            );
+            console.log("✅ [Quiz] Full-length test saved successfully");
+          } else {
+            // Regular unit quiz
+            const response = await apiRequest(
+              "PUT",
+              `/api/user/subjects/${subjectId}/unit-progress`,
+              { unitId: unit, mcqScore: percentage }
+            );
+            console.log("✅ [Quiz] Score saved successfully:", percentage);
+          }
         } catch (error) {
           console.error("❌ [Quiz] Failed to save score:", error);
         }
@@ -380,7 +394,7 @@ export default function Quiz() {
     };
 
     saveScore();
-  }, [quizCompleted, subjectId, unit, score, questions.length, isFullLength]);
+  }, [quizCompleted, subjectId, unit, score, questions.length, isFullLength, questions, userAnswers]);
 
   if (loading || isLoading) {
     return (
@@ -482,20 +496,16 @@ export default function Quiz() {
             <div className="max-w-5xl mx-auto space-y-6">
               {/* Header Card */}
               <Card className="border-t-4 border-t-khan-green">
-                <CardHeader>
-                  <CardTitle className="text-center text-3xl font-bold">
-                    Full-Length Test Complete!
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-khan-green to-green-600 mb-4">
-                      <span className="text-5xl font-bold text-white">{percentage}%</span>
+                <CardContent className="pt-8 pb-6">
+                  <div className="text-center">
+                    <h2 className="text-3xl font-bold mb-6">Full-Length Test Complete!</h2>
+                    <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-khan-green to-green-600 mb-3">
+                      <span className="text-4xl font-bold text-white">{percentage}%</span>
                     </div>
                     <div className={`inline-block px-6 py-2 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-lg mb-2`}>
                       {overallPerformance.label}
                     </div>
-                    <p className="text-xl text-gray-600 mt-2">
+                    <p className="text-lg text-gray-600">
                       {score} out of {questions.length} questions correct
                     </p>
                   </div>
