@@ -475,36 +475,36 @@ export default function Study() {
   return (
     <div className="min-h-screen bg-khan-background overflow-x-hidden">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-6">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <Button
             variant="outline"
             onClick={() => router.push("/dashboard")}
             size="sm"
-            className="mb-4"
+            className="mb-3"
             data-testid="button-back"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               {currentSubject.name}
             </h1>
-            <p className="text-gray-600 mt-1">{currentSubject.description}</p>
+            <p className="text-gray-600 mt-0.5">{currentSubject.description}</p>
           </div>
         </div>
 
         {/* Your Progress */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
               <Target className="h-5 w-5 text-khan-green" />
               Your Progress
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">
                   {topicsMastered}/{totalTopics}
@@ -555,19 +555,19 @@ export default function Study() {
         </Card>
 
         {/* Practice Units */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {units.map((unit, index) => (
             <Card key={unit.id} className="border-l-4 border-l-khan-green">
-              <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                   {/* Left side: Content */}
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="w-10 h-10 rounded-full bg-khan-green text-white flex items-center justify-center font-bold flex-shrink-0">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-khan-green text-white flex items-center justify-center font-bold flex-shrink-0 text-sm">
                       {index + 1}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-0.5">
+                        <h3 className="text-base md:text-lg font-bold text-gray-900">
                           {unit.title}
                         </h3>
                         {(() => {

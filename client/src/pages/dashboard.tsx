@@ -371,13 +371,13 @@ export default function Dashboard() {
     <div className="min-h-screen bg-khan-background overflow-x-hidden">
       <Navigation />
 
-      <main className="py-12 px-4 sm:px-6 lg:px-8">
+      <main className="py-6 md:py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto w-full">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-khan-gray-dark mb-2">
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark mb-1">
               Welcome back, {userProfile?.data?.firstName || user?.email?.split('@')[0] || 'Student'}!
             </h1>
-            <p className="text-xl text-khan-gray-medium">
+            <p className="text-lg text-khan-gray-medium">
               Continue your AP preparation journey
             </p>
           </div>
@@ -429,12 +429,12 @@ export default function Dashboard() {
                 </div>
               )}
               {(
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {activeSubjects.map((subject: DashboardSubject) => (
                     <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 w-full">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <CardTitle className="text-xl font-bold text-khan-gray-dark">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between mb-1.5">
+                          <CardTitle className="text-lg md:text-xl font-bold text-khan-gray-dark">
                             {subject.name}
                           </CardTitle>
                           <div className="flex items-center gap-2">
@@ -542,8 +542,8 @@ export default function Dashboard() {
                         </p>
                       </CardHeader>
 
-                      <CardContent>
-                        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 space-y-4 sm:space-y-0 sm:space-x-6">
+                      <CardContent className="pt-3">
+                        <div className="flex flex-col sm:flex-row items-center justify-between mb-4 space-y-3 sm:space-y-0 sm:space-x-6">
                           <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 w-full sm:w-auto">
                             <div className="flex items-center space-x-2 text-khan-gray-medium">
                               <BookOpen className="w-4 h-4" />

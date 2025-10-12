@@ -89,10 +89,10 @@ export default function FullLengthHistory() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-6">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-3">
               {hasSomethingToGoBackTo() && (
                 <Button
                   onClick={() => router.back()}
@@ -102,11 +102,11 @@ export default function FullLengthHistory() {
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               )}
-              <h1 className="text-3xl font-bold text-khan-gray-dark">Full-Length Test History</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark">Full-Length Test History</h1>
             </div>
             <Button
               onClick={handleStartNewTest}
-              className="bg-khan-green hover:bg-khan-green/90"
+              className="bg-khan-green hover:bg-khan-green/90 w-full sm:w-auto"
             >
               <PlayCircle className="mr-2 h-5 w-5" />
               Start New Test
@@ -115,7 +115,7 @@ export default function FullLengthHistory() {
 
           {testHistory.length === 0 ? (
             <Card>
-              <CardContent className="pt-12 pb-12 text-center">
+              <CardContent className="pt-8 pb-8 text-center">
                 <Trophy className="h-16 w-16 text-khan-gray-light mx-auto mb-4" />
                 <h2 className="text-xl font-semibold mb-2">No Tests Taken Yet</h2>
                 <p className="text-khan-gray-medium mb-6">
@@ -128,18 +128,18 @@ export default function FullLengthHistory() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {testHistory.map((test, index) => (
                 <Card key={test.id} className="relative group">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-6 flex-1">
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-4 flex-1">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-khan-blue/10 flex items-center justify-center">
-                            <span className="text-xl font-bold text-khan-blue">#{testHistory.length - index}</span>
+                          <div className="w-10 h-10 rounded-full bg-khan-blue/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-lg font-bold text-khan-blue">#{testHistory.length - index}</span>
                           </div>
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-0.5">
                               <Calendar className="h-4 w-4 text-khan-gray-medium" />
                               <span className="text-sm text-khan-gray-medium">{formatDateTime(test.date)}</span>
                             </div>
@@ -152,13 +152,13 @@ export default function FullLengthHistory() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className={`px-6 py-3 rounded-lg border-2 ${getPerformanceColor(test.percentage)}`}>
-                          <span className="text-2xl font-bold">{test.percentage}%</span>
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className={`px-4 py-2 rounded-lg border-2 ${getPerformanceColor(test.percentage)} flex-1 sm:flex-initial text-center`}>
+                          <span className="text-xl font-bold">{test.percentage}%</span>
                         </div>
                         <Button 
                           onClick={() => handleViewResults(test.id)}
-                          className="bg-khan-blue hover:bg-khan-blue/90"
+                          className="bg-khan-blue hover:bg-khan-blue/90 flex-1 sm:flex-initial"
                         >
                           View Results
                         </Button>
