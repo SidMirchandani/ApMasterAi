@@ -72,8 +72,7 @@ export default async function handler(
         console.log("[Archive] Request details:", {
           subjectId,
           archived,
-          userId,
-          parsedSubjectId: parseInt(subjectId as string)
+          userId
         });
 
         if (typeof archived !== 'boolean') {
@@ -86,41 +85,31 @@ export default async function handler(
         const db = getDb();
         const userSubjectsRef = db.collection('user_subjects');
 
-        // First, let's see all subjects for this user
-        const allUserSubjects = await userSubjectsRef
-          .where('userId', '==', userId)
-          .get();
-        
-        console.log("[Archive] All user subjects:", allUserSubjects.docs.map(doc => ({
-          docId: doc.id,
-          id: doc.data().id,
-          name: doc.data().name,
-          subjectId: doc.data().subjectId
-        })));
+        // Get the document directly by its Firestore document ID
+        const docRef = userSubjectsRef.doc(subjectId as string);
+        const doc = await docRef.get();
 
-        // Query to find the subject document by numeric ID and userId
-        const snapshot = await userSubjectsRef
-          .where('id', '==', parseInt(subjectId as string))
-          .where('userId', '==', userId)
-          .get();
+        if (!doc.exists) {
+          console.log("[Archive] Document not found:", subjectId);
+          return res.status(404).json({
+            success: false,
+            message: "Subject not found."
+          });
+        }
 
-        console.log("[Archive] Query result:", {
-          empty: snapshot.empty,
-          size: snapshot.size,
-          foundDocs: snapshot.docs.map(doc => ({
-            docId: doc.id,
-            data: doc.data()
-          }))
-        });
-
-        if (snapshot.empty) {
+        // Verify it belongs to the user
+        const data = doc.data();
+        if (data?.userId !== userId) {
+          console.log("[Archive] Document does not belong to user:", {
+            docUserId: data?.userId,
+            requestUserId: userId
+          });
           return res.status(404).json({
             success: false,
             message: "Subject not found or does not belong to the user."
           });
         }
 
-        const docRef = snapshot.docs[0].ref;
         await docRef.update({ archived });
 
         console.log("[Archive] Successfully updated document:", docRef.id);

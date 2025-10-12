@@ -236,14 +236,17 @@ export default function Dashboard() {
   };
 
   const handleArchiveSubject = (subject: DashboardSubject) => {
+    // The 'id' field from the API response is the Firestore document ID
+    const firestoreDocId = typeof subject.id === 'string' ? subject.id : subject.id.toString();
+    
     console.log("[Dashboard] Archive button clicked for subject:", {
-      id: subject.id,
+      firestoreDocId,
       name: subject.name,
       subjectId: subject.subjectId,
       currentArchived: (subject as any).archived
     });
     archiveSubjectMutation.mutate({
-      subjectDocId: subject.id.toString(),
+      subjectDocId: firestoreDocId,
       archive: !(subject as any).archived
     });
   };
