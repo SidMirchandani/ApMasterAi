@@ -5,6 +5,6 @@
   "/": "pages/index.js",
   "/api/user/profile": "pages/api/user/profile.js",
   "/dashboard": "pages/dashboard.js",
-  "/api/user/me": "pages/api/user/me.js",
-  "/api/user/subjects": "pages/api/user/subjects.js"
+  "/api/user/subjects": "pages/api/user/subjects.js",
+  "/api/user/me": "pages/api/user/me.js"
 }
