@@ -2,15 +2,12 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/dashboard": "pages/dashboard.js",
-  "/api/user/profile": "pages/api/user/profile.js",
   "/api/user/me": "pages/api/user/me.js",
   "/api/user/subjects": "pages/api/user/subjects.js",
   "/study": "pages/study.js",
-  "/full-length-history": "pages/full-length-history.js",
-  "/api/user/subjects/[subjectId]/unit-progress": "pages/api/user/subjects/[subjectId]/unit-progress.js",
   "/quiz": "pages/quiz.js",
+  "/full-length-history": "pages/full-length-history.js",
   "/api/questions": "pages/api/questions.js",
-  "/api/user/subjects/[subjectId]/full-length-test": "pages/api/user/subjects/[subjectId]/full-length-test.js"
+  "/dashboard": "pages/dashboard.js",
+  "/api/user/profile": "pages/api/user/profile.js"
 }
