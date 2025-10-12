@@ -22,12 +22,13 @@ export default async function handler(
   try {
     const db = getDb();
     const questionLimit = limit ? parseInt(limit as string) : 25;
-    const fetchLimit = section ? questionLimit * 4 : 200; // Fetch up to 200 for full-length tests
+    // Fetch more than needed for better randomization
+    const fetchLimit = questionLimit * 4;
 
     console.log("🔍 Querying questions with:", {
       subject,
       section: section || "ALL",
-      limit: questionLimit,
+      requestedLimit: questionLimit,
       fetchLimit
     });
 

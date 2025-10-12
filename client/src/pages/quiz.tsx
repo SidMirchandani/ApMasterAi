@@ -168,12 +168,13 @@ export default function Quiz() {
         if (isFullLength) {
           // For full-length quiz, fetch ALL questions without section filter
           console.log("📤 Fetching ALL questions for full-length quiz:", {
-            subject: subjectApiCode
+            subject: subjectApiCode,
+            limit: 50
           });
 
           const response = await apiRequest(
             "GET",
-            `/api/questions?subject=${subjectApiCode}`
+            `/api/questions?subject=${subjectApiCode}&limit=50`
           );
 
           if (!response.ok) {
