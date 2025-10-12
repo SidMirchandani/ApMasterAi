@@ -129,38 +129,42 @@ export default async function handler(
 
     switch (req.method) {
       case "DELETE": {
+        console.log("🗑️ [API DELETE] Request received");
+        console.log("Subject ID from URL:", subjectId);
+        console.log("User ID:", userId);
+        
         try {
-          console.log("🗑️ API DELETE: Received request for subject:", subjectId);
-          console.log("User ID:", userId);
-          
           const existingSubject = await storage.getUserSubject(subjectId);
+          console.log("Found subject:", existingSubject ? "YES" : "NO");
           
           if (!existingSubject) {
-            console.log("❌ Subject not found");
+            console.log("❌ Subject not found in database");
             return res.status(404).json({
               success: false,
               message: "Subject not found"
             });
           }
           
+          console.log("Subject belongs to user:", existingSubject.userId, "Expected:", userId);
+          
           if (existingSubject.userId !== userId) {
-            console.log("❌ Unauthorized - subject belongs to different user");
+            console.log("❌ User mismatch");
             return res.status(403).json({
               success: false,
               message: "Unauthorized to delete this subject"
             });
           }
           
-          console.log("✅ Deleting subject...");
+          console.log("✅ Calling storage.deleteUserSubject...");
           await storage.deleteUserSubject(subjectId);
-          console.log("✅ Subject deleted successfully");
+          console.log("✅ Delete completed");
           
           return res.status(200).json({
             success: true,
             message: "Subject removed successfully",
           });
         } catch (error) {
-          console.error("❌ DELETE ERROR:", error.message);
+          console.error("❌ DELETE ERROR:", error);
           return res.status(500).json({
             success: false,
             message: "Failed to remove subject",

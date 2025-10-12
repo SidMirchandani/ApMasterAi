@@ -196,20 +196,20 @@ export default function Dashboard() {
   // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
     mutationFn: async (subjectDocId: string) => {
-      console.log('🌐 DELETE FLOW: Step 4 - API call');
-      console.log('Sending DELETE to:', `/api/user/subjects/${subjectDocId}`);
+      console.log('🌐 [CLIENT DELETE STEP 4] Mutation function called');
+      console.log('Subject ID:', subjectDocId);
       
       const response = await apiRequest("DELETE", `/api/user/subjects/${subjectDocId}`);
-      console.log('Response status:', response.status);
+      console.log('API Response status:', response.status);
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('❌ DELETE failed:', errorData);
+        console.error('❌ API error:', errorData);
         throw new Error(errorData.message || "Failed to remove subject");
       }
       
       const result = await response.json();
-      console.log('✅ DELETE succeeded:', result);
+      console.log('✅ API success:', result);
       return result;
     },
     onMutate: async (subjectDocId) => {
@@ -270,48 +270,42 @@ export default function Dashboard() {
   }, [loading, isAuthenticated, router]);
 
   const handleRemoveSubject = (subject: DashboardSubject) => {
-    console.log('🗑️ DELETE FLOW: Step 1 - handleRemoveSubject called');
-    console.log('Subject to delete:', {
-      id: subject.id,
-      idType: typeof subject.id,
-      name: subject.name,
-      subjectId: subject.subjectId
-    });
+    console.log('🗑️ [CLIENT DELETE STEP 1] handleRemoveSubject called');
+    console.log('Subject:', subject);
     setSubjectToRemove(subject);
+    console.log('State updated, dialog should open');
   };
 
   const confirmRemoveSubject = () => {
-    console.log('🗑️ DELETE FLOW: Step 2 - First confirmation');
+    console.log('🗑️ [CLIENT DELETE STEP 2] confirmRemoveSubject called');
+    console.log('deleteConfirmText value:', deleteConfirmText);
+    console.log('deleteConfirmText trimmed:', deleteConfirmText.trim());
+    console.log('deleteConfirmText lowercase:', deleteConfirmText.trim().toLowerCase());
+    
     const trimmedText = deleteConfirmText.trim().toLowerCase();
-    console.log('Text entered:', `"${trimmedText}"`);
-    console.log('Matches "delete"?', trimmedText === "delete");
     
     if (trimmedText === "delete") {
-      console.log('✅ Showing second confirmation dialog');
+      console.log('✅ Text matches! Setting showSecondConfirm to true');
       setShowSecondConfirm(true);
     } else {
-      console.log('❌ Text does not match "delete"');
+      console.log('❌ Text does NOT match "delete"');
+      console.log('Expected: "delete", Got:', `"${trimmedText}"`);
     }
   };
 
   const finalConfirmRemove = () => {
-    console.log('🗑️ DELETE FLOW: Step 3 - Final confirmation');
+    console.log('🗑️ [CLIENT DELETE STEP 3] finalConfirmRemove called');
     
     if (!subjectToRemove) {
-      console.error('❌ ERROR: No subject selected for removal!');
+      console.error('❌ No subject to remove!');
       return;
     }
     
-    const firestoreDocId = (subjectToRemove as any).firestoreDocId || subjectToRemove.id.toString();
-    console.log('Subject details:', {
-      name: subjectToRemove.name,
-      id: subjectToRemove.id,
-      firestoreDocId,
-      willSendToAPI: firestoreDocId
-    });
+    console.log('Subject to remove:', subjectToRemove);
+    const docId = subjectToRemove.id.toString();
+    console.log('Document ID to delete:', docId);
     
-    console.log('🚀 Calling mutation with ID:', firestoreDocId);
-    removeSubjectMutation.mutate(firestoreDocId);
+    removeSubjectMutation.mutate(docId);
     
     setShowSecondConfirm(false);
     setDeleteConfirmText("");

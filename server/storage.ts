@@ -315,24 +315,29 @@ export class Storage {
   }
 
   async deleteUserSubject(subjectDocId: string): Promise<void> {
-    console.log('🗄️ STORAGE DELETE: Document ID:', subjectDocId);
+    console.log('🗄️ [STORAGE DELETE] Called with ID:', subjectDocId);
 
     try {
       const db = getDb();
+      console.log('Database instance obtained');
+      
       const docRef = db.collection('user_subjects').doc(subjectDocId);
+      console.log('Document reference created');
 
       const doc = await docRef.get();
+      console.log('Document exists?', doc.exists);
 
       if (!doc.exists) {
-        console.log('❌ Document not found in Firestore');
+        console.log('❌ Document not found');
         throw new Error('Subject not found');
       }
 
-      console.log('✅ Document found, deleting...');
+      console.log('Document data:', doc.data());
+      console.log('Calling delete...');
       await docRef.delete();
-      console.log('✅ Document deleted from Firestore');
+      console.log('✅ Delete successful');
     } catch (error) {
-      console.error('❌ STORAGE DELETE ERROR:', error.message);
+      console.error('❌ STORAGE ERROR:', error);
       throw error;
     }
   }
