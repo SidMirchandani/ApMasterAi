@@ -1,10 +1,10 @@
 {
   "/_app": "pages/_app.js",
-  "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/": "pages/index.js",
   "/dashboard": "pages/dashboard.js",
   "/study": "pages/study.js",
-  "/quiz": "pages/quiz.js",
   "/api/user/me": "pages/api/user/me.js",
-  "/api/questions": "pages/api/questions.js"
+  "/api/user/subjects": "pages/api/user/subjects.js"
 }
