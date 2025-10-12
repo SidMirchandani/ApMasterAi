@@ -316,16 +316,26 @@ export default function Dashboard() {
   }, [loading, isAuthenticated, router]);
 
   const handleRemoveSubject = (subject: DashboardSubject) => {
+    console.log("[DELETE FLOW] handleRemoveSubject called with:", {
+      id: subject.id,
+      name: subject.name,
+      fullObject: subject
+    });
     setDeleteState({
       subject,
       step: "first",
       confirmText: "",
     });
+    console.log("[DELETE FLOW] Delete state updated to 'first'");
   };
 
   const handleFirstConfirm = () => {
+    console.log("[DELETE FLOW] handleFirstConfirm called, confirmText:", deleteState.confirmText);
     if (deleteState.confirmText.trim().toLowerCase() === "delete") {
+      console.log("[DELETE FLOW] Moving to second confirmation step");
       setDeleteState((prev) => ({ ...prev, step: "second" }));
+    } else {
+      console.log("[DELETE FLOW] Confirmation text does not match 'delete'");
     }
   };
 
@@ -528,7 +538,12 @@ export default function Dashboard() {
                               Archive
                             </Button>
                             <button
-                              onClick={() => handleRemoveSubject(subject)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log("[DELETE FLOW] Trash button clicked for:", subject.name);
+                                handleRemoveSubject(subject);
+                              }}
                               className="text-khan-gray-light hover:text-khan-red transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
