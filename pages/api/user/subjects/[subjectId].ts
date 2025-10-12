@@ -134,10 +134,17 @@ export default async function handler(
         console.log("User ID:", userId);
         
         try {
-          const existingSubject = await storage.getUserSubject(subjectId);
-          console.log("Found subject:", existingSubject ? "YES" : "NO");
+          // Use Firestore directly to find and delete the document
+          const db = getDb();
+          const userSubjectsRef = db.collection('user_subjects');
           
-          if (!existingSubject) {
+          // Get the document directly by its Firestore document ID
+          const docRef = userSubjectsRef.doc(subjectId as string);
+          const doc = await docRef.get();
+          
+          console.log("Document exists:", doc.exists);
+          
+          if (!doc.exists) {
             console.log("❌ Subject not found in database");
             return res.status(404).json({
               success: false,
@@ -145,9 +152,11 @@ export default async function handler(
             });
           }
           
-          console.log("Subject belongs to user:", existingSubject.userId, "Expected:", userId);
+          const data = doc.data();
+          console.log("Document data userId:", data?.userId, "Expected:", userId);
           
-          if (existingSubject.userId !== userId) {
+          // Verify it belongs to the user
+          if (data?.userId !== userId) {
             console.log("❌ User mismatch");
             return res.status(403).json({
               success: false,
@@ -155,8 +164,8 @@ export default async function handler(
             });
           }
           
-          console.log("✅ Calling storage.deleteUserSubject...");
-          await storage.deleteUserSubject(subjectId);
+          console.log("✅ Deleting document...");
+          await docRef.delete();
           console.log("✅ Delete completed");
           
           return res.status(200).json({

@@ -263,6 +263,7 @@ export default function Dashboard() {
       return response.json();
     },
     onMutate: async (subjectDocId) => {
+      console.log("[DELETE MUTATION] Optimistic update for:", subjectDocId);
       await queryClient.cancelQueries({ queryKey: ["subjects"] });
       const previousSubjects = queryClient.getQueryData(["subjects"]);
 
@@ -270,11 +271,15 @@ export default function Dashboard() {
         if (!old?.data) return old;
 
         const filtered = old.data.filter((subject: DashboardSubject) => {
-          const subjectIdStr =
-            typeof subject.id === "number" ? subject.id.toString() : subject.id;
-          return subjectIdStr !== subjectDocId;
+          const subjectIdToCompare = (subject.id || subject.subjectId)?.toString();
+          const match = subjectIdToCompare === subjectDocId;
+          if (match) {
+            console.log("[DELETE MUTATION] Removing subject:", subject.name);
+          }
+          return !match;
         });
 
+        console.log("[DELETE MUTATION] Subjects before:", old.data.length, "after:", filtered.length);
         return { ...old, data: filtered };
       });
 
@@ -326,7 +331,20 @@ export default function Dashboard() {
 
   const handleFinalConfirm = () => {
     if (deleteState.subject) {
-      const docId = deleteState.subject.id.toString();
+      // Use the Firestore document ID
+      const docId = (deleteState.subject.id || deleteState.subject.subjectId)?.toString();
+      console.log("[DELETE] Attempting to delete subject with ID:", docId);
+      console.log("[DELETE] Full subject object:", deleteState.subject);
+      
+      if (!docId) {
+        toast({
+          title: "Error",
+          description: "Could not determine subject ID",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       removeSubjectMutation.mutate(docId);
     }
   };
