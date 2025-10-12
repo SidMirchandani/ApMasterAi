@@ -334,33 +334,52 @@ export default function Dashboard() {
   };
 
   const handleFirstConfirm = () => {
-    console.log("[DELETE FLOW] handleFirstConfirm called, confirmText:", deleteState.confirmText);
+    console.log("[DELETE FLOW] ===== FIRST CONFIRM CLICKED =====");
+    console.log("[DELETE FLOW] confirmText:", deleteState.confirmText);
+    console.log("[DELETE FLOW] Current deleteState:", deleteState);
+    
     if (deleteState.confirmText.trim().toLowerCase() === "delete") {
-      console.log("[DELETE FLOW] Moving to second confirmation step");
-      setDeleteState((prev) => ({ ...prev, step: "second" }));
+      console.log("[DELETE FLOW] Text matches 'delete', moving to second step");
+      setDeleteState((prev) => {
+        const newState = { ...prev, step: "second" as const };
+        console.log("[DELETE FLOW] New state will be:", newState);
+        return newState;
+      });
     } else {
-      console.log("[DELETE FLOW] Confirmation text does not match 'delete'");
+      console.log("[DELETE FLOW] Text does NOT match 'delete', got:", deleteState.confirmText.trim().toLowerCase());
     }
   };
 
   const handleFinalConfirm = () => {
-    if (deleteState.subject) {
-      // The id field from the API response IS the Firestore document ID
-      const docId = deleteState.subject.id?.toString();
-      console.log("[DELETE] Attempting to delete subject with ID:", docId);
-      console.log("[DELETE] Full subject object:", deleteState.subject);
-      
-      if (!docId) {
-        toast({
-          title: "Error",
-          description: "Could not determine subject ID",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      removeSubjectMutation.mutate(docId);
+    console.log("[DELETE FLOW] ===== FINAL CONFIRM CLICKED =====");
+    console.log("[DELETE FLOW] deleteState:", deleteState);
+    
+    if (!deleteState.subject) {
+      console.log("[DELETE FLOW] ERROR: No subject in deleteState");
+      toast({
+        title: "Error",
+        description: "No subject selected for deletion",
+        variant: "destructive",
+      });
+      return;
     }
+    
+    const docId = deleteState.subject.id?.toString();
+    console.log("[DELETE FLOW] Extracted docId:", docId);
+    console.log("[DELETE FLOW] Full subject object:", deleteState.subject);
+    
+    if (!docId) {
+      console.log("[DELETE FLOW] ERROR: No docId found");
+      toast({
+        title: "Error",
+        description: "Could not determine subject ID",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log("[DELETE FLOW] Calling mutation with docId:", docId);
+    removeSubjectMutation.mutate(docId);
   };
 
   const closeDeleteDialog = () => {
@@ -762,6 +781,7 @@ export default function Dashboard() {
               <AlertDialog
                 open={deleteState.step === "second"}
                 onOpenChange={(open) => {
+                  console.log("[DELETE FLOW] Second dialog onOpenChange:", open);
                   if (!open) closeDeleteDialog();
                 }}
               >
@@ -775,11 +795,20 @@ export default function Dashboard() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel onClick={closeDeleteDialog}>
+                    <AlertDialogCancel 
+                      onClick={(e) => {
+                        console.log("[DELETE FLOW] Cancel clicked on second dialog");
+                        closeDeleteDialog();
+                      }}
+                    >
                       Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={handleFinalConfirm}
+                      onClick={(e) => {
+                        console.log("[DELETE FLOW] Yes Delete Forever button clicked");
+                        e.preventDefault();
+                        handleFinalConfirm();
+                      }}
                       className="bg-red-600 hover:bg-red-700"
                     >
                       Yes, Delete Forever
