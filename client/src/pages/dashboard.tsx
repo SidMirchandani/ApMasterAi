@@ -208,12 +208,17 @@ export default function Dashboard() {
   // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
     mutationFn: async (subjectDocId: string) => {
+      console.log('[Dashboard Mutation] DELETE request starting for:', subjectDocId);
       const response = await apiRequest("DELETE", `/api/user/subjects/${subjectDocId}`);
+      console.log('[Dashboard Mutation] DELETE response status:', response.status);
       if (!response.ok) {
         const errorData = await response.json();
+        console.log('[Dashboard Mutation] DELETE failed with error:', errorData);
         throw new Error(errorData.message || "Failed to remove subject");
       }
-      return response.json();
+      const result = await response.json();
+      console.log('[Dashboard Mutation] DELETE succeeded with result:', result);
+      return result;
     },
     onMutate: async (subjectDocId) => {
       // Cancel any outgoing refetches
@@ -279,29 +284,45 @@ export default function Dashboard() {
   }, [loading, isAuthenticated, router]);
 
   const handleRemoveSubject = (subject: DashboardSubject) => {
+    console.log('[Dashboard] handleRemoveSubject called with:', {
+      id: subject.id,
+      name: subject.name,
+      subjectId: subject.subjectId,
+      fullSubject: subject
+    });
     setSubjectToRemove(subject);
   };
 
   const confirmRemoveSubject = () => {
     const trimmedText = deleteConfirmText.trim().toLowerCase();
-    console.log('[Dashboard] Delete confirm text:', trimmedText);
+    console.log('[Dashboard] confirmRemoveSubject - text entered:', trimmedText);
+    console.log('[Dashboard] confirmRemoveSubject - matches "delete":', trimmedText === "delete");
     if (trimmedText === "delete") {
+      console.log('[Dashboard] confirmRemoveSubject - showing second confirmation');
       setShowSecondConfirm(true);
+    } else {
+      console.log('[Dashboard] confirmRemoveSubject - text does not match, not showing second confirmation');
     }
   };
 
   const finalConfirmRemove = () => {
+    console.log('[Dashboard] finalConfirmRemove called');
     if (subjectToRemove) {
       const firestoreDocId = (subjectToRemove as any).firestoreDocId || subjectToRemove.id.toString();
       console.log('[Dashboard] Final confirm - removing subject:', {
         id: subjectToRemove.id,
         firestoreDocId,
-        subjectId: subjectToRemove.subjectId
+        subjectId: subjectToRemove.subjectId,
+        idType: typeof subjectToRemove.id,
+        fullSubject: subjectToRemove
       });
+      console.log('[Dashboard] Calling removeSubjectMutation.mutate with:', firestoreDocId);
       removeSubjectMutation.mutate(firestoreDocId);
       setShowSecondConfirm(false);
       setDeleteConfirmText("");
       setSubjectToRemove(null);
+    } else {
+      console.log('[Dashboard] finalConfirmRemove - no subjectToRemove!');
     }
   };
 

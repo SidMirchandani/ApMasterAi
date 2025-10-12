@@ -130,9 +130,36 @@ export default async function handler(
     switch (req.method) {
       case "DELETE": {
         try {
-          console.log("[subjectId API][DELETE] Attempting to delete subject with ID:", subjectId);
+          console.log("[subjectId API][DELETE] ===== DELETE REQUEST RECEIVED =====");
+          console.log("[subjectId API][DELETE] Subject ID from URL:", subjectId);
+          console.log("[subjectId API][DELETE] Subject ID type:", typeof subjectId);
           console.log("[subjectId API][DELETE] User ID:", userId);
+          console.log("[subjectId API][DELETE] Firebase UID:", firebaseUid);
           
+          // Verify the subject exists and belongs to the user
+          const existingSubject = await storage.getUserSubject(subjectId);
+          console.log("[subjectId API][DELETE] Existing subject lookup result:", existingSubject);
+          
+          if (!existingSubject) {
+            console.log("[subjectId API][DELETE] Subject not found in database");
+            return res.status(404).json({
+              success: false,
+              message: "Subject not found"
+            });
+          }
+          
+          if (existingSubject.userId !== userId) {
+            console.log("[subjectId API][DELETE] Subject does not belong to user:", {
+              subjectUserId: existingSubject.userId,
+              requestUserId: userId
+            });
+            return res.status(403).json({
+              success: false,
+              message: "Unauthorized to delete this subject"
+            });
+          }
+          
+          console.log("[subjectId API][DELETE] Subject verified, proceeding with deletion");
           const result = await storage.deleteUserSubject(subjectId);
           console.log("[subjectId API][DELETE] Delete result:", result);
           console.log("[subjectId API][DELETE] Successfully deleted subject:", subjectId);
@@ -142,12 +169,14 @@ export default async function handler(
             message: "Subject removed successfully",
           });
         } catch (error) {
+          console.error("[subjectId API][DELETE] ===== DELETE ERROR =====");
           console.error("[subjectId API][DELETE] Error:", error);
           console.error("[subjectId API][DELETE] Error details:", {
             message: error.message,
             stack: error.stack,
             subjectId,
-            userId
+            userId,
+            errorType: error.constructor.name
           });
           
           const errorMessage = `Failed to remove subject${subjectId ? ` "${subjectId}"` : ""}`;

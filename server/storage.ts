@@ -340,9 +340,13 @@ export class Storage {
   }
 
   async getUserSubject(subjectId: string): Promise<UserSubject | null> {
+    console.log("[Storage] getUserSubject called with ID:", subjectId);
+    
     if (isDevelopmentMode()) {
       // Development mode fallback
+      console.log("[Storage] Using dev mode storage");
       const subject = devStorage.userSubjects.get(subjectId);
+      console.log("[Storage] Dev mode result:", subject ? "Found" : "Not found");
       return subject ? { id: subjectId, ...subject } as UserSubject : null;
     }
 
@@ -351,15 +355,26 @@ export class Storage {
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
+      console.log("[Storage] Querying Firestore for subject:", subjectId);
       const doc = await db.collection('user_subjects').doc(subjectId).get();
+      console.log("[Storage] Firestore document exists:", doc.exists);
 
       if (!doc.exists) {
+        console.log("[Storage] Document not found in Firestore");
         return null;
       }
 
+      const data = doc.data();
+      console.log("[Storage] Found document with data:", {
+        id: doc.id,
+        userId: data?.userId,
+        name: data?.name,
+        subjectId: data?.subjectId
+      });
+
       return {
         id: doc.id,
-        ...doc.data(),
+        ...data,
       } as UserSubject;
     });
   }
