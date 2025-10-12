@@ -316,6 +316,7 @@ export default function Dashboard() {
   }, [loading, isAuthenticated, router]);
 
   const handleRemoveSubject = (subject: DashboardSubject) => {
+    console.log("[DELETE FLOW] ===== DELETE INITIATED =====");
     console.log("[DELETE FLOW] handleRemoveSubject called with:", {
       id: subject.id,
       name: subject.name,
@@ -326,7 +327,10 @@ export default function Dashboard() {
       step: "first",
       confirmText: "",
     });
-    console.log("[DELETE FLOW] Delete state updated to 'first'");
+    console.log("[DELETE FLOW] Delete state set to:", {
+      subject: subject.name,
+      step: "first"
+    });
   };
 
   const handleFirstConfirm = () => {
@@ -537,17 +541,19 @@ export default function Dashboard() {
                             >
                               Archive
                             </Button>
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 console.log("[DELETE FLOW] Trash button clicked for:", subject.name);
                                 handleRemoveSubject(subject);
                               }}
-                              className="text-khan-gray-light hover:text-khan-red transition-colors"
+                              className="text-khan-gray-light hover:text-khan-red transition-colors p-2 h-auto"
                             >
                               <Trash2 className="w-4 h-4" />
-                            </button>
+                            </Button>
                           </div>
                         </div>
                         <p className="text-khan-gray-medium text-base leading-relaxed">
