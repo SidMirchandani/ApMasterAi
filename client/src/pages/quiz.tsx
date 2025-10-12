@@ -113,8 +113,6 @@ export default function Quiz() {
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
-  const [showSaveExitDialog, setShowSaveExitDialog] = useState(false);
-  const [isSavedProgress, setIsSavedProgress] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -337,31 +335,6 @@ export default function Quiz() {
     setQuizCompleted(true);
     setShowSubmitConfirm(false);
     // Don't set isReviewMode here - let user see summary first
-  };
-
-  const handleSaveAndExit = async () => {
-    if (!subjectId || !isFullLength) return;
-    
-    try {
-      const percentage = Math.round((Object.keys(userAnswers).length / questions.length) * 100);
-      await apiRequest(
-        "POST",
-        `/api/user/subjects/${subjectId}/full-length-test`,
-        {
-          score: 0,
-          percentage,
-          totalQuestions: questions.length,
-          questions,
-          userAnswers,
-          inProgress: true,
-          currentPage
-        }
-      );
-      setIsSavedProgress(true);
-      router.push(`/full-length-history?subject=${subjectId}`);
-    } catch (error) {
-      console.error("Failed to save progress:", error);
-    }
   };
 
   const handleReviewUnit = (sectionCode: string) => {
@@ -883,23 +856,6 @@ export default function Quiz() {
             </AlertDialogContent>
           </AlertDialog>
 
-          <AlertDialog open={showSaveExitDialog} onOpenChange={setShowSaveExitDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Save Progress & Exit?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Your progress will be saved and you can resume this exam later from where you left off.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Continue Exam</AlertDialogCancel>
-                <AlertDialogAction onClick={handleSaveAndExit} className="bg-khan-green hover:bg-khan-green/90">
-                  Save & Exit
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-semibold">
               {isFullLength
@@ -910,12 +866,12 @@ export default function Quiz() {
             <div className="flex items-center gap-3">
               {isFullLength && (
                 <Button
-                  onClick={() => setShowSaveExitDialog(true)}
+                  onClick={() => setShowExitDialog(true)}
                   variant="outline"
                   size="sm"
-                  className="border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
+                  className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
                 >
-                  Save & Exit
+                  Exit Test
                 </Button>
               )}
               {!isFullLength && (

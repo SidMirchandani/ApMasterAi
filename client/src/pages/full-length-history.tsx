@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Trophy, Calendar, Target, PlayCircle, X } from "lucide-react";
+import { ArrowLeft, Trophy, Calendar, Target, PlayCircle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDateTime } from "@/lib/utils";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface TestHistory {
   id: string;
@@ -17,23 +16,13 @@ interface TestHistory {
   totalQuestions: number;
 }
 
-interface QuizState {
-  currentQuestionIndex: number;
-  score: number;
-  answers: Record<string, string>;
-  unitProgress: Record<string, Record<string, any>>; // Assuming unitProgress structure
-}
-
 export default function FullLengthHistory() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const { subject: subjectId } = router.query;
   const [testHistory, setTestHistory] = useState<TestHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
-  const [isSavingProgress, setIsSavingProgress] = useState(false);
-  const [quizProgress, setQuizProgress] = useState<QuizState | null>(null);
+  
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -73,46 +62,7 @@ export default function FullLengthHistory() {
     router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
   };
 
-  const handleDeleteTest = async (testId: string) => {
-    try {
-      const response = await apiRequest("DELETE", `/api/user/subjects/${subjectId}/tests/${testId}`);
-      if (response.ok) {
-        setTestHistory(testHistory.filter((test) => test.id !== testId));
-        setIsDeleteDialogOpen(false);
-        setDeleteTargetId(null);
-      } else {
-        throw new Error("Failed to delete test");
-      }
-    } catch (error) {
-      console.error("Error deleting test:", error);
-    }
-  };
-
-  const confirmDelete = (testId: string) => {
-    setDeleteTargetId(testId);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleSaveAndExit = async () => {
-    if (!quizProgress || !subjectId) return;
-
-    setIsSavingProgress(true);
-    try {
-      await apiRequest("POST", `/api/user/subjects/${subjectId}/save-quiz-progress`, {
-        progress: quizProgress,
-      });
-      router.push(`/study?subject=${subjectId}`); // Redirect after saving
-    } catch (error) {
-      console.error("Error saving quiz progress:", error);
-      // Show an error message to the user
-    } finally {
-      setIsSavingProgress(false);
-    }
-  };
-
-  const handleResumeQuiz = (testId: string) => {
-    router.push(`/quiz?subject=${subjectId}&testId=${testId}&resume=true`);
-  };
+  
 
   if (loading || isLoading) {
     return (
@@ -204,17 +154,12 @@ export default function FullLengthHistory() {
                           </div>
                         </div>
                       </div>
-                      <div className={`px-6 py-3 rounded-lg border-2 ${getPerformanceColor(test.percentage)}`}>
+                      <Button 
+                        onClick={() => handleViewResults(test.id)}
+                        className={`px-6 py-3 rounded-lg border-2 ${getPerformanceColor(test.percentage)} hover:opacity-80 transition-opacity`}
+                      >
                         <span className="text-2xl font-bold">{test.percentage}%</span>
-                      </div>
-                      <div className="absolute top-1/2 right-4 -translate-y-1/2 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="outline" size="icon" onClick={() => handleResumeQuiz(test.id)}>
-                          <PlayCircle className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" onClick={() => confirmDelete(test.id)}>
-                          <X className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -224,33 +169,6 @@ export default function FullLengthHistory() {
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this test?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. The test history and any associated progress will be permanently removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteTargetId && handleDeleteTest(deleteTargetId)} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Save and Exit Confirmation Dialog (example structure, needs to be integrated into quiz component) */}
-      {isSavingProgress && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-            <p className="text-lg font-semibold mb-4">Saving your progress...</p>
-            <p>Please wait while we save your quiz progress. You can resume later.</p>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
   );
 }

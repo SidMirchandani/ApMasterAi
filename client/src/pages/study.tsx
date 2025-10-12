@@ -472,8 +472,6 @@ export default function Study() {
   }).length;
   const totalTopics = units.length;
 
-  const archivedSubjects = subjects.filter(s => s.id !== currentSubject.id && s.archived);
-
   return (
     <div className="min-h-screen bg-khan-background overflow-x-hidden">
       <Navigation />
@@ -696,56 +694,7 @@ export default function Study() {
           ))}
         </div>
 
-        {/* Archived Courses Section */}
-        {archivedSubjects.length > 0 && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-gray-500" />
-                Archived Courses
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {archivedSubjects.map((archivedSubject) => (
-                  <Card key={archivedSubject.id} className="border-l-4 border-l-gray-400 bg-gray-50">
-                    <CardContent className="pt-4">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div className="flex items-start gap-4 flex-1">
-                          <div className="w-10 h-10 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold flex-shrink-0">
-                            A
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-gray-900">
-                              {archivedSubject.name}
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-2">
-                              {archivedSubject.description}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-3 md:min-w-[340px] md:items-end">
-                          <Button
-                            variant="outline"
-                            className="border-2 border-gray-400 text-gray-700 hover:bg-gray-100 min-h-[44px] w-full"
-                            onClick={() => handleArchiveCourse(archivedSubject.id.toString())}
-                          >
-                            <BookOpen className="mr-2 h-4 w-4" />
-                            View Archived
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        
-      </div>
-
-      </div>
+        </div>
+    </div>
   );
 }
