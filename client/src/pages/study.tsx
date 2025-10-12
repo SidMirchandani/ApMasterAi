@@ -497,12 +497,12 @@ export default function Study() {
           </div>
         </div>
 
-        {/* Your Learning Journey */}
+        {/* Your Progress */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-khan-green" />
-              Your Learning Journey
+              Your Progress
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -556,7 +556,7 @@ export default function Study() {
           </CardContent>
         </Card>
 
-        {/* Study Units */}
+        {/* Practice Units */}
         <div className="space-y-4">
           {units.map((unit, index) => (
             <Card key={unit.id} className="border-l-4 border-l-khan-green">

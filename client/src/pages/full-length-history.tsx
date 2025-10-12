@@ -62,8 +62,6 @@ export default function FullLengthHistory() {
     router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
   };
 
-  
-
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-khan-background">
@@ -154,12 +152,17 @@ export default function FullLengthHistory() {
                           </div>
                         </div>
                       </div>
-                      <Button 
-                        onClick={() => handleViewResults(test.id)}
-                        className={`px-6 py-3 rounded-lg border-2 ${getPerformanceColor(test.percentage)} hover:opacity-80 transition-opacity`}
-                      >
-                        <span className="text-2xl font-bold">{test.percentage}%</span>
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        <div className={`px-6 py-3 rounded-lg border-2 ${getPerformanceColor(test.percentage)}`}>
+                          <span className="text-2xl font-bold">{test.percentage}%</span>
+                        </div>
+                        <Button 
+                          onClick={() => handleViewResults(test.id)}
+                          className="bg-khan-blue hover:bg-khan-blue/90"
+                        >
+                          View Results
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
