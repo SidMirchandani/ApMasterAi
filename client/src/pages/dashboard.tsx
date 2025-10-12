@@ -115,6 +115,14 @@ export default function Dashboard() {
   // Track if we have initial data or are still loading for the first time
   const isInitialLoading = subjectsLoading && !subjectsResponse;
 
+  // Debug: Log state changes for delete flow
+  useEffect(() => {
+    console.log('🗑️ [DELETE] State changed - subjectToRemove:', subjectToRemove?.name || 'null');
+    console.log('🗑️ [DELETE] State changed - showSecondConfirm:', showSecondConfirm);
+    console.log('🗑️ [DELETE] First dialog should be open:', !!subjectToRemove && !showSecondConfirm);
+    console.log('🗑️ [DELETE] Second dialog should be open:', showSecondConfirm);
+  }, [subjectToRemove, showSecondConfirm]);
+
   // Archive subject mutation
   const archiveSubjectMutation = useMutation({
     mutationFn: async ({ subjectDocId, archive }: { subjectDocId: string; archive: boolean }) => {
@@ -270,40 +278,40 @@ export default function Dashboard() {
   }, [loading, isAuthenticated, router]);
 
   const handleRemoveSubject = (subject: DashboardSubject) => {
-    console.log('🗑️ [CLIENT DELETE STEP 1] handleRemoveSubject called');
-    console.log('Subject:', subject);
+    console.log('🗑️ [DELETE] Step 1: handleRemoveSubject called');
+    console.log('🗑️ [DELETE] Subject to remove:', { id: subject.id, name: subject.name });
+    console.log('🗑️ [DELETE] Current subjectToRemove before:', subjectToRemove);
+    console.log('🗑️ [DELETE] Current showSecondConfirm before:', showSecondConfirm);
     setSubjectToRemove(subject);
-    console.log('State updated, dialog should open');
+    console.log('🗑️ [DELETE] setSubjectToRemove called with:', subject);
   };
 
   const confirmRemoveSubject = () => {
-    console.log('🗑️ [CLIENT DELETE STEP 2] confirmRemoveSubject called');
-    console.log('deleteConfirmText value:', deleteConfirmText);
-    console.log('deleteConfirmText trimmed:', deleteConfirmText.trim());
-    console.log('deleteConfirmText lowercase:', deleteConfirmText.trim().toLowerCase());
+    console.log('🗑️ [DELETE] Step 2: confirmRemoveSubject called');
+    console.log('🗑️ [DELETE] deleteConfirmText:', deleteConfirmText);
+    console.log('🗑️ [DELETE] trimmed lowercase:', deleteConfirmText.trim().toLowerCase());
     
     const trimmedText = deleteConfirmText.trim().toLowerCase();
     
     if (trimmedText === "delete") {
-      console.log('✅ Text matches! Setting showSecondConfirm to true');
+      console.log('🗑️ [DELETE] ✅ Text matches! Setting showSecondConfirm to true');
       setShowSecondConfirm(true);
     } else {
-      console.log('❌ Text does NOT match "delete"');
-      console.log('Expected: "delete", Got:', `"${trimmedText}"`);
+      console.log('🗑️ [DELETE] ❌ Text does NOT match. Got:', trimmedText);
     }
   };
 
   const finalConfirmRemove = () => {
-    console.log('🗑️ [CLIENT DELETE STEP 3] finalConfirmRemove called');
+    console.log('🗑️ [DELETE] Step 3: finalConfirmRemove called');
     
     if (!subjectToRemove) {
-      console.error('❌ No subject to remove!');
+      console.error('🗑️ [DELETE] ❌ No subject to remove!');
       return;
     }
     
-    console.log('Subject to remove:', subjectToRemove);
+    console.log('🗑️ [DELETE] Subject:', subjectToRemove.name);
     const docId = subjectToRemove.id.toString();
-    console.log('Document ID to delete:', docId);
+    console.log('🗑️ [DELETE] Document ID:', docId);
     
     removeSubjectMutation.mutate(docId);
     
@@ -494,13 +502,19 @@ export default function Dashboard() {
                               </AlertDialogContent>
                             </AlertDialog>
                             <AlertDialog open={subjectToRemove?.id === subject.id && !showSecondConfirm} onOpenChange={(open) => {
+                              console.log('🗑️ [DELETE] First dialog onOpenChange:', open, 'for subject:', subject.name);
                               if (!open) {
+                                console.log('🗑️ [DELETE] Closing first dialog, resetting state');
                                 setSubjectToRemove(null);
                                 setDeleteConfirmText("");
                               }
                             }}>
                               <button
-                                onClick={() => handleRemoveSubject(subject)}
+                                onClick={(e) => {
+                                  console.log('🗑️ [DELETE] Trash button clicked for:', subject.name);
+                                  console.log('🗑️ [DELETE] Click event:', e);
+                                  handleRemoveSubject(subject);
+                                }}
                                 className="text-khan-gray-light hover:text-khan-red transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -534,7 +548,10 @@ export default function Dashboard() {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                            <AlertDialog open={showSecondConfirm} onOpenChange={setShowSecondConfirm}>
+                            <AlertDialog open={showSecondConfirm} onOpenChange={(open) => {
+                              console.log('🗑️ [DELETE] Second dialog onOpenChange:', open);
+                              setShowSecondConfirm(open);
+                            }}>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Final Confirmation</AlertDialogTitle>
