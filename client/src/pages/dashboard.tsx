@@ -499,14 +499,12 @@ export default function Dashboard() {
                                 setDeleteConfirmText("");
                               }
                             }}>
-                              <AlertDialogTrigger asChild>
-                                <button
-                                  onClick={() => handleRemoveSubject(subject)}
-                                  className="text-khan-gray-light hover:text-khan-red transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </AlertDialogTrigger>
+                              <button
+                                onClick={() => handleRemoveSubject(subject)}
+                                className="text-khan-gray-light hover:text-khan-red transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Permanently Delete Subject</AlertDialogTitle>
