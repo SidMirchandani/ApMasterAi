@@ -292,8 +292,13 @@ export default function Dashboard() {
 
   const finalConfirmRemove = () => {
     if (subjectToRemove) {
-      console.log('[Dashboard] Final confirm - removing subject:', subjectToRemove.id);
-      removeSubjectMutation.mutate(subjectToRemove.id.toString());
+      const firestoreDocId = (subjectToRemove as any).firestoreDocId || subjectToRemove.id.toString();
+      console.log('[Dashboard] Final confirm - removing subject:', {
+        id: subjectToRemove.id,
+        firestoreDocId,
+        subjectId: subjectToRemove.subjectId
+      });
+      removeSubjectMutation.mutate(firestoreDocId);
       setShowSecondConfirm(false);
       setDeleteConfirmText("");
       setSubjectToRemove(null);

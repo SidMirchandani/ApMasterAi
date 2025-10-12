@@ -131,15 +131,25 @@ export default async function handler(
       case "DELETE": {
         try {
           console.log("[subjectId API][DELETE] Attempting to delete subject with ID:", subjectId);
-          await storage.deleteUserSubject(subjectId);
+          console.log("[subjectId API][DELETE] User ID:", userId);
+          
+          const result = await storage.deleteUserSubject(subjectId);
+          console.log("[subjectId API][DELETE] Delete result:", result);
           console.log("[subjectId API][DELETE] Successfully deleted subject:", subjectId);
+          
           return res.status(200).json({
             success: true,
             message: "Subject removed successfully",
           });
         } catch (error) {
           console.error("[subjectId API][DELETE] Error:", error);
-          // Custom message for deletion failure, potentially including subject name if available
+          console.error("[subjectId API][DELETE] Error details:", {
+            message: error.message,
+            stack: error.stack,
+            subjectId,
+            userId
+          });
+          
           const errorMessage = `Failed to remove subject${subjectId ? ` "${subjectId}"` : ""}`;
           return res.status(500).json({
             success: false,
