@@ -246,7 +246,8 @@ export default function SectionReview() {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  Back
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>

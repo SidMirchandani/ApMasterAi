@@ -115,85 +115,88 @@ export default function FullLengthResults() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-4 md:py-6">
-        <div className="max-w-5xl mx-auto space-y-4">
-          <div className="flex items-center justify-center gap-3">
+      <div className="container mx-auto px-4 py-3 md:py-4">
+        <div className="max-w-5xl mx-auto space-y-3">
+          <div className="flex items-center gap-3">
             <Button
               onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
               variant="outline"
               size="sm"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
             </Button>
             <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark">Test Results</h1>
           </div>
 
           {/* Overall Score Card */}
           <Card className="border-t-4 border-t-khan-green">
-            <CardContent className="pt-6 pb-5">
-              <div className="text-center">
-                <p className="text-sm text-khan-gray-medium mb-2">{formatDateTime(testData.date)}</p>
-                <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-khan-green to-green-600 mb-2">
-                  <span className="text-3xl font-bold text-white">{testData.percentage}%</span>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-khan-green to-green-600">
+                    <span className="text-2xl font-bold text-white">{testData.percentage}%</span>
+                  </div>
+                  <div>
+                    <div className={`inline-block px-4 py-1 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-sm mb-1`}>
+                      {overallPerformance.label}
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {testData.score} out of {testData.totalQuestions} questions correct
+                    </p>
+                  </div>
                 </div>
-                <div className={`inline-block px-5 py-1.5 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-base mb-1.5`}>
-                  {overallPerformance.label}
-                </div>
-                <p className="text-base text-gray-600">
-                  {testData.score} out of {testData.totalQuestions} questions correct
-                </p>
+                <p className="text-xs text-khan-gray-medium">{formatDateTime(testData.date)}</p>
               </div>
             </CardContent>
           </Card>
 
           {/* Unit Performance Breakdown */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <BookOpen className="text-khan-blue h-5 w-5" />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BookOpen className="text-khan-blue h-4 w-4" />
                 Unit Performance Breakdown
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {Object.entries(testData.sectionBreakdown)
                   .sort(([, a], [, b]) => (a.unitNumber || 0) - (b.unitNumber || 0))
                   .map(([sectionCode, section]) => {
                     const sectionPerf = getPerformanceLevel(section.percentage);
                     return (
-                      <Card 
+                      <div 
                         key={sectionCode} 
-                        className="border rounded-lg hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
+                        className="border rounded-lg p-3 hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
                         onClick={() => handleReviewSection(sectionCode)}
                       >
-                        <CardContent className="pt-3 pb-3">
-                          <div className="flex justify-between items-start gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                <span className="text-xs font-semibold text-khan-green bg-khan-green/10 px-2 py-0.5 rounded">
-                                  Unit {section.unitNumber || 0}
-                                </span>
-                                <h3 className="font-semibold text-base text-gray-900">{section.name}</h3>
-                              </div>
-                              <p className="text-sm text-gray-600">
-                                {section.correct} / {section.total} correct
-                              </p>
-                            </div>
-                            <div className={`px-3 py-0.5 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-sm font-medium flex-shrink-0`}>
-                              {section.percentage}%
+                        <div className="flex justify-between items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-semibold text-khan-green bg-khan-green/10 px-2 py-0.5 rounded">
+                                Unit {section.unitNumber || 0}
+                              </span>
+                              <h3 className="font-semibold text-sm text-gray-900">{section.name}</h3>
+                              <span className="text-xs text-gray-600">
+                                ({section.correct}/{section.total})
+                              </span>
                             </div>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                            <div
-                              className={`h-2.5 rounded-full transition-all ${
-                                section.percentage >= 75 ? 'bg-green-500' :
-                                section.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${section.percentage}%` }}
-                            />
+                          <div className={`px-3 py-0.5 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-xs font-medium flex-shrink-0`}>
+                            {section.percentage}%
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                          <div
+                            className={`h-2 rounded-full transition-all ${
+                              section.percentage >= 75 ? 'bg-green-500' :
+                              section.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
+                            style={{ width: `${section.percentage}%` }}
+                          />
+                        </div>
+                      </div>
                     );
                   })}
               </div>

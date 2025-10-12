@@ -518,23 +518,27 @@ export default function Quiz() {
     return (
       <div className="min-h-screen bg-khan-background">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-4">
           {isFullLength ? (
-            <div className="max-w-5xl mx-auto space-y-6">
+            <div className="max-w-5xl mx-auto space-y-3">
               {/* Header Card */}
               <Card className="border-t-4 border-t-khan-green">
-                <CardContent className="pt-8 pb-6">
-                  <div className="text-center">
-                    <h2 className="text-3xl font-bold mb-6">Full-Length Test Complete!</h2>
-                    <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-khan-green to-green-600 mb-3">
-                      <span className="text-4xl font-bold text-white">{percentage}%</span>
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-khan-green to-green-600">
+                        <span className="text-2xl font-bold text-white">{percentage}%</span>
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold mb-1">Full-Length Test Complete!</h2>
+                        <div className={`inline-block px-4 py-1 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-sm mb-1`}>
+                          {overallPerformance.label}
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {score} out of {questions.length} questions correct
+                        </p>
+                      </div>
                     </div>
-                    <div className={`inline-block px-6 py-2 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-lg mb-2`}>
-                      {overallPerformance.label}
-                    </div>
-                    <p className="text-lg text-gray-600">
-                      {score} out of {questions.length} questions correct
-                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -542,36 +546,38 @@ export default function Quiz() {
               {/* Section Performance Breakdown */}
               {sectionPerformance && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-2xl flex items-center gap-2">
-                      <CheckCircle className="text-khan-blue h-6 w-6" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <CheckCircle className="text-khan-blue h-4 w-4" />
                       Section Performance Breakdown
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {Object.entries(sectionPerformance).map(([sectionCode, section], idx) => {
                         const sectionPerf = getPerformanceLevel(section.percentage);
                         return (
                           <div 
                             key={idx} 
-                            className="border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
+                            className="border rounded-lg p-3 hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
                             onClick={() => sectionCode && handleReviewUnit(sectionCode)}
                           >
-                            <div className="flex justify-between items-start mb-3">
+                            <div className="flex justify-between items-center gap-3">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-lg text-gray-900">{section.name}</h3>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  {section.correct} / {section.total} correct
-                                </p>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-semibold text-sm text-gray-900">{section.name}</h3>
+                                  <span className="text-xs text-gray-600">
+                                    ({section.correct}/{section.total})
+                                  </span>
+                                </div>
                               </div>
-                              <div className={`px-3 py-1 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-sm font-medium`}>
+                              <div className={`px-3 py-0.5 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-xs font-medium`}>
                                 {section.percentage}%
                               </div>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                               <div
-                                className={`h-3 rounded-full transition-all ${
+                                className={`h-2 rounded-full transition-all ${
                                   section.percentage >= 75 ? 'bg-green-500' :
                                   section.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
                                 }`}
@@ -836,9 +842,9 @@ export default function Quiz() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4">
           <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>

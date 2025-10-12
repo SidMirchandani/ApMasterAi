@@ -91,15 +91,16 @@ export default function FullLengthHistory() {
       <Navigation />
       <div className="container mx-auto px-4 py-4 md:py-6">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            <div className="flex items-center justify-center gap-3 mb-4">
+          <div className="mb-4">
+            <div className="flex items-center gap-3 mb-3">
               {hasSomethingToGoBackTo() && (
                 <Button
                   onClick={() => router.back()}
                   variant="outline"
                   size="sm"
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  Back
                 </Button>
               )}
               <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark">Full-Length Test History</h1>

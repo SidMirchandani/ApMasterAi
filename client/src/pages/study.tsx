@@ -477,76 +477,64 @@ export default function Study() {
       <Navigation />
       <div className="container mx-auto px-4 py-4 md:py-6">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-center gap-3 mb-2">
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-2">
             <Button
               variant="outline"
               onClick={() => router.push("/dashboard")}
               size="sm"
               data-testid="button-back"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
             </Button>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              {currentSubject.name}
-            </h1>
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                {currentSubject.name}
+              </h1>
+              <p className="text-gray-600 text-sm">{currentSubject.description}</p>
+            </div>
           </div>
-          <p className="text-gray-600 text-center">{currentSubject.description}</p>
         </div>
 
         {/* Your Progress */}
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Target className="h-5 w-5 text-khan-green" />
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Target className="h-4 w-4 text-khan-green" />
               Your Progress
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <CardContent className="pb-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-blue-600">
                   {topicsMastered}/{totalTopics}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  Topics Mastered
-                </div>
-                <div className="flex justify-center mt-2">
-                  <Trophy className="h-5 w-5 text-blue-600" />
-                </div>
+                <div className="text-xs text-gray-600">Topics Mastered</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">4</div>
-                <div className="text-sm text-gray-600 mt-1">Expected Score</div>
-                <div className="flex justify-center mt-2">
-                  <Target className="h-5 w-5 text-purple-600" />
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600">
+                <div className="text-2xl font-bold text-orange-600">
                   {formatDate(currentSubject.examDate)}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">Exam Date</div>
-                <div className="flex justify-center mt-2">
-                  <Clock className="h-5 w-5 text-orange-600" />
-                </div>
+                <div className="text-xs text-gray-600">Exam Date</div>
               </div>
             </div>
 
             {/* Full-Length Practice Test Buttons */}
-            <div className="mt-8 flex flex-col md:flex-row gap-3 max-w-2xl mx-auto items-center">
+            <div className="flex flex-col md:flex-row gap-2">
               <Button
                 onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
-                className="bg-khan-green w-full md:flex-1 h-12 min-h-[44px]"
+                className="bg-khan-green w-full md:flex-1"
               >
-                <BookOpen className="mr-2 h-5 w-5" />
+                <BookOpen className="mr-2 h-4 w-4" />
                 MCQ Full-Length Test
               </Button>
               <Button
                 disabled
-                className="bg-khan-blue w-full md:flex-1 h-12 min-h-[44px] opacity-50 cursor-not-allowed"
+                className="bg-khan-blue w-full md:flex-1 opacity-50 cursor-not-allowed"
               >
-                <PlayCircle className="mr-2 h-5 w-5" />
+                <PlayCircle className="mr-2 h-4 w-4" />
                 FRQ Full-Length Test (Coming Soon)
               </Button>
             </div>
