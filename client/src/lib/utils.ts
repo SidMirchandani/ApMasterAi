@@ -14,10 +14,11 @@ export function safeDateParse(value: any): Date | null {
   if (!value) return null;
   
   try {
-    // Handle Firestore Timestamp objects (both formats: seconds and _seconds)
+    // Handle Firestore Timestamp objects (both formats)
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      // Handle both 'seconds' and '_seconds' properties
       const seconds = value.seconds || value._seconds;
-      if (typeof seconds === 'number') {
+      if (seconds) {
         return new Date(seconds * 1000);
       }
     }
@@ -43,6 +44,7 @@ export function safeDateParse(value: any): Date | null {
  */
 export function formatDate(value: any, fmt = "MMM d, yyyy"): string {
   const date = safeDateParse(value);
+  console.log('[formatDate] Input:', value, 'Parsed:', date, 'Result:', date ? format(date, fmt) : "TBD");
   return date ? format(date, fmt) : "TBD";
 }
 

@@ -72,14 +72,6 @@ export default async function handler(
       case "GET": {
         try {
           const subjects = await storage.getUserSubjects(userId);
-          console.log("[subjects API][GET] Retrieved subjects:", subjects.length);
-          subjects.forEach(subject => {
-            console.log("[subjects API][GET] Subject:", {
-              id: subject.id,
-              firestoreDocId: (subject as any).firestoreDocId,
-              name: subject.name
-            });
-          });
           res.setHeader(
             "Cache-Control",
             "public, s-maxage=60, stale-while-revalidate=300",

@@ -129,54 +129,21 @@ export default async function handler(
 
     switch (req.method) {
       case "DELETE": {
-        console.log("🗑️ [API DELETE] Request received");
-        console.log("Subject ID from URL:", subjectId);
-        console.log("User ID:", userId);
-        
         try {
-          // Use Firestore directly to find and delete the document
-          const db = getDb();
-          const userSubjectsRef = db.collection('user_subjects');
-          
-          // Get the document directly by its Firestore document ID
-          const docRef = userSubjectsRef.doc(subjectId as string);
-          const doc = await docRef.get();
-          
-          console.log("Document exists:", doc.exists);
-          
-          if (!doc.exists) {
-            console.log("❌ Subject not found in database");
-            return res.status(404).json({
-              success: false,
-              message: "Subject not found"
-            });
-          }
-          
-          const data = doc.data();
-          console.log("Document data userId:", data?.userId, "Expected:", userId);
-          
-          // Verify it belongs to the user
-          if (data?.userId !== userId) {
-            console.log("❌ User mismatch");
-            return res.status(403).json({
-              success: false,
-              message: "Unauthorized to delete this subject"
-            });
-          }
-          
-          console.log("✅ Deleting document...");
-          await docRef.delete();
-          console.log("✅ Delete completed");
-          
+          console.log("[subjectId API][DELETE] Attempting to delete subject with ID:", subjectId);
+          await storage.deleteUserSubject(subjectId);
+          console.log("[subjectId API][DELETE] Successfully deleted subject:", subjectId);
           return res.status(200).json({
             success: true,
             message: "Subject removed successfully",
           });
         } catch (error) {
-          console.error("❌ DELETE ERROR:", error);
+          console.error("[subjectId API][DELETE] Error:", error);
+          // Custom message for deletion failure, potentially including subject name if available
+          const errorMessage = `Failed to remove subject${subjectId ? ` "${subjectId}"` : ""}`;
           return res.status(500).json({
             success: false,
-            message: "Failed to remove subject",
+            message: errorMessage,
             error: error.message
           });
         }
