@@ -124,7 +124,7 @@ export default function FullLengthResults() {
               size="sm"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to History
+              Back
             </Button>
             <h1 className="text-3xl font-bold text-khan-gray-dark">Test Results</h1>
           </div>

@@ -263,12 +263,12 @@ export default function Quiz() {
   const questionsPerPage = isFullLength ? 10 : 1; // Set to 10 questions per page for full-length
   const totalPages = Math.ceil(questions.length / questionsPerPage);
 
-  const currentQuestions = isFullLength 
+  const currentQuestions = isFullLength
     ? questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage)
     : [questions[currentQuestionIndex]];
 
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = isFullLength 
+  const progress = isFullLength
     ? ((currentPage + 1) / totalPages) * 100
     : ((currentQuestionIndex + 1) / questions.length) * 100;
 
@@ -355,11 +355,11 @@ export default function Quiz() {
     const saveScore = async () => {
       if (quizCompleted && subjectId && unit) {
         const percentage = Math.round((score / questions.length) * 100);
-        console.log("💾 [Quiz] Attempting to save score:", { 
-          subjectId, 
-          unit, 
-          score, 
-          total: questions.length, 
+        console.log("💾 [Quiz] Attempting to save score:", {
+          subjectId,
+          unit,
+          score,
+          total: questions.length,
           percentage,
           isFullLength
         });
@@ -369,7 +369,7 @@ export default function Quiz() {
             const response = await apiRequest(
               "POST",
               `/api/user/subjects/${subjectId}/full-length-test`,
-              { 
+              {
                 score,
                 percentage,
                 totalQuestions: questions.length,
@@ -430,10 +430,10 @@ export default function Quiz() {
 
     // Calculate section-wise performance for full-length test
     const sectionPerformance = isFullLength ? (() => {
-      const sections: Record<string, { 
-        name: string; 
-        correct: number; 
-        total: number; 
+      const sections: Record<string, {
+        name: string;
+        correct: number;
+        total: number;
         percentage: number;
       }> = {};
 
@@ -451,7 +451,7 @@ export default function Quiz() {
       questions.forEach((q, idx) => {
         const sectionCode = q.section_code || "Unknown";
         const sectionName = sectionNames[sectionCode] || sectionCode;
-        
+
         if (!sections[sectionCode]) {
           sections[sectionCode] = {
             name: sectionName,
@@ -462,7 +462,7 @@ export default function Quiz() {
         }
 
         sections[sectionCode].total++;
-        
+
         const userAnswer = userAnswers[idx];
         const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
         if (userAnswer === correctAnswerLabel) {
@@ -592,8 +592,8 @@ export default function Quiz() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button 
-                      onClick={() => setIsReviewMode(true)} 
+                    <Button
+                      onClick={() => setIsReviewMode(true)}
                       className="bg-khan-blue hover:bg-khan-blue/90 px-8"
                     >
                       <CheckCircle className="mr-2 h-5 w-5" />
@@ -735,7 +735,7 @@ export default function Quiz() {
                     {/* Show user's answer status */}
                     <div className={`p-3 rounded-lg mb-3 ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
                       <p className="font-semibold">
-                        Your answer: {userAnswer || "Not answered"} 
+                        Your answer: {userAnswer || "Not answered"}
                         {isCorrect ? " ✓ Correct" : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
                       </p>
                     </div>
@@ -828,7 +828,7 @@ export default function Quiz() {
           </AlertDialog>
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-semibold">
-              {isFullLength 
+              {isFullLength
                 ? `Page ${currentPage + 1} of ${totalPages} (Questions ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`
                 : `Question ${currentQuestionIndex + 1} of ${questions.length}`
               }
@@ -903,7 +903,7 @@ export default function Quiz() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Submit Full-Length Exam?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you ready to submit your exam? You have answered {Object.keys(userAnswers).length} out of {questions.length} questions. 
+                    Are you ready to submit your exam? You have answered {Object.keys(userAnswers).length} out of {questions.length} questions.
                     Once submitted, you cannot change your answers.
                   </AlertDialogDescription>
                 </AlertDialogHeader>

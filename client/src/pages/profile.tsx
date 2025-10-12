@@ -133,11 +133,12 @@ export default function Profile() {
         <div className="max-w-3xl mx-auto">
           <div className="mb-8 flex items-center gap-4">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => router.push("/dashboard")}
-              className="p-2"
+              size="sm"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-khan-gray-dark">Profile Settings</h1>

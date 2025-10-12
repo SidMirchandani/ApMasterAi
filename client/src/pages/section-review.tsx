@@ -178,10 +178,11 @@ export default function SectionReview() {
           {currentPage === totalPages - 1 ? (
             <Button
               onClick={() => router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`)}
-              className="bg-khan-green hover:bg-khan-green/90 px-8"
+              variant="outline"
+              className="px-8"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Results
+              Back
             </Button>
           ) : (
             <Button

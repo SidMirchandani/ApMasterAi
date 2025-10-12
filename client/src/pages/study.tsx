@@ -482,12 +482,13 @@ export default function Study() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => router.push("/dashboard")}
-              className="p-2"
+              size="sm"
               data-testid="button-back"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
@@ -742,17 +743,7 @@ export default function Study() {
           </Card>
         )}
 
-        {/* Back Button */}
-        <div className="mt-8 flex justify-center">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/dashboard")}
-            data-testid="button-back-to-dashboard-bottom"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </div>
+        
       </div>
 
       </div>

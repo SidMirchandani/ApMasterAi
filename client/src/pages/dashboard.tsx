@@ -281,7 +281,7 @@ export default function Dashboard() {
                   onClick={() => refetchSubjects()}
                   className="ml-4 border-khan-red text-khan-red hover:bg-khan-red hover:text-white"
                 >
-                  Retry
+                  Try Again
                 </Button>
               </AlertDescription>
             </Alert>

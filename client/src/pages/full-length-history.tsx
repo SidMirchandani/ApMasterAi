@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -37,10 +36,10 @@ export default function FullLengthHistory() {
       try {
         const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/unit-progress`);
         if (!response.ok) throw new Error("Failed to fetch test history");
-        
+
         const data = await response.json();
         const fullLengthData = data.data?.["full-length"];
-        
+
         if (fullLengthData?.history && Array.isArray(fullLengthData.history)) {
           setTestHistory(fullLengthData.history);
         }
