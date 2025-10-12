@@ -22,15 +22,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/full-length-history": [
+    "/dashboard": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/full-length-history.js"
+      "static/chunks/pages/dashboard.js"
     ],
-    "/learn": [
+    "/quiz": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/learn.js"
+      "static/chunks/pages/quiz.js"
     ],
     "/study": [
       "static/chunks/webpack.js",

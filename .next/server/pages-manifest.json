@@ -2,9 +2,11 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/dashboard": "pages/dashboard.js",
+  "/api/user/me": "pages/api/user/me.js",
   "/study": "pages/study.js",
-  "/full-length-history": "pages/full-length-history.js",
-  "/learn": "pages/learn.js",
-  "/api/user/me": "pages/api/user/me.js"
+  "/quiz": "pages/quiz.js",
+  "/api/user/subjects": "pages/api/user/subjects.js",
+  "/dashboard": "pages/dashboard.js",
+  "/api/questions": "pages/api/questions.js",
+  "/api/user/profile": "pages/api/user/profile.js"
 }
