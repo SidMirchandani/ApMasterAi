@@ -95,19 +95,7 @@ export default function Dashboard() {
   });
 
   // Memoize subjects array to prevent unnecessary re-renders
-  const subjects = useMemo(() => {
-    const data = subjectsResponse?.data || [];
-    console.log('[Dashboard] Raw subjects data:', data);
-    data.forEach(subject => {
-      console.log(`[Dashboard] Subject "${subject.name}" dates:`, {
-        dateAdded: subject.dateAdded,
-        lastStudied: subject.lastStudied,
-        dateAddedType: typeof subject.dateAdded,
-        lastStudiedType: typeof subject.lastStudied
-      });
-    });
-    return data;
-  }, [subjectsResponse?.data]);
+  const subjects = useMemo(() => subjectsResponse?.data || [], [subjectsResponse?.data]);
 
   // Split into active and archived
   const activeSubjects = useMemo(() => subjects.filter(s => !(s as any).archived), [subjects]);
@@ -208,50 +196,51 @@ export default function Dashboard() {
   // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
     mutationFn: async (subjectDocId: string) => {
-      console.log('[Dashboard Mutation] DELETE request starting for:', subjectDocId);
+      console.log('🌐 DELETE FLOW: Step 4 - API call');
+      console.log('Sending DELETE to:', `/api/user/subjects/${subjectDocId}`);
+      
       const response = await apiRequest("DELETE", `/api/user/subjects/${subjectDocId}`);
-      console.log('[Dashboard Mutation] DELETE response status:', response.status);
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
-        console.log('[Dashboard Mutation] DELETE failed with error:', errorData);
+        console.error('❌ DELETE failed:', errorData);
         throw new Error(errorData.message || "Failed to remove subject");
       }
+      
       const result = await response.json();
-      console.log('[Dashboard Mutation] DELETE succeeded with result:', result);
+      console.log('✅ DELETE succeeded:', result);
       return result;
     },
     onMutate: async (subjectDocId) => {
-      // Cancel any outgoing refetches
+      console.log('🔄 DELETE FLOW: Step 5 - onMutate (optimistic update)');
+      
       await queryClient.cancelQueries({ queryKey: ["subjects"] });
-
-      // Snapshot the previous value
       const previousSubjects = queryClient.getQueryData(["subjects"]);
 
-      // Optimistically update to the new value - remove the subject immediately
       queryClient.setQueryData(["subjects"], (old: any) => {
         if (!old?.data) return old;
-        console.log('[Dashboard] Removing subject with ID:', subjectDocId);
-        console.log('[Dashboard] Current subjects:', old.data.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
+        
         const filtered = old.data.filter((subject: DashboardSubject) => {
           const subjectIdStr = typeof subject.id === 'number' ? subject.id.toString() : subject.id;
           return subjectIdStr !== subjectDocId;
         });
-        console.log('[Dashboard] After filter:', filtered.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
-        return {
-          ...old,
-          data: filtered
-        };
+        
+        console.log('Optimistically removed subject. Remaining:', filtered.length);
+        return { ...old, data: filtered };
       });
 
-      // Return a context object with the snapshotted value
       return { previousSubjects };
     },
     onError: (err, subjectDocId, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      console.error('[Dashboard] Remove subject failed:', err);
+      console.error('❌ DELETE FLOW: Step 6 - onError (rollback)');
+      console.error('Error:', err.message);
+      
       if (context?.previousSubjects) {
         queryClient.setQueryData(["subjects"], context.previousSubjects);
+        console.log('Rolled back to previous state');
       }
+      
       toast({
         title: "Error removing subject",
         description: err.message || "An unexpected error occurred.",
@@ -259,7 +248,8 @@ export default function Dashboard() {
       });
     },
     onSuccess: (data, subjectDocId) => {
-      console.log('[Dashboard] Remove subject succeeded');
+      console.log('✅ DELETE FLOW: Step 6 - onSuccess (complete)');
+      console.log('Subject successfully deleted:', subjectDocId);
 
       toast({
         title: "Subject removed",
@@ -267,10 +257,6 @@ export default function Dashboard() {
       });
 
       setSubjectToRemove(null);
-
-      // Don't invalidate - the optimistic update in onMutate already updated the cache
-      // Both dashboard and courses page use the same ["subjects"] query key,
-      // so the optimistic update will reflect in both pages automatically
     }
   });
 
@@ -284,46 +270,52 @@ export default function Dashboard() {
   }, [loading, isAuthenticated, router]);
 
   const handleRemoveSubject = (subject: DashboardSubject) => {
-    console.log('[Dashboard] handleRemoveSubject called with:', {
+    console.log('🗑️ DELETE FLOW: Step 1 - handleRemoveSubject called');
+    console.log('Subject to delete:', {
       id: subject.id,
+      idType: typeof subject.id,
       name: subject.name,
-      subjectId: subject.subjectId,
-      fullSubject: subject
+      subjectId: subject.subjectId
     });
     setSubjectToRemove(subject);
   };
 
   const confirmRemoveSubject = () => {
+    console.log('🗑️ DELETE FLOW: Step 2 - First confirmation');
     const trimmedText = deleteConfirmText.trim().toLowerCase();
-    console.log('[Dashboard] confirmRemoveSubject - text entered:', trimmedText);
-    console.log('[Dashboard] confirmRemoveSubject - matches "delete":', trimmedText === "delete");
+    console.log('Text entered:', `"${trimmedText}"`);
+    console.log('Matches "delete"?', trimmedText === "delete");
+    
     if (trimmedText === "delete") {
-      console.log('[Dashboard] confirmRemoveSubject - showing second confirmation');
+      console.log('✅ Showing second confirmation dialog');
       setShowSecondConfirm(true);
     } else {
-      console.log('[Dashboard] confirmRemoveSubject - text does not match, not showing second confirmation');
+      console.log('❌ Text does not match "delete"');
     }
   };
 
   const finalConfirmRemove = () => {
-    console.log('[Dashboard] finalConfirmRemove called');
-    if (subjectToRemove) {
-      const firestoreDocId = (subjectToRemove as any).firestoreDocId || subjectToRemove.id.toString();
-      console.log('[Dashboard] Final confirm - removing subject:', {
-        id: subjectToRemove.id,
-        firestoreDocId,
-        subjectId: subjectToRemove.subjectId,
-        idType: typeof subjectToRemove.id,
-        fullSubject: subjectToRemove
-      });
-      console.log('[Dashboard] Calling removeSubjectMutation.mutate with:', firestoreDocId);
-      removeSubjectMutation.mutate(firestoreDocId);
-      setShowSecondConfirm(false);
-      setDeleteConfirmText("");
-      setSubjectToRemove(null);
-    } else {
-      console.log('[Dashboard] finalConfirmRemove - no subjectToRemove!');
+    console.log('🗑️ DELETE FLOW: Step 3 - Final confirmation');
+    
+    if (!subjectToRemove) {
+      console.error('❌ ERROR: No subject selected for removal!');
+      return;
     }
+    
+    const firestoreDocId = (subjectToRemove as any).firestoreDocId || subjectToRemove.id.toString();
+    console.log('Subject details:', {
+      name: subjectToRemove.name,
+      id: subjectToRemove.id,
+      firestoreDocId,
+      willSendToAPI: firestoreDocId
+    });
+    
+    console.log('🚀 Calling mutation with ID:', firestoreDocId);
+    removeSubjectMutation.mutate(firestoreDocId);
+    
+    setShowSecondConfirm(false);
+    setDeleteConfirmText("");
+    setSubjectToRemove(null);
   };
 
   const handleArchiveSubject = (subject: DashboardSubject) => {
