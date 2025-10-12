@@ -470,110 +470,23 @@ export default function Dashboard() {
                             {subject.name}
                           </CardTitle>
                           <div className="flex items-center gap-2">
-                            <AlertDialog open={subjectToArchive?.id === subject.id} onOpenChange={(open) => {
-                              if (!open) setSubjectToArchive(null);
-                            }}>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleArchiveSubject(subject)}
-                                  className="border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
-                                >
-                                  Archive
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Archive Subject?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    "{subject.name}" will be moved to the archive. You can restore it anytime from the archived subjects section.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={confirmArchiveSubject}
-                                    className="bg-khan-blue hover:bg-khan-blue/90"
-                                  >
-                                    Archive
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                            <AlertDialog open={subjectToRemove?.id === subject.id && !showSecondConfirm} onOpenChange={(open) => {
-                              console.log('🗑️ [DELETE] First dialog onOpenChange:', open, 'for subject:', subject.name);
-                              if (!open) {
-                                console.log('🗑️ [DELETE] Closing first dialog, resetting state');
-                                setSubjectToRemove(null);
-                                setDeleteConfirmText("");
-                              }
-                            }}>
-                              <button
-                                onClick={(e) => {
-                                  console.log('🗑️ [DELETE] Trash button clicked for:', subject.name);
-                                  console.log('🗑️ [DELETE] Click event:', e);
-                                  handleRemoveSubject(subject);
-                                }}
-                                className="text-khan-gray-light hover:text-khan-red transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Permanently Delete Subject</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. All your progress for <strong>"{subject.name}"</strong> will be permanently deleted.
-                                    <div className="mt-4">
-                                      <p className="mb-2 font-medium text-gray-900">Type "delete" to confirm:</p>
-                                      <input
-                                        type="text"
-                                        value={deleteConfirmText}
-                                        onChange={(e) => setDeleteConfirmText(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                                        placeholder="Type delete here"
-                                      />
-                                    </div>
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={confirmRemoveSubject}
-                                    disabled={deleteConfirmText.toLowerCase() !== "delete"}
-                                    className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    Continue
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                            <AlertDialog open={showSecondConfirm} onOpenChange={(open) => {
-                              console.log('🗑️ [DELETE] Second dialog onOpenChange:', open);
-                              setShowSecondConfirm(open);
-                            }}>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Final Confirmation</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you absolutely sure? This will permanently delete all data for <strong>"{subjectToRemove?.name}"</strong>. This action is irreversible.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel onClick={() => {
-                                    setShowSecondConfirm(false);
-                                    setDeleteConfirmText("");
-                                    setSubjectToRemove(null);
-                                  }}>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={finalConfirmRemove}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Yes, Delete Forever
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleArchiveSubject(subject)}
+                              className="border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
+                            >
+                              Archive
+                            </Button>
+                            <button
+                              onClick={() => {
+                                console.log('🗑️ [DELETE] Trash button clicked for:', subject.name);
+                                handleRemoveSubject(subject);
+                              }}
+                              className="text-khan-gray-light hover:text-khan-red transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
                         <p className="text-khan-gray-medium text-base leading-relaxed">
@@ -679,6 +592,100 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
+
+              {/* Archive Confirmation Dialog */}
+              <AlertDialog open={!!subjectToArchive} onOpenChange={(open) => {
+                if (!open) setSubjectToArchive(null);
+              }}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Archive Subject?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      "{subjectToArchive?.name}" will be moved to the archive. You can restore it anytime from the archived subjects section.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={confirmArchiveSubject}
+                      className="bg-khan-blue hover:bg-khan-blue/90"
+                    >
+                      Archive
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              {/* First Delete Confirmation Dialog */}
+              <AlertDialog open={!!subjectToRemove && !showSecondConfirm} onOpenChange={(open) => {
+                console.log('🗑️ [DELETE] First dialog onOpenChange:', open);
+                if (!open) {
+                  console.log('🗑️ [DELETE] Closing first dialog, resetting state');
+                  setSubjectToRemove(null);
+                  setDeleteConfirmText("");
+                }
+              }}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Permanently Delete Subject</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. All your progress for <strong>"{subjectToRemove?.name}"</strong> will be permanently deleted.
+                      <div className="mt-4">
+                        <p className="mb-2 font-medium text-gray-900">Type "delete" to confirm:</p>
+                        <input
+                          type="text"
+                          value={deleteConfirmText}
+                          onChange={(e) => setDeleteConfirmText(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                          placeholder="Type delete here"
+                        />
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={confirmRemoveSubject}
+                      disabled={deleteConfirmText.trim().toLowerCase() !== "delete"}
+                      className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Continue
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              {/* Second Delete Confirmation Dialog */}
+              <AlertDialog open={showSecondConfirm} onOpenChange={(open) => {
+                console.log('🗑️ [DELETE] Second dialog onOpenChange:', open);
+                if (!open) {
+                  setShowSecondConfirm(false);
+                  setDeleteConfirmText("");
+                  setSubjectToRemove(null);
+                }
+              }}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Final Confirmation</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you absolutely sure? This will permanently delete all data for <strong>"{subjectToRemove?.name}"</strong>. This action is irreversible.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => {
+                      setShowSecondConfirm(false);
+                      setDeleteConfirmText("");
+                      setSubjectToRemove(null);
+                    }}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={finalConfirmRemove}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Yes, Delete Forever
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
 
               {/* Archived Subjects Section */}
               {archivedSubjects.length > 0 && (
