@@ -22,11 +22,13 @@ export default async function handler(
   try {
     const db = getDb();
     const questionLimit = limit ? parseInt(limit as string) : 25;
+    const fetchLimit = section ? questionLimit * 4 : 200; // Fetch up to 200 for full-length tests
 
     console.log("🔍 Querying questions with:", {
       subject,
       section: section || "ALL",
-      limit: questionLimit
+      limit: questionLimit,
+      fetchLimit
     });
 
     // Query Firestore for MCQ questions
@@ -39,7 +41,7 @@ export default async function handler(
     }
     
     const snapshot = await query
-      .limit(questionLimit * 4) // Get more for better randomization (especially for 50-question tests)
+      .limit(fetchLimit)
       .get();
 
     console.log("📊 Firestore query result:", {

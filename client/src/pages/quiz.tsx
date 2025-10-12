@@ -188,9 +188,13 @@ export default function Quiz() {
           });
 
           if (data.success && data.data && data.data.length > 0) {
-            // Shuffle and select 50 random questions
+            // Shuffle and select 50 random questions for full-length test
             const shuffled = [...data.data].sort(() => Math.random() - 0.5);
-            setQuestions(shuffled.slice(0, 50));
+            const selectedQuestions = shuffled.slice(0, 50);
+            if (selectedQuestions.length < 50) {
+              console.warn(`⚠️ Only ${selectedQuestions.length} questions available, expected 50`);
+            }
+            setQuestions(selectedQuestions);
           } else {
             setError("No questions found for this subject");
           }
@@ -260,7 +264,7 @@ export default function Quiz() {
   }, [isAuthenticated, unit, subjectId]);
 
   const isFullLength = unit === "full-length";
-  const questionsPerPage = isFullLength ? 5 : 1; // Set to 5 questions per page for full-length
+  const questionsPerPage = isFullLength ? 10 : 1; // Set to 10 questions per page for full-length
   const totalPages = Math.ceil(questions.length / questionsPerPage);
 
   const currentQuestions = isFullLength 
@@ -439,7 +443,9 @@ export default function Quiz() {
         <div className="container mx-auto px-4 py-8">
           <Card className="max-w-2xl mx-auto">
             <CardHeader>
-              <CardTitle className="text-center text-2xl">Quiz Complete!</CardTitle>
+              <CardTitle className="text-center text-2xl">
+                {isFullLength ? "Full-Length Test Complete!" : "Quiz Complete!"}
+              </CardTitle>
             </CardHeader>
             <CardContent className="text-center">
               <div className="mb-6">
@@ -450,25 +456,27 @@ export default function Quiz() {
                   You scored {score} out of {questions.length}
                 </p>
               </div>
-              <div className="flex gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                {isFullLength && (
+                  <Button 
+                    onClick={() => setIsReviewMode(true)} 
+                    className="bg-khan-blue hover:bg-khan-blue/90"
+                  >
+                    Review Answers
+                  </Button>
+                )}
                 <Button
                   onClick={handleRetakeQuiz}
                   className="bg-khan-green hover:bg-khan-green/90"
                 >
-                  Retake Quiz
+                  {isFullLength ? "Retake Test" : "Retake Quiz"}
                 </Button>
                 <Button
                   onClick={() => router.push(`/study?subject=${subjectId}`)}
                   variant="outline"
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Study
+                  Exit {isFullLength ? "Test" : "Quiz"}
                 </Button>
-                {isFullLength && (
-                  <Button onClick={() => setIsReviewMode(true)} className="bg-khan-blue hover:bg-khan-blue/90">
-                    Review Test
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>
