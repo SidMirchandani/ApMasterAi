@@ -570,20 +570,32 @@ export default function Dashboard() {
                             {Array.from({ length: subject.units }).map((_, index) => {
                               const unitId = `unit${index + 1}`;
                               const unitData = (subject as any).unitProgress?.[unitId];
-                              const status = unitData?.status || "not-started";
+                              const score = unitData?.highestScore || 0;
+                              const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;
 
                               let bgColor = "bg-gray-200"; // not-started
-                              if (status === "mastered") bgColor = "bg-green-600";
-                              else if (status === "proficient") bgColor = "bg-yellow-400";
-                              else if (status === "attempted") bgColor = "bg-orange-400";
+                              let status = "Not Started";
+                              
+                              if (hasAttempted) {
+                                if (score >= 80) {
+                                  bgColor = "bg-green-600";
+                                  status = "Mastered";
+                                } else if (score >= 60) {
+                                  bgColor = "bg-green-400";
+                                  status = "Proficient";
+                                } else {
+                                  bgColor = "bg-orange-400";
+                                  status = "In Progress";
+                                }
+                              }
 
                               return (
                                 <div
                                   key={unitId}
                                   className={`w-6 h-6 rounded ${bgColor} border border-black transition-all flex items-center justify-center text-xs`}
-                                  title={`Unit ${index + 1}: ${status.replace('-', ' ')}`}
+                                  title={`Unit ${index + 1}: ${status}`}
                                 >
-                                  {status === "mastered" && "👑"}
+                                  {status === "Mastered" && "👑"}
                                 </div>
                               );
                             })}
@@ -597,12 +609,12 @@ export default function Dashboard() {
                                   <span>Mastered (80%+)</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="w-4 h-4 rounded bg-yellow-400"></div>
+                                  <div className="w-4 h-4 rounded bg-green-400"></div>
                                   <span>Proficient (60%+)</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="w-4 h-4 rounded bg-orange-400"></div>
-                                  <span>Attempted (&lt;60%)</span>
+                                  <span>In Progress (&lt;60%)</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="w-4 h-4 rounded bg-gray-200"></div>

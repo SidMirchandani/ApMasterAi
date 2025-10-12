@@ -377,11 +377,11 @@ export default function Study() {
     }
   }, [subjectId, router]);
 
-  const getProgressLevel = (score: number): string => {
+  const getProgressLevel = (score: number, hasAttempted: boolean): string => {
+    if (!hasAttempted) return "Not Started";
     if (score >= 80) return "Mastered";
     if (score >= 60) return "Proficient";
-    if (score >= 0) return "In Progress"; // Covers scores below 60 and greater than or equal to 0
-    return "Not Started";
+    return "In Progress";
   };
 
   const getProgressBadgeColor = (level: string): string => {
@@ -390,7 +390,7 @@ export default function Study() {
         return "bg-green-600 text-white";
       case "Proficient":
         return "bg-green-400 text-white";
-      case "Attempted":
+      case "In Progress":
         return "bg-orange-400 text-white";
       default:
         return "bg-gray-200 text-gray-700";
@@ -468,7 +468,8 @@ export default function Study() {
   const topicsMastered = units.filter((unit) => {
     const unitData = currentSubject.unitProgress?.[unit.id];
     const score = unitData?.highestScore || 0;
-    return getProgressLevel(score) === "Mastered";
+    const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;
+    return getProgressLevel(score, hasAttempted) === "Mastered";
   }).length;
   const totalTopics = units.length;
 
@@ -568,11 +569,12 @@ export default function Study() {
                         {(() => {
                           const unitData = currentSubject.unitProgress?.[unit.id];
                           const score = unitData?.highestScore || 0;
-                          const level = getProgressLevel(score);
+                          const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;
+                          const level = getProgressLevel(score, hasAttempted);
                           const badgeColor = getProgressBadgeColor(level);
 
                           // Add highest score to badge text if available
-                          const scoreDisplay = score > 0 ? `: Highest Score: ${Math.round(score)}/100` : '';
+                          const scoreDisplay = hasAttempted ? `: Highest Score: ${Math.round(score)}/100` : '';
 
                           return (
                             <div className="relative group">
