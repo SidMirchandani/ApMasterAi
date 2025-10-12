@@ -566,10 +566,16 @@ export default function Study() {
                       {index + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-0.5">
-                        <h3 className="text-base md:text-lg font-bold text-gray-900">
-                          {unit.title}
-                        </h3>
+                      <h3 className="text-base md:text-lg font-bold text-gray-900 mb-0.5">
+                        {unit.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {unit.description}
+                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="text-xs">
+                          Exam Weight: {unit.examWeight}
+                        </Badge>
                         {(() => {
                           const unitData = currentSubject.unitProgress?.[unit.id];
                           const score = unitData?.highestScore || 0;
@@ -580,7 +586,7 @@ export default function Study() {
                           const scoreDisplay = score > 0 ? `: Highest Score: ${Math.round(score)}/100` : '';
 
                           return (
-                            <div className="relative group md:hidden">
+                            <div className="relative group">
                               <Badge
                                 className={`text-xs ${badgeColor} border border-black cursor-help`}
                               >
@@ -589,7 +595,7 @@ export default function Study() {
                               </Badge>
 
                               {/* Legend on hover */}
-                              <div className="absolute top-full left-0 mt-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
+                              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
                                 <div className="text-xs font-semibold mb-2">Unit Progress Legend</div>
                                 <div className="space-y-1 text-xs">
                                   <div className="flex items-center gap-2">
@@ -614,59 +620,11 @@ export default function Study() {
                           );
                         })()}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {unit.description}
-                      </p>
-                      <Badge variant="outline" className="text-xs">
-                        Exam Weight: {unit.examWeight}
-                      </Badge>
                     </div>
                   </div>
 
                   {/* Right side: Buttons stacked vertically on desktop */}
                   <div className="flex flex-col gap-3 md:min-w-[340px] md:items-end">
-                    {(() => {
-                      const unitData = currentSubject.unitProgress?.[unit.id];
-                      const score = unitData?.highestScore || 0;
-                      const level = getProgressLevel(score);
-                      const badgeColor = getProgressBadgeColor(level);
-
-                      const scoreDisplay = score > 0 ? `: Highest Score: ${Math.round(score)}/100` : '';
-
-                      return (
-                        <div className="relative group hidden md:block mb-1">
-                          <Badge
-                            className={`text-xs ${badgeColor} border border-black cursor-help`}
-                          >
-                            {level === "Mastered" && "👑 "}
-                            {level} {scoreDisplay}
-                          </Badge>
-
-                          {/* Legend on hover */}
-                          <div className="absolute top-full right-0 mt-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
-                            <div className="text-xs font-semibold mb-2">Unit Progress Legend</div>
-                            <div className="space-y-1 text-xs">
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded bg-green-600"></div>
-                                <span>Mastered (80%+)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded bg-green-400"></div>
-                                <span>Proficient (60%+)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded bg-orange-400"></div>
-                                <span>Attempted (&lt;60%)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded bg-gray-200"></div>
-                                <span>Not Started</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
                     <Button
                       onClick={() =>
                         router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)
