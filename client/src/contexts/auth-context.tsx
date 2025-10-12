@@ -12,6 +12,7 @@ interface AuthContextType {
   isFirebaseEnabled: boolean;
   error: string | null;
   refreshAuth: () => Promise<void>;
+  saveUserProfile: (user: User) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,6 +37,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Failed to refresh auth token:', error);
       setError('Authentication refresh failed');
+    }
+  };
+
+  const saveUserProfile = async (firebaseUser: User) => {
+    try {
+      const token = await firebaseUser.getIdToken();
+      const response = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          displayName: firebaseUser.displayName,
+          email: firebaseUser.email,
+          photoURL: firebaseUser.photoURL,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save user profile');
+      }
+
+      console.log('User profile saved successfully');
+    } catch (error) {
+      console.error('Error saving user profile:', error);
     }
   };
 
@@ -73,7 +100,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Set up enhanced auth state listener with cross-domain support
         const unsubscribe = AuthDomainHandler.monitorAuthStateForDomain(
-          (firebaseUser: User | null) => {
+          async (firebaseUser: User | null) => {
             if (!mounted) return;
 
             try {
@@ -86,6 +113,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 authenticated: !!firebaseUser,
                 domain: window.location.hostname
               });
+
+              // Save user profile when they log in
+              if (firebaseUser && firebaseUser.displayName) {
+                await saveUserProfile(firebaseUser);
+              }
             } catch (error) {
               console.error('Error processing auth state change:', error);
               setError('Authentication processing error');
@@ -179,7 +211,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user && isFirebaseEnabled,
     isFirebaseEnabled,
     error,
-    refreshAuth
+    refreshAuth,
+    saveUserProfile
   };
 
   return (

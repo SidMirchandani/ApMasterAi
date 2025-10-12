@@ -1,7 +1,7 @@
 import { BookOpen } from "lucide-react";
 import { Clock } from "lucide-react";
 import { ArrowRight } from "lucide-react";
-import { Target } from "lucide-react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,34 +19,9 @@ import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/ui/navigation";
 import { apSubjects, difficultyColors } from "@/lib/ap-subjects";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { formatDate, formatDateTime, safeDateParse } from "@/lib/utils";
-
-
-const masteryLevels = [
-  {
-    level: 3,
-    title: "Pass (3)",
-    description: "I want to pass the AP exam and earn college credit",
-    color: "bg-yellow-100 text-yellow-800 border-yellow-200"
-  },
-  {
-    level: 4,
-    title: "Well Qualified (4)", 
-    description: "I want to demonstrate strong understanding and skills",
-    color: "bg-blue-100 text-blue-800 border-blue-200"
-  },
-  {
-    level: 5,
-    title: "Extremely Well Qualified (5)",
-    description: "I want to achieve the highest possible score",
-    color: "bg-green-100 text-green-800 border-green-200"
-  }
-];
+import { formatDate, safeDateParse } from "@/lib/utils";
 
 // Interface for a course, including optional isAdded status
 interface Course {
@@ -66,13 +41,29 @@ export default function Courses() {
   const router = useRouter(); // Changed from useLocation()
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showMasteryModal, setShowMasteryModal] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState<typeof apSubjects[0] | null>(null);
-  const [selectedMastery, setSelectedMastery] = useState<string>("4");
+
+  // Fetch user's subjects to check which are already added
+  const { data: subjectsResponse } = useQuery<{success: boolean, data: any[]}>({
+    queryKey: ["subjects"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/subjects");
+      if (!response.ok) {
+        throw new Error("Failed to fetch subjects");
+      }
+      return response.json();
+    },
+    enabled: isAuthenticated,
+    refetchOnMount: false, // Trust the cache - optimistic updates will sync both pages
+    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes
+  });
+
+  const addedSubjectIds = new Set(
+    (subjectsResponse?.data || []).map((subject: any) => subject.subjectId)
+  );
 
   // Add subject to dashboard mutation
   const addSubjectMutation = useMutation({
-    mutationFn: async ({ subject, masteryLevel }: { subject: typeof apSubjects[0]; masteryLevel: string }) => {
+    mutationFn: async (subject: typeof apSubjects[0]) => {
       const response = await apiRequest("POST", "/api/user/subjects", {
         subjectId: subject.id,
         name: subject.name,
@@ -81,18 +72,34 @@ export default function Courses() {
         difficulty: subject.difficulty,
         examDate: subject.examDate,
         progress: 0,
-        masteryLevel: parseInt(masteryLevel),
+        masteryLevel: 4, // Default mastery level
       });
       return response.json();
     },
-    onSuccess: (data, { subject }) => {
+    onSuccess: (data, subject) => {
+      // Optimistically update the cache immediately
+      queryClient.setQueryData(["subjects"], (oldData: any) => {
+        if (!oldData?.data) return oldData;
+        return {
+          ...oldData,
+          data: [...oldData.data, {
+            subjectId: subject.id,
+            name: subject.name,
+            description: subject.description,
+            units: subject.units,
+            difficulty: subject.difficulty,
+            examDate: subject.examDate,
+            progress: 0,
+            masteryLevel: 4
+          }]
+        };
+      });
+      
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
       toast({
         title: "Subject added!",
         description: `${subject.name} has been added to your dashboard.`,
       });
-      setShowMasteryModal(false);
-      router.push('/dashboard');
     },
   });
 
@@ -135,36 +142,29 @@ export default function Courses() {
       return;
     }
 
-    setSelectedSubject(subject);
-    setShowMasteryModal(true);
-  };
-
-  const handleConfirmAddSubject = () => {
-    if (!selectedSubject) return;
-
     // Map difficulty to accepted values
-    let adjustedDifficulty: string = selectedSubject.difficulty;
-    if (selectedSubject.difficulty === "Very Hard") {
+    let adjustedDifficulty: string = subject.difficulty;
+    if (subject.difficulty === "Very Hard") {
       adjustedDifficulty = "Hard";
     }
 
     // Adjust units if it exceeds the limit
-    let adjustedUnits = selectedSubject.units;
-    if (selectedSubject.units > 8) {
+    let adjustedUnits = subject.units;
+    if (subject.units > 8) {
       adjustedUnits = 8;
     }
 
     // Format examDate to YYYY-MM-DD with safe date handling
     let formattedExamDate: string;
     try {
-      const parsedDate = safeDateParse(selectedSubject.examDate);
+      const parsedDate = safeDateParse(subject.examDate);
       if (parsedDate) {
         formattedExamDate = parsedDate.toISOString().split('T')[0];
       } else {
-        console.error("Invalid date format for examDate:", selectedSubject.examDate);
+        console.error("Invalid date format for examDate:", subject.examDate);
         toast({
           title: "Invalid Date",
-          description: `The exam date for ${selectedSubject.name} is invalid.`,
+          description: `The exam date for ${subject.name} is invalid.`,
           variant: "destructive",
         });
         return;
@@ -173,21 +173,17 @@ export default function Courses() {
       console.error("Error parsing date:", e);
       toast({
         title: "Date Parsing Error",
-        description: `Could not parse the exam date for ${selectedSubject.name}.`,
+        description: `Could not parse the exam date for ${subject.name}.`,
         variant: "destructive",
       });
       return;
     }
 
-
-    addSubjectMutation.mutate({ 
-      subject: {
-        ...selectedSubject,
-        difficulty: adjustedDifficulty,
-        units: adjustedUnits,
-        examDate: formattedExamDate
-      }, 
-      masteryLevel: selectedMastery 
+    addSubjectMutation.mutate({
+      ...subject,
+      difficulty: adjustedDifficulty,
+      units: adjustedUnits,
+      examDate: formattedExamDate
     });
   };
 
@@ -229,122 +225,72 @@ export default function Courses() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {apSubjects.map((subject) => (
-              <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 hover:border-khan-green/30">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <CardTitle className="text-lg font-bold text-khan-gray-dark">
-                      {subject.name}
-                    </CardTitle>
-                    <Badge
-                      variant="outline"
-                      className={difficultyColors[subject.difficulty as keyof typeof difficultyColors]}
-                    >
-                      {subject.difficulty}
-                    </Badge>
-                  </div>
-                  <CardDescription className="text-khan-gray-medium leading-relaxed text-sm">
-                    {subject.description}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm text-khan-gray-medium mb-6">
-                    <div className="flex items-center space-x-1">
-                      <BookOpen className="w-4 h-4" />
-                      <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
+            {[...apSubjects].sort((a, b) => a.name.localeCompare(b.name)).map((subject) => {
+              const isActive = ['computer-science-principles', 'macroeconomics', 'microeconomics'].includes(subject.id);
+              const isAdded = addedSubjectIds.has(subject.id);
+              const isAdding = addSubjectMutation.isPending && addSubjectMutation.variables?.id === subject.id;
+              const shouldShowAsAdded = isAdded || isAdding;
+              
+              return (
+                <Card key={subject.id} className={`bg-white transition-all border-2 ${isActive ? 'hover:shadow-md border-gray-100 hover:border-khan-green/30' : 'border-gray-200 opacity-75'}`}>
+                  <CardHeader className="pb-4">
+                    <div className="mb-2">
+                      <CardTitle className="text-lg font-bold text-khan-gray-dark">
+                        {subject.name}
+                      </CardTitle>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-khan-gray-dark font-medium">{formatDate(subject.examDate)}</span>
-                    </div>
-                  </div>
+                    <CardDescription className="text-khan-gray-medium leading-relaxed text-sm">
+                      {subject.description}
+                    </CardDescription>
+                  </CardHeader>
 
-                  <div className="flex flex-col space-y-3">
-                    <Button 
-                      onClick={() => handleAddToDashboard(subject)}
-                      className="w-full bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold"
-                    >
-                      Add to Dashboard
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <CardContent>
+                    <div className="flex items-center justify-between text-sm text-khan-gray-medium mb-6">
+                      <div className="flex items-center space-x-1">
+                        <BookOpen className="w-4 h-4" />
+                        <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-4 h-4" />
+                        <span className="text-khan-gray-dark font-medium">{formatDate(subject.examDate)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col space-y-3">
+                      {!isActive ? (
+                        <Button 
+                          disabled
+                          className="w-full bg-gray-400 text-white cursor-not-allowed font-semibold"
+                        >
+                          Coming Soon
+                        </Button>
+                      ) : shouldShowAsAdded ? (
+                        <Button 
+                          disabled
+                          className="w-full bg-green-100 text-green-700 cursor-not-allowed font-semibold border-2 border-green-200"
+                        >
+                          <Check className="mr-2 w-4 h-4" />
+                          {isAdding ? 'Adding...' : 'Added to Dashboard'}
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={() => handleAddToDashboard(subject)}
+                          className="w-full bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold"
+                        >
+                          Add to Dashboard
+                          <ArrowRight className="ml-2 w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
 
         </div>
       </div>
-
-      {/* Mastery Level Selection Modal */}
-      <Dialog open={showMasteryModal} onOpenChange={setShowMasteryModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <Target className="w-6 h-6 text-khan-green" />
-              <span>What's your AP goal?</span>
-            </DialogTitle>
-            <DialogDescription>
-              Choose the score you're aiming for in {selectedSubject?.name}. This helps us customize your study plan.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <RadioGroup 
-              value={selectedMastery} 
-              onValueChange={setSelectedMastery}
-              className="space-y-3"
-            >
-              {masteryLevels.map((level) => (
-                <div key={level.level} className="flex items-start space-x-3">
-                  <RadioGroupItem 
-                    value={level.level.toString()} 
-                    id={level.level.toString()}
-                    className="mt-1"
-                    data-testid={`mastery-level-${level.level}`}
-                  />
-                  <Label 
-                    htmlFor={level.level.toString()} 
-                    className="flex-1 cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Badge className={level.color}>
-                        Score {level.level}
-                      </Badge>
-                      <span className="font-semibold text-khan-gray-dark">
-                        {level.title}
-                      </span>
-                    </div>
-                    <p className="text-sm text-khan-gray-medium leading-relaxed">
-                      {level.description}
-                    </p>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowMasteryModal(false)}
-                data-testid="button-cancel"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleConfirmAddSubject}
-                disabled={addSubjectMutation.isPending}
-                className="bg-khan-green text-white hover:bg-khan-green-light"
-                data-testid="button-add-subject"
-              >
-                {addSubjectMutation.isPending ? "Adding..." : "Add Subject"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

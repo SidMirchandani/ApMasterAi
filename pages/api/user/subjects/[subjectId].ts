@@ -1,5 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../../server/storage";
+import admin from "firebase-admin"; // Assuming admin is used elsewhere for Firebase
+
+// Helper function to get Firestore instance, assuming it's initialized
+function getDb() {
+  if (admin.apps.length === 0) {
+    // Initialize Firebase Admin if not already initialized
+    // Replace with your service account key path or other initialization method
+    // admin.initializeApp({
+    //   credential: admin.credential.cert(require("../../../../path/to/serviceAccountKey.json")),
+    // });
+    console.warn("Firebase Admin SDK not initialized. Assuming it's initialized elsewhere.");
+  }
+  return admin.firestore();
+}
+
 
 async function getOrCreateUser(firebaseUid: string): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
@@ -49,6 +64,69 @@ export default async function handler(
       });
     }
 
+    if (req.method === "PUT") {
+      // Handle archive/unarchive
+      try {
+        const { archived } = req.body;
+
+        console.log("[Archive] Request details:", {
+          subjectId,
+          archived,
+          userId
+        });
+
+        if (typeof archived !== 'boolean') {
+          return res.status(400).json({
+            success: false,
+            message: "archived field must be a boolean"
+          });
+        }
+
+        const db = getDb();
+        const userSubjectsRef = db.collection('user_subjects');
+
+        // Get the document directly by its Firestore document ID
+        const docRef = userSubjectsRef.doc(subjectId as string);
+        const doc = await docRef.get();
+
+        if (!doc.exists) {
+          console.log("[Archive] Document not found:", subjectId);
+          return res.status(404).json({
+            success: false,
+            message: "Subject not found."
+          });
+        }
+
+        // Verify it belongs to the user
+        const data = doc.data();
+        if (data?.userId !== userId) {
+          console.log("[Archive] Document does not belong to user:", {
+            docUserId: data?.userId,
+            requestUserId: userId
+          });
+          return res.status(404).json({
+            success: false,
+            message: "Subject not found or does not belong to the user."
+          });
+        }
+
+        await docRef.update({ archived });
+
+        console.log("[Archive] Successfully updated document:", docRef.id);
+
+        return res.status(200).json({
+          success: true,
+          message: archived ? "Subject archived" : "Subject restored"
+        });
+      } catch (error) {
+        console.error("[Archive] Error:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to archive subject"
+        });
+      }
+    }
+
     switch (req.method) {
       case "DELETE": {
         try {
@@ -61,16 +139,48 @@ export default async function handler(
           });
         } catch (error) {
           console.error("[subjectId API][DELETE] Error:", error);
+          // Custom message for deletion failure, potentially including subject name if available
+          const errorMessage = `Failed to remove subject${subjectId ? ` "${subjectId}"` : ""}`;
           return res.status(500).json({
             success: false,
-            message: "Failed to remove subject",
+            message: errorMessage,
             error: error.message
           });
         }
       }
 
+      case "PUT": {
+        try {
+          // Verify subject ownership before proceeding with updates
+          const subject = await storage.getUserSubject(userId, subjectId);
+          if (!subject) {
+            return res.status(404).json({
+              success: false,
+              message: "Subject not found or does not belong to the user.",
+            });
+          }
+
+          const updates = req.body;
+          // Ensure that we are not overwriting essential fields with empty values if not provided
+          const sanitizedUpdates = Object.fromEntries(
+            Object.entries(updates).filter(([_, value]) => value !== undefined && value !== null)
+          );
+
+          await storage.updateUserSubject(userId, subjectId, sanitizedUpdates);
+          console.log(`[subjectId API][PUT] Successfully updated subject ${subjectId} for user ${userId}`);
+          return res.status(200).json({ success: true, message: "Subject updated successfully" });
+        } catch (error) {
+          console.error(`[subjectId API][PUT] Error updating subject ${subjectId} for user ${userId}:`, error);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to update subject",
+            error: error.message,
+          });
+        }
+      }
+
       default:
-        res.setHeader("Allow", ["DELETE"]);
+        res.setHeader("Allow", ["DELETE", "PUT", "PATCH"]);
         return res.status(405).json({
           success: false,
           message: `Method ${req.method} not allowed`,

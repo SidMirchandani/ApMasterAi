@@ -338,7 +338,7 @@ export default function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Search className="w-5 h-5" />
+              <Search className="w-5 w-5" />
               Filter Questions
             </CardTitle>
             <CardDescription>Search by subject and section code</CardDescription>
