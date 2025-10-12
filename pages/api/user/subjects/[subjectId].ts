@@ -69,6 +69,13 @@ export default async function handler(
       try {
         const { archived } = req.body;
 
+        console.log("[Archive] Request details:", {
+          subjectId,
+          archived,
+          userId,
+          parsedSubjectId: parseInt(subjectId as string)
+        });
+
         if (typeof archived !== 'boolean') {
           return res.status(400).json({
             success: false,
@@ -79,11 +86,32 @@ export default async function handler(
         const db = getDb();
         const userSubjectsRef = db.collection('user_subjects');
 
+        // First, let's see all subjects for this user
+        const allUserSubjects = await userSubjectsRef
+          .where('userId', '==', userId)
+          .get();
+        
+        console.log("[Archive] All user subjects:", allUserSubjects.docs.map(doc => ({
+          docId: doc.id,
+          id: doc.data().id,
+          name: doc.data().name,
+          subjectId: doc.data().subjectId
+        })));
+
         // Query to find the subject document by numeric ID and userId
         const snapshot = await userSubjectsRef
           .where('id', '==', parseInt(subjectId as string))
           .where('userId', '==', userId)
           .get();
+
+        console.log("[Archive] Query result:", {
+          empty: snapshot.empty,
+          size: snapshot.size,
+          foundDocs: snapshot.docs.map(doc => ({
+            docId: doc.id,
+            data: doc.data()
+          }))
+        });
 
         if (snapshot.empty) {
           return res.status(404).json({
@@ -95,12 +123,14 @@ export default async function handler(
         const docRef = snapshot.docs[0].ref;
         await docRef.update({ archived });
 
+        console.log("[Archive] Successfully updated document:", docRef.id);
+
         return res.status(200).json({
           success: true,
           message: archived ? "Subject archived" : "Subject restored"
         });
       } catch (error) {
-        console.error("Error archiving subject:", error);
+        console.error("[Archive] Error:", error);
         return res.status(500).json({
           success: false,
           message: "Failed to archive subject"

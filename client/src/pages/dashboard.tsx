@@ -117,9 +117,12 @@ export default function Dashboard() {
   // Archive subject mutation
   const archiveSubjectMutation = useMutation({
     mutationFn: async ({ subjectDocId, archive }: { subjectDocId: string; archive: boolean }) => {
+      console.log("[Dashboard Archive] Attempting to archive:", { subjectDocId, archive });
       const response = await apiRequest("PUT", `/api/user/subjects/${subjectDocId}`, { archived: archive });
+      console.log("[Dashboard Archive] Response status:", response.status);
       if (!response.ok) {
         const errorData = await response.json();
+        console.log("[Dashboard Archive] Error data:", errorData);
         throw new Error(errorData.message || "Failed to archive subject");
       }
       return response.json();
@@ -233,6 +236,12 @@ export default function Dashboard() {
   };
 
   const handleArchiveSubject = (subject: DashboardSubject) => {
+    console.log("[Dashboard] Archive button clicked for subject:", {
+      id: subject.id,
+      name: subject.name,
+      subjectId: subject.subjectId,
+      currentArchived: (subject as any).archived
+    });
     archiveSubjectMutation.mutate({
       subjectDocId: subject.id.toString(),
       archive: !(subject as any).archived
