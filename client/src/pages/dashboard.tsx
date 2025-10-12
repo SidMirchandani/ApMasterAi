@@ -271,7 +271,7 @@ export default function Dashboard() {
         if (!old?.data) return old;
 
         const filtered = old.data.filter((subject: DashboardSubject) => {
-          const subjectIdToCompare = (subject.id || subject.subjectId)?.toString();
+          const subjectIdToCompare = subject.id?.toString();
           const match = subjectIdToCompare === subjectDocId;
           if (match) {
             console.log("[DELETE MUTATION] Removing subject:", subject.name);
@@ -341,8 +341,8 @@ export default function Dashboard() {
 
   const handleFinalConfirm = () => {
     if (deleteState.subject) {
-      // Use the Firestore document ID
-      const docId = (deleteState.subject.id || deleteState.subject.subjectId)?.toString();
+      // The id field from the API response IS the Firestore document ID
+      const docId = deleteState.subject.id?.toString();
       console.log("[DELETE] Attempting to delete subject with ID:", docId);
       console.log("[DELETE] Full subject object:", deleteState.subject);
       
