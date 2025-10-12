@@ -380,7 +380,7 @@ export default function Study() {
   const getProgressLevel = (score: number): string => {
     if (score >= 80) return "Mastered";
     if (score >= 60) return "Proficient";
-    if (score >= 0) return "Attempted"; // Covers scores below 60 and greater than or equal to 0
+    if (score >= 0) return "In Progress"; // Covers scores below 60 and greater than or equal to 0
     return "Not Started";
   };
 
@@ -550,8 +550,9 @@ export default function Study() {
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   {/* Left side: Content */}
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-khan-green to-khan-green-light text-white flex items-center justify-center font-bold flex-shrink-0 text-sm shadow-md">
-                      {index + 1}
+                    <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white flex items-center justify-center font-bold flex-shrink-0 text-sm shadow-lg">
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 to-transparent opacity-60"></div>
+                      <span className="relative z-10">{index + 1}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-base md:text-lg font-bold text-gray-900 mb-1">
@@ -596,7 +597,7 @@ export default function Study() {
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded bg-orange-400 shadow-sm"></div>
-                                    <span className="text-gray-700">Attempted (&lt;60%)</span>
+                                    <span className="text-gray-700">In Progress (&lt;60%)</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded bg-gray-200 shadow-sm"></div>
