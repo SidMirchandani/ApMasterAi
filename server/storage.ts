@@ -51,18 +51,41 @@ const isDevelopmentMode = () => {
 };
 
 export class Storage {
+  private db: admin.firestore.Firestore | null = null;
+
+  private async ensureConnection() {
+    if (this.db) {
+      return;
+    }
+    if (isDevelopmentMode()) {
+      this.db = null; // Explicitly null for dev mode
+      return;
+    }
+    try {
+      this.db = getDb();
+      if (!this.db) {
+        throw new Error("Firestore instance is null or undefined.");
+      }
+    } catch (error) {
+      console.error("Failed to get database instance:", error);
+      throw new Error("Could not establish database connection.");
+    }
+  }
+
   private getDbInstance() {
     if (isDevelopmentMode()) {
       return null;
     }
-    try {
-      // Ensure getDb is properly imported or defined and returns a Firestore instance
-      // If getDb() relies on admin.initializeApp(), that should be handled elsewhere.
-      return getDb();
-    } catch (error) {
-      console.warn("Failed to get database instance:", error);
-      return null;
+    // Ensure connection is established before returning
+    if (!this.db) {
+      console.warn("Database instance not initialized. Attempting to initialize.");
+      // This part might need adjustment depending on how getDb() is managed globally
+      // For now, we'll assume ensureConnection() handles it.
+      // If getDb() itself throws, ensureConnection will catch it.
+      getDb(); // Trigger potential initialization if not already done
+      return getDb(); // Return the instance after attempting to get it
     }
+    return this.db;
   }
 
   async addToWaitlist(email: string): Promise<WaitlistEntry> {
@@ -83,6 +106,7 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
@@ -118,6 +142,7 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
       const snapshot = await db.collection('waitlist_emails').get();
@@ -140,6 +165,7 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
@@ -172,6 +198,7 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
@@ -203,6 +230,7 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
@@ -233,6 +261,7 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
@@ -265,6 +294,7 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
@@ -299,6 +329,7 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
@@ -316,6 +347,7 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
@@ -340,6 +372,7 @@ export class Storage {
     }
 
     return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
@@ -358,7 +391,10 @@ export class Storage {
     subjectId: string,
     masteryLevel: number
   ): Promise<any> {
-    const db = getDb(); // Assuming getDb() is available and returns a Firestore instance
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
     const subjectsRef = db.collection("user_subjects");
 
     const snapshot = await subjectsRef
@@ -384,11 +420,14 @@ export class Storage {
     userId: string,
     subjectId: string,
     unitId: string,
-    mcqScore: number
+    mcqScore: number,
   ): Promise<any> {
     console.log("📝 [updateUnitProgress] Starting with:", { userId, subjectId, unitId, mcqScore });
 
-    const db = getDb();
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
     const subjectsRef = db.collection("user_subjects");
 
     const snapshot = await subjectsRef
@@ -396,9 +435,9 @@ export class Storage {
       .where("subjectId", "==", subjectId)
       .get();
 
-    console.log("📊 [updateUnitProgress] Query result:", { 
-      empty: snapshot.empty, 
-      size: snapshot.size 
+    console.log("📊 [updateUnitProgress] Query result:", {
+      empty: snapshot.empty,
+      size: snapshot.size
     });
 
     if (snapshot.empty) {
@@ -410,8 +449,8 @@ export class Storage {
     const unitProgress = data.unitProgress || {};
     const currentUnit = unitProgress[unitId] || { scores: [], highestScore: 0 };
 
-    console.log("📖 [updateUnitProgress] Current unit data:", { 
-      unitId, 
+    console.log("📖 [updateUnitProgress] Current unit data:", {
+      unitId,
       currentScores: currentUnit.scores?.length || 0,
       currentHighestScore: currentUnit.highestScore || 0
     });
@@ -431,9 +470,9 @@ export class Storage {
     // Determine status based on highest score using the updated calculateUnitStatus logic
     const status = calculateUnitStatus(highestScore);
 
-    console.log("🎯 [updateUnitProgress] Calculated status:", { 
-      mcqScore, 
-      highestScore, 
+    console.log("🎯 [updateUnitProgress] Calculated status:", {
+      mcqScore,
+      highestScore,
       status: status,
       totalScores: scores.length
     });
@@ -446,7 +485,7 @@ export class Storage {
       lastPracticed: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    console.log("💾 [updateUnitProgress] Updating Firestore with:", { 
+    console.log("💾 [updateUnitProgress] Updating Firestore with:", {
       unitId,
       status: status,
       mcqScore: highestScore,
@@ -468,7 +507,10 @@ export class Storage {
     userId: string,
     subjectId: string
   ): Promise<any> {
-    const db = getDb(); // Assuming getDb() is available and returns a Firestore instance
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
     const subjectsRef = db.collection("user_subjects");
 
     const snapshot = await subjectsRef
@@ -486,6 +528,151 @@ export class Storage {
     // Ensure unitProgress exists and is an object, otherwise return empty object
     return data.unitProgress && typeof data.unitProgress === 'object' ? data.unitProgress : {};
   }
+
+
+  async saveFullLengthTest(
+    userId: string,
+    subjectId: string,
+    score: number,
+    percentage: number,
+    totalQuestions: number,
+    questions: any[],
+    userAnswers: { [key: number]: string }
+  ): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const userRef = db.collection("users").doc(userId);
+    const subjectRef = userRef.collection("subjects").doc(subjectId);
+
+    const testId = `test_${Date.now()}`;
+    const timestamp = new Date();
+
+    // Calculate section breakdown
+    const sectionBreakdown: { [key: string]: { name: string; correct: number; total: number; percentage: number } } = {};
+    const sectionNames: Record<string, string> = {
+      "BEC": "Basic Economic Concepts",
+      "EIBC": "Economic Indicators & Business Cycle",
+      "NIPD": "National Income & Price Determination",
+      "FS": "Financial Sector",
+      "LRCSP": "Long-Run Consequences of Stabilization Policies",
+      "OEITF": "Open Economy - International Trade & Finance",
+    };
+
+    questions.forEach((q, idx) => {
+      const sectionCode = q.section_code || "Unknown";
+      const sectionName = sectionNames[sectionCode] || sectionCode;
+
+      if (!sectionBreakdown[sectionCode]) {
+        sectionBreakdown[sectionCode] = {
+          name: sectionName,
+          correct: 0,
+          total: 0,
+          percentage: 0
+        };
+      }
+
+      sectionBreakdown[sectionCode].total++;
+
+      const userAnswer = userAnswers[idx];
+      const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
+      if (userAnswer === correctAnswerLabel) {
+        sectionBreakdown[sectionCode].correct++;
+      }
+    });
+
+    // Calculate percentages
+    Object.values(sectionBreakdown).forEach(section => {
+      section.percentage = Math.round((section.correct / section.total) * 100);
+    });
+
+    const testData = {
+      id: testId,
+      date: timestamp,
+      score,
+      percentage,
+      totalQuestions,
+      questions,
+      userAnswers,
+      sectionBreakdown
+    };
+
+    // Update the full-length unit progress with history
+    await subjectRef.set({
+      unitProgress: {
+        "full-length": {
+          mcqScore: percentage,
+          lastUpdated: timestamp,
+          history: admin.firestore.FieldValue.arrayUnion({
+            id: testId,
+            date: timestamp,
+            score,
+            percentage,
+            totalQuestions
+          })
+        }
+      }
+    }, { merge: true });
+
+    // Save complete test data in a separate collection
+    await subjectRef.collection("fullLengthTests").doc(testId).set(testData);
+
+    return testData;
+  }
+
+  async getFullLengthTestResult(userId: string, subjectId: string, testId: string): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const testDoc = await db
+      .collection("users")
+      .doc(userId)
+      .collection("subjects")
+      .doc(subjectId)
+      .collection("fullLengthTests")
+      .doc(testId)
+      .get();
+
+    if (!testDoc.exists) {
+      return null;
+    }
+
+    return testDoc.data();
+  }
+
+  async getSectionReviewData(userId: string, subjectId: string, testId: string, sectionCode: string): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const testData = await this.getFullLengthTestResult(userId, subjectId, testId);
+
+    if (!testData) {
+      return null;
+    }
+
+    // Filter questions by section
+    const sectionQuestions = testData.questions.filter((q: any) => q.section_code === sectionCode);
+
+    // Filter user answers to match section question indices
+    const sectionUserAnswers: { [key: number]: string } = {};
+    let sectionQuestionIndex = 0;
+
+    testData.questions.forEach((q: any, idx: number) => {
+      if (q.section_code === sectionCode) {
+        sectionUserAnswers[sectionQuestionIndex] = testData.userAnswers[idx];
+        sectionQuestionIndex++;
+      }
+    });
+
+    return {
+      questions: sectionQuestions,
+      userAnswers: sectionUserAnswers
+    };
+  }
+
 }
 
 export const storage = new Storage();

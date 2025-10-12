@@ -35,11 +35,11 @@ export default function FullLengthHistory() {
       if (!subjectId || !isAuthenticated) return;
 
       try {
-        const response = await apiRequest("GET", `/api/user/subjects/${subjectId}`);
+        const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/unit-progress`);
         if (!response.ok) throw new Error("Failed to fetch test history");
         
         const data = await response.json();
-        const fullLengthData = data.data?.unitProgress?.["full-length"];
+        const fullLengthData = data.data?.["full-length"];
         
         if (fullLengthData?.history && Array.isArray(fullLengthData.history)) {
           setTestHistory(fullLengthData.history);
