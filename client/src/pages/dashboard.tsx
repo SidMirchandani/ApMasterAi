@@ -47,6 +47,7 @@ export default function Dashboard() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [showSecondConfirm, setShowSecondConfirm] = useState(false);
   const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
+  const [subjectToArchive, setSubjectToArchive] = useState<DashboardSubject | null>(null);
 
   // Fetch user profile
   const { data: userProfile } = useQuery<{
@@ -164,12 +165,31 @@ export default function Dashboard() {
       });
     },
     onSuccess: (data, variables, context) => {
-      toast({
-        title: context?.archive ? "Subject archived" : "Subject restored",
-        description: context?.archive 
-          ? "Your subject has been moved to the archive." 
-          : "Your subject has been restored.",
-      });
+      const { subjectDocId, archive } = variables;
+      
+      if (archive) {
+        // Show undo option for archive
+        const subject = subjects.find(s => s.id.toString() === subjectDocId);
+        toast({
+          title: "Subject archived",
+          description: "Your subject has been moved to the archive.",
+          action: {
+            label: "Undo",
+            onClick: () => {
+              archiveSubjectMutation.mutate({
+                subjectDocId,
+                archive: false
+              });
+            },
+          },
+        });
+      } else {
+        // Simple toast for restore
+        toast({
+          title: "Subject restored",
+          description: "Your subject has been restored.",
+        });
+      }
     }
   });
 
@@ -266,19 +286,30 @@ export default function Dashboard() {
   };
 
   const handleArchiveSubject = (subject: DashboardSubject) => {
-    // The 'id' field from the API response is the Firestore document ID
-    const firestoreDocId = typeof subject.id === 'string' ? subject.id : subject.id.toString();
+    const isCurrentlyArchived = (subject as any).archived;
     
-    console.log("[Dashboard] Archive button clicked for subject:", {
-      firestoreDocId,
-      name: subject.name,
-      subjectId: subject.subjectId,
-      currentArchived: (subject as any).archived
-    });
-    archiveSubjectMutation.mutate({
-      subjectDocId: firestoreDocId,
-      archive: !(subject as any).archived
-    });
+    // If restoring, do it immediately (common UX pattern)
+    if (isCurrentlyArchived) {
+      const firestoreDocId = typeof subject.id === 'string' ? subject.id : subject.id.toString();
+      archiveSubjectMutation.mutate({
+        subjectDocId: firestoreDocId,
+        archive: false
+      });
+    } else {
+      // If archiving, show confirmation dialog
+      setSubjectToArchive(subject);
+    }
+  };
+
+  const confirmArchiveSubject = () => {
+    if (subjectToArchive) {
+      const firestoreDocId = typeof subjectToArchive.id === 'string' ? subjectToArchive.id : subjectToArchive.id.toString();
+      archiveSubjectMutation.mutate({
+        subjectDocId: firestoreDocId,
+        archive: true
+      });
+      setSubjectToArchive(null);
+    }
   };
 
   const handleStartStudying = (subjectId: string) => {
@@ -404,14 +435,37 @@ export default function Dashboard() {
                             {subject.name}
                           </CardTitle>
                           <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleArchiveSubject(subject)}
-                              className="border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
-                            >
-                              Archive
-                            </Button>
+                            <AlertDialog open={subjectToArchive?.id === subject.id} onOpenChange={(open) => {
+                              if (!open) setSubjectToArchive(null);
+                            }}>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleArchiveSubject(subject)}
+                                  className="border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
+                                >
+                                  Archive
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Archive Subject?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    "{subject.name}" will be moved to the archive. You can restore it anytime from the archived subjects section.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={confirmArchiveSubject}
+                                    className="bg-khan-blue hover:bg-khan-blue/90"
+                                  >
+                                    Archive
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                             <AlertDialog open={subjectToRemove?.id === subject.id && !showSecondConfirm} onOpenChange={(open) => {
                               if (!open) {
                                 setSubjectToRemove(null);
