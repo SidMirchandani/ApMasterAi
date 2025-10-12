@@ -724,7 +724,7 @@ export default function Quiz() {
               <CardTitle className="text-sm font-semibold text-khan-gray-dark">Question Navigation</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 justify-center">
                 {questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage).map((q, idx) => {
                   const globalIndex = currentPage * questionsPerPage + idx;
                   const userAnswer = userAnswers[globalIndex];
@@ -970,9 +970,7 @@ export default function Quiz() {
                           element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }}
                         className={`relative w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
-                          isFlagged
-                            ? 'bg-red-100 border-2 border-red-500 text-red-700'
-                            : isAnswered
+                          isAnswered
                             ? 'bg-gray-200 border-2 border-gray-400 text-gray-700'
                             : 'bg-white border-2 border-gray-300 text-gray-500'
                         }`}
