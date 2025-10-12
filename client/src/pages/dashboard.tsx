@@ -43,9 +43,15 @@ export default function Dashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [showSecondConfirm, setShowSecondConfirm] = useState(false);
+  const [deleteState, setDeleteState] = useState<{
+    subject: DashboardSubject | null;
+    step: 'closed' | 'first' | 'second';
+    confirmText: string;
+  }>({
+    subject: null,
+    step: 'closed',
+    confirmText: ''
+  });
   const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
   const [subjectToArchive, setSubjectToArchive] = useState<DashboardSubject | null>(null);
 
@@ -114,14 +120,6 @@ export default function Dashboard() {
 
   // Track if we have initial data or are still loading for the first time
   const isInitialLoading = subjectsLoading && !subjectsResponse;
-
-  // Debug: Log state changes for delete flow
-  useEffect(() => {
-    console.log('🗑️ [DELETE] State changed - subjectToRemove:', subjectToRemove?.name || 'null');
-    console.log('🗑️ [DELETE] State changed - showSecondConfirm:', showSecondConfirm);
-    console.log('🗑️ [DELETE] First dialog should be open:', !!subjectToRemove && !showSecondConfirm);
-    console.log('🗑️ [DELETE] Second dialog should be open:', showSecondConfirm);
-  }, [subjectToRemove, showSecondConfirm]);
 
   // Archive subject mutation
   const archiveSubjectMutation = useMutation({
@@ -204,25 +202,16 @@ export default function Dashboard() {
   // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
     mutationFn: async (subjectDocId: string) => {
-      console.log('🌐 [CLIENT DELETE STEP 4] Mutation function called');
-      console.log('Subject ID:', subjectDocId);
-      
       const response = await apiRequest("DELETE", `/api/user/subjects/${subjectDocId}`);
-      console.log('API Response status:', response.status);
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('❌ API error:', errorData);
         throw new Error(errorData.message || "Failed to remove subject");
       }
       
-      const result = await response.json();
-      console.log('✅ API success:', result);
-      return result;
+      return response.json();
     },
     onMutate: async (subjectDocId) => {
-      console.log('🔄 DELETE FLOW: Step 5 - onMutate (optimistic update)');
-      
       await queryClient.cancelQueries({ queryKey: ["subjects"] });
       const previousSubjects = queryClient.getQueryData(["subjects"]);
 
@@ -234,19 +223,14 @@ export default function Dashboard() {
           return subjectIdStr !== subjectDocId;
         });
         
-        console.log('Optimistically removed subject. Remaining:', filtered.length);
         return { ...old, data: filtered };
       });
 
       return { previousSubjects };
     },
     onError: (err, subjectDocId, context) => {
-      console.error('❌ DELETE FLOW: Step 6 - onError (rollback)');
-      console.error('Error:', err.message);
-      
       if (context?.previousSubjects) {
         queryClient.setQueryData(["subjects"], context.previousSubjects);
-        console.log('Rolled back to previous state');
       }
       
       toast({
@@ -255,16 +239,13 @@ export default function Dashboard() {
         variant: "destructive",
       });
     },
-    onSuccess: (data, subjectDocId) => {
-      console.log('✅ DELETE FLOW: Step 6 - onSuccess (complete)');
-      console.log('Subject successfully deleted:', subjectDocId);
-
+    onSuccess: () => {
       toast({
         title: "Subject removed",
         description: "Your subject has been successfully removed.",
       });
 
-      setSubjectToRemove(null);
+      setDeleteState({ subject: null, step: 'closed', confirmText: '' });
     }
   });
 
@@ -278,46 +259,28 @@ export default function Dashboard() {
   }, [loading, isAuthenticated, router]);
 
   const handleRemoveSubject = (subject: DashboardSubject) => {
-    console.log('🗑️ [DELETE] Step 1: handleRemoveSubject called');
-    console.log('🗑️ [DELETE] Subject to remove:', { id: subject.id, name: subject.name });
-    console.log('🗑️ [DELETE] Current subjectToRemove before:', subjectToRemove);
-    console.log('🗑️ [DELETE] Current showSecondConfirm before:', showSecondConfirm);
-    setSubjectToRemove(subject);
-    console.log('🗑️ [DELETE] setSubjectToRemove called with:', subject);
+    setDeleteState({
+      subject,
+      step: 'first',
+      confirmText: ''
+    });
   };
 
-  const confirmRemoveSubject = () => {
-    console.log('🗑️ [DELETE] Step 2: confirmRemoveSubject called');
-    console.log('🗑️ [DELETE] deleteConfirmText:', deleteConfirmText);
-    console.log('🗑️ [DELETE] trimmed lowercase:', deleteConfirmText.trim().toLowerCase());
-    
-    const trimmedText = deleteConfirmText.trim().toLowerCase();
-    
-    if (trimmedText === "delete") {
-      console.log('🗑️ [DELETE] ✅ Text matches! Setting showSecondConfirm to true');
-      setShowSecondConfirm(true);
-    } else {
-      console.log('🗑️ [DELETE] ❌ Text does NOT match. Got:', trimmedText);
+  const handleFirstConfirm = () => {
+    if (deleteState.confirmText.trim().toLowerCase() === "delete") {
+      setDeleteState(prev => ({ ...prev, step: 'second' }));
     }
   };
 
-  const finalConfirmRemove = () => {
-    console.log('🗑️ [DELETE] Step 3: finalConfirmRemove called');
-    
-    if (!subjectToRemove) {
-      console.error('🗑️ [DELETE] ❌ No subject to remove!');
-      return;
+  const handleFinalConfirm = () => {
+    if (deleteState.subject) {
+      const docId = deleteState.subject.id.toString();
+      removeSubjectMutation.mutate(docId);
     }
-    
-    console.log('🗑️ [DELETE] Subject:', subjectToRemove.name);
-    const docId = subjectToRemove.id.toString();
-    console.log('🗑️ [DELETE] Document ID:', docId);
-    
-    removeSubjectMutation.mutate(docId);
-    
-    setShowSecondConfirm(false);
-    setDeleteConfirmText("");
-    setSubjectToRemove(null);
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteState({ subject: null, step: 'closed', confirmText: '' });
   };
 
   const handleArchiveSubject = (subject: DashboardSubject) => {
@@ -479,10 +442,7 @@ export default function Dashboard() {
                               Archive
                             </Button>
                             <button
-                              onClick={() => {
-                                console.log('🗑️ [DELETE] Trash button clicked for:', subject.name);
-                                handleRemoveSubject(subject);
-                              }}
+                              onClick={() => handleRemoveSubject(subject)}
                               className="text-khan-gray-light hover:text-khan-red transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -617,25 +577,20 @@ export default function Dashboard() {
               </AlertDialog>
 
               {/* First Delete Confirmation Dialog */}
-              <AlertDialog open={!!subjectToRemove && !showSecondConfirm} onOpenChange={(open) => {
-                console.log('🗑️ [DELETE] First dialog onOpenChange:', open);
-                if (!open) {
-                  console.log('🗑️ [DELETE] Closing first dialog, resetting state');
-                  setSubjectToRemove(null);
-                  setDeleteConfirmText("");
-                }
+              <AlertDialog open={deleteState.step === 'first'} onOpenChange={(open) => {
+                if (!open) closeDeleteDialog();
               }}>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Permanently Delete Subject</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This action cannot be undone. All your progress for <strong>"{subjectToRemove?.name}"</strong> will be permanently deleted.
+                      This action cannot be undone. All your progress for <strong>"{deleteState.subject?.name}"</strong> will be permanently deleted.
                       <div className="mt-4">
                         <p className="mb-2 font-medium text-gray-900">Type "delete" to confirm:</p>
                         <input
                           type="text"
-                          value={deleteConfirmText}
-                          onChange={(e) => setDeleteConfirmText(e.target.value)}
+                          value={deleteState.confirmText}
+                          onChange={(e) => setDeleteState(prev => ({ ...prev, confirmText: e.target.value }))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                           placeholder="Type delete here"
                         />
@@ -643,10 +598,10 @@ export default function Dashboard() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel onClick={closeDeleteDialog}>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={confirmRemoveSubject}
-                      disabled={deleteConfirmText.trim().toLowerCase() !== "delete"}
+                      onClick={handleFirstConfirm}
+                      disabled={deleteState.confirmText.trim().toLowerCase() !== "delete"}
                       className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Continue
@@ -656,29 +611,20 @@ export default function Dashboard() {
               </AlertDialog>
 
               {/* Second Delete Confirmation Dialog */}
-              <AlertDialog open={showSecondConfirm} onOpenChange={(open) => {
-                console.log('🗑️ [DELETE] Second dialog onOpenChange:', open);
-                if (!open) {
-                  setShowSecondConfirm(false);
-                  setDeleteConfirmText("");
-                  setSubjectToRemove(null);
-                }
+              <AlertDialog open={deleteState.step === 'second'} onOpenChange={(open) => {
+                if (!open) closeDeleteDialog();
               }}>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Final Confirmation</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you absolutely sure? This will permanently delete all data for <strong>"{subjectToRemove?.name}"</strong>. This action is irreversible.
+                      Are you absolutely sure? This will permanently delete all data for <strong>"{deleteState.subject?.name}"</strong>. This action is irreversible.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => {
-                      setShowSecondConfirm(false);
-                      setDeleteConfirmText("");
-                      setSubjectToRemove(null);
-                    }}>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel onClick={closeDeleteDialog}>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={finalConfirmRemove}
+                      onClick={handleFinalConfirm}
                       className="bg-red-600 hover:bg-red-700"
                     >
                       Yes, Delete Forever
