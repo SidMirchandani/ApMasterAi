@@ -95,7 +95,19 @@ export default function Dashboard() {
   });
 
   // Memoize subjects array to prevent unnecessary re-renders
-  const subjects = useMemo(() => subjectsResponse?.data || [], [subjectsResponse?.data]);
+  const subjects = useMemo(() => {
+    const data = subjectsResponse?.data || [];
+    console.log('[Dashboard] Raw subjects data:', data);
+    data.forEach(subject => {
+      console.log(`[Dashboard] Subject "${subject.name}" dates:`, {
+        dateAdded: subject.dateAdded,
+        lastStudied: subject.lastStudied,
+        dateAddedType: typeof subject.dateAdded,
+        lastStudiedType: typeof subject.lastStudied
+      });
+    });
+    return data;
+  }, [subjectsResponse?.data]);
 
   // Split into active and archived
   const activeSubjects = useMemo(() => subjects.filter(s => !(s as any).archived), [subjects]);

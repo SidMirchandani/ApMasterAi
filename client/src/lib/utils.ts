@@ -40,6 +40,7 @@ export function safeDateParse(value: any): Date | null {
  */
 export function formatDate(value: any, fmt = "MMM d, yyyy"): string {
   const date = safeDateParse(value);
+  console.log('[formatDate] Input:', value, 'Parsed:', date, 'Result:', date ? format(date, fmt) : "TBD");
   return date ? format(date, fmt) : "TBD";
 }
 
