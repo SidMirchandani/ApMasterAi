@@ -438,49 +438,233 @@ export default function Quiz() {
       saveScore();
     }
 
+    // Calculate section-wise performance for full-length test
+    const sectionPerformance = isFullLength ? (() => {
+      const sections: Record<string, { 
+        name: string; 
+        correct: number; 
+        total: number; 
+        percentage: number;
+      }> = {};
+
+      // Section code to name mapping
+      const sectionNames: Record<string, string> = {
+        "BEC": "Basic Economic Concepts",
+        "EIBC": "Economic Indicators & Business Cycle",
+        "NIPD": "National Income & Price Determination",
+        "FS": "Financial Sector",
+        "LRCSP": "Long-Run Consequences of Stabilization Policies",
+        "OEITF": "Open Economy - International Trade & Finance",
+        // Add more mappings as needed for other subjects
+      };
+
+      questions.forEach((q, idx) => {
+        const sectionCode = q.section_code || "Unknown";
+        const sectionName = sectionNames[sectionCode] || sectionCode;
+        
+        if (!sections[sectionCode]) {
+          sections[sectionCode] = {
+            name: sectionName,
+            correct: 0,
+            total: 0,
+            percentage: 0
+          };
+        }
+
+        sections[sectionCode].total++;
+        
+        const userAnswer = userAnswers[idx];
+        const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
+        if (userAnswer === correctAnswerLabel) {
+          sections[sectionCode].correct++;
+        }
+      });
+
+      // Calculate percentages
+      Object.values(sections).forEach(section => {
+        section.percentage = Math.round((section.correct / section.total) * 100);
+      });
+
+      return Object.values(sections).sort((a, b) => b.percentage - a.percentage);
+    })() : null;
+
+    // Performance level indicator
+    const getPerformanceLevel = (pct: number) => {
+      if (pct >= 90) return { label: "Excellent", color: "text-green-600", bgColor: "bg-green-100" };
+      if (pct >= 75) return { label: "Good", color: "text-blue-600", bgColor: "bg-blue-100" };
+      if (pct >= 60) return { label: "Fair", color: "text-yellow-600", bgColor: "bg-yellow-100" };
+      return { label: "Needs Work", color: "text-red-600", bgColor: "bg-red-100" };
+    };
+
+    const overallPerformance = getPerformanceLevel(percentage);
+
     return (
       <div className="min-h-screen bg-khan-background">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-center text-2xl">
-                {isFullLength ? "Full-Length Test Complete!" : "Quiz Complete!"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <div className="mb-6">
-                <div className="text-6xl font-bold text-khan-green mb-2">
-                  {percentage}%
+          {isFullLength ? (
+            <div className="max-w-5xl mx-auto space-y-6">
+              {/* Header Card */}
+              <Card className="border-t-4 border-t-khan-green">
+                <CardHeader>
+                  <CardTitle className="text-center text-3xl font-bold">
+                    Full-Length Test Complete!
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-khan-green to-green-600 mb-4">
+                      <span className="text-5xl font-bold text-white">{percentage}%</span>
+                    </div>
+                    <div className={`inline-block px-6 py-2 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-lg mb-2`}>
+                      {overallPerformance.label}
+                    </div>
+                    <p className="text-xl text-gray-600 mt-2">
+                      {score} out of {questions.length} questions correct
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Section Performance Breakdown */}
+              {sectionPerformance && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-2xl flex items-center gap-2">
+                      <CheckCircle className="text-khan-blue h-6 w-6" />
+                      Section Performance Breakdown
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {sectionPerformance.map((section, idx) => {
+                        const sectionPerf = getPerformanceLevel(section.percentage);
+                        return (
+                          <div key={idx} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-lg text-gray-900">{section.name}</h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {section.correct} / {section.total} correct
+                                </p>
+                              </div>
+                              <div className={`px-3 py-1 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-sm font-medium`}>
+                                {section.percentage}%
+                              </div>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-3">
+                              <div
+                                className={`h-3 rounded-full transition-all ${
+                                  section.percentage >= 75 ? 'bg-green-500' :
+                                  section.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${section.percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-gray-900">{score}</p>
+                      <p className="text-sm text-gray-600">Correct Answers</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <XCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-gray-900">{questions.length - score}</p>
+                      <p className="text-sm text-gray-600">Incorrect Answers</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <div className="h-12 w-12 rounded-full bg-khan-blue flex items-center justify-center mx-auto mb-2">
+                        <span className="text-white font-bold text-lg">{questions.length}</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">Total</p>
+                      <p className="text-sm text-gray-600">Questions</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Action Buttons */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button 
+                      onClick={() => setIsReviewMode(true)} 
+                      className="bg-khan-blue hover:bg-khan-blue/90 px-8"
+                    >
+                      <CheckCircle className="mr-2 h-5 w-5" />
+                      Review Answers
+                    </Button>
+                    <Button
+                      onClick={handleRetakeQuiz}
+                      className="bg-khan-green hover:bg-khan-green/90 px-8"
+                    >
+                      Retake Test
+                    </Button>
+                    <Button
+                      onClick={() => router.push(`/study?subject=${subjectId}`)}
+                      variant="outline"
+                      className="px-8"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to Study
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            // Regular quiz completion screen
+            <Card className="max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="text-center text-2xl">
+                  Quiz Complete!
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="mb-6">
+                  <div className="text-6xl font-bold text-khan-green mb-2">
+                    {percentage}%
+                  </div>
+                  <p className="text-xl text-gray-600">
+                    You scored {score} out of {questions.length}
+                  </p>
                 </div>
-                <p className="text-xl text-gray-600">
-                  You scored {score} out of {questions.length}
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {isFullLength && (
-                  <Button 
-                    onClick={() => setIsReviewMode(true)} 
-                    className="bg-khan-blue hover:bg-khan-blue/90"
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button
+                    onClick={handleRetakeQuiz}
+                    className="bg-khan-green hover:bg-khan-green/90"
                   >
-                    Review Answers
+                    Retake Quiz
                   </Button>
-                )}
-                <Button
-                  onClick={handleRetakeQuiz}
-                  className="bg-khan-green hover:bg-khan-green/90"
-                >
-                  {isFullLength ? "Retake Test" : "Retake Quiz"}
-                </Button>
-                <Button
-                  onClick={() => router.push(`/study?subject=${subjectId}`)}
-                  variant="outline"
-                >
-                  Exit {isFullLength ? "Test" : "Quiz"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                  <Button
+                    onClick={() => router.push(`/study?subject=${subjectId}`)}
+                    variant="outline"
+                  >
+                    Exit Quiz
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     );
