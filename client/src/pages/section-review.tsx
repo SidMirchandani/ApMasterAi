@@ -185,6 +185,11 @@ export default function SectionReview() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base font-medium leading-relaxed">
                     {displayNumber}. {q.prompt}
+                    {sectionCode === "all" && sectionData?.sectionBreakdown && q.section_code && (
+                      <span className="ml-2 font-bold text-khan-green">
+                        (UNIT {sectionData.sectionBreakdown[q.section_code]?.unitNumber || ""})
+                      </span>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">

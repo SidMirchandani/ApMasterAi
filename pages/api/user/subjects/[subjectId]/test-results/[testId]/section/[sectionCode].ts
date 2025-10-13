@@ -136,6 +136,19 @@ export default async function handler(
       unitNumber: 0,
     };
 
+    // For "all" section, return entire test
+      if (sectionCode === "all") {
+        console.log("📤 Returning full test data for 'all' section");
+        return res.status(200).json({
+          success: true,
+          data: {
+            questions: testData.questions,
+            userAnswers: testData.userAnswers,
+            sectionBreakdown: testData.sectionBreakdown,
+          },
+        });
+      }
+
     const responseData = {
       questions: questionsWithOriginalIndex, // Use questionsWithOriginalIndex here
       userAnswers: sectionUserAnswers,
