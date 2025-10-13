@@ -896,10 +896,10 @@ export default function Quiz() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-2">
         {/* Header - Only for regular quiz */}
         {!isFullLength && (
-          <div className="mb-4">
+          <div className="mb-2">
             <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -917,7 +917,7 @@ export default function Quiz() {
               </AlertDialogContent>
             </AlertDialog>
 
-            <div className="flex flex-col items-center mb-2 gap-2">
+            <div className="flex flex-col items-center mb-1 gap-1">
               <Button
                 onClick={() => setShowExitDialog(true)}
                 variant="outline"
@@ -927,10 +927,10 @@ export default function Quiz() {
                 Exit Quiz
               </Button>
               <div className="flex justify-between items-center w-full">
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-lg font-semibold">
                   Question {currentQuestionIndex + 1} of {questions.length}
                 </h2>
-                <div className="text-lg font-semibold text-khan-green">
+                <div className="text-base font-semibold text-khan-green">
                   Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
                 </div>
               </div>
@@ -962,10 +962,10 @@ export default function Quiz() {
         {isFullLength ? (
           <>
             {/* Top Navigation Bar */}
-            <Card className="mb-4 sticky top-0 z-10 bg-white shadow-md">
-              <CardContent className="pt-3 pb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-base font-semibold">
+            <Card className="mb-2 sticky top-0 z-10 bg-white shadow-md">
+              <CardContent className="pt-2 pb-2">
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="text-sm font-semibold">
                     Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
                   </h2>
                   <Button
@@ -978,12 +978,12 @@ export default function Quiz() {
                   </Button>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="text-center">
-                    <span className="text-sm font-semibold text-khan-gray-dark">Question Navigation</span>
+                    <span className="text-xs font-semibold text-khan-gray-dark">Question Navigation</span>
                   </div>
                   
-                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
                     {questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage).map((_, idx) => {
                       const globalIndex = currentPage * questionsPerPage + idx;
                       const isAnswered = userAnswers[globalIndex] !== undefined;
@@ -1049,7 +1049,7 @@ export default function Quiz() {
             </Card>
 
             {/* Full-length exam: show multiple questions per page - Compact */}
-            <div className="space-y-4 mb-6">
+            <div className="space-y-2 mb-4">
               {currentQuestions.map((q, idx) => {
                 const globalIndex = currentPage * questionsPerPage + idx;
                 const options = q.choices.map((choice, i) => ({
@@ -1059,9 +1059,9 @@ export default function Quiz() {
 
                 return (
                   <Card key={globalIndex} id={`question-${globalIndex}`} className="border">
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-2 pt-3">
                       <div className="flex justify-between items-start gap-3">
-                        <CardTitle className="text-base font-medium leading-relaxed flex-1">
+                        <CardTitle className="text-sm font-medium leading-relaxed flex-1">
                           {globalIndex + 1}. {q.prompt}
                         </CardTitle>
                         <Button
@@ -1081,8 +1081,8 @@ export default function Quiz() {
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
+                    <CardContent className="pt-2 pb-3">
+                      <div className="space-y-1.5">
                         {options.map((option) => {
                           const isSelected = userAnswers[globalIndex] === option.label;
 
@@ -1090,7 +1090,7 @@ export default function Quiz() {
                             <button
                               key={option.label}
                               onClick={() => handleAnswerSelect(option.label, idx)}
-                              className={`w-full text-left p-3 rounded-lg border transition-all ${
+                              className={`w-full text-left p-2 rounded-lg border transition-all ${
                                 isSelected
                                   ? "border-khan-blue bg-blue-50"
                                   : "border-gray-200 hover:border-gray-300"
@@ -1174,14 +1174,14 @@ export default function Quiz() {
         ) : (
           <>
             {/* Regular quiz: show one question at a time */}
-            <Card className="mb-4">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-medium leading-relaxed">
+            <Card className="mb-2">
+              <CardHeader className="pb-2 pt-3">
+                <CardTitle className="text-sm font-medium leading-relaxed">
                   {currentQuestion.prompt}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-2">
+              <CardContent className="pt-2 pb-3">
+                <div className="space-y-1.5">
                   {(() => {
                     const options = currentQuestion.choices.map((choice, index) => ({
                       label: String.fromCharCode(65 + index),
@@ -1200,7 +1200,7 @@ export default function Quiz() {
                           key={option.label}
                           onClick={() => handleAnswerSelect(option.label)}
                           disabled={isAnswerSubmitted || isReviewMode}
-                          className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
+                          className={`w-full text-left p-2 rounded-lg border-2 transition-all ${
                             showCorrect
                               ? "border-green-500 bg-green-50"
                               : showIncorrect
@@ -1212,7 +1212,7 @@ export default function Quiz() {
                         >
                           <div className="flex items-start gap-2">
                             <div
-                              className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
+                              className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center font-semibold text-xs ${
                                 showCorrect
                                   ? "bg-green-500 text-white"
                                   : showIncorrect
@@ -1238,15 +1238,15 @@ export default function Quiz() {
 
             {/* Explanation */}
             {isAnswerSubmitted && currentQuestion.explanation && (
-              <Card className="mb-4 border-khan-blue bg-blue-50">
-                <CardHeader className="pb-2 pt-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <CheckCircle className="text-khan-blue h-4 w-4" />
+              <Card className="mb-2 border-khan-blue bg-blue-50">
+                <CardHeader className="pb-1 pt-2">
+                  <CardTitle className="text-xs flex items-center gap-2">
+                    <CheckCircle className="text-khan-blue h-3 w-3" />
                     Explanation
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 pb-3">
-                  <p className="text-sm text-gray-700">{currentQuestion.explanation}</p>
+                <CardContent className="pt-1 pb-2">
+                  <p className="text-xs text-gray-700">{currentQuestion.explanation}</p>
                 </CardContent>
               </Card>
             )}
