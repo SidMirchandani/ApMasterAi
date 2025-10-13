@@ -116,11 +116,10 @@ export default function SectionReview() {
               variant="outline"
               size="sm"
             >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Results
+            <ArrowLeft className="h-4 w-4" />
             </Button>
             <h2 className="text-xl font-semibold absolute left-1/2 transform -translate-x-1/2">
-              Review - Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
+              Review - Page {currentPage + 1}/{totalPages} (Q{currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
             </h2>
             <div className="w-24"></div> {/* Spacer for layout balance */}
           </div>
@@ -229,10 +228,9 @@ export default function SectionReview() {
             <Button
               onClick={handleBackNavigation}
               variant="outline"
-              className="px-8"
+              className="px-4"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Results
+              <ArrowLeft className="h-4 w-4" />
             </Button>
           ) : (
             <Button

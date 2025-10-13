@@ -104,7 +104,7 @@ export default function FullLengthResults() {
               className="mt-4"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to History
+              Test History
             </Button>
           </div>
         </div>
@@ -150,7 +150,7 @@ export default function FullLengthResults() {
             className="flex items-center gap-1"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to History
+            Test History
           </Button>
           <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
             Test Results
@@ -165,6 +165,10 @@ export default function FullLengthResults() {
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">
                   {formatDateTime(testData.date)}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Page 1/1 (Q {testData.questions.length > 0 ? 1 : 0}-
+                  {testData.questions.length})
                 </p>
               </div>
 
@@ -231,7 +235,7 @@ export default function FullLengthResults() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <CheckCircle className="text-khan-blue h-5 w-5" />
-              Section Performance Breakdown
+              Test History
             </CardTitle>
           </CardHeader>
           <CardContent>

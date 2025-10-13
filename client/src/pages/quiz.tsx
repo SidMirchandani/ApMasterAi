@@ -661,7 +661,7 @@ export default function Quiz() {
                     <Button
                       onClick={() => router.push(`/study?subject=${subjectId}`)}
                       variant="outline"
-                      className="px-8"
+                      className="px-4"
                     >
                       <ArrowLeft className="h-4 w-4" />
                     </Button>

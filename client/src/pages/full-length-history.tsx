@@ -92,10 +92,9 @@ export default function FullLengthHistory() {
                 variant="outline"
                 size="sm"
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back to Study
+                <ArrowLeft className="h-4 w-4" />
               </Button>
-              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">Full-Length Test History</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">Test History</h1>
               <div className="w-24"></div>
             </div>
             <div className="flex justify-center">
