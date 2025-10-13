@@ -16,6 +16,7 @@ interface Question {
   answerIndex: number;
   explanation: string;
   section_code?: string;
+  originalTestIndex?: number; // Added to store the original test index
 }
 
 export default function SectionReview() {
@@ -73,9 +74,9 @@ export default function SectionReview() {
             "GET",
             `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`,
           );
-          
+
           console.log("📡 API Response status:", response.status);
-          
+
           if (!response.ok) {
             const errorText = await response.text();
             console.error("❌ API Error:", {
@@ -165,20 +166,18 @@ export default function SectionReview() {
         <div className="space-y-4 mb-6">
           {currentQuestions.map((q, idx) => {
             const globalIndex = currentPage * questionsPerPage + idx;
-            // Find the original question index from the full test
-            const originalIndex = questions.findIndex(
-              (question) => question.id === q.id,
-            );
-            const displayNumber =
-              originalIndex !== -1 ? originalIndex + 1 : globalIndex + 1;
+            // Use the originalTestIndex from the question object (set by API)
+            const displayNumber = q.originalTestIndex !== undefined 
+              ? q.originalTestIndex + 1 
+              : globalIndex + 1;
 
             const options = q.choices.map((choice, i) => ({
               label: String.fromCharCode(65 + i),
               value: choice,
             }));
             const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
-            const userAnswer =
-              userAnswers[originalIndex !== -1 ? originalIndex : globalIndex];
+            // Use originalTestIndex for userAnswer lookup if available, otherwise globalIndex
+            const userAnswer = userAnswers[q.originalTestIndex !== undefined ? q.originalTestIndex : globalIndex];
             const isCorrect = userAnswer === correctAnswerLabel;
 
             return (

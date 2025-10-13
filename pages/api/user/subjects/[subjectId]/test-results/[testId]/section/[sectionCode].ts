@@ -92,17 +92,22 @@ export default async function handler(
       questionIds: sectionQuestions.map((q: any) => q.id),
     });
 
-    // Build section user answers
+    // Map user answers to section question indices and add original index to each question
     const sectionUserAnswers: { [key: number]: string } = {};
+    const questionsWithOriginalIndex: any[] = [];
     let sectionQuestionIndex = 0;
 
     testData.questions.forEach((q: any, idx: number) => {
       if (q.section_code === sectionCode) {
-        sectionUserAnswers[sectionQuestionIndex] = testData.userAnswers[idx];
         console.log(`📝 Mapping answer for section question ${sectionQuestionIndex}:`, {
           originalIndex: idx,
           userAnswer: testData.userAnswers[idx],
           questionId: q.id,
+        });
+        sectionUserAnswers[sectionQuestionIndex] = testData.userAnswers[idx];
+        questionsWithOriginalIndex.push({
+          ...q,
+          originalTestIndex: idx, // Add original position in full test
         });
         sectionQuestionIndex++;
       }
@@ -132,7 +137,7 @@ export default async function handler(
     };
 
     const responseData = {
-      questions: sectionQuestions,
+      questions: questionsWithOriginalIndex, // Use questionsWithOriginalIndex here
       userAnswers: sectionUserAnswers,
       unitNumber: info.unitNumber,
       sectionName: info.name,
