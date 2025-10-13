@@ -100,17 +100,19 @@ export default function FullLengthHistory() {
                 <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
                 {!isMobile && "Study"}
               </Button>
+            </div>
+            <h1 className="text-base md:text-xl font-bold text-khan-gray-dark text-center mb-4">
+              Test History
+            </h1>
+            <div className="flex justify-center mb-4">
               <Button
                 onClick={handleStartNewTest}
-                className="bg-khan-green hover:bg-khan-green/90 flex-1 max-w-xs"
+                className="bg-khan-green hover:bg-khan-green/90 w-full max-w-md"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 Start New Test
               </Button>
             </div>
-            <h1 className="text-lg md:text-2xl font-bold text-khan-gray-dark text-center mb-2">
-              Test History
-            </h1>
           </div>
 
           {testHistory.length === 0 ? (

@@ -175,7 +175,7 @@ export default function FullLengthResults() {
         <Card className="border-t-4 border-t-khan-green">
           <CardContent className="pt-4 pb-4">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col items-center gap-3">
                 <p className="text-sm text-gray-500">
                   {isMobile ? formatDateTime(testData.date, "MMM d, yyyy") : formatDateTime(testData.date)}
                 </p>
@@ -185,7 +185,7 @@ export default function FullLengthResults() {
                       `/section-review?subject=${subjectId}&testId=${testId}&section=all`,
                     )
                   }
-                  className="bg-khan-blue hover:bg-khan-blue/90 text-white flex-1 max-w-xs"
+                  className="bg-khan-blue hover:bg-khan-blue/90 text-white w-full max-w-md"
                 >
                   <BookOpen className="h-4 w-4 mr-2" />
                   Review Whole Test
@@ -233,16 +233,6 @@ export default function FullLengthResults() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Start New Test Button */}
-        <div className="mt-6 mb-4 text-center">
-          <Button
-            onClick={handleStartNewTest}
-            className="w-full md:w-auto px-6 py-3 text-lg font-semibold bg-khan-green hover:bg-khan-green/90"
-          >
-            Start New Test
-          </Button>
-        </div>
 
         {/* Unit Performance Breakdown */}
         <Card>
