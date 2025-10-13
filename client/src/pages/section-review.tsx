@@ -73,15 +73,29 @@ export default function SectionReview() {
             "GET",
             `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`,
           );
-          if (!response.ok)
+          
+          console.log("📡 API Response status:", response.status);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("❌ API Error:", {
+              status: response.status,
+              statusText: response.statusText,
+              errorBody: errorText,
+            });
             throw new Error("Failed to fetch section questions");
+          }
 
           const data = await response.json();
           console.log("📥 Section data received:", {
+            success: data.success,
             questionCount: data.data?.questions?.length,
+            answerCount: Object.keys(data.data?.userAnswers || {}).length,
             sectionCode: sectionCode,
             unitNumber: data.data?.unitNumber,
-            firstQuestion: data.data?.questions?.[0]?.section_code
+            sectionName: data.data?.sectionName,
+            firstQuestion: data.data?.questions?.[0],
+            userAnswersSample: data.data?.userAnswers,
           });
           setSectionData(data.data);
           setQuestions(data.data.questions);

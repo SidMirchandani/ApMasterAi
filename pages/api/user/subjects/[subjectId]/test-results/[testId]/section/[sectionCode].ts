@@ -63,46 +63,88 @@ export default async function handler(
       testId as string,
     );
 
+    console.log("📦 Full test data retrieved:", {
+      exists: !!testData,
+      totalQuestions: testData?.questions?.length,
+      hasUserAnswers: !!testData?.userAnswers,
+      sectionCodes: testData?.questions?.map((q: any) => q.section_code),
+    });
+
     if (!testData) {
+      console.error("❌ Test data not found for:", { userId: decodedToken.uid, subjectId, testId });
       return res.status(404).json({
         success: false,
-        error: "Test not found",
+        message: "Test not found",
       });
     }
 
-    // Filter questions by section_code
+    // Filter questions by section
     const sectionQuestions = testData.questions.filter(
-      (q: any) => q.section_code === sectionCode
+      (q: any) => q.section_code === sectionCode,
     );
 
-    // Filter user answers to match the filtered questions
+    console.log("🔍 Filtered section questions:", {
+      requestedSection: sectionCode,
+      foundQuestions: sectionQuestions.length,
+      questionIds: sectionQuestions.map((q: any) => q.id),
+    });
+
+    // Build section user answers
     const sectionUserAnswers: { [key: number]: string } = {};
-    let sectionIndex = 0;
+    let sectionQuestionIndex = 0;
 
     testData.questions.forEach((q: any, idx: number) => {
       if (q.section_code === sectionCode) {
-        sectionUserAnswers[sectionIndex] = testData.userAnswers[idx];
-        sectionIndex++;
+        sectionUserAnswers[sectionQuestionIndex] = testData.userAnswers[idx];
+        console.log(`📝 Mapping answer for section question ${sectionQuestionIndex}:`, {
+          originalIndex: idx,
+          userAnswer: testData.userAnswers[idx],
+          questionId: q.id,
+        });
+        sectionQuestionIndex++;
       }
     });
 
-    console.log("📤 Section API Response:", {
-      sectionCode,
-      questionCount: sectionQuestions.length,
-      userAnswerCount: Object.keys(sectionUserAnswers).length,
-      sampleQuestion: sectionQuestions[0] ? {
-        section_code: sectionQuestions[0].section_code,
-        prompt: sectionQuestions[0].prompt?.substring(0, 50) + "..."
-      } : null
+    const sectionInfo: Record<
+      string,
+      { name: string; unitNumber: number }
+    > = {
+      BEC: { name: "Basic Economic Concepts", unitNumber: 1 },
+      EIBC: { name: "Economic Indicators & Business Cycle", unitNumber: 2 },
+      NIPD: { name: "National Income & Price Determination", unitNumber: 3 },
+      FS: { name: "Financial Sector", unitNumber: 4 },
+      LRCSP: {
+        name: "Long-Run Consequences of Stabilization Policies",
+        unitNumber: 5,
+      },
+      OEITF: {
+        name: "Open Economy - International Trade & Finance",
+        unitNumber: 6,
+      },
+    };
+
+    const info = sectionInfo[sectionCode as string] || {
+      name: sectionCode as string,
+      unitNumber: 0,
+    };
+
+    const responseData = {
+      questions: sectionQuestions,
+      userAnswers: sectionUserAnswers,
+      unitNumber: info.unitNumber,
+      sectionName: info.name,
+    };
+
+    console.log("✅ Sending section response:", {
+      questionCount: responseData.questions.length,
+      answerCount: Object.keys(responseData.userAnswers).length,
+      unitNumber: responseData.unitNumber,
+      sectionName: responseData.sectionName,
     });
 
     return res.status(200).json({
       success: true,
-      data: {
-        questions: sectionQuestions,
-        userAnswers: sectionUserAnswers,
-        unitNumber: testData.sectionBreakdown?.[sectionCode]?.unitNumber,
-      },
+      data: responseData,
     });
   } catch (error) {
     console.error("[section-review API] Error:", error);
