@@ -843,63 +843,31 @@ export default function Quiz() {
           </div>
 
           {/* Review Navigation */}
-          <div className="flex items-center justify-center gap-4">
-            {currentPage > 0 && (
+          <div className="flex justify-between gap-4">
+            <Button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 0}
+              variant="outline"
+              className="px-8"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Previous
+            </Button>
+
+            {currentPage === totalPages - 1 ? (
               <Button
-                onClick={handlePreviousPage}
-                variant="outline"
-                className="px-8"
+                onClick={() => router.push(`/study?subject=${subjectId}`)}
+                className="bg-khan-green hover:bg-khan-green/90 px-8"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Previous
+                <ArrowLeft className="h-4 w-4" />
               </Button>
-            )}
-
-            <div className="flex flex-wrap gap-2 justify-center">
-              {questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage).map((q, idx) => {
-                const globalIndex = currentPage * questionsPerPage + idx;
-                const userAnswer = userAnswers[globalIndex];
-                const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
-                const isCorrect = userAnswer === correctAnswerLabel;
-
-                return (
-                  <button
-                    key={globalIndex}
-                    onClick={() => {
-                      const element = document.getElementById(`review-question-${globalIndex}`);
-                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }}
-                    className={`relative w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
-                      isCorrect
-                        ? 'bg-green-100 border-2 border-green-500 text-green-700'
-                        : 'bg-red-100 border-2 border-red-500 text-red-700'
-                    }`}
-                  >
-                    <span className="relative z-10">{globalIndex + 1}</span>
-                    {flaggedQuestions.has(globalIndex) && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="absolute top-0 right-0 h-3.5 w-3.5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {currentPage < totalPages - 1 ? (
+            ) : (
               <Button
                 onClick={handleNextPage}
                 className="bg-khan-blue hover:bg-khan-blue/90 px-8"
               >
                 Next
                 <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                onClick={() => router.push(`/study?subject=${subjectId}`)}
-                className="bg-khan-green hover:bg-khan-green/90 px-8"
-              >
-                <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
           </div>
@@ -1110,62 +1078,31 @@ export default function Quiz() {
             </AlertDialog>
 
             {/* Full-length navigation */}
-            <div className="flex items-center justify-center gap-4">
-              {currentPage > 0 && (
+            <div className="flex justify-between gap-4">
+              <Button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 0}
+                variant="outline"
+                className="px-8"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Previous
+              </Button>
+
+              {currentPage === totalPages - 1 ? (
                 <Button
-                  onClick={handlePreviousPage}
-                  variant="outline"
-                  className="px-8"
+                  onClick={() => setShowSubmitConfirm(true)}
+                  className="bg-khan-green hover:bg-khan-green/90 px-8"
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Previous
+                  Submit Exam
                 </Button>
-              )}
-
-              <div className="flex flex-wrap gap-2 justify-center">
-                {questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage).map((_, idx) => {
-                  const globalIndex = currentPage * questionsPerPage + idx;
-                  const isAnswered = userAnswers[globalIndex] !== undefined;
-                  const isFlagged = flaggedQuestions.has(globalIndex);
-
-                  return (
-                    <button
-                      key={globalIndex}
-                      onClick={() => {
-                        const element = document.getElementById(`question-${globalIndex}`);
-                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }}
-                      className={`relative w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
-                        isAnswered
-                          ? 'bg-gray-200 border-2 border-gray-400 text-gray-700'
-                          : 'bg-white border-2 border-gray-300 text-gray-500'
-                      }`}
-                    >
-                      <span className="relative z-10">{globalIndex + 1}</span>
-                      {isFlagged && (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="absolute top-0 right-0 h-3.5 w-3.5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {currentPage < totalPages - 1 ? (
+              ) : (
                 <Button
                   onClick={handleNextPage}
                   className="bg-khan-blue hover:bg-khan-blue/90 px-8"
                 >
                   Next
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setShowSubmitConfirm(true)}
-                  className="bg-khan-green hover:bg-khan-green/90 px-8"
-                >
-                  Submit Exam
                 </Button>
               )}
             </div>
