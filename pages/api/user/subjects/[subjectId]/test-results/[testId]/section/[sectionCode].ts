@@ -6,8 +6,10 @@ async function getOrCreateUser(firebaseUid: string): Promise<string> {
 
   if (!user) {
     user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`);
+    console.log("[section API] Created new user for Firebase UID:", firebaseUid);
   }
 
+  console.log("[section API] Resolved user:", { firebaseUid, userId: user.id });
   return user.id;
 }
 
@@ -58,7 +60,7 @@ export default async function handler(
 
     // Get the full test data
     const testData = await storage.getFullLengthTestResult(
-      decodedToken.uid,
+      userId,
       subjectId as string,
       testId as string,
     );
@@ -67,14 +69,15 @@ export default async function handler(
       exists: !!testData,
       totalQuestions: testData?.questions?.length,
       hasUserAnswers: !!testData?.userAnswers,
-      sectionCodes: testData?.questions?.map((q: any) => q.section_code),
+      sectionCodes: testData?.questions?.map((q: any) => q.section_code).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i)
     });
 
     if (!testData) {
-      console.error("❌ Test data not found for:", { userId: decodedToken.uid, subjectId, testId });
+      console.log("❌ Test data not found for:", { userId, subjectId, testId });
+      console.log("⚠️ This might be a user mismatch. Check if you're logged in with the correct account that took this test.");
       return res.status(404).json({
         success: false,
-        message: "Test not found",
+        message: "Test data not found. You may be logged in with a different account than the one that took this test.",
       });
     }
 
