@@ -11,6 +11,12 @@ export default async function handler(
   }
 
   try {
+    const { questionIds } = req.body;
+
+    if (!questionIds || !Array.isArray(questionIds) || questionIds.length === 0) {
+      return res.status(400).json({ error: "questionIds array is required" });
+    }
+
     // ✅ 1. Initialize Gemini
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -29,22 +35,27 @@ export default async function handler(
     const { firestore } = firebaseAdmin;
     const questionsRef = firestore.collection("questions");
 
-    // ✅ 3. Fetch all questions (we’ll rewrite explanations for all)
-    console.log("Fetching all questions from Firestore...");
-    const snapshot = await questionsRef.get();
-    const total = snapshot.size;
-    console.log(`Found ${total} total questions`);
+    const total = questionIds.length;
+    console.log(`Generating explanations for ${total} selected questions...`);
 
     let updated = 0;
 
-    // ✅ 4. Generate explanations for all questions (throttled)
-    for (let i = 0; i < snapshot.docs.length; i++) {
-      const doc = snapshot.docs[i];
-      const question = doc.data();
-
-      console.log(`Generating explanation for Question ${i + 1}/${total}`);
+    // ✅ 3. Generate explanations for selected questions (throttled)
+    for (let i = 0; i < questionIds.length; i++) {
+      const questionId = questionIds[i];
 
       try {
+        const doc = await questionsRef.doc(questionId).get();
+
+        if (!doc.exists) {
+          console.log(`Question ${questionId} not found, skipping...`);
+          continue;
+        }
+
+        const question = doc.data();
+
+        console.log(`Generating explanation for Question ${i + 1}/${total} (ID: ${questionId})`);
+
         const prompt = `Explain why the correct answer is correct for the following AP-style multiple-choice question.
 Question: ${question.prompt}
 Choices: ${question.choices?.join(", ")}
@@ -66,17 +77,17 @@ Keep your explanation concise (2–3 sentences).`;
         updated++;
         console.log(`✓ Overwrote explanation for question ${doc.id}`);
       } catch (error) {
-        console.error(`✗ Failed to generate explanation for ${doc.id}:`, error);
+        console.error(`✗ Failed to generate explanation for ${questionId}:`, error);
       }
 
       // ⏱️ 1-second delay between API calls
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    console.log(`✅ Completed: Regenerated ${updated} explanations`);
+    console.log(`✅ Completed: Regenerated ${updated} explanations for selected questions`);
 
     return res.status(200).json({
-      total,
+      total: questionIds.length,
       updated,
     });
   } catch (error: any) {
