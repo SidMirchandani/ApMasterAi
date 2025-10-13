@@ -22,10 +22,10 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/dashboard": [
+    "/admin": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/dashboard.js"
+      "static/chunks/pages/admin.js"
     ],
     "/full-length-history": [
       "static/chunks/webpack.js",
@@ -37,10 +37,10 @@
       "static/chunks/main.js",
       "static/chunks/pages/full-length-results.js"
     ],
-    "/section-review": [
+    "/quiz": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/section-review.js"
+      "static/chunks/pages/quiz.js"
     ],
     "/study": [
       "static/chunks/webpack.js",
