@@ -56,8 +56,8 @@ export default async function handler(
       sectionCode,
     });
 
-    // Get the test data
-    const testData = await storage.getFullLengthTest(
+    // Get the full test data
+    const testData = await storage.getFullLengthTestResult(
       decodedToken.uid,
       subjectId as string,
       testId as string,
