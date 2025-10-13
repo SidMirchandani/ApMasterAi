@@ -955,9 +955,9 @@ export default function Quiz() {
           <>
             {/* Top Navigation Bar */}
             <Card className="mb-4 sticky top-0 z-10 bg-white shadow-md">
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-lg font-semibold">
+              <CardContent className="pt-3 pb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-base font-semibold">
                     Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
                   </h2>
                   <Button
@@ -970,7 +970,7 @@ export default function Quiz() {
                   </Button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="text-center">
                     <span className="text-sm font-semibold text-khan-gray-dark">Question Navigation</span>
                   </div>
@@ -988,7 +988,7 @@ export default function Quiz() {
                             const element = document.getElementById(`question-${globalIndex}`);
                             element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                           }}
-                          className={`relative w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
+                          className={`relative w-9 h-9 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
                             isAnswered
                               ? 'bg-gray-200 border-2 border-gray-400 text-gray-700'
                               : 'bg-white border-2 border-gray-300 text-gray-500'
@@ -996,7 +996,7 @@ export default function Quiz() {
                         >
                           <span className="relative z-10">{globalIndex + 1}</span>
                           {isFlagged && (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="absolute top-0 right-0 h-3.5 w-3.5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="absolute top-0 right-0 h-3 w-3 text-red-600" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
                             </svg>
                           )}
@@ -1010,7 +1010,8 @@ export default function Quiz() {
                       onClick={handlePreviousPage}
                       disabled={currentPage === 0}
                       variant="outline"
-                      className="px-6"
+                      className="px-4"
+                      size="sm"
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Previous
@@ -1019,14 +1020,16 @@ export default function Quiz() {
                     {currentPage === totalPages - 1 ? (
                       <Button
                         onClick={() => setShowSubmitConfirm(true)}
-                        className="bg-khan-green hover:bg-khan-green/90 px-6"
+                        className="bg-khan-green hover:bg-khan-green/90 px-4"
+                        size="sm"
                       >
                         Submit Exam
                       </Button>
                     ) : (
                       <Button
                         onClick={handleNextPage}
-                        className="bg-khan-blue hover:bg-khan-blue/90 px-6"
+                        className="bg-khan-blue hover:bg-khan-blue/90 px-4"
+                        size="sm"
                       >
                         Next
                         <ArrowRight className="ml-2 h-4 w-4" />
@@ -1126,9 +1129,38 @@ export default function Quiz() {
               </AlertDialogContent>
             </AlertDialog>
 
-            {/* Bottom page indicator */}
-            <div className="text-center text-sm text-gray-600 mt-4">
-              Page {currentPage + 1} of {totalPages}
+            {/* Bottom Navigation */}
+            <div className="mt-6 flex justify-between items-center gap-4">
+              <Button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 0}
+                variant="outline"
+                className="px-6"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Previous
+              </Button>
+
+              <div className="text-sm text-gray-600">
+                Page {currentPage + 1} of {totalPages}
+              </div>
+
+              {currentPage === totalPages - 1 ? (
+                <Button
+                  onClick={() => setShowSubmitConfirm(true)}
+                  className="bg-khan-green hover:bg-khan-green/90 px-6"
+                >
+                  Submit Exam
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNextPage}
+                  className="bg-khan-blue hover:bg-khan-blue/90 px-6"
+                >
+                  Next
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
             </div>
           </>
         ) : (
