@@ -7,6 +7,7 @@ import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDateTime } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Question {
   id: string;
@@ -41,6 +42,7 @@ export default function FullLengthResults() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const { subject: subjectId, testId } = router.query;
+  const isMobile = useIsMobile();
   const [testData, setTestData] = useState<TestData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -191,10 +193,10 @@ export default function FullLengthResults() {
               {/* Stats Grid - Compact */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <CheckCircle className="h-6 w-6 text-green-500" />
+                  <div className={`flex ${isMobile ? 'flex-col' : ''} items-center justify-center gap-2`}>
+                    <CheckCircle className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-green-500`} />
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>
                         {testData.score}
                       </p>
                       <p className="text-xs text-gray-600">Correct</p>
@@ -202,10 +204,10 @@ export default function FullLengthResults() {
                   </div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <XCircle className="h-6 w-6 text-red-500" />
+                  <div className={`flex ${isMobile ? 'flex-col' : ''} items-center justify-center gap-2`}>
+                    <XCircle className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-red-500`} />
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>
                         {testData.totalQuestions - testData.score}
                       </p>
                       <p className="text-xs text-gray-600">Incorrect</p>
@@ -213,14 +215,14 @@ export default function FullLengthResults() {
                   </div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="h-6 w-6 rounded-full bg-khan-blue flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">
+                  <div className={`flex ${isMobile ? 'flex-col' : ''} items-center justify-center gap-2`}>
+                    <div className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} rounded-full bg-khan-blue flex items-center justify-center`}>
+                      <span className={`text-white font-bold ${isMobile ? 'text-xs' : 'text-sm'}`}>
                         {testData.totalQuestions}
                       </span>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">Total</p>
+                      <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>Total</p>
                       <p className="text-xs text-gray-600">Questions</p>
                     </div>
                   </div>

@@ -8,6 +8,7 @@ import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDateTime } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -100,6 +101,7 @@ export default function Quiz() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const { subject: subjectId, unit } = router.query;
+  const isMobile = useIsMobile();
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -1110,15 +1112,18 @@ export default function Quiz() {
                 <CardContent className="py-2">
                   {/* First Line: Page info, Question Navigation label, Exit button */}
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold">
-                      Page {currentPage + 1}/{totalPages} (Q{" "}
-                      {currentPage * questionsPerPage + 1}-
-                      {Math.min(
-                        (currentPage + 1) * questionsPerPage,
-                        questions.length,
-                      )}
-                      )
-                    </span>
+                    {!isMobile && (
+                      <span className="text-sm font-semibold">
+                        Page {currentPage + 1}/{totalPages} (Q{" "}
+                        {currentPage * questionsPerPage + 1}-
+                        {Math.min(
+                          (currentPage + 1) * questionsPerPage,
+                          questions.length,
+                        )}
+                        )
+                      </span>
+                    )}
+                    {isMobile && <div className="w-20"></div>}
                     <span className="text-sm font-semibold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
                       Question Navigation
                     </span>
@@ -1141,8 +1146,8 @@ export default function Quiz() {
                       className="px-4"
                       size="sm"
                     >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Previous
+                      <ArrowLeft className={isMobile ? "" : "mr-2 h-4 w-4"} />
+                      {!isMobile && "Previous"}
                     </Button>
 
                     <div className="flex items-center justify-center gap-1.5 flex-wrap absolute left-1/2 transform -translate-x-1/2">
@@ -1212,8 +1217,8 @@ export default function Quiz() {
                         className="bg-khan-blue hover:bg-khan-blue/90 px-4"
                         size="sm"
                       >
-                        Next
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        {!isMobile && "Next"}
+                        <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
                       </Button>
                     )}
                   </div>
@@ -1245,7 +1250,7 @@ export default function Quiz() {
                           onClick={() => toggleFlag(globalIndex)}
                           variant="outline"
                           size="sm"
-                          className={`flex-shrink-0 h-8 px-2 ${
+                          className={`flex-shrink-0 h-8 ${isMobile ? 'px-2' : 'px-2'} ${
                             flaggedQuestions.has(globalIndex)
                               ? "border-red-500 bg-red-50 text-red-700 hover:bg-red-100"
                               : "border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -1253,7 +1258,7 @@ export default function Quiz() {
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="h-3.5 w-3.5 mr-1"
+                            className={`h-3.5 w-3.5 ${!isMobile ? 'mr-1' : ''}`}
                             viewBox="0 0 20 20"
                             fill="currentColor"
                           >
@@ -1263,11 +1268,13 @@ export default function Quiz() {
                               clipRule="evenodd"
                             />
                           </svg>
-                          <span className="text-xs">
-                            {flaggedQuestions.has(globalIndex)
-                              ? "Unflag"
-                              : "Flag"}
-                          </span>
+                          {!isMobile && (
+                            <span className="text-xs">
+                              {flaggedQuestions.has(globalIndex)
+                                ? "Unflag"
+                                : "Flag"}
+                            </span>
+                          )}
                         </Button>
                       </div>
                     </CardHeader>
@@ -1347,13 +1354,15 @@ export default function Quiz() {
                 variant="outline"
                 className="px-6"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Previous
+                <ArrowLeft className={isMobile ? "" : "mr-2 h-4 w-4"} />
+                {!isMobile && "Previous"}
               </Button>
 
-              <div className="text-sm text-gray-600">
-                Page {currentPage + 1} of {totalPages}
-              </div>
+              {!isMobile && (
+                <div className="text-sm text-gray-600">
+                  Page {currentPage + 1} of {totalPages}
+                </div>
+              )}
 
               {currentPage === totalPages - 1 ? (
                 <Button
@@ -1367,8 +1376,8 @@ export default function Quiz() {
                   onClick={handleNextPage}
                   className="bg-khan-blue hover:bg-khan-blue/90 px-6"
                 >
-                  Next
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  {!isMobile && "Next"}
+                  <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
                 </Button>
               )}
             </div>

@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle, XCircle, ArrowRight } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Question {
   id: string;
@@ -21,6 +22,7 @@ export default function SectionReview() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const { subject: subjectId, testId, section: sectionCode } = router.query;
+  const isMobile = useIsMobile();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [currentPage, setCurrentPage] = useState(0);
@@ -246,8 +248,8 @@ export default function SectionReview() {
             variant="outline"
             className="px-8"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Previous
+            <ArrowLeft className={isMobile ? "" : "mr-2 h-4 w-4"} />
+            {!isMobile && "Previous"}
           </Button>
 
           {currentPage === totalPages - 1 ? (
@@ -263,8 +265,8 @@ export default function SectionReview() {
               onClick={() => setCurrentPage(currentPage + 1)}
               className="bg-khan-blue hover:bg-khan-blue/90 px-8"
             >
-              Next
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {!isMobile && "Next"}
+              <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
             </Button>
           )}
         </div>
