@@ -963,11 +963,13 @@ export default function Quiz() {
           <>
             {/* Top Navigation Bar */}
             <Card className="mb-2 sticky top-0 z-10 bg-white shadow-md">
-              <CardContent className="pt-2 pb-2">
-                <div className="flex items-center justify-between mb-1">
-                  <h2 className="text-sm font-semibold">
+              <CardContent className="py-2">
+                {/* First Line: Page info, Question Navigation label, Exit button */}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold">
                     Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
-                  </h2>
+                  </span>
+                  <span className="text-sm font-semibold text-khan-gray-dark">Question Navigation</span>
                   <Button
                     onClick={() => setShowExitDialog(true)}
                     variant="outline"
@@ -978,11 +980,19 @@ export default function Quiz() {
                   </Button>
                 </div>
 
-                <div className="space-y-1">
-                  <div className="text-center">
-                    <span className="text-xs font-semibold text-khan-gray-dark">Question Navigation</span>
-                  </div>
-                  
+                {/* Second Line: Previous button, numbered boxes, Next button */}
+                <div className="flex items-center justify-between gap-4">
+                  <Button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 0}
+                    variant="outline"
+                    className="px-4"
+                    size="sm"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Previous
+                  </Button>
+
                   <div className="flex items-center justify-center gap-1.5 flex-wrap">
                     {questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage).map((_, idx) => {
                       const globalIndex = currentPage * questionsPerPage + idx;
@@ -1013,37 +1023,24 @@ export default function Quiz() {
                     })}
                   </div>
 
-                  <div className="flex justify-between items-center gap-4">
+                  {currentPage === totalPages - 1 ? (
                     <Button
-                      onClick={handlePreviousPage}
-                      disabled={currentPage === 0}
-                      variant="outline"
-                      className="px-4"
+                      onClick={() => setShowSubmitConfirm(true)}
+                      className="bg-khan-green hover:bg-khan-green/90 px-4"
                       size="sm"
                     >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Previous
+                      Submit Exam
                     </Button>
-
-                    {currentPage === totalPages - 1 ? (
-                      <Button
-                        onClick={() => setShowSubmitConfirm(true)}
-                        className="bg-khan-green hover:bg-khan-green/90 px-4"
-                        size="sm"
-                      >
-                        Submit Exam
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={handleNextPage}
-                        className="bg-khan-blue hover:bg-khan-blue/90 px-4"
-                        size="sm"
-                      >
-                        Next
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                  ) : (
+                    <Button
+                      onClick={handleNextPage}
+                      className="bg-khan-blue hover:bg-khan-blue/90 px-4"
+                      size="sm"
+                    >
+                      Next
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
