@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../../../../server/firebase-admin";
-import { storage } from "../../../../../../../server/storage";
+import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../../../server/firebase-admin";
+import { storage } from "../../../../../../server/storage";
 
 export default async function handler(
   req: NextApiRequest,
