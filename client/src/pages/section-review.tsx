@@ -149,11 +149,9 @@ export default function SectionReview() {
               {!isMobile && "Summary"}
             </Button>
             <h2 className="text-base md:text-xl font-semibold absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-              {isMobile 
-                ? (sectionCode === "all" 
-                    ? "Full Review" 
-                    : `Unit ${sectionData?.unitNumber || ""} Review`)
-                : `Review - Page ${currentPage + 1}/${totalPages} (Q ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`}
+              {sectionCode === "all" 
+                ? `Review - Page ${currentPage + 1}/${totalPages}`
+                : `Review Unit ${sectionData?.unitNumber || ""} - Page ${currentPage + 1}/${totalPages}`}
             </h2>
             <div className="w-24"></div> {/* Spacer for layout balance */}
           </div>
@@ -193,7 +191,7 @@ export default function SectionReview() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {options.map((option) => {
                       const isUserAnswer = userAnswer === option.label;
                       const isCorrectAnswer =
@@ -202,7 +200,7 @@ export default function SectionReview() {
                       return (
                         <div
                           key={option.label}
-                          className={`w-full text-left p-3 rounded-lg border ${
+                          className={`w-full text-left p-2 rounded-lg border ${
                             isCorrectAnswer
                               ? "border-green-500 bg-green-50"
                               : isUserAnswer && !isCorrect
