@@ -889,101 +889,147 @@ export default function Quiz() {
     <div className="min-h-screen bg-khan-background">
       <Navigation />
       <div className="container mx-auto px-4 py-4">
-        {/* Header */}
-        <div className="mb-4">
-          <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Leave {isFullLength ? 'Test' : 'Quiz'}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {isFullLength
-                    ? 'Your progress on this full-length practice test will be lost if you leave now. Are you sure you want to exit?'
-                    : 'Your progress on this unit practice quiz will be lost if you leave now. Are you sure you want to exit?'
-                  }
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Continue {isFullLength ? 'Test' : 'Quiz'}</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmExit} className="bg-red-600 hover:bg-red-700">
-                  Yes, Exit {isFullLength ? 'Test' : 'Quiz'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+        {/* Header - Only for regular quiz */}
+        {!isFullLength && (
+          <div className="mb-4">
+            <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Leave Quiz?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Your progress on this unit practice quiz will be lost if you leave now. Are you sure you want to exit?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Continue Quiz</AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmExit} className="bg-red-600 hover:bg-red-700">
+                    Yes, Exit Quiz
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-semibold">
-              {isFullLength
-                ? `Page ${currentPage + 1} of ${totalPages} (Questions ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`
-                : `Question ${currentQuestionIndex + 1} of ${questions.length}`
-              }
-            </h2>
-            <div className="flex items-center gap-3">
-              {isFullLength ? (
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-semibold">
+                Question {currentQuestionIndex + 1} of {questions.length}
+              </h2>
+              <div className="flex items-center gap-3">
+                <div className="text-lg font-semibold text-khan-green">
+                  Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
+                </div>
                 <Button
                   onClick={() => setShowExitDialog(true)}
                   variant="outline"
                   size="sm"
                   className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
                 >
-                  Exit Test
+                  Exit Quiz
                 </Button>
-              ) : (
-                <>
-                  <div className="text-lg font-semibold text-khan-green">
-                    Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
-                  </div>
+              </div>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        )}
+
+        {/* Alert Dialog for Full-Length Test */}
+        {isFullLength && (
+          <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Leave Test?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Your progress on this full-length practice test will be lost if you leave now. Are you sure you want to exit?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Continue Test</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmExit} className="bg-red-600 hover:bg-red-700">
+                  Yes, Exit Test
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
+        {isFullLength ? (
+          <>
+            {/* Top Navigation Bar */}
+            <Card className="mb-4 sticky top-0 z-10 bg-white shadow-md">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-semibold">
+                    Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
+                  </h2>
                   <Button
                     onClick={() => setShowExitDialog(true)}
                     variant="outline"
                     size="sm"
                     className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
                   >
-                    Exit Quiz
+                    Exit Test
                   </Button>
-                </>
-              )}
-            </div>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
+                </div>
 
-        {isFullLength ? (
-          <>
-            {/* Question Navigation Box */}
-            <Card className="mb-4 sticky top-0 z-10 bg-white shadow-md">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-khan-gray-dark">Question Navigation</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex flex-wrap gap-2">
-                  {questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage).map((_, idx) => {
-                    const globalIndex = currentPage * questionsPerPage + idx;
-                    const isAnswered = userAnswers[globalIndex] !== undefined;
-                    const isFlagged = flaggedQuestions.has(globalIndex);
+                <div className="flex items-center gap-4">
+                  <Button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 0}
+                    variant="outline"
+                    className="px-6"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Previous
+                  </Button>
 
-                    return (
-                      <button
-                        key={globalIndex}
-                        onClick={() => {
-                          const element = document.getElementById(`question-${globalIndex}`);
-                          element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }}
-                        className={`relative w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
-                          isAnswered
-                            ? 'bg-gray-200 border-2 border-gray-400 text-gray-700'
-                            : 'bg-white border-2 border-gray-300 text-gray-500'
-                        }`}
-                      >
-                        <span className="relative z-10">{globalIndex + 1}</span>
-                        {isFlagged && (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="absolute top-0 right-0 h-3.5 w-3.5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </button>
-                    );
-                  })}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-khan-gray-dark mr-2">Question Navigation</span>
+                      {questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage).map((_, idx) => {
+                        const globalIndex = currentPage * questionsPerPage + idx;
+                        const isAnswered = userAnswers[globalIndex] !== undefined;
+                        const isFlagged = flaggedQuestions.has(globalIndex);
+
+                        return (
+                          <button
+                            key={globalIndex}
+                            onClick={() => {
+                              const element = document.getElementById(`question-${globalIndex}`);
+                              element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }}
+                            className={`relative w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
+                              isAnswered
+                                ? 'bg-gray-200 border-2 border-gray-400 text-gray-700'
+                                : 'bg-white border-2 border-gray-300 text-gray-500'
+                            }`}
+                          >
+                            <span className="relative z-10">{globalIndex + 1}</span>
+                            {isFlagged && (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="absolute top-0 right-0 h-3.5 w-3.5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {currentPage === totalPages - 1 ? (
+                    <Button
+                      onClick={() => setShowSubmitConfirm(true)}
+                      className="bg-khan-green hover:bg-khan-green/90 px-6"
+                    >
+                      Submit Exam
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleNextPage}
+                      className="bg-khan-blue hover:bg-khan-blue/90 px-6"
+                    >
+                      Next
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1077,34 +1123,9 @@ export default function Quiz() {
               </AlertDialogContent>
             </AlertDialog>
 
-            {/* Full-length navigation */}
-            <div className="flex justify-between gap-4">
-              <Button
-                onClick={handlePreviousPage}
-                disabled={currentPage === 0}
-                variant="outline"
-                className="px-8"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Previous
-              </Button>
-
-              {currentPage === totalPages - 1 ? (
-                <Button
-                  onClick={() => setShowSubmitConfirm(true)}
-                  className="bg-khan-green hover:bg-khan-green/90 px-8"
-                >
-                  Submit Exam
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleNextPage}
-                  className="bg-khan-blue hover:bg-khan-blue/90 px-8"
-                >
-                  Next
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              )}
+            {/* Bottom page indicator */}
+            <div className="text-center text-sm text-gray-600 mt-4">
+              Page {currentPage + 1} of {totalPages}
             </div>
           </>
         ) : (
