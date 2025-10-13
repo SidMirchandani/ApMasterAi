@@ -91,7 +91,7 @@ export default function FullLengthHistory() {
       <div className="container mx-auto px-4 py-4 md:py-6">
         <div className="max-w-6xl mx-auto">
           <div className="mb-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <Button
                 onClick={() => router.push(`/study?subject=${subjectId}`)}
                 variant="outline"
@@ -100,40 +100,33 @@ export default function FullLengthHistory() {
                 <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
                 {!isMobile && "Study"}
               </Button>
-              <h1 className="text-xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                Test History
-              </h1>
               <div className="w-24"></div>
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center mb-4">
               <Button
                 onClick={handleStartNewTest}
-                className="bg-khan-green hover:bg-khan-green/90"
+                className="bg-khan-green hover:bg-khan-green/90 text-base px-6 py-5"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 Start New Test
               </Button>
             </div>
+            <h1 className="text-lg md:text-2xl font-bold text-khan-gray-dark text-center mb-2">
+              Test History
+            </h1>
           </div>
 
           {testHistory.length === 0 ? (
             <Card>
-              <CardContent className="pt-8 pb-8 text-center">
+              <CardContent className="pt-6 pb-6 text-center">
                 <Trophy className="h-16 w-16 text-khan-gray-light mx-auto mb-4" />
                 <h2 className="text-xl font-semibold mb-2">
                   No Tests Taken Yet
                 </h2>
-                <p className="text-khan-gray-medium mb-6">
+                <p className="text-khan-gray-medium">
                   Start your first full-length practice test to track your
                   progress
                 </p>
-                <Button
-                  onClick={handleStartNewTest}
-                  className="bg-khan-green hover:bg-khan-green/90"
-                >
-                  <PlayCircle className="mr-2 h-5 w-5" />
-                  Take First Test
-                </Button>
               </CardContent>
             </Card>
           ) : (

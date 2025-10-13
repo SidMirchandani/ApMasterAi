@@ -87,6 +87,11 @@ export default function FullLengthResults() {
     });
   };
 
+  const handleStartNewTest = () => {
+    router.push(`/take-test?subject=${subjectId}`);
+  };
+
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-khan-background">
@@ -240,12 +245,22 @@ export default function FullLengthResults() {
           </CardContent>
         </Card>
 
+        {/* Start New Test Button */}
+        <div className="mt-6 mb-4 text-center">
+          <Button
+            onClick={handleStartNewTest}
+            className="w-full md:w-auto px-6 py-3 text-lg font-semibold bg-khan-green hover:bg-khan-green/90"
+          >
+            Start New Test
+          </Button>
+        </div>
+
         {/* Unit Performance Breakdown */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <CheckCircle className="text-khan-blue h-5 w-5" />
-              Test History
+              <span className="text-base md:text-lg font-bold">Test History</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
