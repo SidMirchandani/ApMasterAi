@@ -487,8 +487,8 @@ export default function Study() {
               data-testid="button-back"
               className="transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Dashboard
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Dashboard
             </Button>
             <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">

@@ -22,7 +22,7 @@ export default function FullLengthHistory() {
   const { subject: subjectId } = router.query;
   const [testHistory, setTestHistory] = useState<TestHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -92,7 +92,8 @@ export default function FullLengthHistory() {
                 variant="outline"
                 size="sm"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Study
               </Button>
               <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">Test History</h1>
               <div className="w-24"></div>

@@ -153,7 +153,7 @@ export default function FullLengthResults() {
             Test History
           </Button>
           <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
-            Test Results
+            Results Summary
           </h1>
           <div className="w-24"></div>
         </div>
