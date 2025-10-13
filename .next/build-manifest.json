@@ -42,6 +42,11 @@
       "static/chunks/main.js",
       "static/chunks/pages/quiz.js"
     ],
+    "/section-review": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/section-review.js"
+    ],
     "/study": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
