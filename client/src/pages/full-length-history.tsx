@@ -88,10 +88,10 @@ export default function FullLengthHistory() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-4 md:py-6">
+      <div className="container mx-auto px-4 py-3">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-4">
-            <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="mb-3">
+            <div className="flex items-center justify-between gap-3 mb-3">
               <Button
                 onClick={() => router.push(`/study?subject=${subjectId}`)}
                 variant="outline"
@@ -100,39 +100,38 @@ export default function FullLengthHistory() {
                 <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
                 {!isMobile && "Study"}
               </Button>
-            </div>
-            <h1 className="text-base md:text-xl font-bold text-khan-gray-dark text-center mb-4">
-              Test History
-            </h1>
-            <div className="flex justify-center mb-4">
+              <h1 className="text-base md:text-xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
+                Test History
+              </h1>
               <Button
                 onClick={handleStartNewTest}
-                className="bg-khan-green hover:bg-khan-green/90 w-full max-w-md"
+                className="bg-khan-green hover:bg-khan-green/90"
+                size="sm"
               >
-                <PlayCircle className="mr-2 h-5 w-5" />
-                Start New Test
+                <PlayCircle className={isMobile ? "" : "mr-2 h-4 w-4"} />
+                {!isMobile && "Start New Test"}
               </Button>
             </div>
           </div>
 
           {testHistory.length === 0 ? (
             <Card>
-              <CardContent className="pt-6 pb-6 text-center">
-                <Trophy className="h-16 w-16 text-khan-gray-light mx-auto mb-4" />
-                <h2 className="text-xl font-semibold mb-2">
+              <CardContent className="pt-4 pb-4 text-center">
+                <Trophy className="h-12 w-12 text-khan-gray-light mx-auto mb-3" />
+                <h2 className="text-lg font-semibold mb-2">
                   No Tests Taken Yet
                 </h2>
-                <p className="text-khan-gray-medium">
+                <p className="text-sm text-khan-gray-medium">
                   Start your first full-length practice test to track your
                   progress
                 </p>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {testHistory.map((test, index) => (
                 <Card key={test.id} className="relative group">
-                  <CardContent className="pt-4 pb-4">
+                  <CardContent className="pt-3 pb-3">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-4 flex-1">
                         <div className="flex items-center gap-3">
