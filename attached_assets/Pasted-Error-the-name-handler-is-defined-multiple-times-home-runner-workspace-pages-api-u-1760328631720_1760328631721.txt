@@ -1,0 +1,227 @@
+Error: 
+  × the name `handler` is defined multiple times
+    ╭─[/home/runner/workspace/pages/api/user/subjects/[subjectId]/test-results/[testId]/section/[sectionCode].ts:12:1]
+ 12 │   return user.id;
+ 13 │ }
+ 14 │ 
+ 15 │ export default async function handler(
+    ·                               ───┬───
+    ·                                  ╰── previous definition of `handler` here
+ 16 │   req: NextApiRequest,
+ 17 │   res: NextApiResponse,
+ 18 │ ) {
+ 19 │   if (req.method !== "GET") {
+ 20 │     res.setHeader("Allow", ["GET"]);
+ 21 │     return res.status(405).json({
+ 22 │       success: false,
+ 23 │       message: `Method ${req.method} not allowed`,
+ 24 │     });
+ 25 │   }
+ 26 │ 
+ 27 │   try {
+ 28 │     const authHeader = req.headers.authorization;
+ 29 │     if (!authHeader?.startsWith("Bearer ")) {
+ 30 │       return res.status(401).json({ success: false, message: "Unauthorized" });
+ 31 │     }
+ 32 │ 
+ 33 │     const token = authHeader.split(" ")[1];
+ 34 │     let decodedToken;
+ 35 │     try {
+ 36 │       const { verifyFirebaseToken } = await import("../../../../../../../../server/firebase-admin");
+ 37 │       decodedToken = await verifyFirebaseToken(token);
+ 38 │     } catch (error) {
+ 39 │       return res.status(401).json({ success: false, message: "Invalid token" });
+ 40 │     }
+ 41 │ 
+ 42 │     const firebaseUid = decodedToken.uid;
+ 43 │     const userId = await getOrCreateUser(firebaseUid);
+ 44 │ 
+ 45 │     const { subjectId, testId, sectionCode } = req.query;
+ 46 │     if (!subjectId || typeof subjectId !== "string" || !testId || typeof testId !== "string" || !sectionCode || typeof sectionCode !== "string") {
+ 47 │       return res.status(400).json({
+ 48 │         success: false,
+ 49 │         message: "Valid subject ID, test ID, and section code are required",
+ 50 │       });
+ 51 │     }
+ 52 │ 
+ 53 │     const sectionData = await storage.getSectionReviewData(userId, subjectId, testId, sectionCode);
+ 54 │ 
+ 55 │     if (!sectionData) {
+ 56 │       return res.status(404).json({
+ 57 │         success: false,
+ 58 │         message: "Section data not found",
+ 59 │       });
+ 60 │     }
+ 61 │ 
+ 62 │     return res.status(200).json({
+ 63 │       success: true,
+ 64 │       data: sectionData,
+ 65 │     });
+ 66 │   } catch (error) {
+ 67 │     console.error("[section-review API] Error:", error);
+ 68 │     return res.status(500).json({
+ 69 │       success: false,
+ 70 │       message: "Internal server error",
+ 71 │     });
+ 72 │   }
+ 73 │ }
+ 74 │ import { NextApiRequest, NextApiResponse } from "next";
+ 75 │ import admin from "@/server/firebase-admin";
+ 76 │ import { verifyAuthToken } from "@/server/firebase-admin";
+ 77 │ 
+ 78 │ export default async function handler(
+    ·                               ───┬───
+    ·                                  ╰── `handler` redefined here
+ 79 │   req: NextApiRequest,
+ 80 │   res: NextApiResponse
+ 81 │ ) {
+    ╰────
+
+  × the name `default` is exported multiple times
+     ╭─[/home/runner/workspace/pages/api/user/subjects/[subjectId]/test-results/[testId]/section/[sectionCode].ts:12:1]
+  12 │       return user.id;
+  13 │     }
+  14 │     
+  15 │ ╭─▶ export default async function handler(
+  16 │ │     req: NextApiRequest,
+  17 │ │     res: NextApiResponse,
+  18 │ │   ) {
+  19 │ │     if (req.method !== "GET") {
+  20 │ │       res.setHeader("Allow", ["GET"]);
+  21 │ │       return res.status(405).json({
+  22 │ │         success: false,
+  23 │ │         message: `Method ${req.method} not allowed`,
+  24 │ │       });
+  25 │ │     }
+  26 │ │   
+  27 │ │     try {
+  28 │ │       const authHeader = req.headers.authorization;
+  29 │ │       if (!authHeader?.startsWith("Bearer ")) {
+  30 │ │         return res.status(401).json({ success: false, message: "Unauthorized" });
+  31 │ │       }
+  32 │ │   
+  33 │ │       const token = authHeader.split(" ")[1];
+  34 │ │       let decodedToken;
+  35 │ │       try {
+  36 │ │         const { verifyFirebaseToken } = await import("../../../../../../../../server/firebase-admin");
+  37 │ │         decodedToken = await verifyFirebaseToken(token);
+  38 │ │       } catch (error) {
+  39 │ │         return res.status(401).json({ success: false, message: "Invalid token" });
+  40 │ │       }
+  41 │ │   
+  42 │ │       const firebaseUid = decodedToken.uid;
+  43 │ │       const userId = await getOrCreateUser(firebaseUid);
+  44 │ │   
+  45 │ │       const { subjectId, testId, sectionCode } = req.query;
+  46 │ │       if (!subjectId || typeof subjectId !== "string" || !testId || typeof testId !== "string" || !sectionCode || typeof sectionCode !== "string") {
+  47 │ │         return res.status(400).json({
+  48 │ │           success: false,
+  49 │ │           message: "Valid subject ID, test ID, and section code are required",
+  50 │ │         });
+  51 │ │       }
+  52 │ │   
+  53 │ │       const sectionData = await storage.getSectionReviewData(userId, subjectId, testId, sectionCode);
+  54 │ │   
+  55 │ │       if (!sectionData) {
+  56 │ │         return res.status(404).json({
+  57 │ │           success: false,
+  58 │ │           message: "Section data not found",
+  59 │ │         });
+  60 │ │       }
+  61 │ │   
+  62 │ │       return res.status(200).json({
+  63 │ │         success: true,
+  64 │ │         data: sectionData,
+  65 │ │       });
+  66 │ │     } catch (error) {
+  67 │ │       console.error("[section-review API] Error:", error);
+  68 │ │       return res.status(500).json({
+  69 │ │         success: false,
+  70 │ │         message: "Internal server error",
+  71 │ │       });
+  72 │ │     }
+  73 │ ├─▶ }
+     · ╰──── previous exported here
+  74 │     import { NextApiRequest, NextApiResponse } from "next";
+  75 │     import admin from "@/server/firebase-admin";
+  76 │     import { verifyAuthToken } from "@/server/firebase-admin";
+  77 │     
+  78 │ ╭─▶ export default async function handler(
+  79 │ │     req: NextApiRequest,
+  80 │ │     res: NextApiResponse
+  81 │ │   ) {
+  82 │ │     if (req.method !== "GET") {
+  83 │ │       return res.status(405).json({ error: "Method not allowed" });
+  84 │ │     }
+  85 │ │   
+  86 │ │     try {
+  87 │ │       const authHeader = req.headers.authorization;
+  88 │ │       if (!authHeader?.startsWith("Bearer ")) {
+  89 │ │         return res.status(401).json({ error: "Unauthorized" });
+  90 │ │       }
+  91 │ │   
+  92 │ │       const token = authHeader.split("Bearer ")[1];
+  93 │ │       const decodedToken = await verifyAuthToken(token);
+  94 │ │       const userId = decodedToken.uid;
+  95 │ │   
+  96 │ │       const { subjectId, testId, sectionCode } = req.query;
+  97 │ │   
+  98 │ │       if (!subjectId || !testId || !sectionCode) {
+  99 │ │         return res.status(400).json({ error: "Missing required parameters" });
+ 100 │ │       }
+ 101 │ │   
+ 102 │ │       const db = admin.firestore();
+ 103 │ │       
+ 104 │ │       // Fetch the full test result
+ 105 │ │       const testDoc = await db
+ 106 │ │         .collection("users")
+ 107 │ │         .doc(userId)
+ 108 │ │         .collection("subjects")
+ 109 │ │         .doc(subjectId as string)
+ 110 │ │         .collection("fullLengthTests")
+ 111 │ │         .doc(testId as string)
+ 112 │ │         .get();
+ 113 │ │   
+ 114 │ │       if (!testDoc.exists) {
+ 115 │ │         return res.status(404).json({ error: "Test not found" });
+ 116 │ │       }
+ 117 │ │   
+ 118 │ │       const testData = testDoc.data();
+ 119 │ │       
+ 120 │ │       // Filter questions and answers for the specific section
+ 121 │ │       const sectionQuestions = testData?.questions?.filter(
+ 122 │ │         (q: any) => q.section_code === sectionCode
+ 123 │ │       ) || [];
+ 124 │ │       
+ 125 │ │       // Filter user answers for this section's questions
+ 126 │ │       const sectionAnswers: { [key: number]: string } = {};
+ 127 │ │       testData?.questions?.forEach((q: any, idx: number) => {
+ 128 │ │         if (q.section_code === sectionCode && testData.userAnswers?.[idx]) {
+ 129 │ │           sectionAnswers[idx] = testData.userAnswers[idx];
+ 130 │ │         }
+ 131 │ │       });
+ 132 │ │   
+ 133 │ │       // Get section metadata from sectionBreakdown
+ 134 │ │       const sectionMetadata = testData?.sectionBreakdown?.[sectionCode as string];
+ 135 │ │   
+ 136 │ │       res.status(200).json({
+ 137 │ │         success: true,
+ 138 │ │         data: {
+ 139 │ │           questions: sectionQuestions,
+ 140 │ │           userAnswers: sectionAnswers,
+ 141 │ │           unitNumber: sectionMetadata?.unitNumber,
+ 142 │ │           sectionName: sectionMetadata?.name,
+ 143 │ │           score: sectionMetadata?.correct,
+ 144 │ │           totalQuestions: sectionMetadata?.total,
+ 145 │ │         },
+ 146 │ │       });
+ 147 │ │     } catch (error) {
+ 148 │ │       console.error("Error fetching section review:", error);
+ 149 │ │       res.status(500).json({ error: "Internal server error" });
+ 150 │ │     }
+ 151 │ ├─▶ }
+     · ╰──── exported more than once
+     ╰────
+
+Error: 
+  ☞ Exported identifiers must be unique
