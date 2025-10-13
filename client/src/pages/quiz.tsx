@@ -775,7 +775,7 @@ export default function Quiz() {
                     onClick={() => router.push(`/study?subject=${subjectId}`)}
                     variant="outline"
                   >
-                    Exit Quiz
+                    Exit Practice Quiz
                   </Button>
                 </div>
               </CardContent>
@@ -804,10 +804,13 @@ export default function Quiz() {
                 {!isMobile && "Back to Results"}
               </Button>
               <h2 className="text-base md:text-xl font-semibold absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                {isMobile ? "Full Review" : `Review - Page ${currentPage + 1} of ${totalPages} (Questions ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`}
+                {isMobile
+                  ? "Full Review"
+                  : `Review - Page ${currentPage + 1} of ${totalPages} (Questions ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`}
               </h2>
               <div className="text-lg font-semibold text-khan-green">
-                {!isMobile && "Final Score: "}{score}/{questions.length}
+                {!isMobile && "Final Score: "}
+                {score}/{questions.length}
               </div>
             </div>
             <Progress
@@ -1032,27 +1035,33 @@ export default function Quiz() {
         {/* Header - Only for regular quiz */}
         {!isFullLength && (
           <div className="mb-2">
-            <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Leave Quiz?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Your progress on this unit practice quiz will be lost if you
-                    leave now. Are you sure you want to exit?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Continue Quiz</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={confirmExit}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    Yes, Exit Quiz
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
+            {!isFullLength && (
+              <AlertDialog
+                open={showExitDialog}
+                onOpenChange={setShowExitDialog}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Leave Full-Length Test?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Your progress on this unit practice quiz will be lost if
+                      you leave now. Are you sure you want to exit?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>
+                      Continue Practice Quiz
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={confirmExit}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Yes, Exit Practice Quiz
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <div className="flex flex-col items-center mb-1 gap-1">
               <Button
                 onClick={() => setShowExitDialog(true)}
@@ -1060,7 +1069,7 @@ export default function Quiz() {
                 size="sm"
                 className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
               >
-                Exit Quiz
+                Exit Practice Quiz
               </Button>
               <div className="flex justify-between items-center w-full">
                 <h2 className="text-lg font-semibold">
@@ -1077,27 +1086,28 @@ export default function Quiz() {
         )}
 
         {/* Alert Dialog for Full-Length Test */}
-        <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Leave Test?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Your progress on this full-length practice test will be lost if
-                you leave now. Are you sure you want to exit?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Continue Test</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={confirmExit}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Yes, Exit Test
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
+        {isFullLength && (
+          <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Leave Full-Length Test?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Your progress on this full-length test will be lost if you
+                  leave now. Are you sure you want to exit?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Continue Full-Length Test</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmExit}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Yes, Exit Full-Length Test
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
         {isFullLength ? (
           <>
             {/* Top Navigation Bar */}
@@ -1112,7 +1122,7 @@ export default function Quiz() {
                       size="sm"
                       className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
                     >
-                      Exit Test
+                      Exit Full-Length Test
                     </Button>
                   </div>
 
@@ -1182,11 +1192,20 @@ export default function Quiz() {
                     </div>
 
                     <Button
-                      onClick={() => currentPage === totalPages - 1 ? setShowSubmitConfirm(true) : setCurrentPage(currentPage + 1)}
+                      onClick={() =>
+                        currentPage === totalPages - 1
+                          ? setShowSubmitConfirm(true)
+                          : setCurrentPage(currentPage + 1)
+                      }
                       disabled={currentPage === totalPages - 1}
-                      className={currentPage === totalPages - 1 ? `bg-gray-400 cursor-not-allowed ${isMobile ? "px-3" : "px-8"}` : `bg-khan-blue hover:bg-khan-blue/90 ${isMobile ? "px-3" : "px-8"}`}
+                      className={
+                        currentPage === totalPages - 1
+                          ? `bg-gray-400 cursor-not-allowed ${isMobile ? "px-3" : "px-8"}`
+                          : `bg-khan-blue hover:bg-khan-blue/90 ${isMobile ? "px-3" : "px-8"}`
+                      }
                     >
-                      {!isMobile && (currentPage === totalPages - 1 ? "End" : "Next")}
+                      {!isMobile &&
+                        (currentPage === totalPages - 1 ? "End" : "Next")}
                       <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
                     </Button>
                   </div>
@@ -1218,7 +1237,7 @@ export default function Quiz() {
                           onClick={() => toggleFlag(globalIndex)}
                           variant="outline"
                           size="sm"
-                          className={`flex-shrink-0 h-8 ${isMobile ? 'px-2' : 'px-2'} ${
+                          className={`flex-shrink-0 h-8 ${isMobile ? "px-2" : "px-2"} ${
                             flaggedQuestions.has(globalIndex)
                               ? "border-red-500 bg-red-50 text-red-700 hover:bg-red-100"
                               : "border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -1226,7 +1245,7 @@ export default function Quiz() {
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className={`h-3.5 w-3.5 ${!isMobile ? 'mr-1' : ''}`}
+                            className={`h-3.5 w-3.5 ${!isMobile ? "mr-1" : ""}`}
                             viewBox="0 0 20 20"
                             fill="currentColor"
                           >
