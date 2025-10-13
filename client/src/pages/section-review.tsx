@@ -68,6 +68,7 @@ export default function SectionReview() {
           setQuestions(data.data.questions);
           setUserAnswers(data.data.userAnswers);
         } else {
+          console.log("📤 Fetching section data for:", { subjectId, testId, sectionCode });
           const response = await apiRequest(
             "GET",
             `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`,
@@ -76,6 +77,12 @@ export default function SectionReview() {
             throw new Error("Failed to fetch section questions");
 
           const data = await response.json();
+          console.log("📥 Section data received:", {
+            questionCount: data.data?.questions?.length,
+            sectionCode: sectionCode,
+            unitNumber: data.data?.unitNumber,
+            firstQuestion: data.data?.questions?.[0]?.section_code
+          });
           setSectionData(data.data);
           setQuestions(data.data.questions);
           setUserAnswers(data.data.userAnswers);

@@ -75,10 +75,16 @@ export default function FullLengthResults() {
     fetchTestData();
   }, [subjectId, testId, isAuthenticated]);
 
-  const handleReviewSection = (sectionCode: string) => {
-    router.push(
-      `/section-review?subject=${subjectId}&testId=${testId}&section=all`,
-    );
+  const handleReviewUnit = (sectionCode: string) => {
+    console.log("📤 Navigating to section review with code:", sectionCode);
+    router.push({
+      pathname: "/section-review",
+      query: {
+        subject: subjectId,
+        testId: testId,
+        section: sectionCode, // This will be the actual section code like "BEC", "NIPD", etc.
+      },
+    });
   };
 
   if (loading || isLoading) {
@@ -254,7 +260,7 @@ export default function FullLengthResults() {
                     <div
                       key={sectionCode}
                       className="border rounded-lg p-3 hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
-                      onClick={() => handleReviewSection(sectionCode)}
+                      onClick={() => handleReviewUnit(sectionCode)}
                     >
                       <div className="flex justify-between items-center gap-3">
                         <div className="flex-1 min-w-0">

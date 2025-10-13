@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../../../../../../server/storage";
 
@@ -50,18 +49,60 @@ export default async function handler(
       });
     }
 
-    const sectionData = await storage.getSectionReviewData(userId, subjectId, testId, sectionCode);
+    console.log("📥 Section API Request:", {
+      userId: decodedToken.uid,
+      subjectId,
+      testId,
+      sectionCode,
+    });
 
-    if (!sectionData) {
+    // Get the test data
+    const testData = await storage.getFullLengthTest(
+      decodedToken.uid,
+      subjectId as string,
+      testId as string,
+    );
+
+    if (!testData) {
       return res.status(404).json({
         success: false,
-        message: "Section data not found",
+        error: "Test not found",
       });
     }
 
+    // Filter questions by section_code
+    const sectionQuestions = testData.questions.filter(
+      (q: any) => q.section_code === sectionCode
+    );
+
+    // Filter user answers to match the filtered questions
+    const sectionUserAnswers: { [key: number]: string } = {};
+    let sectionIndex = 0;
+
+    testData.questions.forEach((q: any, idx: number) => {
+      if (q.section_code === sectionCode) {
+        sectionUserAnswers[sectionIndex] = testData.userAnswers[idx];
+        sectionIndex++;
+      }
+    });
+
+    console.log("📤 Section API Response:", {
+      sectionCode,
+      questionCount: sectionQuestions.length,
+      userAnswerCount: Object.keys(sectionUserAnswers).length,
+      sampleQuestion: sectionQuestions[0] ? {
+        section_code: sectionQuestions[0].section_code,
+        prompt: sectionQuestions[0].prompt?.substring(0, 50) + "..."
+      } : null
+    });
+
     return res.status(200).json({
       success: true,
-      data: sectionData,
+      data: {
+        questions: sectionQuestions,
+        userAnswers: sectionUserAnswers,
+        unitNumber: testData.sectionBreakdown?.[sectionCode]?.unitNumber,
+      },
     });
   } catch (error) {
     console.error("[section-review API] Error:", error);
