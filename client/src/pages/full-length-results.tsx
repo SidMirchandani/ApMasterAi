@@ -129,48 +129,65 @@ export default function FullLengthResults() {
             <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark">Test Results</h1>
           </div>
 
-          {/* Overall Score Card */}
+          {/* Overall Score Card - Compact */}
           <Card className="border-t-4 border-t-khan-green">
-            <CardContent className="pt-6 pb-6">
-              <div className="flex flex-col gap-4">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">Test Results</h2>
-                  <p className="text-sm text-gray-500">{formatDateTime(testData.date)}</p>
+                  <h2 className="text-xl font-bold">Test Results</h2>
+                  <p className="text-xs text-gray-500">{formatDateTime(testData.date)}</p>
                 </div>
                 
-                <div className="flex items-center gap-4">
-                  <div className={`inline-block px-6 py-2 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold`}>
-                    {overallPerformance.label}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`px-4 py-1 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-sm`}>
+                      {overallPerformance.label}
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {testData.score} out of {testData.totalQuestions} questions correct
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    {testData.score} out of {testData.totalQuestions} questions correct
-                  </p>
+                  <Button
+                    onClick={() => router.push(`/section-review?subject=${subjectId}&testId=${testId}&section=all`)}
+                    variant="outline"
+                    size="sm"
+                    className="border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
+                  >
+                    <BookOpen className="h-4 w-4 mr-1" />
+                    Review Whole Test
+                  </Button>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-3 gap-4 mt-2">
-                  <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
-                    <div className="flex justify-center mb-2">
-                      <CheckCircle className="h-12 w-12 text-green-500" />
-                    </div>
-                    <p className="text-3xl font-bold text-gray-900">{testData.score}</p>
-                    <p className="text-sm text-gray-600 mt-1">Correct Answers</p>
-                  </div>
-                  <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
-                    <div className="flex justify-center mb-2">
-                      <XCircle className="h-12 w-12 text-red-500" />
-                    </div>
-                    <p className="text-3xl font-bold text-gray-900">{testData.totalQuestions - testData.score}</p>
-                    <p className="text-sm text-gray-600 mt-1">Incorrect Answers</p>
-                  </div>
-                  <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
-                    <div className="flex justify-center mb-2">
-                      <div className="h-12 w-12 rounded-full bg-khan-blue flex items-center justify-center">
-                        <span className="text-white font-bold text-xl">{testData.totalQuestions}</span>
+                {/* Stats Grid - Compact */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900">{testData.score}</p>
+                        <p className="text-xs text-gray-600">Correct</p>
                       </div>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">Total</p>
-                    <p className="text-sm text-gray-600 mt-1">Questions</p>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <XCircle className="h-6 w-6 text-red-500" />
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900">{testData.totalQuestions - testData.score}</p>
+                        <p className="text-xs text-gray-600">Incorrect</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="h-6 w-6 rounded-full bg-khan-blue flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">{testData.totalQuestions}</span>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900">Total</p>
+                        <p className="text-xs text-gray-600">Questions</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

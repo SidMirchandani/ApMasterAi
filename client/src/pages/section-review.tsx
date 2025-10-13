@@ -54,13 +54,24 @@ export default function SectionReview() {
       }
 
       try {
-        const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`);
-        if (!response.ok) throw new Error("Failed to fetch section questions");
+        // For "all" section, fetch entire test
+        if (sectionCode === 'all') {
+          const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/test-results/${testId}`);
+          if (!response.ok) throw new Error("Failed to fetch test results");
+          
+          const data = await response.json();
+          setSectionData(data.data);
+          setQuestions(data.data.questions);
+          setUserAnswers(data.data.userAnswers);
+        } else {
+          const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`);
+          if (!response.ok) throw new Error("Failed to fetch section questions");
 
-        const data = await response.json();
-        setSectionData(data.data);
-        setQuestions(data.data.questions);
-        setUserAnswers(data.data.userAnswers);
+          const data = await response.json();
+          setSectionData(data.data);
+          setQuestions(data.data.questions);
+          setUserAnswers(data.data.userAnswers);
+        }
       } catch (error) {
         console.error("Error fetching section questions:", error);
       } finally {
@@ -106,26 +117,30 @@ export default function SectionReview() {
         <Progress value={((currentPage + 1) / totalPages) * 100} className="h-2" />
 
 
-        <div className="space-y-6 mb-6">
+        <div className="space-y-4 mb-6">
           {currentQuestions.map((q, idx) => {
             const globalIndex = currentPage * questionsPerPage + idx;
+            // Find the original question index from the full test
+            const originalIndex = questions.findIndex(question => question.id === q.id);
+            const displayNumber = originalIndex !== -1 ? originalIndex + 1 : globalIndex + 1;
+            
             const options = q.choices.map((choice, i) => ({
               label: String.fromCharCode(65 + i),
               value: choice,
             }));
             const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
-            const userAnswer = userAnswers[globalIndex];
+            const userAnswer = userAnswers[originalIndex !== -1 ? originalIndex : globalIndex];
             const isCorrect = userAnswer === correctAnswerLabel;
 
             return (
-              <Card key={globalIndex} className="border-2">
-                <CardHeader>
-                  <CardTitle className="text-lg font-medium leading-relaxed">
-                    {globalIndex + 1}. {q.prompt}
+              <Card key={globalIndex} className="border">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base font-medium leading-relaxed">
+                    {displayNumber}. {q.prompt}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 mb-4">
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
                     {options.map((option) => {
                       const isUserAnswer = userAnswer === option.label;
                       const isCorrectAnswer = option.label === correctAnswerLabel;
@@ -133,7 +148,7 @@ export default function SectionReview() {
                       return (
                         <div
                           key={option.label}
-                          className={`w-full text-left p-4 rounded-lg border-2 ${
+                          className={`w-full text-left p-3 rounded-lg border ${
                             isCorrectAnswer
                               ? "border-green-500 bg-green-50"
                               : isUserAnswer && !isCorrect
@@ -141,9 +156,9 @@ export default function SectionReview() {
                               : "border-gray-200"
                           }`}
                         >
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-2">
                             <div
-                              className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                              className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
                                 isCorrectAnswer
                                   ? "bg-green-500 text-white"
                                   : isUserAnswer && !isCorrect
@@ -153,16 +168,16 @@ export default function SectionReview() {
                             >
                               {option.label}
                             </div>
-                            <div className="flex-1 pt-1">{option.value}</div>
-                            {isCorrectAnswer && <CheckCircle className="text-green-500 flex-shrink-0" />}
-                            {isUserAnswer && !isCorrect && <XCircle className="text-red-500 flex-shrink-0" />}
+                            <div className="flex-1 text-sm pt-0.5">{option.value}</div>
+                            {isCorrectAnswer && <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />}
+                            {isUserAnswer && !isCorrect && <XCircle className="text-red-500 flex-shrink-0 h-5 w-5" />}
                           </div>
                         </div>
                       );
                     })}
                   </div>
 
-                  <div className={`p-3 rounded-lg mb-3 ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
+                  <div className={`p-2 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
                     <p className="font-semibold">
                       Your answer: {userAnswer || "Not answered"}
                       {isCorrect ? " ✓ Correct" : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
@@ -171,14 +186,14 @@ export default function SectionReview() {
 
                   {q.explanation && (
                     <Card className="border-khan-blue bg-blue-50">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <CheckCircle className="text-khan-blue h-5 w-5" />
+                      <CardHeader className="pb-2 pt-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <CheckCircle className="text-khan-blue h-4 w-4" />
                           Explanation
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <p className="text-gray-700">{q.explanation}</p>
+                      <CardContent className="pt-0 pb-3">
+                        <p className="text-sm text-gray-700">{q.explanation}</p>
                       </CardContent>
                     </Card>
                   )}

@@ -757,8 +757,8 @@ export default function Quiz() {
             </CardContent>
           </Card>
 
-          {/* Review Questions */}
-          <div className="space-y-6 mb-6">
+          {/* Review Questions - Compact */}
+          <div className="space-y-4 mb-6">
             {currentQuestions.map((q, idx) => {
               const globalIndex = currentPage * questionsPerPage + idx;
               const options = q.choices.map((choice, i) => ({
@@ -770,14 +770,14 @@ export default function Quiz() {
               const isCorrect = userAnswer === correctAnswerLabel;
 
               return (
-                <Card key={globalIndex} id={`review-question-${globalIndex}`} className="border-2">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-medium leading-relaxed">
+                <Card key={globalIndex} id={`review-question-${globalIndex}`} className="border">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base font-medium leading-relaxed">
                       {globalIndex + 1}. {q.prompt}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 mb-4">
+                  <CardContent className="space-y-3">
+                    <div className="space-y-2">
                       {options.map((option) => {
                         const isUserAnswer = userAnswer === option.label;
                         const isCorrectAnswer = option.label === correctAnswerLabel;
@@ -785,7 +785,7 @@ export default function Quiz() {
                         return (
                           <div
                             key={option.label}
-                            className={`w-full text-left p-4 rounded-lg border-2 ${
+                            className={`w-full text-left p-3 rounded-lg border ${
                               isCorrectAnswer
                                 ? "border-green-500 bg-green-50"
                                 : isUserAnswer && !isCorrect
@@ -793,9 +793,9 @@ export default function Quiz() {
                                 : "border-gray-200"
                             }`}
                           >
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-2">
                               <div
-                                className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
                                   isCorrectAnswer
                                     ? "bg-green-500 text-white"
                                     : isUserAnswer && !isCorrect
@@ -805,9 +805,9 @@ export default function Quiz() {
                               >
                                 {option.label}
                               </div>
-                              <div className="flex-1 pt-1">{option.value}</div>
-                              {isCorrectAnswer && <CheckCircle className="text-green-500 flex-shrink-0" />}
-                              {isUserAnswer && !isCorrect && <XCircle className="text-red-500 flex-shrink-0" />}
+                              <div className="flex-1 text-sm pt-0.5">{option.value}</div>
+                              {isCorrectAnswer && <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />}
+                              {isUserAnswer && !isCorrect && <XCircle className="text-red-500 flex-shrink-0 h-5 w-5" />}
                             </div>
                           </div>
                         );
@@ -815,7 +815,7 @@ export default function Quiz() {
                     </div>
 
                     {/* Show user's answer status */}
-                    <div className={`p-3 rounded-lg mb-3 ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
+                    <div className={`p-2 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
                       <p className="font-semibold">
                         Your answer: {userAnswer || "Not answered"}
                         {isCorrect ? " ✓ Correct" : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
@@ -825,14 +825,14 @@ export default function Quiz() {
                     {/* Explanation */}
                     {q.explanation && (
                       <Card className="border-khan-blue bg-blue-50">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base flex items-center gap-2">
-                            <CheckCircle className="text-khan-blue h-5 w-5" />
+                        <CardHeader className="pb-2 pt-3">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <CheckCircle className="text-khan-blue h-4 w-4" />
                             Explanation
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-0">
-                          <p className="text-gray-700">{q.explanation}</p>
+                        <CardContent className="pt-0 pb-3">
+                          <p className="text-sm text-gray-700">{q.explanation}</p>
                         </CardContent>
                       </Card>
                     )}
@@ -1040,8 +1040,8 @@ export default function Quiz() {
               </CardContent>
             </Card>
 
-            {/* Full-length exam: show multiple questions per page */}
-            <div className="space-y-6 mb-6">
+            {/* Full-length exam: show multiple questions per page - Compact */}
+            <div className="space-y-4 mb-6">
               {currentQuestions.map((q, idx) => {
                 const globalIndex = currentPage * questionsPerPage + idx;
                 const options = q.choices.map((choice, i) => ({
@@ -1050,31 +1050,31 @@ export default function Quiz() {
                 }));
 
                 return (
-                  <Card key={globalIndex} id={`question-${globalIndex}`} className="border-2">
-                    <CardHeader>
-                      <div className="flex justify-between items-start gap-4">
-                        <CardTitle className="text-lg font-medium leading-relaxed flex-1">
+                  <Card key={globalIndex} id={`question-${globalIndex}`} className="border">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start gap-3">
+                        <CardTitle className="text-base font-medium leading-relaxed flex-1">
                           {globalIndex + 1}. {q.prompt}
                         </CardTitle>
                         <Button
                           onClick={() => toggleFlag(globalIndex)}
                           variant="outline"
                           size="sm"
-                          className={`flex-shrink-0 ${
+                          className={`flex-shrink-0 h-8 px-2 ${
                             flaggedQuestions.has(globalIndex)
                               ? 'border-red-500 bg-red-50 text-red-700 hover:bg-red-100'
                               : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                           }`}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
                           </svg>
-                          {flaggedQuestions.has(globalIndex) ? 'Unflag' : 'Flag'}
+                          <span className="text-xs">{flaggedQuestions.has(globalIndex) ? 'Unflag' : 'Flag'}</span>
                         </Button>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {options.map((option) => {
                           const isSelected = userAnswers[globalIndex] === option.label;
 
@@ -1082,15 +1082,15 @@ export default function Quiz() {
                             <button
                               key={option.label}
                               onClick={() => handleAnswerSelect(option.label, idx)}
-                              className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                              className={`w-full text-left p-3 rounded-lg border transition-all ${
                                 isSelected
                                   ? "border-khan-blue bg-blue-50"
                                   : "border-gray-200 hover:border-gray-300"
                               } ${isAnswerSubmitted || isReviewMode ? "cursor-not-allowed" : "cursor-pointer"}`}
                             >
-                              <div className="flex items-start gap-3">
+                              <div className="flex items-start gap-2">
                                 <div
-                                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                                  className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
                                     isSelected
                                       ? "bg-khan-blue text-white"
                                       : "bg-gray-200 text-gray-700"
@@ -1098,7 +1098,7 @@ export default function Quiz() {
                                 >
                                   {option.label}
                                 </div>
-                                <div className="flex-1 pt-1">{option.value}</div>
+                                <div className="flex-1 text-sm pt-0.5">{option.value}</div>
                               </div>
                             </button>
                           );
