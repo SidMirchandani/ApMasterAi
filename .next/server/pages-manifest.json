@@ -3,9 +3,14 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/api/user/me": "pages/api/user/me.js",
-  "/full-length-history": "pages/full-length-history.js",
+  "/study": "pages/study.js",
+  "/dashboard": "pages/dashboard.js",
+  "/api/user/subjects": "pages/api/user/subjects.js",
+  "/api/user/subjects/[subjectId]/unit-progress": "pages/api/user/subjects/[subjectId]/unit-progress.js",
   "/full-length-results": "pages/full-length-results.js",
   "/api/user/subjects/[subjectId]/test-results/[testId]": "pages/api/user/subjects/[subjectId]/test-results/[testId].js",
+  "/full-length-history": "pages/full-length-history.js",
   "/section-review": "pages/section-review.js",
+  "/api/user/subjects/[subjectId]/test-results/[testId]/section/[sectionCode]": "pages/api/user/subjects/[subjectId]/test-results/[testId]/section/[sectionCode].js",
   "/api/user/profile": "pages/api/user/profile.js"
 }
