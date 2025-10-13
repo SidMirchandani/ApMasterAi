@@ -40,7 +40,13 @@ interface StudySubject {
   masteryLevel: number;
   lastStudied?: string | number | Date | { seconds: number } | null;
   dateAdded?: string | number | Date | { seconds: number } | null;
-  unitProgress?: { [unitId: string]: { status: string; highestScore: number; scores: number[] } };
+  unitProgress?: {
+    [unitId: string]: {
+      status: string;
+      highestScore: number;
+      scores: number[];
+    };
+  };
 }
 
 interface Unit {
@@ -342,7 +348,11 @@ export default function Study() {
     ? rawSubject[0] || undefined
     : rawSubject || undefined;
 
-  const { data: subjectsResponse, isLoading: subjectsLoading, refetch } = useQuery<{
+  const {
+    data: subjectsResponse,
+    isLoading: subjectsLoading,
+    refetch,
+  } = useQuery<{
     success: boolean;
     data: StudySubject[];
   }>({
@@ -399,11 +409,11 @@ export default function Study() {
 
   const handleDeleteCourse = async (courseId: string) => {
     const confirmDelete = prompt(
-      `Type "DELETE" to confirm deletion of this course. This action is irreversible.`
+      `Type "DELETE" to confirm deletion of this course. This action is irreversible.`,
     );
     if (confirmDelete === "DELETE") {
       const secondConfirm = confirm(
-        "Are you absolutely sure you want to permanently delete this course? This cannot be undone."
+        "Are you absolutely sure you want to permanently delete this course? This cannot be undone.",
       );
       if (secondConfirm) {
         try {
@@ -412,7 +422,9 @@ export default function Study() {
           router.push("/dashboard"); // Redirect to dashboard after deletion
         } catch (error) {
           console.error("Failed to delete course:", error);
-          alert("An error occurred while deleting the course. Please try again.");
+          alert(
+            "An error occurred while deleting the course. Please try again.",
+          );
         }
       }
     }
@@ -420,7 +432,9 @@ export default function Study() {
 
   const handleArchiveCourse = async (courseId: string) => {
     try {
-      await apiRequest("PATCH", `/api/user/subjects/${courseId}`, { archived: true });
+      await apiRequest("PATCH", `/api/user/subjects/${courseId}`, {
+        archived: true,
+      });
       refetch(); // Refetch subjects to update the dashboard
     } catch (error) {
       console.error("Failed to archive course:", error);
@@ -468,7 +482,8 @@ export default function Study() {
   const topicsMastered = units.filter((unit) => {
     const unitData = currentSubject.unitProgress?.[unit.id];
     const score = unitData?.highestScore || 0;
-    const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;
+    const hasAttempted =
+      unitData && unitData.scores && unitData.scores.length > 0;
     return getProgressLevel(score, hasAttempted) === "Mastered";
   }).length;
   const totalTopics = units.length;
@@ -476,7 +491,7 @@ export default function Study() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-x-hidden">
       <Navigation />
-      <div className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-6 md:py-8 max-w-6xl">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -494,7 +509,9 @@ export default function Study() {
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
                 {currentSubject.name}
               </h1>
-              <p className="text-gray-600 text-sm max-w-3xl">{currentSubject.description}</p>
+              <p className="text-gray-600 text-sm max-w-3xl">
+                {currentSubject.description}
+              </p>
             </div>
             <div className="w-36"></div>
           </div>
@@ -514,20 +531,26 @@ export default function Study() {
                 <div className="text-2xl font-bold text-blue-600">
                   {topicsMastered}/{totalTopics}
                 </div>
-                <div className="text-xs font-medium text-gray-600 mt-1">Topics Mastered</div>
+                <div className="text-xs font-medium text-gray-600 mt-1">
+                  Topics Mastered
+                </div>
               </div>
               <div className="text-center p-3 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-200/50">
                 <div className="text-2xl font-bold text-orange-600">
                   {formatDate(currentSubject.examDate)}
                 </div>
-                <div className="text-xs font-medium text-gray-600 mt-1">Exam Date</div>
+                <div className="text-xs font-medium text-gray-600 mt-1">
+                  Exam Date
+                </div>
               </div>
             </div>
 
             {/* Full-Length Practice Test Buttons */}
             <div className="flex flex-col md:flex-row gap-3">
               <Button
-                onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
+                onClick={() =>
+                  router.push(`/full-length-history?subject=${subjectId}`)
+                }
                 className="bg-khan-green hover:bg-khan-green-light w-full md:flex-1 h-11 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 font-medium"
               >
                 <BookOpen className="mr-2 h-4 w-4" />
@@ -547,7 +570,10 @@ export default function Study() {
         {/* Practice Units */}
         <div className="space-y-4">
           {units.map((unit, index) => (
-            <Card key={unit.id} className="border-l-4 border-l-khan-green shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200/50 rounded-xl bg-white/95 backdrop-blur-sm">
+            <Card
+              key={unit.id}
+              className="border-l-4 border-l-khan-green shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200/50 rounded-xl bg-white/95 backdrop-blur-sm"
+            >
               <CardContent className="pt-5 pb-5">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   {/* Left side: Content */}
@@ -564,13 +590,20 @@ export default function Study() {
                         {unit.description}
                       </p>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="text-xs font-medium border-gray-300 rounded-md px-2 py-0.5">
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-medium border-gray-300 rounded-md px-2 py-0.5"
+                        >
                           Exam Weight: {unit.examWeight}
                         </Badge>
                         {(() => {
-                          const unitData = currentSubject.unitProgress?.[unit.id];
+                          const unitData =
+                            currentSubject.unitProgress?.[unit.id];
                           const score = unitData?.highestScore || 0;
-                          const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;
+                          const hasAttempted =
+                            unitData &&
+                            unitData.scores &&
+                            unitData.scores.length > 0;
                           const level = getProgressLevel(score, hasAttempted);
                           const badgeColor = getProgressBadgeColor(level);
 
@@ -585,23 +618,33 @@ export default function Study() {
 
                               {/* Legend on hover */}
                               <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white shadow-xl rounded-xl p-3 border border-gray-200/50 z-10 whitespace-nowrap backdrop-blur-sm">
-                                <div className="text-xs font-semibold mb-2 text-gray-900">Unit Progress Legend</div>
+                                <div className="text-xs font-semibold mb-2 text-gray-900">
+                                  Unit Progress Legend
+                                </div>
                                 <div className="space-y-1.5 text-xs">
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded bg-green-600 shadow-sm"></div>
-                                    <span className="text-gray-700">Mastered (80%+)</span>
+                                    <span className="text-gray-700">
+                                      Mastered (80%+)
+                                    </span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded bg-green-400 shadow-sm"></div>
-                                    <span className="text-gray-700">Proficient (60%+)</span>
+                                    <span className="text-gray-700">
+                                      Proficient (60%+)
+                                    </span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded bg-orange-400 shadow-sm"></div>
-                                    <span className="text-gray-700">In Progress (&lt;60%)</span>
+                                    <span className="text-gray-700">
+                                      In Progress (&lt;60%)
+                                    </span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 rounded bg-gray-200 shadow-sm"></div>
-                                    <span className="text-gray-700">Not Started</span>
+                                    <span className="text-gray-700">
+                                      Not Started
+                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -616,7 +659,9 @@ export default function Study() {
                   <div className="flex flex-col gap-3 md:min-w-[340px] md:items-end">
                     <Button
                       onClick={() =>
-                        router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)
+                        router.push(
+                          `/quiz?subject=${subjectId}&unit=${unit.id}`,
+                        )
                       }
                       variant="outline"
                       className="border border-khan-green text-khan-green hover:bg-khan-green hover:text-white h-11 w-full rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 font-medium"
@@ -638,8 +683,7 @@ export default function Study() {
             </Card>
           ))}
         </div>
-
-        </div>
+      </div>
     </div>
   );
 }

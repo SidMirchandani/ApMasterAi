@@ -23,7 +23,6 @@ export default function FullLengthHistory() {
   const [testHistory, setTestHistory] = useState<TestHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push("/login");
@@ -35,7 +34,10 @@ export default function FullLengthHistory() {
       if (!subjectId || !isAuthenticated) return;
 
       try {
-        const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/unit-progress`);
+        const response = await apiRequest(
+          "GET",
+          `/api/user/subjects/${subjectId}/unit-progress`,
+        );
         if (!response.ok) throw new Error("Failed to fetch test history");
 
         const data = await response.json();
@@ -76,7 +78,8 @@ export default function FullLengthHistory() {
   const getPerformanceColor = (percentage: number) => {
     if (percentage >= 90) return "text-green-600 bg-green-50 border-green-200";
     if (percentage >= 75) return "text-blue-600 bg-blue-50 border-blue-200";
-    if (percentage >= 60) return "text-yellow-600 bg-yellow-50 border-yellow-200";
+    if (percentage >= 60)
+      return "text-yellow-600 bg-yellow-50 border-yellow-200";
     return "text-red-600 bg-red-50 border-red-200";
   };
 
@@ -84,7 +87,7 @@ export default function FullLengthHistory() {
     <div className="min-h-screen bg-khan-background">
       <Navigation />
       <div className="container mx-auto px-4 py-4 md:py-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="mb-4">
             <div className="flex items-center justify-between mb-3">
               <Button
@@ -95,7 +98,9 @@ export default function FullLengthHistory() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Study
               </Button>
-              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">Test History</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
+                Test History
+              </h1>
               <div className="w-24"></div>
             </div>
             <div className="flex justify-center">
@@ -113,11 +118,17 @@ export default function FullLengthHistory() {
             <Card>
               <CardContent className="pt-8 pb-8 text-center">
                 <Trophy className="h-16 w-16 text-khan-gray-light mx-auto mb-4" />
-                <h2 className="text-xl font-semibold mb-2">No Tests Taken Yet</h2>
+                <h2 className="text-xl font-semibold mb-2">
+                  No Tests Taken Yet
+                </h2>
                 <p className="text-khan-gray-medium mb-6">
-                  Start your first full-length practice test to track your progress
+                  Start your first full-length practice test to track your
+                  progress
                 </p>
-                <Button onClick={handleStartNewTest} className="bg-khan-green hover:bg-khan-green/90">
+                <Button
+                  onClick={handleStartNewTest}
+                  className="bg-khan-green hover:bg-khan-green/90"
+                >
                   <PlayCircle className="mr-2 h-5 w-5" />
                   Take First Test
                 </Button>
@@ -132,12 +143,16 @@ export default function FullLengthHistory() {
                       <div className="flex items-center gap-4 flex-1">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-khan-blue/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-lg font-bold text-khan-blue">#{testHistory.length - index}</span>
+                            <span className="text-lg font-bold text-khan-blue">
+                              #{testHistory.length - index}
+                            </span>
                           </div>
                           <div>
                             <div className="flex items-center gap-2 mb-0.5">
                               <Calendar className="h-4 w-4 text-khan-gray-medium" />
-                              <span className="text-sm text-khan-gray-medium">{formatDateTime(test.date)}</span>
+                              <span className="text-sm text-khan-gray-medium">
+                                {formatDateTime(test.date)}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Target className="h-4 w-4 text-khan-gray-medium" />
@@ -149,10 +164,14 @@ export default function FullLengthHistory() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className={`px-4 py-2 rounded-lg border-2 ${getPerformanceColor(test.percentage)} flex-1 sm:flex-initial text-center`}>
-                          <span className="text-xl font-bold">{test.percentage}%</span>
+                        <div
+                          className={`px-4 py-2 rounded-lg border-2 ${getPerformanceColor(test.percentage)} flex-1 sm:flex-initial text-center`}
+                        >
+                          <span className="text-xl font-bold">
+                            {test.percentage}%
+                          </span>
                         </div>
-                        <Button 
+                        <Button
                           onClick={() => handleViewResults(test.id)}
                           className="bg-khan-blue hover:bg-khan-blue/90 flex-1 sm:flex-initial"
                         >
@@ -167,7 +186,6 @@ export default function FullLengthHistory() {
           )}
         </div>
       </div>
-
-      </div>
+    </div>
   );
 }

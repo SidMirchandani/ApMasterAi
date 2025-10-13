@@ -8,7 +8,6 @@ import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 
-
 interface Question {
   id: string;
   prompt: string;
@@ -40,7 +39,7 @@ export default function SectionReview() {
       if (!subjectId || !testId || !sectionCode || !isAuthenticated) return;
 
       // Handle current test data from query params
-      if (testId === 'current' && router.query.data) {
+      if (testId === "current" && router.query.data) {
         try {
           const data = JSON.parse(router.query.data as string);
           setSectionData(data);
@@ -55,8 +54,11 @@ export default function SectionReview() {
 
       try {
         // For "all" section, fetch entire test
-        if (sectionCode === 'all') {
-          const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/test-results/${testId}`);
+        if (sectionCode === "all") {
+          const response = await apiRequest(
+            "GET",
+            `/api/user/subjects/${subjectId}/test-results/${testId}`,
+          );
           if (!response.ok) throw new Error("Failed to fetch test results");
 
           const data = await response.json();
@@ -64,8 +66,12 @@ export default function SectionReview() {
           setQuestions(data.data.questions);
           setUserAnswers(data.data.userAnswers);
         } else {
-          const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`);
-          if (!response.ok) throw new Error("Failed to fetch section questions");
+          const response = await apiRequest(
+            "GET",
+            `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`,
+          );
+          if (!response.ok)
+            throw new Error("Failed to fetch section questions");
 
           const data = await response.json();
           setSectionData(data.data);
@@ -84,7 +90,10 @@ export default function SectionReview() {
 
   const questionsPerPage = 5;
   const totalPages = Math.ceil(questions.length / questionsPerPage);
-  const currentQuestions = questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage);
+  const currentQuestions = questions.slice(
+    currentPage * questionsPerPage,
+    (currentPage + 1) * questionsPerPage,
+  );
 
   if (loading || isLoading) {
     return (
@@ -98,7 +107,7 @@ export default function SectionReview() {
   }
 
   const handleBackNavigation = () => {
-    if (testId === 'current') {
+    if (testId === "current") {
       router.push(`/quiz?subject=${subjectId}&unit=full-length`);
     } else {
       router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
@@ -108,39 +117,44 @@ export default function SectionReview() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      <div className="container mx-auto px-4 md:px-8 py-3 max-w-4xl">
+      <div className="container mx-auto px-4 md:px-8 py-3 max-w-6xl">
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <Button
-              onClick={handleBackNavigation}
-              variant="outline"
-              size="sm"
-            >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Summary
+            <Button onClick={handleBackNavigation} variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Summary
             </Button>
             <h2 className="text-xl font-semibold absolute left-1/2 transform -translate-x-1/2">
-              Review - Page {currentPage + 1}/{totalPages} (Q {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
+              Review - Page {currentPage + 1}/{totalPages} (Q{" "}
+              {currentPage * questionsPerPage + 1}-
+              {Math.min((currentPage + 1) * questionsPerPage, questions.length)}
+              )
             </h2>
             <div className="w-24"></div> {/* Spacer for layout balance */}
           </div>
-          <Progress value={((currentPage + 1) / totalPages) * 100} className="h-2" />
+          <Progress
+            value={((currentPage + 1) / totalPages) * 100}
+            className="h-2"
+          />
         </div>
-
 
         <div className="space-y-4 mb-6">
           {currentQuestions.map((q, idx) => {
             const globalIndex = currentPage * questionsPerPage + idx;
             // Find the original question index from the full test
-            const originalIndex = questions.findIndex(question => question.id === q.id);
-            const displayNumber = originalIndex !== -1 ? originalIndex + 1 : globalIndex + 1;
+            const originalIndex = questions.findIndex(
+              (question) => question.id === q.id,
+            );
+            const displayNumber =
+              originalIndex !== -1 ? originalIndex + 1 : globalIndex + 1;
 
             const options = q.choices.map((choice, i) => ({
               label: String.fromCharCode(65 + i),
               value: choice,
             }));
             const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
-            const userAnswer = userAnswers[originalIndex !== -1 ? originalIndex : globalIndex];
+            const userAnswer =
+              userAnswers[originalIndex !== -1 ? originalIndex : globalIndex];
             const isCorrect = userAnswer === correctAnswerLabel;
 
             return (
@@ -154,7 +168,8 @@ export default function SectionReview() {
                   <div className="space-y-2">
                     {options.map((option) => {
                       const isUserAnswer = userAnswer === option.label;
-                      const isCorrectAnswer = option.label === correctAnswerLabel;
+                      const isCorrectAnswer =
+                        option.label === correctAnswerLabel;
 
                       return (
                         <div
@@ -163,8 +178,8 @@ export default function SectionReview() {
                             isCorrectAnswer
                               ? "border-green-500 bg-green-50"
                               : isUserAnswer && !isCorrect
-                              ? "border-red-500 bg-red-50"
-                              : "border-gray-200"
+                                ? "border-red-500 bg-red-50"
+                                : "border-gray-200"
                           }`}
                         >
                           <div className="flex items-start gap-2">
@@ -173,25 +188,35 @@ export default function SectionReview() {
                                 isCorrectAnswer
                                   ? "bg-green-500 text-white"
                                   : isUserAnswer && !isCorrect
-                                  ? "bg-red-500 text-white"
-                                  : "bg-gray-200 text-gray-700"
+                                    ? "bg-red-500 text-white"
+                                    : "bg-gray-200 text-gray-700"
                               }`}
                             >
                               {option.label}
                             </div>
-                            <div className="flex-1 text-sm pt-0.5">{option.value}</div>
-                            {isCorrectAnswer && <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />}
-                            {isUserAnswer && !isCorrect && <XCircle className="text-red-500 flex-shrink-0 h-5 w-5" />}
+                            <div className="flex-1 text-sm pt-0.5">
+                              {option.value}
+                            </div>
+                            {isCorrectAnswer && (
+                              <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />
+                            )}
+                            {isUserAnswer && !isCorrect && (
+                              <XCircle className="text-red-500 flex-shrink-0 h-5 w-5" />
+                            )}
                           </div>
                         </div>
                       );
                     })}
                   </div>
 
-                  <div className={`p-2 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
+                  <div
+                    className={`p-2 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}
+                  >
                     <p className="font-semibold">
                       Your answer: {userAnswer || "Not answered"}
-                      {isCorrect ? " ✓ Correct" : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
+                      {isCorrect
+                        ? " ✓ Correct"
+                        : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
                     </p>
                   </div>
 
