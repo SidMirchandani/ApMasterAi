@@ -69,7 +69,11 @@ export default function SectionReview() {
           setQuestions(data.data.questions);
           setUserAnswers(data.data.userAnswers);
         } else {
-          console.log("📤 Fetching section data for:", { subjectId, testId, sectionCode });
+          console.log("📤 Fetching section data for:", {
+            subjectId,
+            testId,
+            sectionCode,
+          });
           const response = await apiRequest(
             "GET",
             `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`,
@@ -149,9 +153,9 @@ export default function SectionReview() {
               {!isMobile && "Summary"}
             </Button>
             <h2 className="text-base md:text-xl font-semibold absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-              {sectionCode === "all" 
-                ? `Review - Page ${currentPage + 1}/${totalPages}`
-                : `Review Unit ${sectionData?.unitNumber || ""} - Page ${currentPage + 1}/${totalPages}`}
+              {sectionCode === "all"
+                ? `Full Review - Page ${currentPage + 1} of ${totalPages}`
+                : `Review Unit ${sectionData?.unitNumber || ""} - Page ${currentPage + 1} of ${totalPages}`}
             </h2>
             <div className="w-24"></div> {/* Spacer for layout balance */}
           </div>
@@ -165,9 +169,10 @@ export default function SectionReview() {
           {currentQuestions.map((q, idx) => {
             const globalIndex = currentPage * questionsPerPage + idx;
             // Use the originalTestIndex from the question object (set by API)
-            const displayNumber = q.originalTestIndex !== undefined 
-              ? q.originalTestIndex + 1 
-              : globalIndex + 1;
+            const displayNumber =
+              q.originalTestIndex !== undefined
+                ? q.originalTestIndex + 1
+                : globalIndex + 1;
 
             const options = q.choices.map((choice, i) => ({
               label: String.fromCharCode(65 + i),
@@ -175,7 +180,12 @@ export default function SectionReview() {
             }));
             const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
             // Use originalTestIndex for userAnswer lookup if available, otherwise globalIndex
-            const userAnswer = userAnswers[q.originalTestIndex !== undefined ? q.originalTestIndex : globalIndex];
+            const userAnswer =
+              userAnswers[
+                q.originalTestIndex !== undefined
+                  ? q.originalTestIndex
+                  : globalIndex
+              ];
             const isCorrect = userAnswer === correctAnswerLabel;
 
             return (
@@ -183,11 +193,16 @@ export default function SectionReview() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base font-medium leading-relaxed">
                     {displayNumber}. {q.prompt}
-                    {sectionCode === "all" && sectionData?.sectionBreakdown && q.section_code && (
-                      <span className="ml-2 font-bold text-khan-green">
-                        (UNIT {sectionData.sectionBreakdown[q.section_code]?.unitNumber || ""})
-                      </span>
-                    )}
+                    {sectionCode === "all" &&
+                      sectionData?.sectionBreakdown &&
+                      q.section_code && (
+                        <span className="ml-2 font-bold text-khan-green">
+                          (UNIT{" "}
+                          {sectionData.sectionBreakdown[q.section_code]
+                            ?.unitNumber || ""}
+                          )
+                        </span>
+                      )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
