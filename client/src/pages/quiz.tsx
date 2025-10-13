@@ -116,6 +116,15 @@ export default function Quiz() {
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
 
+  // Mock functions for navigation and submission to be replaced later
+  const handleExitTest = () => {
+    setShowExitDialog(true);
+  };
+  const handleSubmit = () => {
+    setShowSubmitConfirm(true);
+  };
+
+
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push("/login");
@@ -940,24 +949,22 @@ export default function Quiz() {
         )}
 
         {/* Alert Dialog for Full-Length Test */}
-        {isFullLength && (
-          <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Leave Test?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Your progress on this full-length practice test will be lost if you leave now. Are you sure you want to exit?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Continue Test</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmExit} className="bg-red-600 hover:bg-red-700">
-                  Yes, Exit Test
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+        <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Leave Test?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Your progress on this full-length practice test will be lost if you leave now. Are you sure you want to exit?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Continue Test</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmExit} className="bg-red-600 hover:bg-red-700">
+                Yes, Exit Test
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {isFullLength ? (
           <>
