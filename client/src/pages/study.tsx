@@ -26,6 +26,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { apSubjects } from "@/lib/ap-subjects";
 import { formatDate } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface StudySubject {
   id: number;
@@ -342,6 +343,7 @@ const getUnitsForSubject = (subjectId: string): Unit[] => {
 export default function Study() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const isMobile = useIsMobile();
 
   const rawSubject = router.query.subject;
   const subjectId: string | undefined = Array.isArray(rawSubject)
