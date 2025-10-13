@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Clock, Trash2, Plus, Calendar, AlertTriangle } from "lucide-react";
+import { BookOpen, Clock, Trash2, Plus, Calendar, AlertTriangle, ArrowRight } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,8 +12,7 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-
-
+import { Progress } from "@/components/ui/progress";
 
 
 interface DashboardSubject {
@@ -29,6 +28,8 @@ interface DashboardSubject {
   masteryLevel: number;
   lastStudied?: string | number | Date | { seconds: number } | null;
   dateAdded?: string | number | Date | { seconds: number } | null;
+  archived?: boolean; // Added for clarity
+  unitProgress?: { [key: string]: any }; // Added for unit progress
 }
 
 const difficultyColors: Record<string, string> = {
@@ -110,8 +111,8 @@ export default function Dashboard() {
   }, [subjectsResponse?.data]);
 
   // Split into active and archived
-  const activeSubjects = useMemo(() => subjects.filter(s => !(s as any).archived), [subjects]);
-  const archivedSubjects = useMemo(() => subjects.filter(s => (s as any).archived), [subjects]);
+  const activeSubjects = useMemo(() => subjects.filter(s => !s.archived), [subjects]);
+  const archivedSubjects = useMemo(() => subjects.filter(s => s.archived), [subjects]);
 
   // Handle query errors with useEffect since onError is deprecated in v5
   useEffect(() => {
@@ -178,7 +179,7 @@ export default function Dashboard() {
     },
     onSuccess: (data, variables, context) => {
       const { subjectDocId, archive } = variables;
-      
+
       if (archive) {
         // Show undo option for archive
         const subject = subjects.find(s => s.id.toString() === subjectDocId);
@@ -301,8 +302,8 @@ export default function Dashboard() {
   };
 
   const handleArchiveSubject = (subject: DashboardSubject) => {
-    const isCurrentlyArchived = (subject as any).archived;
-    
+    const isCurrentlyArchived = subject.archived ?? false;
+
     // If restoring, do it immediately (common UX pattern)
     if (isCurrentlyArchived) {
       const firestoreDocId = typeof subject.id === 'string' ? subject.id : subject.id.toString();
@@ -330,6 +331,11 @@ export default function Dashboard() {
   const handleStartStudying = (subjectId: string) => {
     console.log(`Starting to study ${subjectId}`);
     // Navigate to study page with subject ID
+    router.push(`/study?subject=${subjectId}`);
+  };
+
+  // Function to handle subject clicks - replaced original grid logic
+  const handleSubjectClick = (subjectId: string) => {
     router.push(`/study?subject=${subjectId}`);
   };
 
@@ -575,7 +581,7 @@ export default function Dashboard() {
 
                               let bgColor = "bg-gray-200"; // not-started
                               let status = "Not Started";
-                              
+
                               if (hasAttempted) {
                                 if (score >= 80) {
                                   bgColor = "bg-green-600";
