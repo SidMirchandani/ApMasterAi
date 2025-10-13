@@ -574,16 +574,13 @@ export default function Study() {
                           const level = getProgressLevel(score, hasAttempted);
                           const badgeColor = getProgressBadgeColor(level);
 
-                          // Add highest score to badge text if available
-                          const scoreDisplay = hasAttempted ? `: Highest Score: ${Math.round(score)}/100` : '';
-
                           return (
                             <div className="relative group">
                               <Badge
                                 className={`text-xs font-medium ${badgeColor} border border-black/20 cursor-help rounded-md px-2 py-0.5 shadow-sm`}
                               >
                                 {level === "Mastered" && "👑 "}
-                                {level} {scoreDisplay}
+                                {level}
                               </Badge>
 
                               {/* Legend on hover */}
