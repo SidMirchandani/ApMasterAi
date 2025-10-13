@@ -154,7 +154,7 @@ export default function FullLengthResults() {
             <ArrowLeft className={isMobile ? "" : "h-4 w-4"} />
             {!isMobile && "Test History"}
           </Button>
-          <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
+          <h1 className="text-xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
             Results Summary
           </h1>
           <div className="w-24"></div>

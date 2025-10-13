@@ -803,8 +803,8 @@ export default function Quiz() {
                 <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-1"} />
                 {!isMobile && "Back to Results"}
               </Button>
-              <h2 className="text-xl font-semibold absolute left-1/2 transform -translate-x-1/2">
-                {isMobile ? "Review" : `Review - Page ${currentPage + 1} of ${totalPages} (Questions ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`}
+              <h2 className="text-base md:text-xl font-semibold absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                {isMobile ? "Full Review" : `Review - Page ${currentPage + 1} of ${totalPages} (Questions ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`}
               </h2>
               <div className="text-lg font-semibold text-khan-green">
                 {!isMobile && "Final Score: "}{score}/{questions.length}
@@ -1181,23 +1181,14 @@ export default function Quiz() {
                         })}
                     </div>
 
-                    {currentPage === totalPages - 1 ? (
-                      <Button
-                        onClick={() => setShowSubmitConfirm(true)}
-                        className="bg-khan-green hover:bg-khan-green/90 px-4"
-                        size="sm"
-                      >
-                        Submit Exam
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => setCurrentPage(currentPage + 1)}
-                        className={`bg-khan-blue hover:bg-khan-blue/90 ${isMobile ? "px-3" : "px-8"}`}
-                      >
-                        {!isMobile && "Next"}
-                        <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
-                      </Button>
-                    )}
+                    <Button
+                      onClick={() => currentPage === totalPages - 1 ? setShowSubmitConfirm(true) : setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages - 1}
+                      className={currentPage === totalPages - 1 ? `bg-gray-400 cursor-not-allowed ${isMobile ? "px-3" : "px-8"}` : `bg-khan-blue hover:bg-khan-blue/90 ${isMobile ? "px-3" : "px-8"}`}
+                    >
+                      {!isMobile && (currentPage === totalPages - 1 ? "End" : "Next")}
+                      <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
