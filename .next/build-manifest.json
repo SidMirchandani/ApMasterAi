@@ -12,6 +12,11 @@
   ],
   "rootMainFiles": [],
   "pages": {
+    "/": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/index.js"
+    ],
     "/_app": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
@@ -22,20 +27,25 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
+    "/dashboard": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/dashboard.js"
+    ],
     "/full-length-history": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/full-length-history.js"
     ],
-    "/full-length-results": [
+    "/quiz": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/full-length-results.js"
+      "static/chunks/pages/quiz.js"
     ],
-    "/section-review": [
+    "/study": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/section-review.js"
+      "static/chunks/pages/study.js"
     ]
   },
   "ampFirstPages": []
