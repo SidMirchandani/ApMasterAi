@@ -638,6 +638,8 @@ export class Storage {
     const db = this.getDbInstance();
     if (!db) throw new Error("Firestore not available");
 
+    console.log("🔍 [getFullLengthTestResult] Starting with:", { userId, subjectId, testId });
+
     // Find the user_subjects document
     const subjectsRef = db.collection("user_subjects");
     const snapshot = await subjectsRef
@@ -645,18 +647,40 @@ export class Storage {
       .where("subjectId", "==", subjectId)
       .get();
 
+    console.log("📊 [getFullLengthTestResult] User subjects query:", {
+      empty: snapshot.empty,
+      size: snapshot.size
+    });
+
     if (snapshot.empty) {
+      console.log("❌ [getFullLengthTestResult] No user_subjects document found");
       return null;
     }
 
     const doc = snapshot.docs[0];
+    console.log("📄 [getFullLengthTestResult] Found user_subjects doc:", doc.id);
+
     const testDoc = await doc.ref.collection("fullLengthTests").doc(testId).get();
 
+    console.log("📝 [getFullLengthTestResult] Test document:", {
+      exists: testDoc.exists,
+      id: testDoc.id,
+      hasData: !!testDoc.data()
+    });
+
     if (!testDoc.exists) {
+      console.log("❌ [getFullLengthTestResult] Test document does not exist");
       return null;
     }
 
-    return testDoc.data();
+    const testData = testDoc.data();
+    console.log("✅ [getFullLengthTestResult] Retrieved test data:", {
+      hasQuestions: !!testData?.questions,
+      questionCount: testData?.questions?.length,
+      hasUserAnswers: !!testData?.userAnswers
+    });
+
+    return testData;
   }
 
   async getSectionReviewData(userId: string, subjectId: string, testId: string, sectionCode: string): Promise<any> {
