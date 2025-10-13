@@ -77,7 +77,7 @@ export default function FullLengthResults() {
 
   const handleReviewSection = (sectionCode: string) => {
     router.push(
-      `/section-review?subject=${subjectId}&testId=${testId}&section=${sectionCode}`,
+      `/section-review?subject=${subjectId}&testId=${testId}&section=all`,
     );
   };
 

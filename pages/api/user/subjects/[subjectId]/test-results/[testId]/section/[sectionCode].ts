@@ -1,102 +1,73 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../../../../server/firebase-admin";
-import { storage } from "../../../../../../../server/storage";
+
+import type { NextApiRequest, NextApiResponse } from "next";
+import { storage } from "../../../../../../../../server/storage";
+
+async function getOrCreateUser(firebaseUid: string): Promise<string> {
+  let user = await storage.getUserByFirebaseUid(firebaseUid);
+
+  if (!user) {
+    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`);
+  }
+
+  return user.id;
+}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).json({
+      success: false,
+      message: `Method ${req.method} not allowed`,
+    });
   }
 
   try {
-    console.log("[Section Review API] Request params:", { 
-      subjectId: req.query.subjectId, 
-      testId: req.query.testId, 
-      sectionCode: req.query.sectionCode 
-    });
-
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
-      console.log("[Section Review API] No auth header");
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const token = authHeader.split("Bearer ")[1];
-    const decodedToken = await verifyFirebaseToken(token);
-    const userId = decodedToken.uid;
-    console.log("[Section Review API] User ID:", userId);
+    const token = authHeader.split(" ")[1];
+    let decodedToken;
+    try {
+      const { verifyFirebaseToken } = await import("../../../../../../../../server/firebase-admin");
+      decodedToken = await verifyFirebaseToken(token);
+    } catch (error) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const firebaseUid = decodedToken.uid;
+    const userId = await getOrCreateUser(firebaseUid);
 
     const { subjectId, testId, sectionCode } = req.query;
-
-    if (!subjectId || !testId || !sectionCode) {
-      console.log("[Section Review API] Missing parameters");
-      return res.status(400).json({ error: "Missing required parameters" });
+    if (!subjectId || typeof subjectId !== "string" || !testId || typeof testId !== "string" || !sectionCode || typeof sectionCode !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Valid subject ID, test ID, and section code are required",
+      });
     }
 
-    // Use storage service instead of direct firestore access
-    const testData = await storage.getFullLengthTestResult(userId, subjectId as string, testId as string);
-    
-    if (!testData) {
-      console.log("[Section Review API] Test not found");
-      return res.status(404).json({ error: "Test not found" });
+    const sectionData = await storage.getSectionReviewData(userId, subjectId, testId, sectionCode);
+
+    if (!sectionData) {
+      return res.status(404).json({
+        success: false,
+        message: "Section data not found",
+      });
     }
 
-    console.log("[Section Review API] Test data retrieved:", {
-      totalQuestions: testData.questions?.length,
-      sectionBreakdown: Object.keys(testData.sectionBreakdown || {})
-    });
-
-    // Filter questions and answers for the specific section
-    const sectionQuestions = testData?.questions?.filter(
-      (q: any) => q.section_code === sectionCode
-    ) || [];
-
-    console.log("[Section Review API] Filtered questions for section:", {
-      sectionCode,
-      filteredCount: sectionQuestions.length,
-      allQuestionSections: testData?.questions?.map((q: any) => q.section_code)
-    });
-
-    // Filter user answers for this section's questions
-    const sectionAnswers: { [key: number]: string } = {};
-    testData?.questions?.forEach((q: any, idx: number) => {
-      if (q.section_code === sectionCode && testData.userAnswers?.[idx]) {
-        sectionAnswers[idx] = testData.userAnswers[idx];
-      }
-    });
-
-    console.log("[Section Review API] Section answers:", {
-      count: Object.keys(sectionAnswers).length,
-      answers: sectionAnswers
-    });
-
-    // Get section metadata from sectionBreakdown
-    const sectionMetadata = testData?.sectionBreakdown?.[sectionCode as string];
-
-    console.log("[Section Review API] Section metadata:", sectionMetadata);
-
-    const responseData = {
-      questions: sectionQuestions,
-      userAnswers: sectionAnswers,
-      unitNumber: sectionMetadata?.unitNumber,
-      sectionName: sectionMetadata?.name,
-      score: sectionMetadata?.correct,
-      totalQuestions: sectionMetadata?.total,
-    };
-
-    console.log("[Section Review API] Sending response:", {
-      questionCount: responseData.questions.length,
-      answerCount: Object.keys(responseData.userAnswers).length
-    });
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      data: responseData,
+      data: sectionData,
     });
   } catch (error) {
-    console.error("Error fetching section review:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("[section-review API] Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 }
