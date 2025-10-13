@@ -80,12 +80,6 @@ export default function FullLengthHistory() {
     return "text-red-600 bg-red-50 border-red-200";
   };
 
-  const hasSomethingToGoBackTo = () => {
-    // Logic to determine if there's a previous page to go back to
-    // For now, let's assume there always is for pages other than the main dashboard
-    return router.asPath !== '/dashboard'; // Example condition
-  };
-
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
@@ -93,16 +87,14 @@ export default function FullLengthHistory() {
         <div className="max-w-4xl mx-auto">
           <div className="mb-4">
             <div className="flex items-center gap-3 mb-3">
-              {hasSomethingToGoBackTo() && (
-                <Button
-                  onClick={() => router.back()}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-1" />
-                  Back
-                </Button>
-              )}
+              <Button
+                onClick={() => router.push(`/study?subject=${subjectId}`)}
+                variant="outline"
+                size="sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
               <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark text-center flex-1">Full-Length Test History</h1>
             </div>
             <div className="flex justify-center">

@@ -917,22 +917,22 @@ export default function Quiz() {
               </AlertDialogContent>
             </AlertDialog>
 
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xl font-semibold">
-                Question {currentQuestionIndex + 1} of {questions.length}
-              </h2>
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center mb-2 gap-2">
+              <Button
+                onClick={() => setShowExitDialog(true)}
+                variant="outline"
+                size="sm"
+                className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+              >
+                Exit Quiz
+              </Button>
+              <div className="flex justify-between items-center w-full">
+                <h2 className="text-xl font-semibold">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </h2>
                 <div className="text-lg font-semibold text-khan-green">
                   Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
                 </div>
-                <Button
-                  onClick={() => setShowExitDialog(true)}
-                  variant="outline"
-                  size="sm"
-                  className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                >
-                  Exit Quiz
-                </Button>
               </div>
             </div>
             <Progress value={progress} className="h-2" />
