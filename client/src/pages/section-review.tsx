@@ -108,7 +108,7 @@ export default function SectionReview() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      <div className="container mx-auto px-4 md:px-8 py-3 max-w-5xl">
+      <div className="container mx-auto px-4 md:px-8 py-3 max-w-4xl">
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <Button
