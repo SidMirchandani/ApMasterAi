@@ -4,5 +4,7 @@
   "/_document": "pages/_document.js",
   "/dashboard": "pages/dashboard.js",
   "/admin": "pages/admin.js",
-  "/api/user/profile": "pages/api/user/profile.js"
+  "/api/admin/questions/query": "pages/api/admin/questions/query.js",
+  "/api/admin/questions/[id]": "pages/api/admin/questions/[id].js",
+  "/api/generateExplanations": "pages/api/generateExplanations.js"
 }

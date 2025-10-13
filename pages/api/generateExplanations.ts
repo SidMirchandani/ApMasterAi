@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 
 export default async function handler(
@@ -13,18 +13,22 @@ export default async function handler(
   try {
     const { questionIds } = req.body;
 
-    if (!questionIds || !Array.isArray(questionIds) || questionIds.length === 0) {
+    if (
+      !questionIds ||
+      !Array.isArray(questionIds) ||
+      questionIds.length === 0
+    ) {
       return res.status(400).json({ error: "questionIds array is required" });
     }
 
     // ✅ 1. Initialize Gemini
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+      throw new Error("Missing GEMINI_API_KEY in environment");
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Use the verified working SDK
+    const ai = new GoogleGenAI({ apiKey });
 
     // ✅ 2. Initialize Firebase Admin
     const firebaseAdmin = getFirebaseAdmin();
@@ -53,22 +57,29 @@ export default async function handler(
         }
 
         const question = doc.data();
+        console.log(
+          `Generating explanation for Question ${i + 1}/${total} (ID: ${questionId})`,
+        );
 
-        console.log(`Generating explanation for Question ${i + 1}/${total} (ID: ${questionId})`);
-
-        const prompt = `Explain why the correct answer is correct for the following AP-style multiple-choice question.
+        // ✅ Prompt
+        const prompt = `
+Explain why the correct answer is correct for the following AP-style multiple-choice question.
 Question: ${question.prompt}
 Choices: ${question.choices?.join(", ")}
 Correct answer: ${question.choices?.[question.answerIndex]}
-Keep your explanation concise (2–3 sentences).`;
+Keep your explanation concise (2–3 sentences).
+`;
 
-        const result = await model.generateContent(prompt);
-        let explanation = result.response.text()?.trim() || "";
+        // ✅ Correct Gemini 2.5 Flash call
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+        });
 
-        // Clean formatting
+        let explanation = response.text?.trim() || "";
         explanation = explanation.replace(/^Explanation:\s*/i, "").trim();
 
-        // ✅ Always overwrite
+        // ✅ Always overwrite explanation
         await doc.ref.update({
           explanation,
           updatedAt: new Date(),
@@ -77,17 +88,20 @@ Keep your explanation concise (2–3 sentences).`;
         updated++;
         console.log(`✓ Overwrote explanation for question ${doc.id}`);
       } catch (error) {
-        console.error(`✗ Failed to generate explanation for ${questionId}:`, error);
+        console.error(
+          `✗ Failed to generate explanation for ${questionId}:`,
+          error,
+        );
       }
 
-      // ⏱️ 1-second delay between API calls
+      // ⏱️ Delay 1 second between requests
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    console.log(`✅ Completed: Regenerated ${updated} explanations for selected questions`);
+    console.log(`✅ Completed: Regenerated ${updated}/${total} explanations`);
 
     return res.status(200).json({
-      total: questionIds.length,
+      total,
       updated,
     });
   } catch (error: any) {
