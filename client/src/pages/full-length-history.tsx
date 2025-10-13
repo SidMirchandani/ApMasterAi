@@ -90,35 +90,35 @@ export default function FullLengthHistory() {
       <Navigation />
       <div className="container mx-auto px-4 py-3">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-3">
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <Button
-                onClick={() => router.push(`/study?subject=${subjectId}`)}
-                variant="outline"
-                size="sm"
-              >
-                <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
-                {!isMobile && "Study"}
-              </Button>
-              <h1 className="text-base md:text-xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
-                Test History
-              </h1>
-              <Button
-                onClick={handleStartNewTest}
-                className="bg-khan-green hover:bg-khan-green/90"
-                size="sm"
-              >
-                <PlayCircle className={isMobile ? "" : "mr-2 h-4 w-4"} />
-                {!isMobile && "Start New Test"}
-              </Button>
-            </div>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <Button
+              onClick={() => router.push(`/study?subject=${subjectId}`)}
+              variant="outline"
+              size="sm"
+            >
+              <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
+              {!isMobile && "Study"}
+            </Button>
+            <Button
+              onClick={handleStartNewTest}
+              className="bg-khan-green hover:bg-khan-green/90 w-full max-w-md"
+              size="sm"
+            >
+              <PlayCircle className="mr-2 h-4 w-4" />
+              Start New Test
+            </Button>
+            <div className="w-[72px]"></div> {/* Spacer for balance */}
           </div>
+
+          <h1 className="text-xl font-bold text-khan-gray-dark text-center mb-3">
+            Test History
+          </h1>
 
           {testHistory.length === 0 ? (
             <Card>
-              <CardContent className="pt-4 pb-4 text-center">
-                <Trophy className="h-12 w-12 text-khan-gray-light mx-auto mb-3" />
-                <h2 className="text-lg font-semibold mb-2">
+              <CardContent className="pt-3 pb-3 text-center">
+                <Trophy className="h-12 w-12 text-khan-gray-light mx-auto mb-2" />
+                <h2 className="text-lg font-semibold mb-1">
                   No Tests Taken Yet
                 </h2>
                 <p className="text-sm text-khan-gray-medium">
@@ -131,7 +131,7 @@ export default function FullLengthHistory() {
             <div className="space-y-2">
               {testHistory.map((test, index) => (
                 <Card key={test.id} className="relative group">
-                  <CardContent className="pt-3 pb-3">
+                  <CardContent className="py-2 px-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-4 flex-1">
                         <div className="flex items-center gap-3">
