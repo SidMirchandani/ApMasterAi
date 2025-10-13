@@ -32,10 +32,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/full-length-history.js"
     ],
-    "/quiz": [
+    "/full-length-results": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/quiz.js"
+      "static/chunks/pages/full-length-results.js"
+    ],
+    "/section-review": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/section-review.js"
     ],
     "/study": [
       "static/chunks/webpack.js",
