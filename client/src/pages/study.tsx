@@ -479,7 +479,7 @@ export default function Study() {
       <div className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-start gap-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
             <Button
               variant="outline"
               onClick={() => router.push("/dashboard")}
@@ -488,14 +488,15 @@ export default function Study() {
               className="transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
-              Back
+              Back to Dashboard
             </Button>
-            <div className="flex-1 text-center">
+            <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
                 {currentSubject.name}
               </h1>
-              <p className="text-gray-600 text-sm max-w-3xl mx-auto">{currentSubject.description}</p>
+              <p className="text-gray-600 text-sm max-w-3xl">{currentSubject.description}</p>
             </div>
+            <div className="w-36"></div>
           </div>
         </div>
 

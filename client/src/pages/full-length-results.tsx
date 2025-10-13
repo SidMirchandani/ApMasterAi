@@ -140,7 +140,7 @@ export default function FullLengthResults() {
     <div className="min-h-screen bg-khan-background">
       <Navigation />
       <div className="container mx-auto px-4 py-3 md:py-4">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center justify-between mb-4">
           <Button
             onClick={() =>
               router.push(`/full-length-history?subject=${subjectId}`)
@@ -150,10 +150,12 @@ export default function FullLengthResults() {
             className="flex items-center gap-1"
           >
             <ArrowLeft className="h-4 w-4" />
+            Back to History
           </Button>
-          <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark text-center flex-grow">
+          <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
             Test Results
           </h1>
+          <div className="w-24"></div>
         </div>
 
         {/* Overall Score Card - Compact */}

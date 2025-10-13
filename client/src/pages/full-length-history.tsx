@@ -86,16 +86,17 @@ export default function FullLengthHistory() {
       <div className="container mx-auto px-4 py-4 md:py-6">
         <div className="max-w-4xl mx-auto">
           <div className="mb-4">
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center justify-between mb-3">
               <Button
                 onClick={() => router.push(`/study?subject=${subjectId}`)}
                 variant="outline"
                 size="sm"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Back
+                Back to Study
               </Button>
-              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark text-center flex-1">Full-Length Test History</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">Full-Length Test History</h1>
+              <div className="w-24"></div>
             </div>
             <div className="flex justify-center">
               <Button

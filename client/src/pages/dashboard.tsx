@@ -428,7 +428,7 @@ export default function Dashboard() {
                   className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold"
                 >
                   <Plus className="mr-2 w-4 h-4" />
-                  Add Subject
+                  Browse Subjects
                 </Button>
               </div>
 
