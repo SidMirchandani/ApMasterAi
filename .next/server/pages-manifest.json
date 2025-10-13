@@ -9,7 +9,5 @@
   "/api/user/subjects": "pages/api/user/subjects.js",
   "/study": "pages/study.js",
   "/full-length-history": "pages/full-length-history.js",
-  "/api/user/subjects/[subjectId]/unit-progress": "pages/api/user/subjects/[subjectId]/unit-progress.js",
-  "/api/questions": "pages/api/questions.js",
-  "/quiz": "pages/quiz.js"
+  "/api/user/subjects/[subjectId]/unit-progress": "pages/api/user/subjects/[subjectId]/unit-progress.js"
 }
