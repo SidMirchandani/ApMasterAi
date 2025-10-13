@@ -58,7 +58,7 @@ export default function SectionReview() {
         if (sectionCode === 'all') {
           const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/test-results/${testId}`);
           if (!response.ok) throw new Error("Failed to fetch test results");
-          
+
           const data = await response.json();
           setSectionData(data.data);
           setQuestions(data.data.questions);
@@ -108,7 +108,7 @@ export default function SectionReview() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 md:px-8 py-3 max-w-5xl">
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <Button
@@ -134,7 +134,7 @@ export default function SectionReview() {
             // Find the original question index from the full test
             const originalIndex = questions.findIndex(question => question.id === q.id);
             const displayNumber = originalIndex !== -1 ? originalIndex + 1 : globalIndex + 1;
-            
+
             const options = q.choices.map((choice, i) => ({
               label: String.fromCharCode(65 + i),
               value: choice,
