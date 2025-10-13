@@ -1053,7 +1053,7 @@ export default function Quiz() {
             </Card>
 
             {/* Full-length exam: show multiple questions per page - Compact */}
-            <div className="space-y-2 mb-4">
+            <div className="space-y-2 mb-4 max-w-5xl mx-auto">
               {currentQuestions.map((q, idx) => {
                 const globalIndex = currentPage * questionsPerPage + idx;
                 const options = q.choices.map((choice, i) => ({

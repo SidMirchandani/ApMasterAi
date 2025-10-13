@@ -22,6 +22,20 @@ export default function Navigation() {
   const { user, isAuthenticated, loading } = useAuth();
   const { toast } = useToast();
 
+  // Detect if user is in quiz/test mode
+  const isInQuizMode = location === "/quiz" && router.query.unit;
+
+  const handleDisabledClick = (e: React.MouseEvent) => {
+    if (isInQuizMode) {
+      e.preventDefault();
+      toast({
+        title: "Test in Progress",
+        description: "You cannot navigate away during a test. Use the 'Exit Test' button to leave.",
+        duration: 3000,
+      });
+    }
+  };
+
   const { data: userProfile } = useQuery<{
     success: boolean;
     data: {
@@ -64,7 +78,8 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           <Link
             href={isAuthenticated ? "/dashboard" : "/"}
-            className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0"
+            className={`flex items-center space-x-2 sm:space-x-3 flex-shrink-0 ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
+            onClick={handleDisabledClick}
           >
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-khan-green rounded-lg flex items-center justify-center">
               <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -81,8 +96,9 @@ export default function Navigation() {
                     location === "/learn"
                       ? "text-khan-green"
                       : ""
-                  }`}
+                  } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
                   data-testid="link-courses"
+                  onClick={handleDisabledClick}
                 >
                   Courses
                 </Link>
@@ -93,8 +109,9 @@ export default function Navigation() {
                     location === "/dashboard"
                       ? "text-khan-green"
                       : ""
-                  }`}
+                  } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
                   data-testid="link-dashboard"
+                  onClick={handleDisabledClick}
                 >
                   Dashboard
                 </Link>
@@ -108,8 +125,10 @@ export default function Navigation() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="border-2 border-khan-gray-light text-khan-gray-dark hover:bg-khan-background font-medium text-sm sm:text-base px-2 sm:px-4"
+                    className={`border-2 border-khan-gray-light text-khan-gray-dark hover:bg-khan-background font-medium text-sm sm:text-base px-2 sm:px-4 ${isInQuizMode ? 'opacity-60' : ''}`}
                     data-testid="button-user-menu"
+                    disabled={isInQuizMode}
+                    onClick={handleDisabledClick}
                   >
                     <User className="w-4 h-4 sm:mr-2" />
                     <span className="hidden sm:inline">Account</span>
