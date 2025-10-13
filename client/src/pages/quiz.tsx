@@ -969,7 +969,7 @@ export default function Quiz() {
                   <span className="text-sm font-semibold">
                     Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
                   </span>
-                  <span className="text-sm font-semibold text-khan-gray-dark">Question Navigation</span>
+                  <span className="text-sm font-semibold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">Question Navigation</span>
                   <Button
                     onClick={() => setShowExitDialog(true)}
                     variant="outline"
@@ -993,7 +993,7 @@ export default function Quiz() {
                     Previous
                   </Button>
 
-                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                  <div className="flex items-center justify-center gap-1.5 flex-wrap absolute left-1/2 transform -translate-x-1/2">
                     {questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage).map((_, idx) => {
                       const globalIndex = currentPage * questionsPerPage + idx;
                       const isAnswered = userAnswers[globalIndex] !== undefined;
