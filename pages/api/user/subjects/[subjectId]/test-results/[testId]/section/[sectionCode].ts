@@ -11,43 +11,53 @@ export default async function handler(
   }
 
   try {
+    console.log("[Section Review API] Request params:", { 
+      subjectId: req.query.subjectId, 
+      testId: req.query.testId, 
+      sectionCode: req.query.sectionCode 
+    });
+
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
+      console.log("[Section Review API] No auth header");
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const token = authHeader.split("Bearer ")[1];
-    const decodedToken = await verifyAuthToken(token);
+    const decodedToken = await verifyFirebaseToken(token);
     const userId = decodedToken.uid;
+    console.log("[Section Review API] User ID:", userId);
 
     const { subjectId, testId, sectionCode } = req.query;
 
     if (!subjectId || !testId || !sectionCode) {
+      console.log("[Section Review API] Missing parameters");
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    const db = admin.firestore();
-
-    // Fetch the full test result
-    const testDoc = await db
-      .collection("users")
-      .doc(userId)
-      .collection("subjects")
-      .doc(subjectId as string)
-      .collection("fullLengthTests")
-      .doc(testId as string)
-      .get();
-
-    if (!testDoc.exists) {
+    // Use storage service instead of direct firestore access
+    const testData = await storage.getFullLengthTestResult(userId, subjectId as string, testId as string);
+    
+    if (!testData) {
+      console.log("[Section Review API] Test not found");
       return res.status(404).json({ error: "Test not found" });
     }
 
-    const testData = testDoc.data();
+    console.log("[Section Review API] Test data retrieved:", {
+      totalQuestions: testData.questions?.length,
+      sectionBreakdown: Object.keys(testData.sectionBreakdown || {})
+    });
 
     // Filter questions and answers for the specific section
     const sectionQuestions = testData?.questions?.filter(
       (q: any) => q.section_code === sectionCode
     ) || [];
+
+    console.log("[Section Review API] Filtered questions for section:", {
+      sectionCode,
+      filteredCount: sectionQuestions.length,
+      allQuestionSections: testData?.questions?.map((q: any) => q.section_code)
+    });
 
     // Filter user answers for this section's questions
     const sectionAnswers: { [key: number]: string } = {};
@@ -57,19 +67,33 @@ export default async function handler(
       }
     });
 
+    console.log("[Section Review API] Section answers:", {
+      count: Object.keys(sectionAnswers).length,
+      answers: sectionAnswers
+    });
+
     // Get section metadata from sectionBreakdown
     const sectionMetadata = testData?.sectionBreakdown?.[sectionCode as string];
 
+    console.log("[Section Review API] Section metadata:", sectionMetadata);
+
+    const responseData = {
+      questions: sectionQuestions,
+      userAnswers: sectionAnswers,
+      unitNumber: sectionMetadata?.unitNumber,
+      sectionName: sectionMetadata?.name,
+      score: sectionMetadata?.correct,
+      totalQuestions: sectionMetadata?.total,
+    };
+
+    console.log("[Section Review API] Sending response:", {
+      questionCount: responseData.questions.length,
+      answerCount: Object.keys(responseData.userAnswers).length
+    });
+
     res.status(200).json({
       success: true,
-      data: {
-        questions: sectionQuestions,
-        userAnswers: sectionAnswers,
-        unitNumber: sectionMetadata?.unitNumber,
-        sectionName: sectionMetadata?.name,
-        score: sectionMetadata?.correct,
-        totalQuestions: sectionMetadata?.total,
-      },
+      data: responseData,
     });
   } catch (error) {
     console.error("Error fetching section review:", error);
