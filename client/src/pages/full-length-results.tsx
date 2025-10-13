@@ -175,30 +175,19 @@ export default function FullLengthResults() {
         <Card className="border-t-4 border-t-khan-green">
           <CardContent className="pt-4 pb-4">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-gray-500">
-                  {formatDateTime(testData.date)}
+                  {isMobile ? formatDateTime(testData.date, "MMM d, yyyy") : formatDateTime(testData.date)}
                 </p>
-                {!isMobile && (
-                  <p className="text-sm text-gray-500">
-                    Page 1/1 (Q {testData.questions.length > 0 ? 1 : 0}-
-                    {testData.questions.length})
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center justify-center">
                 <Button
                   onClick={() =>
                     router.push(
                       `/section-review?subject=${subjectId}&testId=${testId}&section=all`,
                     )
                   }
-                  variant="outline"
-                  size="sm"
-                  className="border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
+                  className="bg-khan-blue hover:bg-khan-blue/90 text-white flex-1 max-w-xs"
                 >
-                  <BookOpen className="h-4 w-4 mr-1" />
+                  <BookOpen className="h-4 w-4 mr-2" />
                   Review Whole Test
                 </Button>
               </div>

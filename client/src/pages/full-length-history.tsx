@@ -91,7 +91,7 @@ export default function FullLengthHistory() {
       <div className="container mx-auto px-4 py-4 md:py-6">
         <div className="max-w-6xl mx-auto">
           <div className="mb-4">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between gap-3 mb-4">
               <Button
                 onClick={() => router.push(`/study?subject=${subjectId}`)}
                 variant="outline"
@@ -100,12 +100,9 @@ export default function FullLengthHistory() {
                 <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
                 {!isMobile && "Study"}
               </Button>
-              <div className="w-24"></div>
-            </div>
-            <div className="flex justify-center mb-4">
               <Button
                 onClick={handleStartNewTest}
-                className="bg-khan-green hover:bg-khan-green/90 text-base px-6 py-5"
+                className="bg-khan-green hover:bg-khan-green/90 flex-1 max-w-xs"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 Start New Test
