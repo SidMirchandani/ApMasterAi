@@ -103,7 +103,7 @@ export default function FullLengthHistory() {
                   Back
                 </Button>
               )}
-              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark">Full-Length Test History</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark text-center flex-1">Full-Length Test History</h1>
             </div>
             <div className="flex justify-center">
               <Button

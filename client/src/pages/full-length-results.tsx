@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -58,7 +57,7 @@ export default function FullLengthResults() {
       try {
         const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/test-results/${testId}`);
         if (!response.ok) throw new Error("Failed to fetch test results");
-        
+
         const data = await response.json();
         setTestData(data.data);
       } catch (error) {
@@ -134,10 +133,10 @@ export default function FullLengthResults() {
             <CardContent className="pt-4 pb-4">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold">Test Results</h2>
-                  <p className="text-xs text-gray-500">{formatDateTime(testData.date)}</p>
+                  <h2 className="text-2xl font-bold text-center flex-1">Test Results</h2>
+                  <p className="text-sm text-gray-500">{formatDateTime(testData.date)}</p>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`px-4 py-1 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-sm`}>
@@ -209,8 +208,8 @@ export default function FullLengthResults() {
                   .map(([sectionCode, section]) => {
                     const sectionPerf = getPerformanceLevel(section.percentage);
                     return (
-                      <div 
-                        key={sectionCode} 
+                      <div
+                        key={sectionCode}
                         className="border rounded-lg p-3 hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
                         onClick={() => handleReviewSection(sectionCode)}
                       >

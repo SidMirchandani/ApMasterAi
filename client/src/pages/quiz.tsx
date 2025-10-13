@@ -1174,14 +1174,14 @@ export default function Quiz() {
         ) : (
           <>
             {/* Regular quiz: show one question at a time */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg font-medium leading-relaxed">
+            <Card className="mb-4">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium leading-relaxed">
                   {currentQuestion.prompt}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="pt-0">
+                <div className="space-y-2">
                   {(() => {
                     const options = currentQuestion.choices.map((choice, index) => ({
                       label: String.fromCharCode(65 + index),
@@ -1200,7 +1200,7 @@ export default function Quiz() {
                           key={option.label}
                           onClick={() => handleAnswerSelect(option.label)}
                           disabled={isAnswerSubmitted || isReviewMode}
-                          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                          className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
                             showCorrect
                               ? "border-green-500 bg-green-50"
                               : showIncorrect
@@ -1210,9 +1210,9 @@ export default function Quiz() {
                               : "border-gray-200 hover:border-gray-300"
                           } ${isAnswerSubmitted || isReviewMode ? "cursor-not-allowed" : "cursor-pointer"}`}
                         >
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-2">
                             <div
-                              className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                              className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
                                 showCorrect
                                   ? "bg-green-500 text-white"
                                   : showIncorrect
@@ -1224,7 +1224,7 @@ export default function Quiz() {
                             >
                               {option.label}
                             </div>
-                            <div className="flex-1 pt-1">{option.value}</div>
+                            <div className="flex-1 pt-0.5 text-sm">{option.value}</div>
                             {showCorrect && <CheckCircle className="text-green-500 flex-shrink-0" />}
                             {showIncorrect && <XCircle className="text-red-500 flex-shrink-0" />}
                           </div>
@@ -1238,15 +1238,15 @@ export default function Quiz() {
 
             {/* Explanation */}
             {isAnswerSubmitted && currentQuestion.explanation && (
-              <Card className="mb-6 border-khan-blue">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <CheckCircle className="text-khan-blue" />
+              <Card className="mb-4 border-khan-blue bg-blue-50">
+                <CardHeader className="pb-2 pt-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <CheckCircle className="text-khan-blue h-4 w-4" />
                     Explanation
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700">{currentQuestion.explanation}</p>
+                <CardContent className="pt-0 pb-3">
+                  <p className="text-sm text-gray-700">{currentQuestion.explanation}</p>
                 </CardContent>
               </Card>
             )}
