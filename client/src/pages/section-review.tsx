@@ -128,7 +128,9 @@ export default function SectionReview() {
             </Button>
             <h2 className="text-base md:text-xl font-semibold absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
               {isMobile 
-                ? (sectionCode === "all" ? "Full Review" : `Unit ${sectionData?.sectionBreakdown?.[sectionCode as string]?.unitNumber || sectionData?.unitNumber || ""} Review`)
+                ? (sectionCode === "all" 
+                    ? "Full Review" 
+                    : `Unit ${sectionData?.unitNumber || ""} Review`)
                 : `Review - Page ${currentPage + 1}/${totalPages} (Q ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`}
             </h2>
             <div className="w-24"></div> {/* Spacer for layout balance */}
