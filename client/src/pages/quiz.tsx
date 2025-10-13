@@ -1140,11 +1140,10 @@ export default function Quiz() {
                   {/* Second Line: Previous button, numbered boxes, Next button */}
                   <div className="flex items-center justify-between gap-4">
                     <Button
-                      onClick={handlePreviousPage}
+                      onClick={() => setCurrentPage(currentPage - 1)}
                       disabled={currentPage === 0}
                       variant="outline"
-                      className="px-4"
-                      size="sm"
+                      className={isMobile ? "px-3" : "px-8"}
                     >
                       <ArrowLeft className={isMobile ? "" : "mr-2 h-4 w-4"} />
                       {!isMobile && "Previous"}
@@ -1213,9 +1212,8 @@ export default function Quiz() {
                       </Button>
                     ) : (
                       <Button
-                        onClick={handleNextPage}
-                        className="bg-khan-blue hover:bg-khan-blue/90 px-4"
-                        size="sm"
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        className={`bg-khan-blue hover:bg-khan-blue/90 ${isMobile ? "px-3" : "px-8"}`}
                       >
                         {!isMobile && "Next"}
                         <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
@@ -1349,10 +1347,10 @@ export default function Quiz() {
             {/* Bottom Navigation */}
             <div className="mt-6 flex justify-between items-center gap-4">
               <Button
-                onClick={handlePreviousPage}
+                onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 0}
                 variant="outline"
-                className="px-6"
+                className={isMobile ? "px-3" : "px-8"}
               >
                 <ArrowLeft className={isMobile ? "" : "mr-2 h-4 w-4"} />
                 {!isMobile && "Previous"}
@@ -1373,8 +1371,8 @@ export default function Quiz() {
                 </Button>
               ) : (
                 <Button
-                  onClick={handleNextPage}
-                  className="bg-khan-blue hover:bg-khan-blue/90 px-6"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  className={`bg-khan-blue hover:bg-khan-blue/90 ${isMobile ? "px-3" : "px-8"}`}
                 >
                   {!isMobile && "Next"}
                   <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
