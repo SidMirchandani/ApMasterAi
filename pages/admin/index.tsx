@@ -50,6 +50,9 @@ export default function AdminPage() {
   // CSV upload state
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  
+  // AI explanation generation state
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -180,6 +183,33 @@ export default function AdminPage() {
       loading: "Deleting question...",
       success: "Question deleted successfully!",
       error: "Failed to delete question",
+    });
+  }
+
+  async function generateExplanations() {
+    if (!token) return;
+    
+    setGenerating(true);
+    const generatePromise = fetch("/api/generateExplanations", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Generation failed");
+        return res.json();
+      })
+      .then((data) => {
+        alert(`Generated ${data.updated} new explanations out of ${data.total} total.`);
+        return data;
+      })
+      .finally(() => {
+        setGenerating(false);
+      });
+
+    toast.promise(generatePromise, {
+      loading: "Generating explanations with AI...",
+      success: (data) => `Generated ${data.updated} explanations!`,
+      error: "Failed to generate explanations",
     });
   }
 
@@ -343,7 +373,7 @@ export default function AdminPage() {
             </CardTitle>
             <CardDescription>Search by subject and section code</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3">
               <Input
                 placeholder="Subject code (e.g., APMACRO)"
@@ -364,6 +394,18 @@ export default function AdminPage() {
                 <Search className="w-4 h-4 mr-2" />
                 Search
               </Button>
+            </div>
+            <div className="border-t pt-4">
+              <Button
+                onClick={generateExplanations}
+                disabled={generating}
+                className="w-full sm:w-auto bg-khan-green hover:bg-khan-green-light text-white"
+              >
+                {generating ? "Generating..." : "Generate Missing Explanations"}
+              </Button>
+              <p className="text-sm text-khan-gray-medium mt-2">
+                Uses Gemini AI to generate explanations for questions missing them
+              </p>
             </div>
           </CardContent>
         </Card>
