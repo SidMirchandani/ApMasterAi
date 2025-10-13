@@ -120,7 +120,7 @@ export default function SectionReview() {
             Summary
             </Button>
             <h2 className="text-xl font-semibold absolute left-1/2 transform -translate-x-1/2">
-              Review - Page {currentPage + 1}/{totalPages} (Q{currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
+              Review - Page {currentPage + 1}/{totalPages} (Q {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
             </h2>
             <div className="w-24"></div> {/* Spacer for layout balance */}
           </div>

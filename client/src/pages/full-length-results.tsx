@@ -167,8 +167,7 @@ export default function FullLengthResults() {
                   {formatDateTime(testData.date)}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Page 1/1 (Q {testData.questions.length > 0 ? 1 : 0}-
-                  {testData.questions.length})
+                  Page 1/1 (Q {testData.questions.length > 0 ? 1 : 0}-{testData.questions.length})
                 </p>
               </div>
 

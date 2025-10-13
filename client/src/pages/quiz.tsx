@@ -974,7 +974,7 @@ export default function Quiz() {
                 {/* First Line: Page info, Question Navigation label, Exit button */}
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold">
-                    Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
+                    Page {currentPage + 1}/{totalPages} (Q {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
                   </span>
                   <span className="text-sm font-semibold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">Question Navigation</span>
                   <Button
