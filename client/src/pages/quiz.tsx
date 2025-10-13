@@ -800,20 +800,14 @@ export default function Quiz() {
                 variant="outline"
                 size="sm"
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back to Results
+                <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-1"} />
+                {!isMobile && "Back to Results"}
               </Button>
               <h2 className="text-xl font-semibold absolute left-1/2 transform -translate-x-1/2">
-                Review - Page {currentPage + 1} of {totalPages} (Questions{" "}
-                {currentPage * questionsPerPage + 1}-
-                {Math.min(
-                  (currentPage + 1) * questionsPerPage,
-                  questions.length,
-                )}
-                )
+                {isMobile ? "Review" : `Review - Page ${currentPage + 1} of ${totalPages} (Questions ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`}
               </h2>
               <div className="text-lg font-semibold text-khan-green">
-                Final Score: {score}/{questions.length}
+                {!isMobile && "Final Score: "}{score}/{questions.length}
               </div>
             </div>
             <Progress
@@ -1110,23 +1104,8 @@ export default function Quiz() {
             <div className="max-w-6xl mx-auto">
               <Card className="mb-2 sticky top-0 z-10 bg-white shadow-md">
                 <CardContent className="py-2">
-                  {/* First Line: Page info, Question Navigation label, Exit button */}
-                  <div className="flex items-center justify-between mb-2">
-                    {!isMobile && (
-                      <span className="text-sm font-semibold">
-                        Page {currentPage + 1}/{totalPages} (Q{" "}
-                        {currentPage * questionsPerPage + 1}-
-                        {Math.min(
-                          (currentPage + 1) * questionsPerPage,
-                          questions.length,
-                        )}
-                        )
-                      </span>
-                    )}
-                    {isMobile && <div className="w-20"></div>}
-                    <span className="text-sm font-semibold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
-                      Question Navigation
-                    </span>
+                  {/* First Line: Exit button centered */}
+                  <div className="flex items-center justify-center mb-2">
                     <Button
                       onClick={() => setShowExitDialog(true)}
                       variant="outline"
@@ -1149,7 +1128,7 @@ export default function Quiz() {
                       {!isMobile && "Previous"}
                     </Button>
 
-                    <div className="flex items-center justify-center gap-1.5 flex-wrap absolute left-1/2 transform -translate-x-1/2">
+                    <div className="flex items-center justify-center gap-1 flex-wrap absolute left-1/2 transform -translate-x-1/2">
                       {questions
                         .slice(
                           currentPage * questionsPerPage,
@@ -1174,7 +1153,7 @@ export default function Quiz() {
                                   block: "center",
                                 });
                               }}
-                              className={`relative w-9 h-9 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
+                              className={`relative w-8 h-8 rounded-md font-semibold text-xs flex items-center justify-center transition-all ${
                                 isAnswered
                                   ? "bg-gray-200 border-2 border-gray-400 text-gray-700"
                                   : "bg-white border-2 border-gray-300 text-gray-500"
@@ -1186,7 +1165,7 @@ export default function Quiz() {
                               {isFlagged && (
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
-                                  className="absolute top-0 right-0 h-3 w-3 text-red-600"
+                                  className="absolute top-0 right-0 h-2.5 w-2.5 text-red-600"
                                   viewBox="0 0 20 20"
                                   fill="currentColor"
                                 >

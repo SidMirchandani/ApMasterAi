@@ -7,6 +7,7 @@ import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDateTime } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TestHistory {
   id: string;
@@ -20,6 +21,7 @@ export default function FullLengthHistory() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const { subject: subjectId } = router.query;
+  const isMobile = useIsMobile();
   const [testHistory, setTestHistory] = useState<TestHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -95,8 +97,8 @@ export default function FullLengthHistory() {
                 variant="outline"
                 size="sm"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Study
+                <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
+                {!isMobile && "Study"}
               </Button>
               <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
                 Test History

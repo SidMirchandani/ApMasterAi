@@ -151,8 +151,8 @@ export default function FullLengthResults() {
             size="sm"
             className="flex items-center gap-1"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Test History
+            <ArrowLeft className={isMobile ? "" : "h-4 w-4"} />
+            {!isMobile && "Test History"}
           </Button>
           <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2">
             Results Summary

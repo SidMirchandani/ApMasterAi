@@ -502,16 +502,18 @@ export default function Study() {
               data-testid="button-back"
               className="transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Dashboard
+              <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
+              {!isMobile && "Dashboard"}
             </Button>
             <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
                 {currentSubject.name}
               </h1>
-              <p className="text-gray-600 text-sm max-w-3xl">
-                {currentSubject.description}
-              </p>
+              {!isMobile && (
+                <p className="text-gray-600 text-sm max-w-3xl">
+                  {currentSubject.description}
+                </p>
+              )}
             </div>
             <div className="w-36"></div>
           </div>
