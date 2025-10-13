@@ -109,12 +109,23 @@ export default function SectionReview() {
     <div className="min-h-screen bg-khan-background">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-semibold">
-            Review - Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
-          </h2>
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <Button
+              onClick={handleBackNavigation}
+              variant="outline"
+              size="sm"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to Results
+            </Button>
+            <h2 className="text-xl font-semibold absolute left-1/2 transform -translate-x-1/2">
+              Review - Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
+            </h2>
+            <div className="w-24"></div> {/* Spacer for layout balance */}
+          </div>
+          <Progress value={((currentPage + 1) / totalPages) * 100} className="h-2" />
         </div>
-        <Progress value={((currentPage + 1) / totalPages) * 100} className="h-2" />
 
 
         <div className="space-y-4 mb-6">
