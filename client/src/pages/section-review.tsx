@@ -116,7 +116,7 @@ export default function SectionReview() {
               variant="outline"
               size="sm"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Results
             </Button>
             <h2 className="text-xl font-semibold absolute left-1/2 transform -translate-x-1/2">
