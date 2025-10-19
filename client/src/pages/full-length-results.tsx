@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDateTime } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Question {
   id: string;
@@ -42,6 +42,7 @@ export default function FullLengthResults() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const { subject: subjectId, testId } = router.query;
+  const isMobile = useIsMobile();
   const [testData, setTestData] = useState<TestData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,9 +57,12 @@ export default function FullLengthResults() {
       if (!subjectId || !testId || !isAuthenticated) return;
 
       try {
-        const response = await apiRequest("GET", `/api/user/subjects/${subjectId}/test-results/${testId}`);
+        const response = await apiRequest(
+          "GET",
+          `/api/user/subjects/${subjectId}/test-results/${testId}`,
+        );
         if (!response.ok) throw new Error("Failed to fetch test results");
-        
+
         const data = await response.json();
         setTestData(data.data);
       } catch (error) {
@@ -71,9 +75,22 @@ export default function FullLengthResults() {
     fetchTestData();
   }, [subjectId, testId, isAuthenticated]);
 
-  const handleReviewSection = (sectionCode: string) => {
-    router.push(`/section-review?subject=${subjectId}&testId=${testId}&section=${sectionCode}`);
+  const handleReviewUnit = (sectionCode: string) => {
+    console.log("📤 Navigating to section review with code:", sectionCode);
+    router.push({
+      pathname: "/section-review",
+      query: {
+        subject: subjectId,
+        testId: testId,
+        section: sectionCode, // This will be the actual section code like "BEC", "NIPD", etc.
+      },
+    });
   };
+
+  const handleStartNewTest = () => {
+    router.push(`/take-test?subject=${subjectId}`);
+  };
+
 
   if (loading || isLoading) {
     return (
@@ -93,9 +110,14 @@ export default function FullLengthResults() {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <p className="text-khan-gray-medium">Test results not found</p>
-            <Button onClick={() => router.push(`/full-length-history?subject=${subjectId}`)} className="mt-4">
+            <Button
+              onClick={() =>
+                router.push(`/full-length-history?subject=${subjectId}`)
+              }
+              className="mt-4"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to History
+              Test History
             </Button>
           </div>
         </div>
@@ -104,10 +126,25 @@ export default function FullLengthResults() {
   }
 
   const getPerformanceLevel = (pct: number) => {
-    if (pct >= 90) return { label: "Excellent", color: "text-green-600", bgColor: "bg-green-100" };
-    if (pct >= 75) return { label: "Good", color: "text-blue-600", bgColor: "bg-blue-100" };
-    if (pct >= 60) return { label: "Fair", color: "text-yellow-600", bgColor: "bg-yellow-100" };
-    return { label: "Needs Work", color: "text-red-600", bgColor: "bg-red-100" };
+    if (pct >= 90)
+      return {
+        label: "Excellent",
+        color: "text-green-600",
+        bgColor: "bg-green-100",
+      };
+    if (pct >= 75)
+      return { label: "Good", color: "text-blue-600", bgColor: "bg-blue-100" };
+    if (pct >= 60)
+      return {
+        label: "Fair",
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-100",
+      };
+    return {
+      label: "Needs Work",
+      color: "text-red-600",
+      bgColor: "bg-red-100",
+    };
   };
 
   const overallPerformance = getPerformanceLevel(testData.percentage);
@@ -115,92 +152,148 @@ export default function FullLengthResults() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-5xl mx-auto space-y-6">
-          <div className="flex items-center gap-4 mb-6">
-            <Button
-              onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
-              variant="outline"
-              size="sm"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-            <h1 className="text-3xl font-bold text-khan-gray-dark">Test Results</h1>
-          </div>
-
-          {/* Overall Score Card */}
-          <Card className="border-t-4 border-t-khan-green">
-            <CardContent className="pt-8 pb-6">
-              <div className="text-center">
-                <p className="text-sm text-khan-gray-medium mb-3">{formatDateTime(testData.date)}</p>
-                <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-khan-green to-green-600 mb-3">
-                  <span className="text-4xl font-bold text-white">{testData.percentage}%</span>
-                </div>
-                <div className={`inline-block px-6 py-2 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-lg mb-2`}>
-                  {overallPerformance.label}
-                </div>
-                <p className="text-lg text-gray-600">
-                  {testData.score} out of {testData.totalQuestions} questions correct
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Unit Performance Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <BookOpen className="text-khan-blue h-6 w-6" />
-                Unit Performance Breakdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Object.entries(testData.sectionBreakdown)
-                  .sort(([, a], [, b]) => (a.unitNumber || 0) - (b.unitNumber || 0))
-                  .map(([sectionCode, section]) => {
-                    const sectionPerf = getPerformanceLevel(section.percentage);
-                    return (
-                      <Card 
-                        key={sectionCode} 
-                        className="border rounded-lg hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
-                        onClick={() => handleReviewSection(sectionCode)}
-                      >
-                        <CardContent className="pt-4 pb-4">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-semibold text-khan-green bg-khan-green/10 px-2 py-1 rounded">
-                                  Unit {section.unitNumber || 0}
-                                </span>
-                                <h3 className="font-semibold text-lg text-gray-900">{section.name}</h3>
-                              </div>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {section.correct} / {section.total} correct
-                              </p>
-                            </div>
-                            <div className={`px-3 py-1 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-sm font-medium`}>
-                              {section.percentage}%
-                            </div>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
-                            <div
-                              className={`h-3 rounded-full transition-all ${
-                                section.percentage >= 75 ? 'bg-green-500' :
-                                section.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${section.percentage}%` }}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-              </div>
-            </CardContent>
-          </Card>
+      <div className="container mx-auto px-4 md:px-8 py-3 max-w-6xl">
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            onClick={() =>
+              router.push(`/full-length-history?subject=${subjectId}`)
+            }
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+          >
+            <ArrowLeft className={isMobile ? "" : "h-4 w-4"} />
+            {!isMobile && "Test History"}
+          </Button>
+          <h1 className="text-xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+            Results Summary
+          </h1>
+          <div className="w-24"></div>
         </div>
+
+        {/* Overall Score Card - Compact */}
+        <Card className="border-t-4 border-t-khan-green">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-sm text-gray-500">
+                  {isMobile ? formatDateTime(testData.date, "MMM d, yyyy") : formatDateTime(testData.date)}
+                </p>
+                <Button
+                  onClick={() =>
+                    router.push(
+                      `/section-review?subject=${subjectId}&testId=${testId}&section=all`,
+                    )
+                  }
+                  className="bg-khan-blue hover:bg-khan-blue/90 text-white w-full max-w-md"
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Review Whole Test
+                </Button>
+              </div>
+
+              {/* Stats Grid - Compact */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                  <div className={`flex ${isMobile ? 'flex-col' : ''} items-center justify-center gap-2`}>
+                    <CheckCircle className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-green-500`} />
+                    <div>
+                      <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>
+                        {testData.score}
+                      </p>
+                      <p className="text-xs text-gray-600">Correct</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                  <div className={`flex ${isMobile ? 'flex-col' : ''} items-center justify-center gap-2`}>
+                    <XCircle className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-red-500`} />
+                    <div>
+                      <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>
+                        {testData.totalQuestions - testData.score}
+                      </p>
+                      <p className="text-xs text-gray-600">Incorrect</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                  <div className={`flex ${isMobile ? 'flex-col' : ''} items-center justify-center gap-2`}>
+                    <div className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} rounded-full bg-khan-blue flex items-center justify-center`}>
+                      <span className={`text-white font-bold ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                        {testData.totalQuestions}
+                      </span>
+                    </div>
+                    <div>
+                      <p className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>Total</p>
+                      <p className="text-xs text-gray-600">Questions</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Unit Performance Breakdown */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CheckCircle className="text-khan-blue h-5 w-5" />
+              <span className="text-base md:text-lg font-bold">Test History</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {Object.entries(testData.sectionBreakdown)
+                .sort(
+                  ([, a], [, b]) => (a.unitNumber || 0) - (b.unitNumber || 0),
+                )
+                .map(([sectionCode, section]) => {
+                  const sectionPerf = getPerformanceLevel(section.percentage);
+                  return (
+                    <div
+                      key={sectionCode}
+                      className="border rounded-lg p-3 hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
+                      onClick={() => handleReviewUnit(sectionCode)}
+                    >
+                      <div className="flex justify-between items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-semibold text-khan-green bg-khan-green/10 px-2 py-0.5 rounded">
+                              Unit {section.unitNumber || 0}
+                            </span>
+                            <h3 className="font-semibold text-sm text-gray-900">
+                              {section.name}
+                            </h3>
+                            <span className="text-xs text-gray-600">
+                              ({section.correct}/{section.total})
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          className={`px-3 py-0.5 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-xs font-medium flex-shrink-0`}
+                        >
+                          {section.percentage}%
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div
+                          className={`h-2 rounded-full transition-all ${
+                            section.percentage >= 75
+                              ? "bg-green-500"
+                              : section.percentage >= 60
+                                ? "bg-yellow-500"
+                                : "bg-red-500"
+                          }`}
+                          style={{ width: `${section.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

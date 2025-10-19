@@ -74,19 +74,7 @@ export default function Course() {
           </div>
 
           <div className="bg-white rounded-lg border-2 border-gray-100 p-8 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-khan-green rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <BookOpen className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
-                  Study Materials
-                </h3>
-                <p className="text-khan-gray-medium">
-                  Comprehensive lessons and explanations
-                </p>
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div className="text-center">
                 <div className="w-16 h-16 bg-khan-blue rounded-lg flex items-center justify-center mx-auto mb-4">
                   <Target className="w-8 h-8 text-white" />
@@ -96,6 +84,18 @@ export default function Course() {
                 </h3>
                 <p className="text-khan-gray-medium">
                   Real AP-style problems and solutions
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="w-16 h-16 bg-khan-green rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <BookOpen className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
+                  Detailed Explanations
+                </h3>
+                <p className="text-khan-gray-medium">
+                  Comprehensive answer explanations
                 </p>
               </div>
 

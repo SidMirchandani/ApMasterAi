@@ -7,6 +7,8 @@ import { ArrowLeft, CheckCircle, XCircle, ArrowRight } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
+import { formatDateTime } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,17 +32,17 @@ interface Question {
 
 // Map subject IDs to their API codes
 const SUBJECT_API_CODES: Record<string, string> = {
-  "macroeconomics": "APMACRO",
-  "microeconomics": "APMICRO",
+  macroeconomics: "APMACRO",
+  microeconomics: "APMICRO",
   "computer-science-principles": "APCSP",
   "calculus-ab": "APCALCAB",
   "calculus-bc": "APCALCBC",
-  "biology": "APBIO",
+  biology: "APBIO",
 };
 
 // Map subject IDs to their unit-section mappings
 const SUBJECT_UNIT_MAPS: Record<string, Record<string, string>> = {
-  "macroeconomics": {
+  macroeconomics: {
     unit1: "BEC",
     unit2: "EIBC",
     unit3: "NIPD",
@@ -48,7 +50,7 @@ const SUBJECT_UNIT_MAPS: Record<string, Record<string, string>> = {
     unit5: "LRCSP",
     unit6: "OEITF",
   },
-  "microeconomics": {
+  microeconomics: {
     unit1: "BEC",
     unit2: "SD",
     unit3: "PCCPM",
@@ -83,7 +85,7 @@ const SUBJECT_UNIT_MAPS: Record<string, Record<string, string>> = {
     unit7: "DE",
     unit8: "AI",
   },
-  "biology": {
+  biology: {
     unit1: "COL",
     unit2: "CSF",
     unit3: "CE",
@@ -99,6 +101,7 @@ export default function Quiz() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const { subject: subjectId, unit } = router.query;
+  const isMobile = useIsMobile();
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -113,6 +116,17 @@ export default function Quiz() {
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(
+    new Set(),
+  );
+
+  // Mock functions for navigation and submission to be replaced later
+  const handleExitTest = () => {
+    setShowExitDialog(true);
+  };
+  const handleSubmit = () => {
+    setShowSubmitConfirm(true);
+  };
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -125,12 +139,12 @@ export default function Quiz() {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!quizCompleted && questions.length > 0 && !isReviewMode) {
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = "";
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [quizCompleted, questions.length, isReviewMode]);
 
   const handleBackClick = () => {
@@ -169,12 +183,12 @@ export default function Quiz() {
           // For full-length quiz, fetch ALL questions without section filter
           console.log("📤 Fetching ALL questions for full-length quiz:", {
             subject: subjectApiCode,
-            limit: 50
+            limit: 50,
           });
 
           const response = await apiRequest(
             "GET",
-            `/api/questions?subject=${subjectApiCode}&limit=50`
+            `/api/questions?subject=${subjectApiCode}&limit=50`,
           );
 
           if (!response.ok) {
@@ -185,7 +199,7 @@ export default function Quiz() {
 
           console.log("📥 Full-length quiz questions:", {
             success: data.success,
-            totalQuestions: data.data?.length || 0
+            totalQuestions: data.data?.length || 0,
           });
 
           if (data.success && data.data && data.data.length > 0) {
@@ -214,12 +228,12 @@ export default function Quiz() {
             subject: subjectApiCode,
             section: sectionCode,
             unit: unit,
-            limit: 25
+            limit: 25,
           });
 
           const response = await apiRequest(
             "GET",
-            `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`
+            `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`,
           );
 
           if (!response.ok) {
@@ -231,11 +245,15 @@ export default function Quiz() {
           console.log("📥 Questions API response:", {
             success: data.success,
             questionCount: data.data?.length || 0,
-            firstQuestion: data.data?.[0] ? {
-              id: data.data[0].id,
-              prompt: data.data[0].prompt?.substring(0, 50) + "...",
-              hasChoices: Array.isArray(data.data[0].choices) && data.data[0].choices.length > 0
-            } : null
+            firstQuestion: data.data?.[0]
+              ? {
+                  id: data.data[0].id,
+                  prompt: data.data[0].prompt?.substring(0, 50) + "...",
+                  hasChoices:
+                    Array.isArray(data.data[0].choices) &&
+                    data.data[0].choices.length > 0,
+                }
+              : null,
           });
 
           if (data.success && data.data && data.data.length > 0) {
@@ -260,11 +278,14 @@ export default function Quiz() {
   }, [isAuthenticated, unit, subjectId]);
 
   const isFullLength = unit === "full-length";
-  const questionsPerPage = isFullLength ? 10 : 1; // Set to 10 questions per page for full-length
+  const questionsPerPage = isFullLength ? 5 : 1; // Set to 10 questions per page for full-length
   const totalPages = Math.ceil(questions.length / questionsPerPage);
 
   const currentQuestions = isFullLength
-    ? questions.slice(currentPage * questionsPerPage, (currentPage + 1) * questionsPerPage)
+    ? questions.slice(
+        currentPage * questionsPerPage,
+        (currentPage + 1) * questionsPerPage,
+      )
     : [questions[currentQuestionIndex]];
 
   const currentQuestion = questions[currentQuestionIndex];
@@ -277,17 +298,31 @@ export default function Quiz() {
 
     if (isFullLength && questionIndex !== undefined) {
       const globalIndex = currentPage * questionsPerPage + questionIndex;
-      setUserAnswers(prev => ({ ...prev, [globalIndex]: answer }));
+      setUserAnswers((prev) => ({ ...prev, [globalIndex]: answer }));
     } else if (!isAnswerSubmitted) {
       setSelectedAnswer(answer);
     }
+  };
+
+  const toggleFlag = (questionIndex: number) => {
+    setFlaggedQuestions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(questionIndex)) {
+        newSet.delete(questionIndex);
+      } else {
+        newSet.add(questionIndex);
+      }
+      return newSet;
+    });
   };
 
   const handleSubmitAnswer = () => {
     if (!selectedAnswer || !currentQuestion) return;
 
     setIsAnswerSubmitted(true);
-    const correctAnswerLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
+    const correctAnswerLabel = String.fromCharCode(
+      65 + currentQuestion.answerIndex,
+    );
     if (selectedAnswer === correctAnswerLabel) {
       setScore(score + 1);
     }
@@ -337,6 +372,35 @@ export default function Quiz() {
     // Don't set isReviewMode here - let user see summary first
   };
 
+  const handleReviewUnit = (sectionCode: string) => {
+    const unitQuestions = questions.filter(
+      (q) => q.section_code === sectionCode,
+    );
+    const unitAnswers: { [key: number]: string } = {};
+
+    questions.forEach((q, idx) => {
+      if (q.section_code === sectionCode) {
+        unitAnswers[idx] = userAnswers[idx];
+      }
+    });
+
+    // Navigate to section review with current test data
+    router.push({
+      pathname: "/section-review",
+      query: {
+        subject: subjectId,
+        testId: "current",
+        section: sectionCode,
+        data: JSON.stringify({
+          questions: unitQuestions,
+          userAnswers: unitAnswers,
+          score,
+          totalQuestions: questions.length,
+        }),
+      },
+    });
+  };
+
   const handleRetakeQuiz = () => {
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
@@ -361,7 +425,7 @@ export default function Quiz() {
           score,
           total: questions.length,
           percentage,
-          isFullLength
+          isFullLength,
         });
         try {
           // For full-length exams, save complete test data
@@ -374,8 +438,8 @@ export default function Quiz() {
                 percentage,
                 totalQuestions: questions.length,
                 questions,
-                userAnswers
-              }
+                userAnswers,
+              },
             );
             console.log("✅ [Quiz] Full-length test saved successfully");
           } else {
@@ -383,7 +447,7 @@ export default function Quiz() {
             const response = await apiRequest(
               "PUT",
               `/api/user/subjects/${subjectId}/unit-progress`,
-              { unitId: unit, mcqScore: percentage }
+              { unitId: unit, mcqScore: percentage },
             );
             console.log("✅ [Quiz] Score saved successfully:", percentage);
           }
@@ -394,7 +458,16 @@ export default function Quiz() {
     };
 
     saveScore();
-  }, [quizCompleted, subjectId, unit, score, questions.length, isFullLength, questions, userAnswers]);
+  }, [
+    quizCompleted,
+    subjectId,
+    unit,
+    score,
+    questions.length,
+    isFullLength,
+    questions,
+    userAnswers,
+  ]);
 
   if (loading || isLoading) {
     return (
@@ -429,61 +502,87 @@ export default function Quiz() {
     const percentage = Math.round((score / questions.length) * 100);
 
     // Calculate section-wise performance for full-length test
-    const sectionPerformance = isFullLength ? (() => {
-      const sections: Record<string, {
-        name: string;
-        correct: number;
-        total: number;
-        percentage: number;
-      }> = {};
+    const sectionPerformance = isFullLength
+      ? (() => {
+          const sections: Record<
+            string,
+            {
+              name: string;
+              correct: number;
+              total: number;
+              percentage: number;
+            }
+          > = {};
 
-      // Section code to name mapping
-      const sectionNames: Record<string, string> = {
-        "BEC": "Basic Economic Concepts",
-        "EIBC": "Economic Indicators & Business Cycle",
-        "NIPD": "National Income & Price Determination",
-        "FS": "Financial Sector",
-        "LRCSP": "Long-Run Consequences of Stabilization Policies",
-        "OEITF": "Open Economy - International Trade & Finance",
-        // Add more mappings as needed for other subjects
-      };
-
-      questions.forEach((q, idx) => {
-        const sectionCode = q.section_code || "Unknown";
-        const sectionName = sectionNames[sectionCode] || sectionCode;
-
-        if (!sections[sectionCode]) {
-          sections[sectionCode] = {
-            name: sectionName,
-            correct: 0,
-            total: 0,
-            percentage: 0
+          // Section code to name mapping
+          const sectionNames: Record<string, string> = {
+            BEC: "Basic Economic Concepts",
+            EIBC: "Economic Indicators & Business Cycle",
+            NIPD: "National Income & Price Determination",
+            FS: "Financial Sector",
+            LRCSP: "Long-Run Consequences of Stabilization Policies",
+            OEITF: "Open Economy - International Trade & Finance",
+            // Add more mappings as needed for other subjects
           };
-        }
 
-        sections[sectionCode].total++;
+          questions.forEach((q, idx) => {
+            const sectionCode = q.section_code || "Unknown";
+            const sectionName = sectionNames[sectionCode] || sectionCode;
 
-        const userAnswer = userAnswers[idx];
-        const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
-        if (userAnswer === correctAnswerLabel) {
-          sections[sectionCode].correct++;
-        }
-      });
+            if (!sections[sectionCode]) {
+              sections[sectionCode] = {
+                name: sectionName,
+                correct: 0,
+                total: 0,
+                percentage: 0,
+              };
+            }
 
-      // Calculate percentages
-      Object.values(sections).forEach(section => {
-        section.percentage = Math.round((section.correct / section.total) * 100);
-      });
+            sections[sectionCode].total++;
 
-      return Object.values(sections).sort((a, b) => b.percentage - a.percentage);
-    })() : null;
+            const userAnswer = userAnswers[idx];
+            const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
+            if (userAnswer === correctAnswerLabel) {
+              sections[sectionCode].correct++;
+            }
+          });
+
+          // Calculate percentages
+          Object.values(sections).forEach((section) => {
+            section.percentage = Math.round(
+              (section.correct / section.total) * 100,
+            );
+          });
+
+          return sections;
+        })()
+      : null;
 
     // Performance level indicator
     const getPerformanceLevel = (pct: number) => {
-      if (pct >= 90) return { label: "Excellent", color: "text-green-600", bgColor: "bg-green-100" };
-      if (pct >= 75) return { label: "Good", color: "text-blue-600", bgColor: "bg-blue-100" };
-      if (pct >= 60) return { label: "Fair", color: "text-yellow-600", bgColor: "bg-yellow-100" };
-      return { label: "Needs Work", color: "text-red-600", bgColor: "bg-red-100" };
+      if (pct >= 90)
+        return {
+          label: "Excellent",
+          color: "text-green-600",
+          bgColor: "bg-green-100",
+        };
+      if (pct >= 75)
+        return {
+          label: "Good",
+          color: "text-blue-600",
+          bgColor: "bg-blue-100",
+        };
+      if (pct >= 60)
+        return {
+          label: "Fair",
+          color: "text-yellow-600",
+          bgColor: "bg-yellow-100",
+        };
+      return {
+        label: "Needs Work",
+        color: "text-red-600",
+        bgColor: "bg-red-100",
+      };
     };
 
     const overallPerformance = getPerformanceLevel(percentage);
@@ -491,23 +590,69 @@ export default function Quiz() {
     return (
       <div className="min-h-screen bg-khan-background">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-4">
           {isFullLength ? (
-            <div className="max-w-5xl mx-auto space-y-6">
+            <div className="max-w-6xl mx-auto space-y-3">
               {/* Header Card */}
               <Card className="border-t-4 border-t-khan-green">
-                <CardContent className="pt-8 pb-6">
-                  <div className="text-center">
-                    <h2 className="text-3xl font-bold mb-6">Full-Length Test Complete!</h2>
-                    <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-khan-green to-green-600 mb-3">
-                      <span className="text-4xl font-bold text-white">{percentage}%</span>
+                <CardContent className="pt-6 pb-6">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold">Test Results</h2>
+                      <p className="text-sm text-gray-500">
+                        {formatDateTime(new Date())}
+                      </p>
                     </div>
-                    <div className={`inline-block px-6 py-2 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold text-lg mb-2`}>
-                      {overallPerformance.label}
+
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`inline-block px-6 py-2 rounded-full ${overallPerformance.bgColor} ${overallPerformance.color} font-semibold`}
+                      >
+                        {overallPerformance.label}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {score} out of {questions.length} questions correct
+                      </p>
                     </div>
-                    <p className="text-lg text-gray-600">
-                      {score} out of {questions.length} questions correct
-                    </p>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-4 mt-2">
+                      <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                        <div className="flex justify-center mb-2">
+                          <CheckCircle className="h-12 w-12 text-green-500" />
+                        </div>
+                        <p className="text-3xl font-bold text-gray-900">
+                          {score}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Correct Answers
+                        </p>
+                      </div>
+                      <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                        <div className="flex justify-center mb-2">
+                          <XCircle className="h-12 w-12 text-red-500" />
+                        </div>
+                        <p className="text-3xl font-bold text-gray-900">
+                          {questions.length - score}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Incorrect Answers
+                        </p>
+                      </div>
+                      <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                        <div className="flex justify-center mb-2">
+                          <div className="h-12 w-12 rounded-full bg-khan-blue flex items-center justify-center">
+                            <span className="text-white font-bold text-xl">
+                              {questions.length}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-3xl font-bold text-gray-900">
+                          Total
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">Questions</p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -515,78 +660,64 @@ export default function Quiz() {
               {/* Section Performance Breakdown */}
               {sectionPerformance && (
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-2xl flex items-center gap-2">
-                      <CheckCircle className="text-khan-blue h-6 w-6" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <CheckCircle className="text-khan-blue h-4 w-4" />
                       Section Performance Breakdown
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {sectionPerformance.map((section, idx) => {
-                        const sectionPerf = getPerformanceLevel(section.percentage);
-                        return (
-                          <div key={idx} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start mb-3">
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-lg text-gray-900">{section.name}</h3>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  {section.correct} / {section.total} correct
-                                </p>
+                    <div className="space-y-2">
+                      {Object.entries(sectionPerformance).map(
+                        ([sectionCode, section], idx) => {
+                          const sectionPerf = getPerformanceLevel(
+                            section.percentage,
+                          );
+                          return (
+                            <div
+                              key={idx}
+                              className="border rounded-lg p-3 hover:shadow-md transition-all cursor-pointer hover:border-khan-green"
+                              onClick={() =>
+                                sectionCode && handleReviewUnit(sectionCode)
+                              }
+                            >
+                              <div className="flex justify-between items-center gap-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-sm text-gray-900">
+                                      {section.name}
+                                    </h3>
+                                    <span className="text-xs text-gray-600">
+                                      ({section.correct}/{section.total})
+                                    </span>
+                                  </div>
+                                </div>
+                                <div
+                                  className={`px-3 py-0.5 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-xs font-medium`}
+                                >
+                                  {section.percentage}%
+                                </div>
                               </div>
-                              <div className={`px-3 py-1 rounded-full ${sectionPerf.bgColor} ${sectionPerf.color} text-sm font-medium`}>
-                                {section.percentage}%
+                              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                <div
+                                  className={`h-2 rounded-full transition-all ${
+                                    section.percentage >= 75
+                                      ? "bg-green-500"
+                                      : section.percentage >= 60
+                                        ? "bg-yellow-500"
+                                        : "bg-red-500"
+                                  }`}
+                                  style={{ width: `${section.percentage}%` }}
+                                />
                               </div>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3">
-                              <div
-                                className={`h-3 rounded-full transition-all ${
-                                  section.percentage >= 75 ? 'bg-green-500' :
-                                  section.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                                }`}
-                                style={{ width: `${section.percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        },
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               )}
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center">
-                      <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{score}</p>
-                      <p className="text-sm text-gray-600">Correct Answers</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center">
-                      <XCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{questions.length - score}</p>
-                      <p className="text-sm text-gray-600">Incorrect Answers</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center">
-                      <div className="h-12 w-12 rounded-full bg-khan-blue flex items-center justify-center mx-auto mb-2">
-                        <span className="text-white font-bold text-lg">{questions.length}</span>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">Total</p>
-                      <p className="text-sm text-gray-600">Questions</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
 
               {/* Action Buttons */}
               <Card>
@@ -608,10 +739,9 @@ export default function Quiz() {
                     <Button
                       onClick={() => router.push(`/study?subject=${subjectId}`)}
                       variant="outline"
-                      className="px-8"
+                      className="px-4"
                     >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back to Study
+                      <ArrowLeft className="h-4 w-4" />
                     </Button>
                   </div>
                 </CardContent>
@@ -645,7 +775,7 @@ export default function Quiz() {
                     onClick={() => router.push(`/study?subject=${subjectId}`)}
                     variant="outline"
                   >
-                    Exit Quiz
+                    Exit Practice Quiz
                   </Button>
                 </div>
               </CardContent>
@@ -661,71 +791,160 @@ export default function Quiz() {
     return (
       <div className="min-h-screen bg-khan-background">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 md:px-8 py-3 max-w-6xl">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xl font-semibold">
-                Review - Page {currentPage + 1} of {totalPages} (Questions {currentPage * questionsPerPage + 1}-{Math.min((currentPage + 1) * questionsPerPage, questions.length)})
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                onClick={() => setIsReviewMode(false)}
+                variant="outline"
+                size="sm"
+              >
+                <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-1"} />
+                {!isMobile && "Back to Results"}
+              </Button>
+              <h2 className="text-base md:text-xl font-semibold absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                {isMobile
+                  ? "Full Review"
+                  : `Review - Page ${currentPage + 1} of ${totalPages} (Questions ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`}
               </h2>
               <div className="text-lg font-semibold text-khan-green">
-                Final Score: {score}/{questions.length}
+                {!isMobile && "Final Score: "}
+                {score}/{questions.length}
               </div>
             </div>
-            <Progress value={((currentPage + 1) / totalPages) * 100} className="h-2" />
+            <Progress
+              value={((currentPage + 1) / totalPages) * 100}
+              className="h-2"
+            />
           </div>
 
-          {/* Review Questions */}
-          <div className="space-y-6 mb-6">
+          {/* Question Navigation Box */}
+          <Card className="mb-4 sticky top-0 z-10 bg-white shadow-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-khan-gray-dark">
+                Question Navigation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex flex-wrap gap-2 justify-center">
+                {questions
+                  .slice(
+                    currentPage * questionsPerPage,
+                    (currentPage + 1) * questionsPerPage,
+                  )
+                  .map((q, idx) => {
+                    const globalIndex = currentPage * questionsPerPage + idx;
+                    const userAnswer = userAnswers[globalIndex];
+                    const correctAnswerLabel = String.fromCharCode(
+                      65 + q.answerIndex,
+                    );
+                    const isCorrect = userAnswer === correctAnswerLabel;
+
+                    return (
+                      <button
+                        key={globalIndex}
+                        onClick={() => {
+                          const element = document.getElementById(
+                            `review-question-${globalIndex}`,
+                          );
+                          element?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center",
+                          });
+                        }}
+                        className={`relative w-10 h-10 rounded-md font-semibold text-sm flex items-center justify-center transition-all ${
+                          isCorrect
+                            ? "bg-green-100 border-2 border-green-500 text-green-700"
+                            : "bg-red-100 border-2 border-red-500 text-red-700"
+                        }`}
+                      >
+                        <span className="relative z-10">{globalIndex + 1}</span>
+                        {flaggedQuestions.has(globalIndex) && (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="absolute top-0 right-0 h-3.5 w-3.5 text-red-600"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Review Questions - Compact */}
+          <div className="space-y-4 mb-6">
             {currentQuestions.map((q, idx) => {
               const globalIndex = currentPage * questionsPerPage + idx;
               const options = q.choices.map((choice, i) => ({
                 label: String.fromCharCode(65 + i),
                 value: choice,
               }));
-              const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
+              const correctAnswerLabel = String.fromCharCode(
+                65 + q.answerIndex,
+              );
               const userAnswer = userAnswers[globalIndex];
               const isCorrect = userAnswer === correctAnswerLabel;
 
               return (
-                <Card key={globalIndex} className="border-2">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-medium leading-relaxed">
+                <Card
+                  key={globalIndex}
+                  id={`review-question-${globalIndex}`}
+                  className="border"
+                >
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base font-medium leading-relaxed">
                       {globalIndex + 1}. {q.prompt}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 mb-4">
+                  <CardContent className="space-y-3">
+                    <div className="space-y-2">
                       {options.map((option) => {
                         const isUserAnswer = userAnswer === option.label;
-                        const isCorrectAnswer = option.label === correctAnswerLabel;
+                        const isCorrectAnswer =
+                          option.label === correctAnswerLabel;
 
                         return (
                           <div
                             key={option.label}
-                            className={`w-full text-left p-4 rounded-lg border-2 ${
+                            className={`w-full text-left p-3 rounded-lg border ${
                               isCorrectAnswer
                                 ? "border-green-500 bg-green-50"
                                 : isUserAnswer && !isCorrect
-                                ? "border-red-500 bg-red-50"
-                                : "border-gray-200"
+                                  ? "border-red-500 bg-red-50"
+                                  : "border-gray-200"
                             }`}
                           >
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-2">
                               <div
-                                className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
                                   isCorrectAnswer
                                     ? "bg-green-500 text-white"
                                     : isUserAnswer && !isCorrect
-                                    ? "bg-red-500 text-white"
-                                    : "bg-gray-200 text-gray-700"
+                                      ? "bg-red-500 text-white"
+                                      : "bg-gray-200 text-gray-700"
                                 }`}
                               >
                                 {option.label}
                               </div>
-                              <div className="flex-1 pt-1">{option.value}</div>
-                              {isCorrectAnswer && <CheckCircle className="text-green-500 flex-shrink-0" />}
-                              {isUserAnswer && !isCorrect && <XCircle className="text-red-500 flex-shrink-0" />}
+                              <div className="flex-1 text-sm pt-0.5">
+                                {option.value}
+                              </div>
+                              {isCorrectAnswer && (
+                                <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />
+                              )}
+                              {isUserAnswer && !isCorrect && (
+                                <XCircle className="text-red-500 flex-shrink-0 h-5 w-5" />
+                              )}
                             </div>
                           </div>
                         );
@@ -733,24 +952,30 @@ export default function Quiz() {
                     </div>
 
                     {/* Show user's answer status */}
-                    <div className={`p-3 rounded-lg mb-3 ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
+                    <div
+                      className={`p-2 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}
+                    >
                       <p className="font-semibold">
                         Your answer: {userAnswer || "Not answered"}
-                        {isCorrect ? " ✓ Correct" : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
+                        {isCorrect
+                          ? " ✓ Correct"
+                          : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
                       </p>
                     </div>
 
                     {/* Explanation */}
                     {q.explanation && (
                       <Card className="border-khan-blue bg-blue-50">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base flex items-center gap-2">
-                            <CheckCircle className="text-khan-blue h-5 w-5" />
+                        <CardHeader className="pb-2 pt-3">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <CheckCircle className="text-khan-blue h-4 w-4" />
                             Explanation
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-0">
-                          <p className="text-gray-700">{q.explanation}</p>
+                        <CardContent className="pt-0 pb-3">
+                          <p className="text-sm text-gray-700">
+                            {q.explanation}
+                          </p>
                         </CardContent>
                       </Card>
                     )}
@@ -777,8 +1002,7 @@ export default function Quiz() {
                 onClick={() => router.push(`/study?subject=${subjectId}`)}
                 className="bg-khan-green hover:bg-khan-green/90 px-8"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Study
+                <ArrowLeft className="h-4 w-4" />
               </Button>
             ) : (
               <Button
@@ -807,45 +1031,190 @@ export default function Quiz() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-6">
+      <div className="container mx-auto px-4 py-2">
+        {/* Header - Only for regular quiz */}
+        {!isFullLength && (
+          <div className="mb-2">
+            {!isFullLength && (
+              <AlertDialog
+                open={showExitDialog}
+                onOpenChange={setShowExitDialog}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Leave Full-Length Test?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Your progress on this unit practice quiz will be lost if
+                      you leave now. Are you sure you want to exit?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>
+                      Continue Practice Quiz
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={confirmExit}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Yes, Exit Practice Quiz
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <div className="flex flex-col items-center mb-1 gap-1">
+              <Button
+                onClick={() => setShowExitDialog(true)}
+                variant="outline"
+                size="sm"
+                className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+              >
+                Exit Practice Quiz
+              </Button>
+              <div className="flex justify-between items-center w-full">
+                <h2 className="text-lg font-semibold">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </h2>
+                <div className="text-base font-semibold text-khan-green">
+                  Score: {score}/
+                  {currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
+                </div>
+              </div>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        )}
+
+        {/* Alert Dialog for Full-Length Test */}
+        {isFullLength && (
           <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Leave {isFullLength ? 'Exam' : 'Quiz'}?</AlertDialogTitle>
+                <AlertDialogTitle>Leave Full-Length Test?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Your progress on this {isFullLength ? 'full-length exam' : 'quiz'} will be lost if you leave now. Are you sure you want to exit?
+                  Your progress on this full-length test will be lost if you
+                  leave now. Are you sure you want to exit?
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Continue {isFullLength ? 'Exam' : 'Quiz'}</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmExit} className="bg-red-600 hover:bg-red-700">
-                  Exit {isFullLength ? 'Exam' : 'Quiz'}
+                <AlertDialogCancel>Continue Full-Length Test</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmExit}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Yes, Exit Full-Length Test
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-semibold">
-              {isFullLength
-                ? `Page ${currentPage + 1} of ${totalPages} (Questions ${currentPage * questionsPerPage + 1}-${Math.min((currentPage + 1) * questionsPerPage, questions.length)})`
-                : `Question ${currentQuestionIndex + 1} of ${questions.length}`
-              }
-            </h2>
-            {!isFullLength && (
-              <div className="text-lg font-semibold text-khan-green">
-                Score: {score}/{currentQuestionIndex + (isAnswerSubmitted ? 1 : 0)}
-              </div>
-            )}
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
-
+        )}
         {isFullLength ? (
           <>
-            {/* Full-length exam: show multiple questions per page */}
-            <div className="space-y-6 mb-6">
+            {/* Top Navigation Bar */}
+            <div className="max-w-6xl mx-auto">
+              <Card className="mb-2 sticky top-0 z-10 bg-white shadow-md">
+                <CardContent className="py-2">
+                  {/* First Line: Exit button centered */}
+                  <div className="flex items-center justify-center mb-2">
+                    <Button
+                      onClick={() => setShowExitDialog(true)}
+                      variant="outline"
+                      size="sm"
+                      className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                    >
+                      Exit Full-Length Test
+                    </Button>
+                  </div>
+
+                  {/* Second Line: Previous button, numbered boxes, Next button */}
+                  <div className="flex items-center justify-between gap-4">
+                    <Button
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 0}
+                      variant="outline"
+                      className={isMobile ? "px-3" : "px-8"}
+                    >
+                      <ArrowLeft className={isMobile ? "" : "mr-2 h-4 w-4"} />
+                      {!isMobile && "Previous"}
+                    </Button>
+
+                    <div className="flex items-center justify-center gap-1 flex-wrap absolute left-1/2 transform -translate-x-1/2">
+                      {questions
+                        .slice(
+                          currentPage * questionsPerPage,
+                          (currentPage + 1) * questionsPerPage,
+                        )
+                        .map((_, idx) => {
+                          const globalIndex =
+                            currentPage * questionsPerPage + idx;
+                          const isAnswered =
+                            userAnswers[globalIndex] !== undefined;
+                          const isFlagged = flaggedQuestions.has(globalIndex);
+
+                          return (
+                            <button
+                              key={globalIndex}
+                              onClick={() => {
+                                const element = document.getElementById(
+                                  `question-${globalIndex}`,
+                                );
+                                element?.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "center",
+                                });
+                              }}
+                              className={`relative w-8 h-8 rounded-md font-semibold text-xs flex items-center justify-center transition-all ${
+                                isAnswered
+                                  ? "bg-gray-200 border-2 border-gray-400 text-gray-700"
+                                  : "bg-white border-2 border-gray-300 text-gray-500"
+                              }`}
+                            >
+                              <span className="relative z-10">
+                                {globalIndex + 1}
+                              </span>
+                              {isFlagged && (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="absolute top-0 right-0 h-2.5 w-2.5 text-red-600"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              )}
+                            </button>
+                          );
+                        })}
+                    </div>
+
+                    <Button
+                      onClick={() =>
+                        currentPage === totalPages - 1
+                          ? setShowSubmitConfirm(true)
+                          : setCurrentPage(currentPage + 1)
+                      }
+                      disabled={currentPage === totalPages - 1}
+                      className={
+                        currentPage === totalPages - 1
+                          ? `bg-gray-400 cursor-not-allowed ${isMobile ? "px-3" : "px-8"}`
+                          : `bg-khan-blue hover:bg-khan-blue/90 ${isMobile ? "px-3" : "px-8"}`
+                      }
+                    >
+                      {!isMobile &&
+                        (currentPage === totalPages - 1 ? "End" : "Next")}
+                      <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Full-length exam: show multiple questions per page - Compact */}
+            <div className="space-y-2 mb-4 max-w-6xl mx-auto">
               {currentQuestions.map((q, idx) => {
                 const globalIndex = currentPage * questionsPerPage + idx;
                 const options = q.choices.map((choice, i) => ({
@@ -854,30 +1223,69 @@ export default function Quiz() {
                 }));
 
                 return (
-                  <Card key={globalIndex} className="border-2">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-medium leading-relaxed">
-                        {globalIndex + 1}. {q.prompt}
-                      </CardTitle>
+                  <Card
+                    key={globalIndex}
+                    id={`question-${globalIndex}`}
+                    className="border"
+                  >
+                    <CardHeader className="pb-2 pt-3">
+                      <div className="flex justify-between items-start gap-3">
+                        <CardTitle className="text-sm font-medium leading-relaxed flex-1">
+                          {globalIndex + 1}. {q.prompt}
+                        </CardTitle>
+                        <Button
+                          onClick={() => toggleFlag(globalIndex)}
+                          variant="outline"
+                          size="sm"
+                          className={`flex-shrink-0 h-8 ${isMobile ? "px-2" : "px-2"} ${
+                            flaggedQuestions.has(globalIndex)
+                              ? "border-red-500 bg-red-50 text-red-700 hover:bg-red-100"
+                              : "border-gray-300 text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className={`h-3.5 w-3.5 ${!isMobile ? "mr-1" : ""}`}
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          {!isMobile && (
+                            <span className="text-xs">
+                              {flaggedQuestions.has(globalIndex)
+                                ? "Unflag"
+                                : "Flag"}
+                            </span>
+                          )}
+                        </Button>
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
+                    <CardContent className="pt-2 pb-3">
+                      <div className="space-y-1.5">
                         {options.map((option) => {
-                          const isSelected = userAnswers[globalIndex] === option.label;
+                          const isSelected =
+                            userAnswers[globalIndex] === option.label;
 
                           return (
                             <button
                               key={option.label}
-                              onClick={() => handleAnswerSelect(option.label, idx)}
-                              className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                              onClick={() =>
+                                handleAnswerSelect(option.label, idx)
+                              }
+                              className={`w-full text-left p-2 rounded-lg border transition-all ${
                                 isSelected
                                   ? "border-khan-blue bg-blue-50"
                                   : "border-gray-200 hover:border-gray-300"
                               } ${isAnswerSubmitted || isReviewMode ? "cursor-not-allowed" : "cursor-pointer"}`}
                             >
-                              <div className="flex items-start gap-3">
+                              <div className="flex items-start gap-2">
                                 <div
-                                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                                  className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
                                     isSelected
                                       ? "bg-khan-blue text-white"
                                       : "bg-gray-200 text-gray-700"
@@ -885,7 +1293,9 @@ export default function Quiz() {
                                 >
                                   {option.label}
                                 </div>
-                                <div className="flex-1 pt-1">{option.value}</div>
+                                <div className="flex-1 text-sm pt-0.5">
+                                  {option.value}
+                                </div>
                               </div>
                             </button>
                           );
@@ -898,50 +1308,63 @@ export default function Quiz() {
             </div>
 
             {/* Submit Confirmation Dialog for Full-Length Quiz */}
-            <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+            <AlertDialog
+              open={showSubmitConfirm}
+              onOpenChange={setShowSubmitConfirm}
+            >
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Submit Full-Length Exam?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you ready to submit your exam? You have answered {Object.keys(userAnswers).length} out of {questions.length} questions.
-                    Once submitted, you cannot change your answers.
+                    Are you ready to submit your exam? You have answered{" "}
+                    {Object.keys(userAnswers).length} out of {questions.length}{" "}
+                    questions. Once submitted, you cannot change your answers.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Review Answers</AlertDialogCancel>
-                  <AlertDialogAction onClick={confirmSubmitFullLength} className="bg-khan-green hover:bg-khan-green/90">
+                  <AlertDialogAction
+                    onClick={confirmSubmitFullLength}
+                    className="bg-khan-green hover:bg-khan-green/90"
+                  >
                     Yes, Submit Exam
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
 
-            {/* Full-length navigation */}
-            <div className="flex justify-between gap-4">
+            {/* Bottom Navigation */}
+            <div className="mt-6 flex justify-between items-center gap-4">
               <Button
-                onClick={handlePreviousPage}
+                onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 0}
                 variant="outline"
-                className="px-8"
+                className={isMobile ? "px-3" : "px-8"}
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Previous
+                <ArrowLeft className={isMobile ? "" : "mr-2 h-4 w-4"} />
+                {!isMobile && "Previous"}
               </Button>
+
+              {!isMobile && (
+                <div className="text-sm text-gray-600">
+                  Page {currentPage + 1} of {totalPages}
+                </div>
+              )}
 
               {currentPage === totalPages - 1 ? (
                 <Button
                   onClick={() => setShowSubmitConfirm(true)}
-                  className="bg-khan-green hover:bg-khan-green/90 px-8"
+                  className="bg-khan-green hover:bg-khan-green/90 px-6"
                 >
                   Submit Exam
                 </Button>
               ) : (
                 <Button
-                  onClick={handleNextPage}
-                  className="bg-khan-blue hover:bg-khan-blue/90 px-8"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  className={`bg-khan-blue hover:bg-khan-blue/90 ${isMobile ? "px-3" : "px-8"}`}
                 >
-                  Next
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  {!isMobile && "Next"}
+                  <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
                 </Button>
               )}
             </div>
@@ -949,59 +1372,70 @@ export default function Quiz() {
         ) : (
           <>
             {/* Regular quiz: show one question at a time */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg font-medium leading-relaxed">
+            <Card className="mb-2">
+              <CardHeader className="pb-2 pt-3">
+                <CardTitle className="text-sm font-medium leading-relaxed">
                   {currentQuestion.prompt}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="pt-2 pb-3">
+                <div className="space-y-1.5">
                   {(() => {
-                    const options = currentQuestion.choices.map((choice, index) => ({
-                      label: String.fromCharCode(65 + index),
-                      value: choice,
-                    }));
+                    const options = currentQuestion.choices.map(
+                      (choice, index) => ({
+                        label: String.fromCharCode(65 + index),
+                        value: choice,
+                      }),
+                    );
 
                     return options.map((option) => {
                       const isSelected = selectedAnswer === option.label;
-                      const correctAnswerLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
+                      const correctAnswerLabel = String.fromCharCode(
+                        65 + currentQuestion.answerIndex,
+                      );
                       const isCorrect = option.label === correctAnswerLabel;
                       const showCorrect = isAnswerSubmitted && isCorrect;
-                      const showIncorrect = isAnswerSubmitted && isSelected && !isCorrect;
+                      const showIncorrect =
+                        isAnswerSubmitted && isSelected && !isCorrect;
 
                       return (
                         <button
                           key={option.label}
                           onClick={() => handleAnswerSelect(option.label)}
                           disabled={isAnswerSubmitted || isReviewMode}
-                          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                          className={`w-full text-left p-2 rounded-lg border-2 transition-all ${
                             showCorrect
                               ? "border-green-500 bg-green-50"
                               : showIncorrect
-                              ? "border-red-500 bg-red-50"
-                              : isSelected
-                              ? "border-khan-blue bg-blue-50"
-                              : "border-gray-200 hover:border-gray-300"
+                                ? "border-red-500 bg-red-50"
+                                : isSelected
+                                  ? "border-khan-blue bg-blue-50"
+                                  : "border-gray-200 hover:border-gray-300"
                           } ${isAnswerSubmitted || isReviewMode ? "cursor-not-allowed" : "cursor-pointer"}`}
                         >
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-2">
                             <div
-                              className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                              className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center font-semibold text-xs ${
                                 showCorrect
                                   ? "bg-green-500 text-white"
                                   : showIncorrect
-                                  ? "bg-red-500 text-white"
-                                  : isSelected
-                                  ? "bg-khan-blue text-white"
-                                  : "bg-gray-200 text-gray-700"
+                                    ? "bg-red-500 text-white"
+                                    : isSelected
+                                      ? "bg-khan-blue text-white"
+                                      : "bg-gray-200 text-gray-700"
                               }`}
                             >
                               {option.label}
                             </div>
-                            <div className="flex-1 pt-1">{option.value}</div>
-                            {showCorrect && <CheckCircle className="text-green-500 flex-shrink-0" />}
-                            {showIncorrect && <XCircle className="text-red-500 flex-shrink-0" />}
+                            <div className="flex-1 pt-0.5 text-sm">
+                              {option.value}
+                            </div>
+                            {showCorrect && (
+                              <CheckCircle className="text-green-500 flex-shrink-0" />
+                            )}
+                            {showIncorrect && (
+                              <XCircle className="text-red-500 flex-shrink-0" />
+                            )}
                           </div>
                         </button>
                       );
@@ -1013,15 +1447,17 @@ export default function Quiz() {
 
             {/* Explanation */}
             {isAnswerSubmitted && currentQuestion.explanation && (
-              <Card className="mb-6 border-khan-blue">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <CheckCircle className="text-khan-blue" />
+              <Card className="mb-2 border-khan-blue bg-blue-50">
+                <CardHeader className="pb-1 pt-2">
+                  <CardTitle className="text-xs flex items-center gap-2">
+                    <CheckCircle className="text-khan-blue h-3 w-3" />
                     Explanation
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700">{currentQuestion.explanation}</p>
+                <CardContent className="pt-1 pb-2">
+                  <p className="text-xs text-gray-700">
+                    {currentQuestion.explanation}
+                  </p>
                 </CardContent>
               </Card>
             )}

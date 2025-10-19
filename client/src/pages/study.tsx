@@ -26,6 +26,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { apSubjects } from "@/lib/ap-subjects";
 import { formatDate } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface StudySubject {
   id: number;
@@ -40,7 +41,13 @@ interface StudySubject {
   masteryLevel: number;
   lastStudied?: string | number | Date | { seconds: number } | null;
   dateAdded?: string | number | Date | { seconds: number } | null;
-  unitProgress?: { [unitId: string]: { status: string; highestScore: number; scores: number[] } };
+  unitProgress?: {
+    [unitId: string]: {
+      status: string;
+      highestScore: number;
+      scores: number[];
+    };
+  };
 }
 
 interface Unit {
@@ -336,13 +343,18 @@ const getUnitsForSubject = (subjectId: string): Unit[] => {
 export default function Study() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const isMobile = useIsMobile();
 
   const rawSubject = router.query.subject;
   const subjectId: string | undefined = Array.isArray(rawSubject)
     ? rawSubject[0] || undefined
     : rawSubject || undefined;
 
-  const { data: subjectsResponse, isLoading: subjectsLoading, refetch } = useQuery<{
+  const {
+    data: subjectsResponse,
+    isLoading: subjectsLoading,
+    refetch,
+  } = useQuery<{
     success: boolean;
     data: StudySubject[];
   }>({
@@ -377,11 +389,11 @@ export default function Study() {
     }
   }, [subjectId, router]);
 
-  const getProgressLevel = (score: number): string => {
+  const getProgressLevel = (score: number, hasAttempted: boolean): string => {
+    if (!hasAttempted) return "Not Started";
     if (score >= 80) return "Mastered";
     if (score >= 60) return "Proficient";
-    if (score >= 0) return "Attempted"; // Covers scores below 60 and greater than or equal to 0
-    return "Not Started";
+    return "In Progress";
   };
 
   const getProgressBadgeColor = (level: string): string => {
@@ -390,7 +402,7 @@ export default function Study() {
         return "bg-green-600 text-white";
       case "Proficient":
         return "bg-green-400 text-white";
-      case "Attempted":
+      case "In Progress":
         return "bg-orange-400 text-white";
       default:
         return "bg-gray-200 text-gray-700";
@@ -399,11 +411,11 @@ export default function Study() {
 
   const handleDeleteCourse = async (courseId: string) => {
     const confirmDelete = prompt(
-      `Type "DELETE" to confirm deletion of this course. This action is irreversible.`
+      `Type "DELETE" to confirm deletion of this course. This action is irreversible.`,
     );
     if (confirmDelete === "DELETE") {
       const secondConfirm = confirm(
-        "Are you absolutely sure you want to permanently delete this course? This cannot be undone."
+        "Are you absolutely sure you want to permanently delete this course? This cannot be undone.",
       );
       if (secondConfirm) {
         try {
@@ -412,7 +424,9 @@ export default function Study() {
           router.push("/dashboard"); // Redirect to dashboard after deletion
         } catch (error) {
           console.error("Failed to delete course:", error);
-          alert("An error occurred while deleting the course. Please try again.");
+          alert(
+            "An error occurred while deleting the course. Please try again.",
+          );
         }
       }
     }
@@ -420,7 +434,9 @@ export default function Study() {
 
   const handleArchiveCourse = async (courseId: string) => {
     try {
-      await apiRequest("PATCH", `/api/user/subjects/${courseId}`, { archived: true });
+      await apiRequest("PATCH", `/api/user/subjects/${courseId}`, {
+        archived: true,
+      });
       refetch(); // Refetch subjects to update the dashboard
     } catch (error) {
       console.error("Failed to archive course:", error);
@@ -468,149 +484,171 @@ export default function Study() {
   const topicsMastered = units.filter((unit) => {
     const unitData = currentSubject.unitProgress?.[unit.id];
     const score = unitData?.highestScore || 0;
-    return getProgressLevel(score) === "Mastered";
+    const hasAttempted =
+      unitData && unitData.scores && unitData.scores.length > 0;
+    return getProgressLevel(score, hasAttempted) === "Mastered";
   }).length;
   const totalTopics = units.length;
 
-  const archivedSubjects = subjects.filter(s => s.id !== currentSubject.id && s.archived);
-
   return (
-    <div className="min-h-screen bg-khan-background overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-x-hidden">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 md:py-8 max-w-6xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
             <Button
               variant="outline"
               onClick={() => router.push("/dashboard")}
               size="sm"
               data-testid="button-back"
+              className="transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
+              {!isMobile && "Dashboard"}
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+            <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
                 {currentSubject.name}
               </h1>
-              <p className="text-gray-600 mt-1">{currentSubject.description}</p>
+              {!isMobile && (
+                <p className="text-gray-600 text-sm max-w-3xl">
+                  {currentSubject.description}
+                </p>
+              )}
             </div>
+            <div className="w-36"></div>
           </div>
         </div>
 
-        {/* Your Learning Journey */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-khan-green" />
-              Your Learning Journey
+        {/* Your Progress */}
+        <Card className="mb-6 shadow-lg border border-gray-200/50 backdrop-blur-sm bg-white/95 rounded-xl transition-all duration-300 hover:shadow-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Target className="h-4 w-4 text-khan-green" />
+              Your Progress
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">
+          <CardContent className="pb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="text-center p-3 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200/50">
+                <div className="text-2xl font-bold text-blue-600">
                   {topicsMastered}/{totalTopics}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-xs font-medium text-gray-600 mt-1">
                   Topics Mastered
                 </div>
-                <div className="flex justify-center mt-2">
-                  <Trophy className="h-5 w-5 text-blue-600" />
-                </div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">4</div>
-                <div className="text-sm text-gray-600 mt-1">Expected Score</div>
-                <div className="flex justify-center mt-2">
-                  <Target className="h-5 w-5 text-purple-600" />
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600">
+              <div className="text-center p-3 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-200/50">
+                <div className="text-2xl font-bold text-orange-600">
                   {formatDate(currentSubject.examDate)}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">Exam Date</div>
-                <div className="flex justify-center mt-2">
-                  <Clock className="h-5 w-5 text-orange-600" />
+                <div className="text-xs font-medium text-gray-600 mt-1">
+                  Exam Date
                 </div>
               </div>
             </div>
 
             {/* Full-Length Practice Test Buttons */}
-            <div className="mt-8 flex flex-col md:flex-row gap-3 max-w-2xl mx-auto items-center">
+            <div className="flex flex-col md:flex-row gap-3">
               <Button
-                onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
-                className="bg-khan-green w-full md:flex-1 h-12 min-h-[44px]"
+                onClick={() =>
+                  router.push(`/full-length-history?subject=${subjectId}`)
+                }
+                className="bg-khan-green hover:bg-khan-green-light w-full md:flex-1 h-11 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 font-medium"
               >
-                <BookOpen className="mr-2 h-5 w-5" />
+                <BookOpen className="mr-2 h-4 w-4" />
                 MCQ Full-Length Test
               </Button>
               <Button
                 disabled
-                className="bg-khan-blue w-full md:flex-1 h-12 min-h-[44px] opacity-50 cursor-not-allowed"
+                className="bg-khan-blue w-full md:flex-1 h-11 rounded-lg opacity-50 cursor-not-allowed font-medium shadow-sm"
               >
-                <PlayCircle className="mr-2 h-5 w-5" />
+                <PlayCircle className="mr-2 h-4 w-4" />
                 FRQ Full-Length Test (Coming Soon)
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Study Units */}
+        {/* Practice Units */}
         <div className="space-y-4">
           {units.map((unit, index) => (
-            <Card key={unit.id} className="border-l-4 border-l-khan-green">
-              <CardContent className="pt-6">
+            <Card
+              key={unit.id}
+              className="border-l-4 border-l-khan-green shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200/50 rounded-xl bg-white/95 backdrop-blur-sm"
+            >
+              <CardContent className="pt-5 pb-5">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   {/* Left side: Content */}
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="w-10 h-10 rounded-full bg-khan-green text-white flex items-center justify-center font-bold flex-shrink-0">
-                      {index + 1}
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white flex items-center justify-center font-bold flex-shrink-0 text-sm shadow-lg">
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 to-transparent opacity-60"></div>
+                      <span className="relative z-10">{index + 1}</span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-gray-900">
-                          {unit.title}
-                        </h3>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base md:text-lg font-bold text-gray-900 mb-1">
+                        {unit.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                        {unit.description}
+                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-medium border-gray-300 rounded-md px-2 py-0.5"
+                        >
+                          Exam Weight: {unit.examWeight}
+                        </Badge>
                         {(() => {
-                          const unitData = currentSubject.unitProgress?.[unit.id];
+                          const unitData =
+                            currentSubject.unitProgress?.[unit.id];
                           const score = unitData?.highestScore || 0;
-                          const level = getProgressLevel(score);
+                          const hasAttempted =
+                            unitData &&
+                            unitData.scores &&
+                            unitData.scores.length > 0;
+                          const level = getProgressLevel(score, hasAttempted);
                           const badgeColor = getProgressBadgeColor(level);
 
-                          // Add highest score to badge text if available
-                          const scoreDisplay = score > 0 ? `: Highest Score: ${Math.round(score)}/100` : '';
-
                           return (
-                            <div className="relative group md:hidden">
+                            <div className="relative group">
                               <Badge
-                                className={`text-xs ${badgeColor} border border-black cursor-help`}
+                                className={`text-xs font-medium ${badgeColor} border border-black/20 cursor-help rounded-md px-2 py-0.5 shadow-sm`}
                               >
                                 {level === "Mastered" && "👑 "}
-                                {level} {scoreDisplay}
+                                {level}
                               </Badge>
 
                               {/* Legend on hover */}
-                              <div className="absolute top-full left-0 mt-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
-                                <div className="text-xs font-semibold mb-2">Unit Progress Legend</div>
-                                <div className="space-y-1 text-xs">
+                              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white shadow-xl rounded-xl p-3 border border-gray-200/50 z-10 whitespace-nowrap backdrop-blur-sm">
+                                <div className="text-xs font-semibold mb-2 text-gray-900">
+                                  Unit Progress Legend
+                                </div>
+                                <div className="space-y-1.5 text-xs">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-green-600"></div>
-                                    <span>Mastered (80%+)</span>
+                                    <div className="w-4 h-4 rounded bg-green-600 shadow-sm"></div>
+                                    <span className="text-gray-700">
+                                      Mastered (80%+)
+                                    </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-green-400"></div>
-                                    <span>Proficient (60%+)</span>
+                                    <div className="w-4 h-4 rounded bg-green-400 shadow-sm"></div>
+                                    <span className="text-gray-700">
+                                      Proficient (60%+)
+                                    </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-orange-400"></div>
-                                    <span>Attempted (&lt;60%)</span>
+                                    <div className="w-4 h-4 rounded bg-orange-400 shadow-sm"></div>
+                                    <span className="text-gray-700">
+                                      In Progress (&lt;60%)
+                                    </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-gray-200"></div>
-                                    <span>Not Started</span>
+                                    <div className="w-4 h-4 rounded bg-gray-200 shadow-sm"></div>
+                                    <span className="text-gray-700">
+                                      Not Started
+                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -618,65 +656,19 @@ export default function Study() {
                           );
                         })()}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {unit.description}
-                      </p>
-                      <Badge variant="outline" className="text-xs">
-                        Exam Weight: {unit.examWeight}
-                      </Badge>
                     </div>
                   </div>
 
                   {/* Right side: Buttons stacked vertically on desktop */}
                   <div className="flex flex-col gap-3 md:min-w-[340px] md:items-end">
-                    {(() => {
-                      const unitData = currentSubject.unitProgress?.[unit.id];
-                      const score = unitData?.highestScore || 0;
-                      const level = getProgressLevel(score);
-                      const badgeColor = getProgressBadgeColor(level);
-
-                      const scoreDisplay = score > 0 ? `: Highest Score: ${Math.round(score)}/100` : '';
-
-                      return (
-                        <div className="relative group hidden md:block mb-1">
-                          <Badge
-                            className={`text-xs ${badgeColor} border border-black cursor-help`}
-                          >
-                            {level === "Mastered" && "👑 "}
-                            {level} {scoreDisplay}
-                          </Badge>
-
-                          {/* Legend on hover */}
-                          <div className="absolute top-full right-0 mt-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
-                            <div className="text-xs font-semibold mb-2">Unit Progress Legend</div>
-                            <div className="space-y-1 text-xs">
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded bg-green-600"></div>
-                                <span>Mastered (80%+)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded bg-green-400"></div>
-                                <span>Proficient (60%+)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded bg-orange-400"></div>
-                                <span>Attempted (&lt;60%)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded bg-gray-200"></div>
-                                <span>Not Started</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
                     <Button
                       onClick={() =>
-                        router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)
+                        router.push(
+                          `/quiz?subject=${subjectId}&unit=${unit.id}`,
+                        )
                       }
                       variant="outline"
-                      className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white min-h-[44px] w-full"
+                      className="border border-khan-green text-khan-green hover:bg-khan-green hover:text-white h-11 w-full rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 font-medium"
                     >
                       <BookOpen className="mr-2 h-4 w-4" />
                       Unit MCQ Practice Test
@@ -684,7 +676,7 @@ export default function Study() {
                     <Button
                       disabled
                       variant="outline"
-                      className="border-2 border-khan-blue text-khan-blue w-full min-h-[44px] opacity-50 cursor-not-allowed"
+                      className="border border-khan-blue text-khan-blue w-full h-11 opacity-50 cursor-not-allowed rounded-lg font-medium shadow-sm"
                     >
                       <PlayCircle className="mr-2 h-4 w-4" />
                       Unit FRQ Practice Test (Coming Soon)
@@ -695,57 +687,7 @@ export default function Study() {
             </Card>
           ))}
         </div>
-
-        {/* Archived Courses Section */}
-        {archivedSubjects.length > 0 && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-gray-500" />
-                Archived Courses
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {archivedSubjects.map((archivedSubject) => (
-                  <Card key={archivedSubject.id} className="border-l-4 border-l-gray-400 bg-gray-50">
-                    <CardContent className="pt-4">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div className="flex items-start gap-4 flex-1">
-                          <div className="w-10 h-10 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold flex-shrink-0">
-                            A
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-gray-900">
-                              {archivedSubject.name}
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-2">
-                              {archivedSubject.description}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-3 md:min-w-[340px] md:items-end">
-                          <Button
-                            variant="outline"
-                            className="border-2 border-gray-400 text-gray-700 hover:bg-gray-100 min-h-[44px] w-full"
-                            onClick={() => handleArchiveCourse(archivedSubject.id.toString())}
-                          >
-                            <BookOpen className="mr-2 h-4 w-4" />
-                            View Archived
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        
       </div>
-
-      </div>
+    </div>
   );
 }
