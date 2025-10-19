@@ -1,0 +1,88 @@
+Firestore connection established.
+ GET /api/user/me 304 in 112ms
+ ✓ Compiled /api/user/subjects/[subjectId]/test-results/[testId] in 455ms (268 modules)
+Firestore connection established.
+Performing Firestore health check...
+Firestore health check passed
+🔍 [getFullLengthTestResult] Starting with: {
+  userId: 'eIbZbqhyc7bU4EocwNcJ',
+  subjectId: 'macroeconomics',
+  testId: 'test_1760235450868'
+}
+📊 [getFullLengthTestResult] User subjects query: { empty: false, size: 1 }
+📄 [getFullLengthTestResult] Found user_subjects doc: AwZKw4QfgcoAMCl7ZwR1
+📝 [getFullLengthTestResult] Test document: { exists: true, id: 'test_1760235450868', hasData: true }
+✅ [getFullLengthTestResult] Retrieved test data: { hasQuestions: true, questionCount: 50, hasUserAnswers: true }
+ GET /api/user/subjects/macroeconomics/test-results/test_1760235450868 304 in 1230ms
+Performing Firestore health check...
+Firestore health check passed
+🔍 [getFullLengthTestResult] Starting with: {
+  userId: 'eIbZbqhyc7bU4EocwNcJ',
+  subjectId: 'macroeconomics',
+  testId: 'test_1760235450868'
+}
+📊 [getFullLengthTestResult] User subjects query: { empty: false, size: 1 }
+📄 [getFullLengthTestResult] Found user_subjects doc: AwZKw4QfgcoAMCl7ZwR1
+📝 [getFullLengthTestResult] Test document: { exists: true, id: 'test_1760235450868', hasData: true }
+✅ [getFullLengthTestResult] Retrieved test data: { hasQuestions: true, questionCount: 50, hasUserAnswers: true }
+ GET /api/user/subjects/macroeconomics/test-results/test_1760235450868 304 in 868ms
+ ○ Compiling /section-review ...
+ ✓ Compiled /section-review in 1394ms (749 modules)
+Firestore connection established.
+ GET /api/user/me 304 in 118ms
+ ✓ Compiled /api/user/subjects/[subjectId]/test-results/[testId]/section/[sectionCode] in 212ms (276 modules)
+Firestore connection established.
+Performing Firestore health check...
+Firestore health check passed
+📥 Section API Request: {
+  userId: 'THWYvES0X6NBNSmABl7oGt23hy12',
+  subjectId: 'macroeconomics',
+  testId: 'test_1760235450868',
+  sectionCode: 'BEC'
+}
+🔍 [getFullLengthTestResult] Starting with: {
+  userId: 'THWYvES0X6NBNSmABl7oGt23hy12',
+  subjectId: 'macroeconomics',
+  testId: 'test_1760235450868'
+}
+📊 [getFullLengthTestResult] User subjects query: { empty: true, size: 0 }
+❌ [getFullLengthTestResult] No user_subjects document found
+📦 Full test data retrieved: {
+  exists: false,
+  totalQuestions: undefined,
+  hasUserAnswers: false,
+  sectionCodes: undefined
+}
+❌ Test data not found for: {
+  userId: 'THWYvES0X6NBNSmABl7oGt23hy12',
+  subjectId: 'macroeconomics',
+  testId: 'test_1760235450868'
+}
+ GET /api/user/subjects/macroeconomics/test-results/test_1760235450868/section/BEC 404 in 604ms
+Performing Firestore health check...
+Firestore health check passed
+📥 Section API Request: {
+  userId: 'THWYvES0X6NBNSmABl7oGt23hy12',
+  subjectId: 'macroeconomics',
+  testId: 'test_1760235450868',
+  sectionCode: 'BEC'
+}
+🔍 [getFullLengthTestResult] Starting with: {
+  userId: 'THWYvES0X6NBNSmABl7oGt23hy12',
+  subjectId: 'macroeconomics',
+  testId: 'test_1760235450868'
+}
+📊 [getFullLengthTestResult] User subjects query: { empty: true, size: 0 }
+❌ [getFullLengthTestResult] No user_subjects document found
+📦 Full test data retrieved: {
+  exists: false,
+  totalQuestions: undefined,
+  hasUserAnswers: false,
+  sectionCodes: undefined
+}
+❌ Test data not found for: {
+  userId: 'THWYvES0X6NBNSmABl7oGt23hy12',
+  subjectId: 'macroeconomics',
+  testId: 'test_1760235450868'
+}
+ GET /api/user/subjects/macroeconomics/test-results/test_1760235450868/section/BEC 404 in 364ms

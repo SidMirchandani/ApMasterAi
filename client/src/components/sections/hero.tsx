@@ -1,49 +1,33 @@
+
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Star } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-export default function Hero() {
+export function Hero() {
   return (
-    <section className="bg-khan-background pt-20 pb-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto text-center">
-        <div className="mb-8">
-          <div className="inline-flex items-center space-x-2 bg-khan-green/10 border border-khan-green/20 rounded-full px-4 py-2 text-sm">
-            <BookOpen className="w-4 h-4 text-khan-green" />
-            <span className="text-khan-green font-medium">AI-Powered Learning</span>
+    <section className="relative bg-gradient-to-b from-khan-background to-white py-12 md:py-20 lg:py-32">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-khan-gray-dark mb-4 sm:mb-6">
+            Master AP Exams with
+            <span className="text-khan-green block mt-2">AI-Powered Learning</span>
+          </h1>
+          <p className="text-base sm:text-lg md:text-xl text-khan-gray-medium max-w-3xl mx-auto mb-6 sm:mb-8 px-4">
+            Personalized study plans, adaptive practice tests, and instant feedback to help you ace your AP exams.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4">
+            <Link href="/signup">
+              <Button size="lg" className="w-full sm:w-auto bg-khan-green hover:bg-khan-green-light text-white font-semibold px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg">
+                Get Started Free
+                <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+              </Button>
+            </Link>
+            <Link href="/learn">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto border-2 border-khan-green text-khan-green hover:bg-khan-background font-semibold px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg">
+                Browse Courses
+              </Button>
+            </Link>
           </div>
-        </div>
-        
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-khan-gray-dark mb-6 leading-tight">
-          Master Your <span className="text-khan-green">AP Exams</span>
-        </h1>
-        
-        <p className="text-xl text-khan-gray-medium mb-8 max-w-2xl mx-auto leading-relaxed">
-          Personalized learning that adapts to your pace. Practice with real AP questions, get instant feedback, and track your progress across all subjects.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <Link href="/learn">
-            <Button 
-              size="lg"
-              className="bg-khan-green text-white hover:bg-khan-green-light transition-colors px-8 py-4 text-lg font-semibold"
-            >
-              Start Learning
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </Link>
-        </div>
-        
-        <div className="flex items-center justify-center space-x-6 text-sm text-khan-gray-medium">
-          <div className="flex items-center space-x-1">
-            <div className="flex space-x-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-current text-khan-orange" />
-              ))}
-            </div>
-            <span>Trusted by thousands of students</span>
-          </div>
-          <div className="h-4 w-px bg-khan-gray-light" />
-          <span>100% Free • Start Learning Today</span>
         </div>
       </div>
     </section>

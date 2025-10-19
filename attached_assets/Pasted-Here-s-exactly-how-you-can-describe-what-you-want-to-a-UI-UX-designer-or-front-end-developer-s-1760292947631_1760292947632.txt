@@ -1,0 +1,45 @@
+Here’s exactly how you can describe what you want to a **UI/UX designer** (or front-end developer) so they understand your intent clearly — concise but professional phrasing you can send directly:
+
+---
+
+### 🧾 **Instruction Brief**
+
+> **Goal:**
+> Modernize the existing **APMaster UI** (AP Macroeconomics course page) to make it visually premium and production-ready **without changing the layout or color theme**.
+
+---
+
+### 🎨 **Visual Style Direction**
+
+> * Keep **the same layout, spacing, colors, and typography**.
+> * Apply **subtle visual polish** for a more professional, high-end feel:
+>
+>   * Add **soft depth and elevation** to cards and buttons (shadow + slight blur).
+>   * Use **smooth glassy highlights** or **semi-transparent overlays** to create a modern, “real” surface feel.
+>   * Maintain the current **green (#16a34a)**, **blue (#3b82f6)**, and **orange** accents — **do not recolor**.
+>   * Refine borders: thin (1px) with light gradient or faint outline.
+>   * Apply **rounded corners (10–12px)** consistently across cards and buttons.
+>   * Use a **soft neutral background (#f9fafb or light gray)** with minimal contrast shifts.
+>   * Make hover/active states gently animated (0.2–0.3s ease-in-out).
+
+---
+
+### 🧠 **UI Functionality**
+
+> * Keep all component positions identical — no layout restructuring.
+> * Maintain identical text and button hierarchy.
+> * Ensure it’s fully **responsive** (works cleanly on iPad and laptop).
+> * Use consistent **font weights** (e.g., 700 for headings, 500 for body text).
+> * All buttons should have **consistent height and alignment**.
+> * Add **smooth micro-interactions** (button lift, progress fill animation, hover glow).
+
+---
+
+### ✨ **Output Expectation**
+
+> * Deliver a Figma (or coded) redesign that looks **polished, glassy, and premium** but still **feels identical to the current version** in structure.
+> * Visual goal: *“Looks like it could have been designed by Apple or Google Education.”*
+
+---
+
+Would you like me to write a **one-paragraph designer brief** (for posting on Discord/Figma/Upwork) that summarizes all this in a natural, professional way?

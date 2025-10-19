@@ -1,3 +1,4 @@
+
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
   getFirebaseAdmin,
@@ -44,9 +45,8 @@ export default async function handler(
     console.log("Query params:", subject, section);
     console.log("Token decoded email:", decoded.email);
 
-    const snap = await q.limit(200).get();
+    const snap = await q.get();
     console.log("Docs found:", snap.size);
-    snap.forEach((doc) => console.log("Doc data sample:", doc.data()));
 
     const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 

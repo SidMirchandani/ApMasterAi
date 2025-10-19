@@ -18,6 +18,7 @@ import { Button } from "../../client/src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../client/src/components/ui/card";
 import { Input } from "../../client/src/components/ui/input";
 import { Alert, AlertDescription } from "../../client/src/components/ui/alert";
+import { Checkbox } from "../../client/src/components/ui/checkbox";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -50,6 +51,12 @@ export default function AdminPage() {
   // CSV upload state
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  
+  // AI explanation generation state
+  const [generating, setGenerating] = useState(false);
+  
+  // Checkbox selection state
+  const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -139,6 +146,7 @@ export default function AdminPage() {
     );
     const data = await res.json();
     setItems(data.items || []);
+    setSelectedQuestions(new Set());
   }
 
   async function updateQuestion(id: string, patch: Partial<Question>) {
@@ -173,6 +181,11 @@ export default function AdminPage() {
     }).then((res) => {
       if (!res.ok) throw new Error("Delete failed");
       setItems((prev) => prev.filter((q) => q.id !== id));
+      setSelectedQuestions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
       return res;
     });
 
@@ -181,6 +194,62 @@ export default function AdminPage() {
       success: "Question deleted successfully!",
       error: "Failed to delete question",
     });
+  }
+
+  async function generateExplanations() {
+    if (!token || selectedQuestions.size === 0) {
+      toast.error("Please select at least one question");
+      return;
+    }
+    
+    setGenerating(true);
+    const questionIds = Array.from(selectedQuestions);
+    
+    const generatePromise = fetch("/api/generateExplanations", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}` 
+      },
+      body: JSON.stringify({ questionIds }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Generation failed");
+        return res.json();
+      })
+      .then((data) => {
+        fetchFiltered();
+        return data;
+      })
+      .finally(() => {
+        setGenerating(false);
+      });
+
+    toast.promise(generatePromise, {
+      loading: `Generating explanations for ${questionIds.length} questions...`,
+      success: (data) => `Generated ${data.updated} explanations!`,
+      error: "Failed to generate explanations",
+    });
+  }
+
+  function toggleQuestion(id: string) {
+    setSelectedQuestions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedQuestions.size === items.length) {
+      setSelectedQuestions(new Set());
+    } else {
+      setSelectedQuestions(new Set(items.map(q => q.id)));
+    }
   }
 
   if (loading) {
@@ -338,12 +407,12 @@ export default function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Search className="w-5 h-5" />
+              <Search className="w-5 w-5" />
               Filter Questions
             </CardTitle>
             <CardDescription>Search by subject and section code</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3">
               <Input
                 placeholder="Subject code (e.g., APMACRO)"
@@ -371,14 +440,33 @@ export default function AdminPage() {
         {/* Questions Table Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Questions ({items.length})</CardTitle>
-            <CardDescription>View and manage your questions</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Questions ({items.length})</CardTitle>
+                <CardDescription>
+                  {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
+                </CardDescription>
+              </div>
+              <Button
+                onClick={generateExplanations}
+                disabled={generating || selectedQuestions.size === 0}
+                className="bg-khan-green hover:bg-khan-green-light text-white"
+              >
+                {generating ? "Generating..." : `Generate Explanations (${selectedQuestions.size})`}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-50 border-b">
                   <tr>
+                    <th className="p-3 text-center">
+                      <Checkbox
+                        checked={items.length > 0 && selectedQuestions.size === items.length}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </th>
                     <th className="p-3 text-left font-semibold text-khan-gray-dark">Subject</th>
                     <th className="p-3 text-left font-semibold text-khan-gray-dark">Section</th>
                     <th className="p-3 text-left font-semibold text-khan-gray-dark">Prompt</th>
@@ -393,6 +481,8 @@ export default function AdminPage() {
                     <Row
                       key={q.id}
                       q={q}
+                      selected={selectedQuestions.has(q.id)}
+                      onToggleSelect={() => toggleQuestion(q.id)}
                       onSave={updateQuestion}
                       onDelete={deleteQuestion}
                     />
@@ -414,10 +504,14 @@ export default function AdminPage() {
 
 function Row({
   q,
+  selected,
+  onToggleSelect,
   onSave,
   onDelete,
 }: {
   q: Question;
+  selected: boolean;
+  onToggleSelect: () => void;
   onSave: (id: string, patch: Partial<Question>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
@@ -450,6 +544,12 @@ function Row({
   if (!edit) {
     return (
       <tr className="border-b hover:bg-gray-50">
+        <td className="p-3 text-center align-top">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={onToggleSelect}
+          />
+        </td>
         <td className="p-3 align-top">{q.subject_code || "-"}</td>
         <td className="p-3 align-top">{q.section_code || "-"}</td>
         <td className="p-3 align-top max-w-xs truncate">{q.prompt}</td>
@@ -491,6 +591,12 @@ function Row({
 
   return (
     <tr className="border-b bg-blue-50">
+      <td className="p-2 text-center">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onToggleSelect}
+        />
+      </td>
       <td className="p-2">
         <Input
           value={form.subject_code}
