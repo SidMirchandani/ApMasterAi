@@ -93,22 +93,29 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-khan-background flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-khan-background via-white to-khan-background flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-8 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-khan-green/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="max-w-md w-full space-y-8 relative z-10 animate-fade-in">
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center space-x-3 mb-6">
-            <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center">
-              <BookOpen className="w-7 h-7 text-white" />
+          <Link href="/" className="inline-flex items-center space-x-3 mb-8 group">
+            <div className="w-14 h-14 bg-gradient-green rounded-xl flex items-center justify-center shadow-lg shadow-khan-green/20 group-hover:shadow-xl transition-all">
+              <BookOpen className="w-8 h-8 text-white" />
             </div>
-            <span className="text-3xl font-bold text-khan-gray-dark">APMaster</span>
+            <span className="text-4xl font-bold text-khan-gray-dark">APMaster</span>
           </Link>
           
           <div className="mb-8">
             <Link
               href="/"
-              className="inline-flex items-center text-khan-gray-medium hover:text-khan-gray-dark transition-colors font-medium"
+              className="inline-flex items-center text-khan-gray-medium hover:text-khan-green transition-colors font-medium group"
             >
-              ← Go back to home
+              <ArrowRight className="mr-1 h-4 w-4 rotate-180 group-hover:-translate-x-1 transition-transform" />
+              Go back to home
             </Link>
           </div>
         </div>
