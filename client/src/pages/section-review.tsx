@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Question {
   id: string;
@@ -278,13 +280,22 @@ export default function SectionReview() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0 pb-3">
-                          <p className="text-sm text-gray-700">{q.explanation}</p>
+                          <div className="text-sm text-gray-700 prose prose-sm max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {q.explanation}
+                            </ReactMarkdown>
+                          </div>
                         </CardContent>
                       </Card>
                     )}
                     {/* Added ExplanationChat component here */}
                     {q.explanation && (
-                      <ExplanationChat explanation={q.explanation} />
+                      <ExplanationChat 
+                        questionPrompt={q.prompt}
+                        explanation={q.explanation}
+                        correctAnswer={q.choices[q.answerIndex]}
+                        choices={q.choices}
+                      />
                     )}
                   </CardContent>
                 </Card>

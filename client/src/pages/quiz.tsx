@@ -10,6 +10,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { formatDateTime } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -974,9 +976,11 @@ export default function Quiz() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0 pb-3">
-                          <p className="text-sm text-gray-700">
-                            {q.explanation}
-                          </p>
+                          <div className="text-sm text-gray-700 prose prose-sm max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {q.explanation}
+                            </ReactMarkdown>
+                          </div>
                           <ExplanationChat
                             questionPrompt={q.prompt}
                             explanation={q.explanation}
@@ -1468,9 +1472,11 @@ export default function Quiz() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1 pb-2">
-                  <p className="text-xs text-gray-700">
-                    {currentQuestion.explanation}
-                  </p>
+                  <div className="text-xs text-gray-700 prose prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {currentQuestion.explanation}
+                    </ReactMarkdown>
+                  </div>
                   <ExplanationChat
                     questionPrompt={currentQuestion.prompt}
                     explanation={currentQuestion.explanation}
