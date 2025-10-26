@@ -19,9 +19,9 @@ export function Hero() {
               </feMerge>
             </filter>
             <filter id="shadow-top">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
-              <feOffset dx="0" dy="-3" result="offsetblur"/>
-              <feFlood floodColor="hsl(116, 100%, 25%)" floodOpacity="0.25"/>
+              <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
+              <feOffset dx="0" dy="-4" result="offsetblur"/>
+              <feFlood floodColor="hsl(116, 100%, 20%)" floodOpacity="0.45"/>
               <feComposite in2="offsetblur" operator="in"/>
               <feMerge>
                 <feMergeNode/>
