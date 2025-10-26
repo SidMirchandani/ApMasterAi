@@ -491,9 +491,15 @@ export default function Study() {
   const totalTopics = units.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative overflow-hidden">
+      {/* Background decoration - matching hero style */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
+      </div>
+
       <Navigation />
-      <div className="container mx-auto px-4 py-6 md:py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-6 md:py-8 max-w-6xl relative z-10">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">

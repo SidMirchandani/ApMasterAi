@@ -143,173 +143,181 @@ export default function SectionReview() {
   };
 
   return (
-    <div className="min-h-screen bg-khan-background">
-      <Navigation />
-      <div className="container mx-auto px-4 md:px-8 py-3 max-w-6xl">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <Button onClick={handleBackNavigation} variant="outline" size="sm">
-              <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
-              {!isMobile && "Summary"}
-            </Button>
-            <h2 className="text-base md:text-xl font-semibold absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-              {sectionCode === "all"
-                ? `Full Review - Page ${currentPage + 1} of ${totalPages}`
-                : `Review Unit ${sectionData?.unitNumber || ""} - Page ${currentPage + 1} of ${totalPages}`}
-            </h2>
-            <div className="w-24"></div> {/* Spacer for layout balance */}
-          </div>
-          <Progress
-            value={((currentPage + 1) / totalPages) * 100}
-            className="h-2"
-          />
-        </div>
-
-        <div className="space-y-4 mb-6">
-          {currentQuestions.map((q, idx) => {
-            const globalIndex = currentPage * questionsPerPage + idx;
-            // Use the originalTestIndex from the question object (set by API)
-            const displayNumber =
-              q.originalTestIndex !== undefined
-                ? q.originalTestIndex + 1
-                : globalIndex + 1;
-
-            const options = q.choices.map((choice, i) => ({
-              label: String.fromCharCode(65 + i),
-              value: choice,
-            }));
-            const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
-            // Use originalTestIndex for userAnswer lookup if available, otherwise globalIndex
-            const userAnswer =
-              userAnswers[
-                q.originalTestIndex !== undefined
-                  ? q.originalTestIndex
-                  : globalIndex
-              ];
-            const isCorrect = userAnswer === correctAnswerLabel;
-
-            return (
-              <Card key={globalIndex} className="border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-medium leading-relaxed">
-                    {displayNumber}. {q.prompt}
-                    {sectionCode === "all" &&
-                      sectionData?.sectionBreakdown &&
-                      q.section_code && (
-                        <span className="ml-2 font-bold text-khan-green">
-                          (UNIT{" "}
-                          {sectionData.sectionBreakdown[q.section_code]
-                            ?.unitNumber || ""}
-                          )
-                        </span>
-                      )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-1.5">
-                    {options.map((option) => {
-                      const isUserAnswer = userAnswer === option.label;
-                      const isCorrectAnswer =
-                        option.label === correctAnswerLabel;
-
-                      return (
-                        <div
-                          key={option.label}
-                          className={`w-full text-left p-2 rounded-lg border ${
-                            isCorrectAnswer
-                              ? "border-green-500 bg-green-50"
-                              : isUserAnswer && !isCorrect
-                                ? "border-red-500 bg-red-50"
-                                : "border-gray-200"
-                          }`}
-                        >
-                          <div className="flex items-start gap-2">
-                            <div
-                              className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
-                                isCorrectAnswer
-                                  ? "bg-green-500 text-white"
-                                  : isUserAnswer && !isCorrect
-                                    ? "bg-red-500 text-white"
-                                    : "bg-gray-200 text-gray-700"
-                              }`}
-                            >
-                              {option.label}
-                            </div>
-                            <div className="flex-1 text-sm pt-0.5">
-                              {option.value}
-                            </div>
-                            {isCorrectAnswer && (
-                              <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />
-                            )}
-                            {isUserAnswer && !isCorrect && (
-                              <XCircle className="text-red-500 flex-shrink-0 h-5 w-5" />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div
-                    className={`p-2 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}
-                  >
-                    <p className="font-semibold">
-                      Your answer: {userAnswer || "Not answered"}
-                      {isCorrect
-                        ? " ✓ Correct"
-                        : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
-                    </p>
-                  </div>
-
-                  {q.explanation && (
-                    <Card className="border-khan-blue bg-blue-50">
-                      <CardHeader className="pb-2 pt-3">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <CheckCircle className="text-khan-blue h-4 w-4" />
-                          Explanation
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0 pb-3">
-                        <p className="text-sm text-gray-700">{q.explanation}</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        <div className="flex justify-between gap-4">
-          <Button
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 0}
-            variant="outline"
-            className="px-8"
-          >
-            <ArrowLeft className={isMobile ? "" : "mr-2 h-4 w-4"} />
-            {!isMobile && "Previous"}
-          </Button>
-
-          {currentPage === totalPages - 1 ? (
-            <Button
-              onClick={handleBackNavigation}
-              variant="outline"
-              className="px-4"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          ) : (
-            <Button
-              onClick={() => setCurrentPage(currentPage + 1)}
-              className="bg-khan-blue hover:bg-khan-blue/90 px-8"
-            >
-              {!isMobile && "Next"}
-              <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
-            </Button>
-          )}
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative overflow-hidden">
+      {/* Background decoration - matching hero style */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
       </div>
+
+      <Navigation />
+      <main className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <Button onClick={handleBackNavigation} variant="outline" size="sm">
+                <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
+                {!isMobile && "Summary"}
+              </Button>
+              <h2 className="text-base md:text-xl font-semibold absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                {sectionCode === "all"
+                  ? `Full Review - Page ${currentPage + 1} of ${totalPages}`
+                  : `Review Unit ${sectionData?.unitNumber || ""} - Page ${currentPage + 1} of ${totalPages}`}
+              </h2>
+              <div className="w-24"></div> {/* Spacer for layout balance */}
+            </div>
+            <Progress
+              value={((currentPage + 1) / totalPages) * 100}
+              className="h-2"
+            />
+          </div>
+
+          <div className="space-y-4 mb-6">
+            {currentQuestions.map((q, idx) => {
+              const globalIndex = currentPage * questionsPerPage + idx;
+              // Use the originalTestIndex from the question object (set by API)
+              const displayNumber =
+                q.originalTestIndex !== undefined
+                  ? q.originalTestIndex + 1
+                  : globalIndex + 1;
+
+              const options = q.choices.map((choice, i) => ({
+                label: String.fromCharCode(65 + i),
+                value: choice,
+              }));
+              const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
+              // Use originalTestIndex for userAnswer lookup if available, otherwise globalIndex
+              const userAnswer =
+                userAnswers[
+                  q.originalTestIndex !== undefined
+                    ? q.originalTestIndex
+                    : globalIndex
+                ];
+              const isCorrect = userAnswer === correctAnswerLabel;
+
+              return (
+                <Card key={globalIndex} className="border">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base font-medium leading-relaxed">
+                      {displayNumber}. {q.prompt}
+                      {sectionCode === "all" &&
+                        sectionData?.sectionBreakdown &&
+                        q.section_code && (
+                          <span className="ml-2 font-bold text-khan-green">
+                            (UNIT{" "}
+                            {sectionData.sectionBreakdown[q.section_code]
+                              ?.unitNumber || ""}
+                            )
+                          </span>
+                        )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-1.5">
+                      {options.map((option) => {
+                        const isUserAnswer = userAnswer === option.label;
+                        const isCorrectAnswer =
+                          option.label === correctAnswerLabel;
+
+                        return (
+                          <div
+                            key={option.label}
+                            className={`w-full text-left p-2 rounded-lg border ${
+                              isCorrectAnswer
+                                ? "border-green-500 bg-green-50"
+                                : isUserAnswer && !isCorrect
+                                  ? "border-red-500 bg-red-50"
+                                  : "border-gray-200"
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div
+                                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
+                                  isCorrectAnswer
+                                    ? "bg-green-500 text-white"
+                                    : isUserAnswer && !isCorrect
+                                      ? "bg-red-500 text-white"
+                                      : "bg-gray-200 text-gray-700"
+                                }`}
+                              >
+                                {option.label}
+                              </div>
+                              <div className="flex-1 text-sm pt-0.5">
+                                {option.value}
+                              </div>
+                              {isCorrectAnswer && (
+                                <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />
+                              )}
+                              {isUserAnswer && !isCorrect && (
+                                <XCircle className="text-red-500 flex-shrink-0 h-5 w-5" />
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div
+                      className={`p-2 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}
+                    >
+                      <p className="font-semibold">
+                        Your answer: {userAnswer || "Not answered"}
+                        {isCorrect
+                          ? " ✓ Correct"
+                          : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
+                      </p>
+                    </div>
+
+                    {q.explanation && (
+                      <Card className="border-khan-blue bg-blue-50">
+                        <CardHeader className="pb-2 pt-3">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <CheckCircle className="text-khan-blue h-4 w-4" />
+                            Explanation
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0 pb-3">
+                          <p className="text-sm text-gray-700">{q.explanation}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-between gap-4">
+            <Button
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 0}
+              variant="outline"
+              className="px-8"
+            >
+              <ArrowLeft className={isMobile ? "" : "mr-2 h-4 w-4"} />
+              {!isMobile && "Previous"}
+            </Button>
+
+            {currentPage === totalPages - 1 ? (
+              <Button
+                onClick={handleBackNavigation}
+                variant="outline"
+                className="px-4"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                className="bg-khan-blue hover:bg-khan-blue/90 px-8"
+              >
+                {!isMobile && "Next"}
+                <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
+              </Button>
+            )}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

@@ -93,11 +93,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-khan-background via-white to-khan-background flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-8 relative overflow-hidden">
-      {/* Background decoration */}
+    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-8 relative overflow-hidden">
+      {/* Background decoration - matching hero style */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-khan-green/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
       </div>
 
       <div className="max-w-md w-full space-y-8 relative z-10 animate-fade-in">

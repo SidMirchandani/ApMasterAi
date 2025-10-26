@@ -53,10 +53,15 @@ export default function PracticeTest() {
   const testName: string = getTestName(testId);
 
   return (
-    <div className="min-h-screen bg-khan-background">
-      <Navigation />
+    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative overflow-hidden">
+      {/* Background decoration - matching hero style */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
+      </div>
 
-      <div className="py-12 px-4 sm:px-6 lg:px-8">
+      <Navigation />
+      <main className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-khan-gray-dark mb-4">
@@ -151,7 +156,7 @@ export default function PracticeTest() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
