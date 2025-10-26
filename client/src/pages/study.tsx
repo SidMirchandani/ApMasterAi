@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import {
   ArrowLeft,
   Trophy,
   HelpCircle,
+  Calendar,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -401,11 +403,11 @@ export default function Study() {
       case "Mastered":
         return "bg-green-600 text-white";
       case "Proficient":
-        return "bg-green-400 text-white";
+        return "bg-blue-500 text-white";
       case "In Progress":
-        return "bg-orange-400 text-white";
+        return "bg-orange-500 text-white";
       default:
-        return "bg-gray-200 text-gray-700";
+        return "bg-gray-300 text-gray-700";
     }
   };
 
@@ -420,8 +422,8 @@ export default function Study() {
       if (secondConfirm) {
         try {
           await apiRequest("DELETE", `/api/user/subjects/${courseId}`);
-          refetch(); // Refetch subjects to update the dashboard
-          router.push("/dashboard"); // Redirect to dashboard after deletion
+          refetch();
+          router.push("/dashboard");
         } catch (error) {
           console.error("Failed to delete course:", error);
           alert(
@@ -437,7 +439,7 @@ export default function Study() {
       await apiRequest("PATCH", `/api/user/subjects/${courseId}`, {
         archived: true,
       });
-      refetch(); // Refetch subjects to update the dashboard
+      refetch();
     } catch (error) {
       console.error("Failed to archive course:", error);
       alert("An error occurred while archiving the course. Please try again.");
@@ -446,7 +448,7 @@ export default function Study() {
 
   if (loading || subjectsLoading) {
     return (
-      <div className="min-h-screen bg-khan-background">
+      <div className="min-h-screen bg-white">
         <Navigation />
         <div className="flex items-center justify-center h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
@@ -457,7 +459,7 @@ export default function Study() {
 
   if (!currentSubject) {
     return (
-      <div className="min-h-screen bg-khan-background">
+      <div className="min-h-screen bg-white">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
@@ -480,7 +482,6 @@ export default function Study() {
     );
   }
 
-  // Calculate topics mastered based on unit progress
   const topicsMastered = units.filter((unit) => {
     const unitData = currentSubject.unitProgress?.[unit.id];
     const score = unitData?.highestScore || 0;
@@ -491,167 +492,187 @@ export default function Study() {
   const totalTopics = units.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative overflow-hidden">
-      {/* Background decoration - matching hero style */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
-      </div>
-
+    <div className="min-h-screen bg-white">
       <Navigation />
-      <div className="container mx-auto px-4 py-6 md:py-8 max-w-6xl relative z-10">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
+      
+      {/* Header Section */}
+      <div className="border-b border-gray-200 bg-white sticky top-0 z-20">
+        <div className="container mx-auto px-4 py-4 max-w-6xl">
+          <div className="flex items-center justify-between">
             <Button
               variant="outline"
               onClick={() => router.push("/dashboard")}
               size="sm"
               data-testid="button-back"
-              className="transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+              className="border-gray-300"
             >
-              <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
-              {!isMobile && "Dashboard"}
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Dashboard
             </Button>
-            <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
+            
+            <div className="text-center flex-1 mx-4">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                 {currentSubject.name}
               </h1>
-              {!isMobile && (
-                <p className="text-gray-600 text-sm max-w-3xl">
-                  {currentSubject.description}
-                </p>
-              )}
             </div>
-            <div className="w-36"></div>
+            
+            <div className="w-28"></div>
           </div>
         </div>
+      </div>
 
-        {/* Your Progress */}
-        <Card className="mb-6 shadow-lg border border-gray-200/50 backdrop-blur-sm bg-white/95 rounded-xl transition-all duration-300 hover:shadow-xl">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Target className="h-4 w-4 text-khan-green" />
-              Your Progress
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="border-2 border-gray-200 shadow-sm">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Topics Mastered</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {topicsMastered}/{totalTopics}
+                  </p>
+                </div>
+                <Trophy className="h-10 w-10 text-khan-green" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-gray-200 shadow-sm">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Exam Date</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {formatDate(currentSubject.examDate)}
+                  </p>
+                </div>
+                <Calendar className="h-10 w-10 text-khan-blue" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-gray-200 shadow-sm">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Overall Progress</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {Math.round((topicsMastered / totalTopics) * 100)}%
+                  </p>
+                </div>
+                <Target className="h-10 w-10 text-khan-orange" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Full-Length Practice Tests */}
+        <Card className="mb-8 border-2 border-gray-200 shadow-sm">
+          <CardHeader className="border-b border-gray-200 bg-gray-50">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-khan-green" />
+              Full-Length Practice Tests
             </CardTitle>
           </CardHeader>
-          <CardContent className="pb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="text-center p-3 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200/50">
-                <div className="text-2xl font-bold text-blue-600">
-                  {topicsMastered}/{totalTopics}
-                </div>
-                <div className="text-xs font-medium text-gray-600 mt-1">
-                  Topics Mastered
-                </div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-200/50">
-                <div className="text-2xl font-bold text-orange-600">
-                  {formatDate(currentSubject.examDate)}
-                </div>
-                <div className="text-xs font-medium text-gray-600 mt-1">
-                  Exam Date
-                </div>
-              </div>
-            </div>
-
-            {/* Full-Length Practice Test Buttons */}
-            <div className="flex flex-col md:flex-row gap-3">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button
                 onClick={() =>
                   router.push(`/full-length-history?subject=${subjectId}`)
                 }
-                className="bg-khan-green hover:bg-khan-green-light w-full md:flex-1 h-11 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 font-medium"
+                className="bg-khan-green hover:bg-khan-green-light h-12 text-base font-medium"
               >
-                <BookOpen className="mr-2 h-4 w-4" />
+                <BookOpen className="mr-2 h-5 w-5" />
                 MCQ Full-Length Test
               </Button>
               <Button
                 disabled
-                className="bg-khan-blue w-full md:flex-1 h-11 rounded-lg opacity-50 cursor-not-allowed font-medium shadow-sm"
+                className="bg-gray-300 h-12 text-base opacity-50 cursor-not-allowed font-medium"
               >
-                <PlayCircle className="mr-2 h-4 w-4" />
+                <PlayCircle className="mr-2 h-5 w-5" />
                 FRQ Full-Length Test (Coming Soon)
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Practice Units */}
-        <div className="space-y-4">
-          {units.map((unit, index) => (
-            <Card
-              key={unit.id}
-              className="border-l-4 border-l-khan-green shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200/50 rounded-xl bg-white/95 backdrop-blur-sm"
-            >
-              <CardContent className="pt-5 pb-5">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                  {/* Left side: Content */}
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-green-500 via-green-600 to-green-700 text-white flex items-center justify-center font-bold flex-shrink-0 text-sm shadow-lg">
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 to-transparent opacity-60"></div>
-                      <span className="relative z-10">{index + 1}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base md:text-lg font-bold text-gray-900 mb-1">
-                        {unit.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                        {unit.description}
-                      </p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge
-                          variant="outline"
-                          className="text-xs font-medium border-gray-300 rounded-md px-2 py-0.5"
-                        >
-                          Exam Weight: {unit.examWeight}
-                        </Badge>
-                        {(() => {
-                          const unitData =
-                            currentSubject.unitProgress?.[unit.id];
-                          const score = unitData?.highestScore || 0;
-                          const hasAttempted =
-                            unitData &&
-                            unitData.scores &&
-                            unitData.scores.length > 0;
-                          const level = getProgressLevel(score, hasAttempted);
-                          const badgeColor = getProgressBadgeColor(level);
+        {/* Units Section */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Target className="h-6 w-6 text-khan-green" />
+            Practice by Unit
+          </h2>
+        </div>
 
-                          return (
+        <div className="space-y-4">
+          {units.map((unit, index) => {
+            const unitData = currentSubject.unitProgress?.[unit.id];
+            const score = unitData?.highestScore || 0;
+            const hasAttempted =
+              unitData && unitData.scores && unitData.scores.length > 0;
+            const level = getProgressLevel(score, hasAttempted);
+            const badgeColor = getProgressBadgeColor(level);
+
+            return (
+              <Card
+                key={unit.id}
+                className="border-2 border-gray-200 hover:border-khan-green transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                <CardContent className="p-6">
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                    {/* Left: Unit Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start gap-4 mb-4">
+                        <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-khan-green text-white flex items-center justify-center font-bold text-lg">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-gray-900 mb-2">
+                            {unit.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                            {unit.description}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge
+                              variant="outline"
+                              className="text-xs border-gray-300 text-gray-700"
+                            >
+                              Exam Weight: {unit.examWeight}
+                            </Badge>
                             <div className="relative group">
-                              <Badge
-                                className={`text-xs font-medium ${badgeColor} border border-black/20 cursor-help rounded-md px-2 py-0.5 shadow-sm`}
-                              >
+                              <Badge className={`text-xs ${badgeColor}`}>
                                 {level === "Mastered" && "👑 "}
                                 {level}
                               </Badge>
-
-                              {/* Legend on hover */}
-                              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white shadow-xl rounded-xl p-3 border border-gray-200/50 z-10 whitespace-nowrap backdrop-blur-sm">
+                              
+                              {/* Tooltip */}
+                              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white shadow-xl rounded-lg p-3 border-2 border-gray-200 z-10 whitespace-nowrap">
                                 <div className="text-xs font-semibold mb-2 text-gray-900">
-                                  Unit Progress Legend
+                                  Progress Legend
                                 </div>
                                 <div className="space-y-1.5 text-xs">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-green-600 shadow-sm"></div>
+                                    <div className="w-4 h-4 rounded bg-green-600"></div>
                                     <span className="text-gray-700">
                                       Mastered (80%+)
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-green-400 shadow-sm"></div>
+                                    <div className="w-4 h-4 rounded bg-blue-500"></div>
                                     <span className="text-gray-700">
                                       Proficient (60%+)
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-orange-400 shadow-sm"></div>
+                                    <div className="w-4 h-4 rounded bg-orange-500"></div>
                                     <span className="text-gray-700">
                                       In Progress (&lt;60%)
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-gray-200 shadow-sm"></div>
+                                    <div className="w-4 h-4 rounded bg-gray-300"></div>
                                     <span className="text-gray-700">
                                       Not Started
                                     </span>
@@ -659,39 +680,38 @@ export default function Study() {
                                 </div>
                               </div>
                             </div>
-                          );
-                        })()}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Right side: Buttons stacked vertically on desktop */}
-                  <div className="flex flex-col gap-3 md:min-w-[340px] md:items-end">
-                    <Button
-                      onClick={() =>
-                        router.push(
-                          `/quiz?subject=${subjectId}&unit=${unit.id}`,
-                        )
-                      }
-                      variant="outline"
-                      className="border border-khan-green text-khan-green hover:bg-khan-green hover:text-white h-11 w-full rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 font-medium"
-                    >
-                      <BookOpen className="mr-2 h-4 w-4" />
-                      Unit MCQ Practice Test
-                    </Button>
-                    <Button
-                      disabled
-                      variant="outline"
-                      className="border border-khan-blue text-khan-blue w-full h-11 opacity-50 cursor-not-allowed rounded-lg font-medium shadow-sm"
-                    >
-                      <PlayCircle className="mr-2 h-4 w-4" />
-                      Unit FRQ Practice Test (Coming Soon)
-                    </Button>
+                    {/* Right: Action Buttons */}
+                    <div className="flex flex-col gap-3 lg:min-w-[280px]">
+                      <Button
+                        onClick={() =>
+                          router.push(
+                            `/quiz?subject=${subjectId}&unit=${unit.id}`,
+                          )
+                        }
+                        className="bg-khan-green hover:bg-khan-green-light h-11 font-medium"
+                      >
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        Unit MCQ Practice
+                      </Button>
+                      <Button
+                        disabled
+                        variant="outline"
+                        className="border-2 border-gray-300 h-11 opacity-50 cursor-not-allowed font-medium"
+                      >
+                        <PlayCircle className="mr-2 h-4 w-4" />
+                        Unit FRQ Practice (Soon)
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </div>
