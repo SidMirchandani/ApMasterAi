@@ -9,6 +9,9 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDateTime } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ExplanationChat } from "@/components/ui/explanation-chat";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -973,9 +976,17 @@ export default function Quiz() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0 pb-3">
-                          <p className="text-sm text-gray-700">
-                            {q.explanation}
-                          </p>
+                          <div className="text-sm text-gray-700 prose prose-sm max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {q.explanation}
+                            </ReactMarkdown>
+                          </div>
+                          <ExplanationChat
+                            questionPrompt={q.prompt}
+                            explanation={q.explanation}
+                            correctAnswer={q.choices[q.answerIndex]}
+                            choices={q.choices}
+                          />
                         </CardContent>
                       </Card>
                     )}
@@ -1029,9 +1040,15 @@ export default function Quiz() {
   }));
 
   return (
-    <div className="min-h-screen bg-khan-background">
+    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative overflow-hidden">
+      {/* Background decoration - matching hero style */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
+      </div>
+
       <Navigation />
-      <div className="container mx-auto px-4 py-2">
+      <div className="max-w-4xl mx-auto px-4 py-8 relative z-10">
         {/* Header - Only for regular quiz */}
         {!isFullLength && (
           <div className="mb-2">
@@ -1455,9 +1472,17 @@ export default function Quiz() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-1 pb-2">
-                  <p className="text-xs text-gray-700">
-                    {currentQuestion.explanation}
-                  </p>
+                  <div className="text-xs text-gray-700 prose prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {currentQuestion.explanation}
+                    </ReactMarkdown>
+                  </div>
+                  <ExplanationChat
+                    questionPrompt={currentQuestion.prompt}
+                    explanation={currentQuestion.explanation}
+                    correctAnswer={currentQuestion.choices[currentQuestion.answerIndex]}
+                    choices={currentQuestion.choices}
+                  />
                 </CardContent>
               </Card>
             )}

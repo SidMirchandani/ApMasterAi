@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { BookOpen, Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
+import { BookOpen, Eye, EyeOff, Loader2, Mail, Lock, ArrowRight } from "lucide-react";
 import { loginWithEmail, signInWithGoogle } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
   const router = useRouter();
   const { toast } = useToast();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -23,6 +25,47 @@ export default function Login() {
     email: "",
     password: ""
   });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setMousePos({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        });
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('mousemove', handleMouseMove);
+      return () => container.removeEventListener('mousemove', handleMouseMove);
+    }
+  }, []);
+
+  // Generate wavy lines
+  const generateWavyPath = (yOffset: number, amplitude: number, frequency: number) => {
+    const points: string[] = [];
+    const width = 100;
+    const steps = 100;
+    
+    for (let i = 0; i <= steps; i++) {
+      const x = (i / steps) * width;
+      const y = yOffset + Math.sin((i / steps) * Math.PI * frequency) * amplitude;
+      points.push(`${x},${y}`);
+    }
+    
+    return `M ${points.join(' L ')}`;
+  };
+
+  const lines = [
+    { yOffset: 15, amplitude: 2, frequency: 3 },
+    { yOffset: 30, amplitude: 2.5, frequency: 2.5 },
+    { yOffset: 45, amplitude: 2, frequency: 3.5 },
+    { yOffset: 60, amplitude: 2.2, frequency: 2.8 },
+    { yOffset: 75, amplitude: 2.3, frequency: 3.2 },
+  ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -93,22 +136,79 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-khan-background flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-8">
-      <div className="max-w-md w-full space-y-8">
+    <div ref={containerRef} className="min-h-screen bg-white flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-8 relative overflow-hidden">
+      {/* Interactive wavy lines */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          {lines.map((line, index) => {
+            const lineY = (line.yOffset / 100) * (containerRef.current?.clientHeight || 1);
+            const distanceY = Math.abs(mousePos.y - lineY);
+            const maxDistanceY = 150;
+            const proximityY = Math.max(0, 1 - distanceY / maxDistanceY);
+            
+            const mouseXPercent = (mousePos.x / (containerRef.current?.clientWidth || 1)) * 100;
+            
+            return (
+              <linearGradient key={index} id={`login-line-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="hsl(116, 30%, 40%)" stopOpacity="0.08" />
+                <stop 
+                  offset={`${Math.max(0, mouseXPercent - 15)}%`} 
+                  stopColor="hsl(116, 30%, 40%)" 
+                  stopOpacity="0.08" 
+                />
+                <stop 
+                  offset={`${mouseXPercent}%`} 
+                  stopColor={`hsl(116, ${30 + proximityY * 70}%, 40%)`} 
+                  stopOpacity={0.08 + proximityY * 0.5}
+                />
+                <stop 
+                  offset={`${Math.min(100, mouseXPercent + 15)}%`} 
+                  stopColor="hsl(116, 30%, 40%)" 
+                  stopOpacity="0.08" 
+                />
+                <stop offset="100%" stopColor="hsl(116, 30%, 40%)" stopOpacity="0.08" />
+              </linearGradient>
+            );
+          })}
+        </defs>
+        {lines.map((line, index) => {
+          const path = generateWavyPath(line.yOffset, line.amplitude, line.frequency);
+          
+          return (
+            <path
+              key={index}
+              d={path}
+              stroke={`url(#login-line-gradient-${index})`}
+              strokeWidth="0.3"
+              fill="none"
+              style={{
+                transition: 'stroke-width 0.2s ease',
+              }}
+            />
+          );
+        })}
+      </svg>
+
+      <div className="max-w-md w-full space-y-8 relative z-10 animate-fade-in">
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center space-x-3 mb-6">
-            <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center">
-              <BookOpen className="w-7 h-7 text-white" />
+          <Link href="/" className="inline-flex items-center space-x-3 mb-8 group">
+            <div className="w-14 h-14 bg-khan-green rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all">
+              <BookOpen className="w-8 h-8 text-white" />
             </div>
-            <span className="text-3xl font-bold text-khan-gray-dark">APMaster</span>
+            <span className="text-4xl font-bold text-khan-gray-dark">APMaster</span>
           </Link>
           
           <div className="mb-8">
             <Link
               href="/"
-              className="inline-flex items-center text-khan-gray-medium hover:text-khan-gray-dark transition-colors font-medium"
+              className="inline-flex items-center text-khan-gray-medium hover:text-khan-green transition-colors font-medium group"
             >
-              ← Go back to home
+              <ArrowRight className="mr-1 h-4 w-4 rotate-180 group-hover:-translate-x-1 transition-transform" />
+              Go back to home
             </Link>
           </div>
         </div>
