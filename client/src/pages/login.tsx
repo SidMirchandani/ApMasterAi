@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 export default function Login() {
   const router = useRouter();
   const { toast } = useToast();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -23,6 +25,47 @@ export default function Login() {
     email: "",
     password: ""
   });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setMousePos({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        });
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('mousemove', handleMouseMove);
+      return () => container.removeEventListener('mousemove', handleMouseMove);
+    }
+  }, []);
+
+  // Generate wavy lines
+  const generateWavyPath = (yOffset: number, amplitude: number, frequency: number) => {
+    const points: string[] = [];
+    const width = 100;
+    const steps = 100;
+    
+    for (let i = 0; i <= steps; i++) {
+      const x = (i / steps) * width;
+      const y = yOffset + Math.sin((i / steps) * Math.PI * frequency) * amplitude;
+      points.push(`${x},${y}`);
+    }
+    
+    return `M ${points.join(' L ')}`;
+  };
+
+  const lines = [
+    { yOffset: 15, amplitude: 2, frequency: 3 },
+    { yOffset: 30, amplitude: 2.5, frequency: 2.5 },
+    { yOffset: 45, amplitude: 2, frequency: 3.5 },
+    { yOffset: 60, amplitude: 2.2, frequency: 2.8 },
+    { yOffset: 75, amplitude: 2.3, frequency: 3.2 },
+  ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -93,12 +136,62 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-8 relative overflow-hidden">
-      {/* Background decoration - matching hero style */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
-      </div>
+    <div ref={containerRef} className="min-h-screen bg-white flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-8 relative overflow-hidden">
+      {/* Interactive wavy lines */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          {lines.map((line, index) => {
+            const lineY = (line.yOffset / 100) * (containerRef.current?.clientHeight || 1);
+            const distanceY = Math.abs(mousePos.y - lineY);
+            const maxDistanceY = 150;
+            const proximityY = Math.max(0, 1 - distanceY / maxDistanceY);
+            
+            const mouseXPercent = (mousePos.x / (containerRef.current?.clientWidth || 1)) * 100;
+            
+            return (
+              <linearGradient key={index} id={`login-line-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="hsl(116, 30%, 40%)" stopOpacity="0.08" />
+                <stop 
+                  offset={`${Math.max(0, mouseXPercent - 15)}%`} 
+                  stopColor="hsl(116, 30%, 40%)" 
+                  stopOpacity="0.08" 
+                />
+                <stop 
+                  offset={`${mouseXPercent}%`} 
+                  stopColor={`hsl(116, ${30 + proximityY * 70}%, 40%)`} 
+                  stopOpacity={0.08 + proximityY * 0.5}
+                />
+                <stop 
+                  offset={`${Math.min(100, mouseXPercent + 15)}%`} 
+                  stopColor="hsl(116, 30%, 40%)" 
+                  stopOpacity="0.08" 
+                />
+                <stop offset="100%" stopColor="hsl(116, 30%, 40%)" stopOpacity="0.08" />
+              </linearGradient>
+            );
+          })}
+        </defs>
+        {lines.map((line, index) => {
+          const path = generateWavyPath(line.yOffset, line.amplitude, line.frequency);
+          
+          return (
+            <path
+              key={index}
+              d={path}
+              stroke={`url(#login-line-gradient-${index})`}
+              strokeWidth="0.3"
+              fill="none"
+              style={{
+                transition: 'stroke-width 0.2s ease',
+              }}
+            />
+          );
+        })}
+      </svg>
 
       <div className="max-w-md w-full space-y-8 relative z-10 animate-fade-in">
         <div className="text-center">
