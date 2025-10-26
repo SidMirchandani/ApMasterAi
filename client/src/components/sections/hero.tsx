@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -18,15 +17,15 @@ export function Hero() {
             Master AP Exams with
             <span className="text-gradient-green block mt-2">AI-Powered Learning</span>
           </h1>
-          
+
           <p className="text-lg sm:text-xl md:text-2xl text-khan-gray-medium max-w-3xl mx-auto mb-10 leading-relaxed px-4">
             Personalized study plans, adaptive practice tests, and instant feedback to help you ace your AP exams.
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
             <Link href="/signup">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="w-full sm:w-auto btn-primary shadow-lg shadow-khan-green/20 px-8 py-6 text-lg group"
               >
                 Get Started Free
@@ -34,9 +33,9 @@ export function Hero() {
               </Button>
             </Link>
             <Link href="/learn">
-              <Button 
-                size="lg" 
-                variant="outline" 
+              <Button
+                size="lg"
+                variant="outline"
                 className="w-full sm:w-auto btn-secondary px-8 py-6 text-lg"
               >
                 Browse Courses
@@ -72,7 +71,7 @@ export function Hero() {
               <div className="bg-white border border-khan-gray-light rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="w-12 h-12 bg-khan-blue/10 rounded-lg flex items-center justify-center mb-4">
                   <svg className="w-6 h-6 text-khan-blue" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                   </svg>
                 </div>
                 <div className="text-3xl font-bold text-khan-gray-dark mb-2">34.9%</div>
@@ -94,7 +93,7 @@ export function Hero() {
               <div className="bg-white border border-khan-gray-light rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="w-12 h-12 bg-khan-purple/10 rounded-lg flex items-center justify-center mb-4">
                   <svg className="w-6 h-6 text-khan-purple" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="text-3xl font-bold text-khan-gray-dark mb-2">83%</div>
