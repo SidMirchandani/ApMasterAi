@@ -4,11 +4,50 @@ import Link from "next/link";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-khan-background via-white to-white py-16 md:py-24 lg:py-40">
-      {/* Decorative background elements */}
+    <section className="relative overflow-hidden bg-white py-16 md:py-24 lg:py-40">
+      {/* Animated wave gradient background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
+        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="wave-gradient-1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="hsl(116, 100%, 33%)" stopOpacity="0.15" />
+              <stop offset="50%" stopColor="hsl(122, 75%, 41%)" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="hsl(116, 100%, 33%)" stopOpacity="0.15" />
+            </linearGradient>
+            <linearGradient id="wave-gradient-2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="hsl(122, 75%, 41%)" stopOpacity="0.12" />
+              <stop offset="50%" stopColor="hsl(116, 100%, 33%)" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="hsl(122, 75%, 41%)" stopOpacity="0.12" />
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          
+          {/* Wave 1 */}
+          <path className="wave-path-1" fill="url(#wave-gradient-1)" filter="url(#glow)"
+            d="M0,100 Q250,50 500,100 T1000,100 T1500,100 T2000,100 V0 H0 Z" />
+          
+          {/* Wave 2 */}
+          <path className="wave-path-2" fill="url(#wave-gradient-2)" filter="url(#glow)"
+            d="M0,200 Q300,150 600,200 T1200,200 T1800,200 T2400,200 V0 H0 Z" />
+          
+          {/* Wave 3 */}
+          <path className="wave-path-3" fill="url(#wave-gradient-1)" filter="url(#glow)"
+            d="M0,350 Q200,300 400,350 T800,350 T1200,350 T1600,350 V0 H0 Z" />
+          
+          {/* Wave 4 */}
+          <path className="wave-path-4" fill="url(#wave-gradient-2)" filter="url(#glow)"
+            d="M0,500 Q350,450 700,500 T1400,500 T2100,500 T2800,500 V0 H0 Z" />
+          
+          {/* Wave 5 */}
+          <path className="wave-path-5" fill="url(#wave-gradient-1)" filter="url(#glow)"
+            d="M0,650 Q250,600 500,650 T1000,650 T1500,650 T2000,650 V0 H0 Z" />
+        </svg>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
