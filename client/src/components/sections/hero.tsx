@@ -7,18 +7,6 @@ import { useEffect } from "react";
 export function Hero() {
   return (
     <section className="relative overflow-hidden py-16 md:py-24 lg:py-40 bg-white">
-      {/* Comic book halftone gradient background */}
-      <div className="absolute inset-0 opacity-30" style={{
-        backgroundImage: `
-          radial-gradient(circle, hsl(116, 100%, 40%) 1px, transparent 1px),
-          radial-gradient(circle, hsl(116, 100%, 40%) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)
-        `,
-        backgroundSize: '20px 20px, 30px 30px, 100% 100%',
-        backgroundPosition: '0 0, 15px 15px, 0 0',
-        backgroundBlendMode: 'normal, normal, normal'
-      }}></div>
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center animate-fade-in">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-khan-gray-dark mb-6 leading-tight">
@@ -73,39 +61,6 @@ export function Hero() {
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Wavy separator with modern layered shadow */}
-      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
-        <svg className="relative block w-full h-12" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <defs>
-            <filter id="wave-shadow" x="-50%" y="-50%" width="200%" height="200%">
-              {/* Multiple layered shadows for depth - bigger and more prominent */}
-              <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
-              <feOffset dx="0" dy="6" result="shadow1"/>
-              <feFlood floodColor="hsl(116, 100%, 33%)" floodOpacity="0.25"/>
-              <feComposite in2="shadow1" operator="in" result="shadow1colored"/>
-              
-              <feGaussianBlur in="SourceAlpha" stdDeviation="16"/>
-              <feOffset dx="0" dy="12" result="shadow2"/>
-              <feFlood floodColor="hsl(116, 100%, 25%)" floodOpacity="0.3"/>
-              <feComposite in2="shadow2" operator="in" result="shadow2colored"/>
-              
-              <feGaussianBlur in="SourceAlpha" stdDeviation="28"/>
-              <feOffset dx="0" dy="20" result="shadow3"/>
-              <feFlood floodColor="hsl(116, 90%, 20%)" floodOpacity="0.2"/>
-              <feComposite in2="shadow3" operator="in" result="shadow3colored"/>
-              
-              <feMerge>
-                <feMergeNode in="shadow3colored"/>
-                <feMergeNode in="shadow2colored"/>
-                <feMergeNode in="shadow1colored"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" className="fill-white" filter="url(#wave-shadow)"></path>
-        </svg>
       </div>
     </section>
   );
