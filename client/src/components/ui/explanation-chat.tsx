@@ -36,9 +36,7 @@ export function ExplanationChat({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // Removed auto-scroll effect to prevent unwanted scrolling
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
