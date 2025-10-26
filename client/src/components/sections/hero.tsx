@@ -1,12 +1,33 @@
+
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { useEffect } from "react";
+
+export function Hero() {
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const waveContainer = document.querySelector('.wave-container') as HTMLElement;
+      if (waveContainer) {
+        // Parallax effect - waves move at 30% of scroll speed
+        waveContainer.style.transform = `translateY(${scrollY * 0.3}px)`;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-export function Hero() {
-  return (
-    <section className="relative overflow-hidden bg-white py-16 md:py-24 lg:py-40">
+<section className="relative overflow-hidden bg-white py-16 md:py-24 lg:py-40">
       {/* Animated wave gradient background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+      <div className="wave-container">
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
           <defs>
             <filter id="glow">
@@ -16,26 +37,36 @@ export function Hero() {
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
+            <filter id="shadow-right">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+              <feOffset dx="2" dy="0" result="offsetblur"/>
+              <feFlood floodColor="hsl(116, 100%, 20%)" floodOpacity="0.15"/>
+              <feComposite in2="offsetblur" operator="in"/>
+              <feMerge>
+                <feMergeNode/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
           </defs>
           
           {/* Wave 1 */}
-          <path className="wave-path-1" stroke="hsl(116, 100%, 33%)" strokeWidth="1.5" fill="none" opacity="0.06" filter="url(#glow)"
+          <path className="wave-path-1" stroke="hsl(116, 100%, 33%)" strokeWidth="1.5" fill="none" opacity="0.06" filter="url(#glow) url(#shadow-right)"
             d="M-500,100 Q-250,50 0,100 T500,100 T1000,100 T1500,100 T2000,100 T2500,100" />
           
           {/* Wave 2 */}
-          <path className="wave-path-2" stroke="hsl(122, 75%, 41%)" strokeWidth="1.5" fill="none" opacity="0.08" filter="url(#glow)"
+          <path className="wave-path-2" stroke="hsl(122, 75%, 41%)" strokeWidth="1.5" fill="none" opacity="0.08" filter="url(#glow) url(#shadow-right)"
             d="M-500,200 Q-200,150 100,200 T600,200 T1200,200 T1800,200 T2400,200 T3000,200" />
           
           {/* Wave 3 */}
-          <path className="wave-path-3" stroke="hsl(116, 100%, 33%)" strokeWidth="1.5" fill="none" opacity="0.05" filter="url(#glow)"
+          <path className="wave-path-3" stroke="hsl(116, 100%, 33%)" strokeWidth="1.5" fill="none" opacity="0.05" filter="url(#glow) url(#shadow-right)"
             d="M-500,350 Q-300,300 -100,350 T400,350 T800,350 T1200,350 T1600,350 T2000,350" />
           
           {/* Wave 4 */}
-          <path className="wave-path-4" stroke="hsl(122, 75%, 41%)" strokeWidth="1.5" fill="none" opacity="0.07" filter="url(#glow)"
+          <path className="wave-path-4" stroke="hsl(122, 75%, 41%)" strokeWidth="1.5" fill="none" opacity="0.07" filter="url(#glow) url(#shadow-right)"
             d="M-500,500 Q-150,450 200,500 T700,500 T1400,500 T2100,500 T2800,500 T3500,500" />
           
           {/* Wave 5 */}
-          <path className="wave-path-5" stroke="hsl(116, 100%, 33%)" strokeWidth="1.5" fill="none" opacity="0.06" filter="url(#glow)"
+          <path className="wave-path-5" stroke="hsl(116, 100%, 33%)" strokeWidth="1.5" fill="none" opacity="0.06" filter="url(#glow) url(#shadow-right)"
             d="M-500,650 Q-250,600 0,650 T500,650 T1000,650 T1500,650 T2000,650 T2500,650" />
         </svg>
       </div>
