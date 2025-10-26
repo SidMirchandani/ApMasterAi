@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { BookOpen, Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
+import { BookOpen, Eye, EyeOff, Loader2, Mail, Lock, ArrowRight } from "lucide-react";
 import { loginWithEmail, signInWithGoogle } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
