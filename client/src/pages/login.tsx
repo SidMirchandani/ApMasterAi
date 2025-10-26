@@ -103,11 +103,9 @@ export default function Login() {
       <div className="max-w-md w-full space-y-8 relative z-10 animate-fade-in">
         <div className="text-center">
           <Link href="/" className="inline-flex items-center space-x-3 mb-8 group">
-            <img 
-              src="/apmaster-logo.png" 
-              alt="APMaster Logo" 
-              className="w-14 h-14 rounded-xl shadow-lg group-hover:shadow-xl transition-all"
-            />
+            <div className="w-14 h-14 bg-khan-green rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all">
+              <BookOpen className="w-8 h-8 text-white" />
+            </div>
             <span className="text-4xl font-bold text-khan-gray-dark">APMaster</span>
           </Link>
           
