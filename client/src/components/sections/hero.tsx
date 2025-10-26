@@ -26,26 +26,15 @@ export function Hero() {
     }
   }, []);
 
-  // Generate wavy lines with different orientations
-  const generateWavyPath = (
-    startX: number, 
-    startY: number, 
-    angle: number, 
-    length: number, 
-    amplitude: number, 
-    frequency: number
-  ) => {
+  // Generate wavy lines
+  const generateWavyPath = (yOffset: number, amplitude: number, frequency: number) => {
     const points: string[] = [];
-    const steps = 50;
+    const width = 100;
+    const steps = 100;
     
     for (let i = 0; i <= steps; i++) {
-      const t = (i / steps) * length;
-      const wave = Math.sin((i / steps) * Math.PI * frequency) * amplitude;
-      
-      // Calculate position along the angled line with wave offset perpendicular to it
-      const x = startX + t * Math.cos(angle) + wave * Math.sin(angle);
-      const y = startY + t * Math.sin(angle) - wave * Math.cos(angle);
-      
+      const x = (i / steps) * width;
+      const y = yOffset + Math.sin((i / steps) * Math.PI * frequency) * amplitude;
       points.push(`${x},${y}`);
     }
     
@@ -53,13 +42,11 @@ export function Hero() {
   };
 
   const lines = [
-    { startX: 10, startY: 20, angle: 0.1, length: 80, amplitude: 1.5, frequency: 3 },
-    { startX: 5, startY: 35, angle: -0.05, length: 90, amplitude: 2, frequency: 2.5 },
-    { startX: 15, startY: 50, angle: 0.15, length: 70, amplitude: 1.8, frequency: 3.5 },
-    { startX: 8, startY: 65, angle: -0.1, length: 85, amplitude: 2.2, frequency: 2.8 },
-    { startX: 20, startY: 80, angle: 0.08, length: 75, amplitude: 1.6, frequency: 3.2 },
-    { startX: 12, startY: 10, angle: -0.12, length: 60, amplitude: 1.9, frequency: 2.7 },
-    { startX: 25, startY: 40, angle: 0.2, length: 65, amplitude: 1.7, frequency: 3.1 },
+    { yOffset: 15, amplitude: 2, frequency: 3 },
+    { yOffset: 30, amplitude: 2.5, frequency: 2.5 },
+    { yOffset: 45, amplitude: 2, frequency: 3.5 },
+    { yOffset: 60, amplitude: 2.2, frequency: 2.8 },
+    { yOffset: 75, amplitude: 2.3, frequency: 3.2 },
   ];
 
   return (
@@ -71,39 +58,24 @@ export function Hero() {
         preserveAspectRatio="none"
       >
         {lines.map((line, index) => {
-          const path = generateWavyPath(
-            line.startX, 
-            line.startY, 
-            line.angle, 
-            line.length, 
-            line.amplitude, 
-            line.frequency
-          );
+          const path = generateWavyPath(line.yOffset, line.amplitude, line.frequency);
           
-          // Calculate distance from mouse to line's center point
-          const heroHeight = heroRef.current?.clientHeight || 1;
-          const heroWidth = heroRef.current?.clientWidth || 1;
-          const lineCenterX = ((line.startX + line.length * Math.cos(line.angle) / 2) / 100) * heroWidth;
-          const lineCenterY = ((line.startY + line.length * Math.sin(line.angle) / 2) / 100) * heroHeight;
-          
-          const distance = Math.sqrt(
-            Math.pow(mousePos.x - lineCenterX, 2) + 
-            Math.pow(mousePos.y - lineCenterY, 2)
-          );
-          
-          const maxDistance = 150;
+          // Calculate distance from mouse to this line's y position
+          const lineY = (line.yOffset / 100) * (heroRef.current?.clientHeight || 1);
+          const distance = Math.abs(mousePos.y - lineY);
+          const maxDistance = 300;
           const proximity = Math.max(0, 1 - distance / maxDistance);
           
           // Color transitions from very light green to vibrant green
-          const opacity = 0.08 + proximity * 0.5;
-          const saturation = 20 + proximity * 80;
+          const opacity = 0.15 + proximity * 0.6;
+          const saturation = 30 + proximity * 70;
           
           return (
             <path
               key={index}
               d={path}
               stroke={`hsl(116, ${saturation}%, 40%)`}
-              strokeWidth="0.3"
+              strokeWidth="0.15"
               fill="none"
               opacity={opacity}
               style={{
