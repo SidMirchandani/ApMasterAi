@@ -6,10 +6,7 @@ import { useEffect } from "react";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden py-16 md:py-24 lg:py-40 bg-gradient-to-b from-white via-white via-75% to-khan-green/10 backdrop-blur-xl shadow-lg">
-      {/* Glass blur overlay */}
-      <div className="absolute inset-0 bg-white/30 backdrop-blur-sm pointer-events-none"></div>
-
+    <section className="relative overflow-hidden py-16 md:py-24 lg:py-40 bg-gradient-to-b from-white from-0% via-green-50/30 via-50% to-green-100/20 to-100% shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center animate-fade-in">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-khan-gray-dark mb-6 leading-tight">
@@ -63,9 +60,24 @@ export function Hero() {
               <span className="text-sm font-medium">Personalized</span>
             </div>
           </div>
+        </div>
+      </div>
+      
+      {/* Wavy separator */}
+      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
+        <svg className="relative block w-full h-12" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" className="fill-white"></path>
+        </svg>
+      </div>
+    </section>
+  );
+}
 
-          {/* Statistics Section */}
-          <div className="mt-24 max-w-6xl mx-auto">
+export function HeroStats() {
+  return (
+    <section className="relative bg-white py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-white border border-khan-gray-light rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="w-12 h-12 bg-khan-blue/20 rounded-lg flex items-center justify-center mb-4">
@@ -113,10 +125,9 @@ export function Hero() {
             </div>
 
             <div className="mt-12 text-center">
-              <p className="text-lg text-khan-gray-medium max-w-3xl mx-auto leading-relaxed">
-                With <span className="font-semibold text-khan-green">61% of teens</span> reporting that getting good grades is a significant source of stress, APMaster combines AI technology with proven educational methods to make AP preparation more effective and less overwhelming.
-              </p>
-            </div>
+            <p className="text-lg text-khan-gray-medium max-w-3xl mx-auto leading-relaxed">
+              With <span className="font-semibold text-khan-green">61% of teens</span> reporting that getting good grades is a significant source of stress, APMaster combines AI technology with proven educational methods to make AP preparation more effective and less overwhelming.
+            </p>
           </div>
         </div>
       </div>
