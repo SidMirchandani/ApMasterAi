@@ -6,21 +6,11 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden bg-white py-16 md:py-24 lg:py-40">
       {/* Animated wave gradient background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
           <defs>
-            <linearGradient id="wave-gradient-1" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="hsl(116, 100%, 33%)" stopOpacity="0.15" />
-              <stop offset="50%" stopColor="hsl(122, 75%, 41%)" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="hsl(116, 100%, 33%)" stopOpacity="0.15" />
-            </linearGradient>
-            <linearGradient id="wave-gradient-2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="hsl(122, 75%, 41%)" stopOpacity="0.12" />
-              <stop offset="50%" stopColor="hsl(116, 100%, 33%)" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="hsl(122, 75%, 41%)" stopOpacity="0.12" />
-            </linearGradient>
             <filter id="glow">
-              <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
               <feMerge>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="SourceGraphic"/>
@@ -29,24 +19,24 @@ export function Hero() {
           </defs>
           
           {/* Wave 1 */}
-          <path className="wave-path-1" fill="url(#wave-gradient-1)" filter="url(#glow)"
-            d="M0,100 Q250,50 500,100 T1000,100 T1500,100 T2000,100 V0 H0 Z" />
+          <path className="wave-path-1" stroke="hsl(116, 100%, 33%)" strokeWidth="1.5" fill="none" opacity="0.06" filter="url(#glow)"
+            d="M-500,100 Q-250,50 0,100 T500,100 T1000,100 T1500,100 T2000,100 T2500,100" />
           
           {/* Wave 2 */}
-          <path className="wave-path-2" fill="url(#wave-gradient-2)" filter="url(#glow)"
-            d="M0,200 Q300,150 600,200 T1200,200 T1800,200 T2400,200 V0 H0 Z" />
+          <path className="wave-path-2" stroke="hsl(122, 75%, 41%)" strokeWidth="1.5" fill="none" opacity="0.08" filter="url(#glow)"
+            d="M-500,200 Q-200,150 100,200 T600,200 T1200,200 T1800,200 T2400,200 T3000,200" />
           
           {/* Wave 3 */}
-          <path className="wave-path-3" fill="url(#wave-gradient-1)" filter="url(#glow)"
-            d="M0,350 Q200,300 400,350 T800,350 T1200,350 T1600,350 V0 H0 Z" />
+          <path className="wave-path-3" stroke="hsl(116, 100%, 33%)" strokeWidth="1.5" fill="none" opacity="0.05" filter="url(#glow)"
+            d="M-500,350 Q-300,300 -100,350 T400,350 T800,350 T1200,350 T1600,350 T2000,350" />
           
           {/* Wave 4 */}
-          <path className="wave-path-4" fill="url(#wave-gradient-2)" filter="url(#glow)"
-            d="M0,500 Q350,450 700,500 T1400,500 T2100,500 T2800,500 V0 H0 Z" />
+          <path className="wave-path-4" stroke="hsl(122, 75%, 41%)" strokeWidth="1.5" fill="none" opacity="0.07" filter="url(#glow)"
+            d="M-500,500 Q-150,450 200,500 T700,500 T1400,500 T2100,500 T2800,500 T3500,500" />
           
           {/* Wave 5 */}
-          <path className="wave-path-5" fill="url(#wave-gradient-1)" filter="url(#glow)"
-            d="M0,650 Q250,600 500,650 T1000,650 T1500,650 T2000,650 V0 H0 Z" />
+          <path className="wave-path-5" stroke="hsl(116, 100%, 33%)" strokeWidth="1.5" fill="none" opacity="0.06" filter="url(#glow)"
+            d="M-500,650 Q-250,600 0,650 T500,650 T1000,650 T1500,650 T2000,650 T2500,650" />
         </svg>
       </div>
 
@@ -108,7 +98,7 @@ export function Hero() {
           <div className="mt-24 max-w-6xl mx-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-white border border-khan-gray-light rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="w-12 h-12 bg-khan-blue/10 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-khan-blue/20 rounded-lg flex items-center justify-center mb-4">
                   <svg className="w-6 h-6 text-khan-blue" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                   </svg>
@@ -119,7 +109,7 @@ export function Hero() {
               </div>
 
               <div className="bg-white border border-khan-gray-light rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="w-12 h-12 bg-khan-green/10 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-khan-green/20 rounded-lg flex items-center justify-center mb-4">
                   <svg className="w-6 h-6 text-khan-green" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -130,7 +120,7 @@ export function Hero() {
               </div>
 
               <div className="bg-white border border-khan-gray-light rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="w-12 h-12 bg-khan-purple/10 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-khan-purple/20 rounded-lg flex items-center justify-center mb-4">
                   <svg className="w-6 h-6 text-khan-purple" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
@@ -141,7 +131,7 @@ export function Hero() {
               </div>
 
               <div className="bg-white border border-khan-gray-light rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="w-12 h-12 bg-orange-500/10 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mb-4">
                   <svg className="w-6 h-6 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
                   </svg>
