@@ -20,12 +20,7 @@ export function Hero() {
   }, []);
 
   return (
-
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
-
-<section className="relative overflow-hidden bg-white py-16 md:py-24 lg:py-40">
+    <section className="relative overflow-hidden bg-white py-16 md:py-24 lg:py-40">
       {/* Animated wave gradient background */}
       <div className="wave-container">
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
