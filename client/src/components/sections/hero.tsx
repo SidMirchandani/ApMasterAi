@@ -57,29 +57,52 @@ export function Hero() {
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
       >
+        <defs>
+          {lines.map((line, index) => {
+            const lineY = (line.yOffset / 100) * (heroRef.current?.clientHeight || 1);
+            const distanceY = Math.abs(mousePos.y - lineY);
+            const maxDistanceY = 150; // Smaller vertical range
+            const proximityY = Math.max(0, 1 - distanceY / maxDistanceY);
+            
+            // Calculate horizontal position as percentage
+            const mouseXPercent = (mousePos.x / (heroRef.current?.clientWidth || 1)) * 100;
+            
+            return (
+              <linearGradient key={index} id={`line-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                {/* Create stops for localized glow effect */}
+                <stop offset="0%" stopColor="hsl(116, 30%, 40%)" stopOpacity="0.08" />
+                <stop 
+                  offset={`${Math.max(0, mouseXPercent - 15)}%`} 
+                  stopColor="hsl(116, 30%, 40%)" 
+                  stopOpacity="0.08" 
+                />
+                <stop 
+                  offset={`${mouseXPercent}%`} 
+                  stopColor={`hsl(116, ${30 + proximityY * 70}%, 40%)`} 
+                  stopOpacity={0.08 + proximityY * 0.5}
+                />
+                <stop 
+                  offset={`${Math.min(100, mouseXPercent + 15)}%`} 
+                  stopColor="hsl(116, 30%, 40%)" 
+                  stopOpacity="0.08" 
+                />
+                <stop offset="100%" stopColor="hsl(116, 30%, 40%)" stopOpacity="0.08" />
+              </linearGradient>
+            );
+          })}
+        </defs>
         {lines.map((line, index) => {
           const path = generateWavyPath(line.yOffset, line.amplitude, line.frequency);
-          
-          // Calculate distance from mouse to this line's y position
-          const lineY = (line.yOffset / 100) * (heroRef.current?.clientHeight || 1);
-          const distance = Math.abs(mousePos.y - lineY);
-          const maxDistance = 300;
-          const proximity = Math.max(0, 1 - distance / maxDistance);
-          
-          // Color transitions from very light green to vibrant green
-          const opacity = 0.15 + proximity * 0.6;
-          const saturation = 30 + proximity * 70;
           
           return (
             <path
               key={index}
               d={path}
-              stroke={`hsl(116, ${saturation}%, 40%)`}
-              strokeWidth="0.15"
+              stroke={`url(#line-gradient-${index})`}
+              strokeWidth="0.3"
               fill="none"
-              opacity={opacity}
               style={{
-                transition: 'stroke 0.3s ease, opacity 0.3s ease',
+                transition: 'stroke-width 0.2s ease',
               }}
             />
           );
