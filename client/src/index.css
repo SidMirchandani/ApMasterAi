@@ -247,15 +247,14 @@ html, body {
     }
   }
 
-  .wave-container {
-    position: fixed;
+  .wave-container-static {
+    position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     overflow: hidden;
     pointer-events: none;
-    will-change: transform;
   }
 
   @keyframes wave1 {
@@ -304,22 +303,22 @@ html, body {
   }
 
   .wave-path-1 {
-    animation: wave1 5s ease-in-out infinite;
+    animation: wave1 3s ease-in-out infinite;
   }
 
   .wave-path-2 {
-    animation: wave2 6s ease-in-out infinite;
+    animation: wave2 3.5s ease-in-out infinite;
   }
 
   .wave-path-3 {
-    animation: wave3 7s ease-in-out infinite;
+    animation: wave3 4s ease-in-out infinite;
   }
 
   .wave-path-4 {
-    animation: wave4 8s ease-in-out infinite;
+    animation: wave4 4.5s ease-in-out infinite;
   }
 
   .wave-path-5 {
-    animation: wave5 9s ease-in-out infinite;
+    animation: wave5 5s ease-in-out infinite;
   }
 }
