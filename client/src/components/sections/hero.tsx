@@ -63,17 +63,31 @@ export function Hero() {
         </div>
       </div>
       
-      {/* Wavy separator with shadow */}
+      {/* Wavy separator with modern layered shadow */}
       <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
         <svg className="relative block w-full h-12" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
           <defs>
             <filter id="wave-shadow" x="-50%" y="-50%" width="200%" height="200%">
+              {/* Multiple layered shadows for depth */}
+              <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+              <feOffset dx="0" dy="4" result="shadow1"/>
+              <feFlood floodColor="hsl(116, 100%, 33%)" floodOpacity="0.15"/>
+              <feComposite in2="shadow1" operator="in" result="shadow1colored"/>
+              
               <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
-              <feOffset dx="0" dy="8" result="offsetblur"/>
-              <feFlood floodColor="hsl(116, 100%, 33%)" floodOpacity="0.3"/>
-              <feComposite in2="offsetblur" operator="in"/>
+              <feOffset dx="0" dy="8" result="shadow2"/>
+              <feFlood floodColor="hsl(116, 100%, 25%)" floodOpacity="0.2"/>
+              <feComposite in2="shadow2" operator="in" result="shadow2colored"/>
+              
+              <feGaussianBlur in="SourceAlpha" stdDeviation="16"/>
+              <feOffset dx="0" dy="12" result="shadow3"/>
+              <feFlood floodColor="hsl(116, 90%, 20%)" floodOpacity="0.1"/>
+              <feComposite in2="shadow3" operator="in" result="shadow3colored"/>
+              
               <feMerge>
-                <feMergeNode/>
+                <feMergeNode in="shadow3colored"/>
+                <feMergeNode in="shadow2colored"/>
+                <feMergeNode in="shadow1colored"/>
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
