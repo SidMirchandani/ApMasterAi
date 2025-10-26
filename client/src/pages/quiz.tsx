@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDateTime } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ExplanationChat } from "@/components/ui/explanation-chat";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -976,6 +977,12 @@ export default function Quiz() {
                           <p className="text-sm text-gray-700">
                             {q.explanation}
                           </p>
+                          <ExplanationChat
+                            questionPrompt={q.prompt}
+                            explanation={q.explanation}
+                            correctAnswer={q.choices[q.answerIndex]}
+                            choices={q.choices}
+                          />
                         </CardContent>
                       </Card>
                     )}
@@ -1464,6 +1471,12 @@ export default function Quiz() {
                   <p className="text-xs text-gray-700">
                     {currentQuestion.explanation}
                   </p>
+                  <ExplanationChat
+                    questionPrompt={currentQuestion.prompt}
+                    explanation={currentQuestion.explanation}
+                    correctAnswer={currentQuestion.choices[currentQuestion.answerIndex]}
+                    choices={currentQuestion.choices}
+                  />
                 </CardContent>
               </Card>
             )}

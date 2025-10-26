@@ -8,6 +8,7 @@ import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ExplanationChat } from "@/components/ui/explanation-chat";
 
 interface Question {
   id: string;
@@ -280,6 +281,10 @@ export default function SectionReview() {
                           <p className="text-sm text-gray-700">{q.explanation}</p>
                         </CardContent>
                       </Card>
+                    )}
+                    {/* Added ExplanationChat component here */}
+                    {q.explanation && (
+                      <ExplanationChat explanation={q.explanation} />
                     )}
                   </CardContent>
                 </Card>
