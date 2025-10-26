@@ -2,11 +2,90 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function Hero() {
+  const heroRef = useRef<HTMLElement>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (heroRef.current) {
+        const rect = heroRef.current.getBoundingClientRect();
+        setMousePos({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        });
+      }
+    };
+
+    const heroElement = heroRef.current;
+    if (heroElement) {
+      heroElement.addEventListener('mousemove', handleMouseMove);
+      return () => heroElement.removeEventListener('mousemove', handleMouseMove);
+    }
+  }, []);
+
+  // Generate wavy lines
+  const generateWavyPath = (yOffset: number, amplitude: number, frequency: number) => {
+    const points: string[] = [];
+    const width = 100;
+    const steps = 100;
+    
+    for (let i = 0; i <= steps; i++) {
+      const x = (i / steps) * width;
+      const y = yOffset + Math.sin((i / steps) * Math.PI * frequency) * amplitude;
+      points.push(`${x},${y}`);
+    }
+    
+    return `M ${points.join(' L ')}`;
+  };
+
+  const lines = [
+    { yOffset: 15, amplitude: 2, frequency: 3 },
+    { yOffset: 30, amplitude: 2.5, frequency: 2.5 },
+    { yOffset: 45, amplitude: 2, frequency: 3.5 },
+    { yOffset: 60, amplitude: 2.2, frequency: 2.8 },
+    { yOffset: 75, amplitude: 2.3, frequency: 3.2 },
+  ];
+
   return (
-    <section className="relative overflow-hidden py-16 md:py-24 lg:py-40 bg-white">
+    <section ref={heroRef} className="relative overflow-hidden py-16 md:py-24 lg:py-40 bg-white">
+      {/* Interactive wavy lines */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      >
+        {lines.map((line, index) => {
+          const path = generateWavyPath(line.yOffset, line.amplitude, line.frequency);
+          
+          // Calculate distance from mouse to this line's y position
+          const lineY = (line.yOffset / 100) * (heroRef.current?.clientHeight || 1);
+          const distance = Math.abs(mousePos.y - lineY);
+          const maxDistance = 300;
+          const proximity = Math.max(0, 1 - distance / maxDistance);
+          
+          // Color transitions from very light green to vibrant green
+          const opacity = 0.15 + proximity * 0.6;
+          const saturation = 30 + proximity * 70;
+          
+          return (
+            <path
+              key={index}
+              d={path}
+              stroke={`hsl(116, ${saturation}%, 40%)`}
+              strokeWidth="0.15"
+              fill="none"
+              opacity={opacity}
+              style={{
+                transition: 'stroke 0.3s ease, opacity 0.3s ease',
+              }}
+            />
+          );
+        })}
+      </svg>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center animate-fade-in">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-khan-gray-dark mb-6 leading-tight">
