@@ -131,7 +131,38 @@ export default async function handler(
       case "DELETE": {
         try {
           console.log("[subjectId API][DELETE] Attempting to delete subject with ID:", subjectId);
-          await storage.deleteUserSubject(subjectId);
+          
+          const db = getDb();
+          const userSubjectsRef = db.collection('user_subjects');
+          
+          // Get the document directly by its Firestore document ID
+          const docRef = userSubjectsRef.doc(subjectId as string);
+          const doc = await docRef.get();
+          
+          if (!doc.exists) {
+            console.log("[subjectId API][DELETE] Document not found:", subjectId);
+            return res.status(404).json({
+              success: false,
+              message: "Subject not found."
+            });
+          }
+          
+          // Verify it belongs to the user
+          const data = doc.data();
+          if (data?.userId !== userId) {
+            console.log("[subjectId API][DELETE] Document does not belong to user:", {
+              docUserId: data?.userId,
+              requestUserId: userId
+            });
+            return res.status(404).json({
+              success: false,
+              message: "Subject not found or does not belong to the user."
+            });
+          }
+          
+          // Delete the document
+          await docRef.delete();
+          
           console.log("[subjectId API][DELETE] Successfully deleted subject:", subjectId);
           return res.status(200).json({
             success: true,
@@ -139,11 +170,9 @@ export default async function handler(
           });
         } catch (error) {
           console.error("[subjectId API][DELETE] Error:", error);
-          // Custom message for deletion failure, potentially including subject name if available
-          const errorMessage = `Failed to remove subject${subjectId ? ` "${subjectId}"` : ""}`;
           return res.status(500).json({
             success: false,
-            message: errorMessage,
+            message: "Failed to remove subject",
             error: error.message
           });
         }
