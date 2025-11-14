@@ -953,14 +953,20 @@ export default function Quiz() {
                                 {q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices] &&
                                  Array.isArray(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices]) &&
                                  (q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).length > 0 && (
-                                  <div className="mb-2 space-y-2">
+                                  <div className="mb-2 space-x-1 inline-flex flex-wrap">
                                     {(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
-                                      <img
-                                        key={imgIdx}
-                                        src={imageUrl}
-                                        alt={`Choice ${option.label} image ${imgIdx + 1}`}
-                                        className="max-w-full h-auto rounded-md border border-gray-200"
-                                      />
+                                      <div key={imgIdx} className="group relative inline-block">
+                                        <img
+                                          src={imageUrl}
+                                          alt={`Choice ${option.label} image ${imgIdx + 1}`}
+                                          className="h-10 w-auto rounded border border-gray-300 cursor-pointer"
+                                        />
+                                        <img
+                                          src={imageUrl}
+                                          alt={`Choice ${option.label} image ${imgIdx + 1} enlarged`}
+                                          className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                                        />
+                                      </div>
                                     ))}
                                   </div>
                                 )}
@@ -1276,14 +1282,20 @@ export default function Quiz() {
                             {globalIndex + 1}. {q.prompt}
                           </CardTitle>
                           {q.image_urls?.question && q.image_urls.question.length > 0 && (
-                            <div className="mt-3 space-y-2">
+                            <div className="mt-3 space-x-2 inline-flex flex-wrap">
                               {q.image_urls.question.map((imageUrl, imgIdx) => (
-                                <img
-                                  key={imgIdx}
-                                  src={imageUrl}
-                                  alt={`Question ${globalIndex + 1} image ${imgIdx + 1}`}
-                                  className="max-w-full h-auto rounded-md border border-gray-200"
-                                />
+                                <div key={imgIdx} className="group relative inline-block">
+                                  <img
+                                    src={imageUrl}
+                                    alt={`Question ${globalIndex + 1} image ${imgIdx + 1}`}
+                                    className="h-12 w-auto rounded border border-gray-300 cursor-pointer"
+                                  />
+                                  <img
+                                    src={imageUrl}
+                                    alt={`Question ${globalIndex + 1} image ${imgIdx + 1} enlarged`}
+                                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                                  />
+                                </div>
                               ))}
                             </div>
                           )}
@@ -1352,14 +1364,20 @@ export default function Quiz() {
                                   {q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices] &&
                                    Array.isArray(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices]) &&
                                    (q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).length > 0 && (
-                                    <div className="mb-2 space-y-2">
+                                    <div className="mb-2 space-x-1 inline-flex flex-wrap">
                                       {(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
-                                        <img
-                                          key={imgIdx}
-                                          src={imageUrl}
-                                          alt={`Choice ${option.label} image ${imgIdx + 1}`}
-                                          className="max-w-full h-auto rounded-md border border-gray-200"
-                                        />
+                                        <div key={imgIdx} className="group relative inline-block">
+                                          <img
+                                            src={imageUrl}
+                                            alt={`Choice ${option.label} image ${imgIdx + 1}`}
+                                            className="h-10 w-auto rounded border border-gray-300 cursor-pointer"
+                                          />
+                                          <img
+                                            src={imageUrl}
+                                            alt={`Choice ${option.label} image ${imgIdx + 1} enlarged`}
+                                            className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                                          />
+                                        </div>
                                       ))}
                                     </div>
                                   )}
@@ -1450,17 +1468,25 @@ export default function Quiz() {
                     </CardTitle>
                     {currentQuestion.image_urls?.question &&
                       currentQuestion.image_urls.question.length > 0 && (
-                        <div className="mt-3 space-y-2">
+                        <div className="mt-3 space-x-2 inline-flex flex-wrap">
                           {currentQuestion.image_urls.question.map(
                             (imageUrl, imgIdx) => (
-                              <img
-                                key={imgIdx}
-                                src={imageUrl}
-                                alt={`Question ${
-                                  currentQuestionIndex + 1
-                                } image ${imgIdx + 1}`}
-                                className="max-w-full h-auto rounded-md border border-gray-200"
-                              />
+                              <div key={imgIdx} className="group relative inline-block">
+                                <img
+                                  src={imageUrl}
+                                  alt={`Question ${
+                                    currentQuestionIndex + 1
+                                  } image ${imgIdx + 1}`}
+                                  className="h-12 w-auto rounded border border-gray-300 cursor-pointer"
+                                />
+                                <img
+                                  src={imageUrl}
+                                  alt={`Question ${
+                                    currentQuestionIndex + 1
+                                  } image ${imgIdx + 1} enlarged`}
+                                  className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                                />
+                              </div>
                             ),
                           )}
                         </div>
@@ -1521,14 +1547,20 @@ export default function Quiz() {
                               {currentQuestion.image_urls?.choices?.[option.label as keyof typeof currentQuestion.image_urls.choices] &&
                                Array.isArray(currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices]) &&
                                (currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices] as string[]).length > 0 && (
-                                <div className="mb-2 space-y-2">
+                                <div className="mb-2 space-x-1 inline-flex flex-wrap">
                                   {(currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
-                                    <img
-                                      key={imgIdx}
-                                      src={imageUrl}
-                                      alt={`Choice ${option.label} image ${imgIdx + 1}`}
-                                      className="max-w-full h-auto rounded-md border border-gray-200"
-                                    />
+                                    <div key={imgIdx} className="group relative inline-block">
+                                      <img
+                                        src={imageUrl}
+                                        alt={`Choice ${option.label} image ${imgIdx + 1}`}
+                                        className="h-10 w-auto rounded border border-gray-300 cursor-pointer"
+                                      />
+                                      <img
+                                        src={imageUrl}
+                                        alt={`Choice ${option.label} image ${imgIdx + 1} enlarged`}
+                                        className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                                      />
+                                    </div>
                                   ))}
                                 </div>
                               )}
