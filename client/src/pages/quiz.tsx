@@ -921,6 +921,17 @@ export default function Quiz() {
                   <CardContent className="space-y-3">
                     <div className="space-y-2">
                       {options.map((option) => {
+                        const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
+                        const choiceImages = q.image_urls?.choices?.[choiceKey];
+                        const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+                        const hasText = option.value && option.value.trim() !== "";
+                        const isEmpty = !hasImage && !hasText;
+
+                        // Only show N/A for choice E when empty, skip other empty choices
+                        if (isEmpty && option.label !== 'E') {
+                          return null;
+                        }
+
                         const isUserAnswer = userAnswers[globalIndex] === option.label;
                         const isCorrectAnswer =
                           option.label === correctAnswerLabel;
@@ -969,7 +980,11 @@ export default function Quiz() {
                                     ))}
                                   </div>
                                 )}
-                                {option.value && <span>{option.value}</span>}
+                                {isEmpty && option.label === 'E' ? (
+                                  <span className="italic text-gray-500">N/A</span>
+                                ) : (
+                                  option.value && <span>{option.value}</span>
+                                )}
                               </div>
                               {isCorrectAnswer && (
                                 <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />
@@ -1334,6 +1349,17 @@ export default function Quiz() {
                     <CardContent className="pt-2 pb-3">
                       <div className="space-y-1.5">
                         {options.map((option) => {
+                          const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
+                          const choiceImages = q.image_urls?.choices?.[choiceKey];
+                          const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+                          const hasText = option.value && option.value.trim() !== "";
+                          const isEmpty = !hasImage && !hasText;
+
+                          // Only show N/A for choice E when empty, skip other empty choices
+                          if (isEmpty && option.label !== 'E') {
+                            return null;
+                          }
+
                           const isSelected =
                             userAnswers[globalIndex] === option.label;
 
@@ -1343,6 +1369,7 @@ export default function Quiz() {
                               onClick={() =>
                                 handleAnswerSelect(option.label, idx)
                               }
+                              disabled={isAnswerSubmitted || isReviewMode}
                               className={`w-full text-left p-2 rounded-lg border-2 transition-all ${
                                 isSelected
                                   ? "border-khan-blue bg-blue-50"
@@ -1380,7 +1407,11 @@ export default function Quiz() {
                                       ))}
                                     </div>
                                   )}
-                                  {option.value && <span>{option.value}</span>}
+                                  {isEmpty && option.label === 'E' ? (
+                                    <span className="italic text-gray-500">N/A</span>
+                                  ) : (
+                                    option.value && <span>{option.value}</span>
+                                  )}
                                 </div>
                               </div>
                             </button>
