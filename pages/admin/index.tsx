@@ -56,7 +56,9 @@ export default function AdminPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // AI explanation generation state
-  const [generating, setGenerating] = useState(false);
+  const [generatingExplanations, setGeneratingExplanations] = useState(false);
+  const [fixingPrompts, setFixingPrompts] = useState(false);
+  const [deletingQuestions, setDeletingQuestions] = useState(false);
 
   // Checkbox selection state
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
@@ -235,7 +237,7 @@ export default function AdminPage() {
       return;
     }
 
-    setGenerating(true);
+    setGeneratingExplanations(true);
     const questionIds = Array.from(selectedQuestions);
 
     const generatePromise = fetch("/api/generateExplanations", {
@@ -255,7 +257,7 @@ export default function AdminPage() {
         return data;
       })
       .finally(() => {
-        setGenerating(false);
+        setGeneratingExplanations(false);
       });
 
     toast.promise(generatePromise, {
@@ -265,16 +267,16 @@ export default function AdminPage() {
     });
   }
 
-  async function fixText() {
+  async function fixPrompt() { // Renamed from fixText
     if (!token || selectedQuestions.size === 0) {
       toast.error("Please select at least one question");
       return;
     }
 
-    setGenerating(true);
+    setFixingPrompts(true);
     const questionIds = Array.from(selectedQuestions);
 
-    const fixPromise = fetch("/api/fixText", {
+    const fixPromise = fetch("/api/fixText", { // API endpoint remains the same, button text changes
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -283,7 +285,7 @@ export default function AdminPage() {
       body: JSON.stringify({ questionIds }),
     })
       .then((res) => {
-        if (!res.ok) throw new Error("Fix text failed");
+        if (!res.ok) throw new Error("Fix prompt failed"); // Changed error message
         return res.json();
       })
       .then((data) => {
@@ -291,13 +293,13 @@ export default function AdminPage() {
         return data;
       })
       .finally(() => {
-        setGenerating(false);
+        setFixingPrompts(false);
       });
 
     toast.promise(fixPromise, {
-      loading: `Fixing text for ${questionIds.length} questions...`,
-      success: (data) => `Fixed ${data.updated} questions!`,
-      error: "Failed to fix text",
+      loading: `Fixing prompts for ${questionIds.length} questions...`,
+      success: (data) => `Fixed ${data.updated} prompts!`, // Changed success message
+      error: "Failed to fix prompts", // Changed error message
     });
   }
 
@@ -325,6 +327,7 @@ export default function AdminPage() {
     if (!confirm(`Delete ${selectedQuestions.size} questions?`)) return;
     if (!token) return;
 
+    setDeletingQuestions(true);
     const idsToDelete = Array.from(selectedQuestions);
 
     const deletePromise = fetch("/api/admin/questions/bulk-delete", {
@@ -345,6 +348,9 @@ export default function AdminPage() {
       .then(() => {
         setItems((prev) => prev.filter((q) => !selectedQuestions.has(q.id)));
         setSelectedQuestions(new Set());
+      })
+      .finally(() => {
+        setDeletingQuestions(false);
       });
 
     toast.promise(deletePromise, {
@@ -597,24 +603,24 @@ export default function AdminPage() {
               <div className="flex gap-2">
                 <Button
                   onClick={generateExplanations}
-                  disabled={generating || selectedQuestions.size === 0}
+                  disabled={generatingExplanations || selectedQuestions.size === 0}
                   className="bg-khan-green hover:bg-khan-green-light text-white"
                 >
-                  {generating ? "Generating..." : `Generate Explanations (${selectedQuestions.size})`}
+                  {generatingExplanations ? "Generating..." : `Generate Explanations (${selectedQuestions.size})`}
                 </Button>
                 <Button
-                  onClick={fixText}
-                  disabled={generating || selectedQuestions.size === 0}
+                  onClick={fixPrompt} // Button now calls fixPrompt
+                  disabled={fixingPrompts || selectedQuestions.size === 0}
                   className="bg-khan-blue hover:bg-khan-blue/90 text-white"
                 >
-                  {generating ? "Fixing..." : `Fix Text (${selectedQuestions.size})`}
+                  {fixingPrompts ? "Fixing..." : `Fix Prompt (${selectedQuestions.size})`}
                 </Button>
                 <Button
                   onClick={deleteSelected}
                   variant="destructive"
-                  disabled={selectedQuestions.size === 0}
+                  disabled={deletingQuestions || selectedQuestions.size === 0}
                 >
-                  Delete Selected ({selectedQuestions.size})
+                  {deletingQuestions ? "Deleting..." : `Delete Selected (${selectedQuestions.size})`}
                 </Button>
               </div>
             </div>
