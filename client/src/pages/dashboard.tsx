@@ -293,8 +293,13 @@ export default function Dashboard() {
 
   const finalConfirmRemove = () => {
     if (subjectToRemove) {
-      console.log('[Dashboard] Final confirm - removing subject:', subjectToRemove.id);
-      removeSubjectMutation.mutate(subjectToRemove.id.toString());
+      const idToDelete = String(subjectToRemove.id);
+      console.log('[Dashboard] User confirmed deletion:', {
+        originalId: subjectToRemove.id,
+        convertedId: idToDelete,
+        subjectName: subjectToRemove.name
+      });
+      removeSubjectMutation.mutate(idToDelete);
       setShowSecondConfirm(false);
       setDeleteConfirmText("");
       setSubjectToRemove(null);
@@ -581,8 +586,8 @@ export default function Dashboard() {
                           <div className="flex items-center space-x-2 group relative">
                             {Array.from({ length: subject.units }).map((_, index) => {
                               // Handle AP CSP's bigidea naming convention
-                              const unitId = subject.subjectId === "computer-science-principles" 
-                                ? `bigidea${index + 1}` 
+                              const unitId = subject.subjectId === "computer-science-principles"
+                                ? `bigidea${index + 1}`
                                 : `unit${index + 1}`;
                               const unitData = (subject as any).unitProgress?.[unitId];
                               const score = unitData?.highestScore || 0;
