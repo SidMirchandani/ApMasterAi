@@ -950,11 +950,11 @@ export default function Quiz() {
                                 {option.label}
                               </div>
                               <div className="flex-1 text-sm pt-0.5">
-                                {q.image_urls?.choices?.[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] &&
-                                 Array.isArray(q.image_urls.choices[option.label as 'A' | 'B' | 'C' | 'D' | 'E']) &&
-                                 (q.image_urls.choices[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] as string[]).length > 0 && (
+                                {q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices] &&
+                                 Array.isArray(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices]) &&
+                                 (q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).length > 0 && (
                                   <div className="mb-2 space-x-1 inline-flex flex-wrap">
-                                    {(q.image_urls.choices[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] as string[]).map((imageUrl, imgIdx) => (
+                                    {(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
                                       <div key={imgIdx} className="group relative inline-block">
                                         <img
                                           src={imageUrl}
@@ -1139,8 +1139,8 @@ export default function Quiz() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Leave Full-Length Test?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Your progress on this full-length test will be lost if
-                  you leave now. Are you sure you want to exit?
+                  Your progress on this full-length test will be lost if you
+                  leave now. Are you sure you want to exit?
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -1334,18 +1334,9 @@ export default function Quiz() {
                     </CardHeader>
                     <CardContent className="pt-2 pb-3">
                       <div className="space-y-1.5">
-                        {options
-                          .filter((option) => {
-                            const choiceImages = q.image_urls?.choices?.[option.label as 'A' | 'B' | 'C' | 'D' | 'E'];
-                            const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
-                            const hasText = option.value && option.value.trim() !== "";
-                            return hasImage || hasText;
-                          })
-                          .map((option) => {
+                        {options.map((option) => {
                           const isSelected =
                             userAnswers[globalIndex] === option.label;
-                          const choiceImages = q.image_urls?.choices?.[option.label as 'A' | 'B' | 'C' | 'D' | 'E'];
-                          const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
 
                           return (
                             <button
@@ -1370,9 +1361,11 @@ export default function Quiz() {
                                   {option.label}
                                 </div>
                                 <div className="flex-1 text-sm pt-0.5">
-                                  {hasImage && (
+                                  {q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices] &&
+                                   Array.isArray(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices]) &&
+                                   (q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).length > 0 && (
                                     <div className="mb-2 space-x-1 inline-flex flex-wrap">
-                                      {(choiceImages as string[]).map((imageUrl, imgIdx) => (
+                                      {(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
                                         <div key={imgIdx} className="group relative inline-block">
                                           <img
                                             src={imageUrl}
@@ -1473,9 +1466,8 @@ export default function Quiz() {
                     <CardTitle className="text-sm font-medium leading-relaxed">
                       {currentQuestionIndex + 1}. {currentQuestion.prompt}
                     </CardTitle>
-                    {currentQuestion.image_urls?.question && 
-                     Array.isArray(currentQuestion.image_urls.question) && 
-                     currentQuestion.image_urls.question.length > 0 && (
+                    {currentQuestion.image_urls?.question &&
+                      currentQuestion.image_urls.question.length > 0 && (
                         <div className="mt-3 space-x-2 inline-flex flex-wrap">
                           {currentQuestion.image_urls.question.map(
                             (imageUrl, imgIdx) => (
@@ -1512,15 +1504,7 @@ export default function Quiz() {
                       }),
                     );
 
-                    return options
-                      .filter((option) => {
-                        const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
-                        const choiceImages = currentQuestion.image_urls?.choices?.[choiceKey];
-                        const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
-                        const hasText = option.value && option.value.trim() !== "";
-                        return hasImage || hasText;
-                      })
-                      .map((option) => {
+                    return options.map((option) => {
                       const isSelected = selectedAnswer === option.label;
                       const correctAnswerLabel = String.fromCharCode(
                         65 + currentQuestion.answerIndex,
@@ -1529,9 +1513,6 @@ export default function Quiz() {
                       const showCorrect = isAnswerSubmitted && isCorrect;
                       const showIncorrect =
                         isAnswerSubmitted && isSelected && !isCorrect;
-                      const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
-                      const choiceImages = currentQuestion.image_urls?.choices?.[choiceKey];
-                      const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
 
                       return (
                         <button
@@ -1563,9 +1544,11 @@ export default function Quiz() {
                               {option.label}
                             </div>
                             <div className="flex-1 pt-0.5 text-sm">
-                              {hasImage && (
+                              {currentQuestion.image_urls?.choices?.[option.label as keyof typeof currentQuestion.image_urls.choices] &&
+                               Array.isArray(currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices]) &&
+                               (currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices] as string[]).length > 0 && (
                                 <div className="mb-2 space-x-1 inline-flex flex-wrap">
-                                  {(choiceImages as string[]).map((imageUrl, imgIdx) => (
+                                  {(currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
                                     <div key={imgIdx} className="group relative inline-block">
                                       <img
                                         src={imageUrl}
