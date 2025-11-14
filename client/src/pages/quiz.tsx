@@ -950,11 +950,11 @@ export default function Quiz() {
                                 {option.label}
                               </div>
                               <div className="flex-1 text-sm pt-0.5">
-                                {q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices] &&
-                                 Array.isArray(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices]) &&
-                                 (q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).length > 0 && (
+                                {q.image_urls?.[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] &&
+                                 Array.isArray(q.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E']) &&
+                                 (q.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] as string[]).length > 0 && (
                                   <div className="mb-2 space-x-1 inline-flex flex-wrap">
-                                    {(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
+                                    {(q.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] as string[]).map((imageUrl, imgIdx) => (
                                       <div key={imgIdx} className="group relative inline-block">
                                         <img
                                           src={imageUrl}
@@ -1344,7 +1344,7 @@ export default function Quiz() {
                           .map((option) => {
                           const isSelected =
                             userAnswers[globalIndex] === option.label;
-                          const choiceImages = q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices];
+                          const choiceImages = q.image_urls?.[option.label as 'A' | 'B' | 'C' | 'D' | 'E'];
                           const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
 
                           return (
@@ -1527,7 +1527,7 @@ export default function Quiz() {
                       const showCorrect = isAnswerSubmitted && isCorrect;
                       const showIncorrect =
                         isAnswerSubmitted && isSelected && !isCorrect;
-                      const choiceImages = currentQuestion.image_urls?.choices?.[option.label as keyof typeof currentQuestion.image_urls.choices];
+                      const choiceImages = currentQuestion.image_urls?.[option.label as 'A' | 'B' | 'C' | 'D' | 'E'];
                       const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
 
                       return (
