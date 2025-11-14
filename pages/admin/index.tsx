@@ -33,6 +33,16 @@ type Question = {
   difficulty?: string | null;
   subject_code?: string;
   section_code?: string;
+  image_urls?: {
+    question?: string[];
+    choices?: {
+      A?: string[];
+      B?: string[];
+      C?: string[];
+      D?: string[];
+      E?: string[];
+    };
+  };
 };
 
 export default function AdminPage() {
@@ -710,6 +720,75 @@ function Row({
     setEdit(false);
   }
 
+  const renderQuestionPrompt = () => {
+    const hasImage = q.image_urls?.question && Array.isArray(q.image_urls.question) && q.image_urls.question.length > 0;
+    const hasText = q.prompt && q.prompt.trim() !== "";
+
+    if (!hasImage && !hasText) {
+      return <span className="text-gray-400">N/A</span>;
+    }
+
+    return (
+      <div className="max-w-xs">
+        {hasImage && (
+          <div className="mb-1 space-y-1">
+            {q.image_urls.question.map((url, idx) => (
+              <div key={idx} className="group relative inline-block">
+                <img
+                  src={url}
+                  alt={`Question image ${idx + 1}`}
+                  className="h-8 w-auto rounded border border-gray-300 cursor-pointer"
+                />
+                <img
+                  src={url}
+                  alt={`Question image ${idx + 1} enlarged`}
+                  className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        {hasText && <div className="truncate text-xs">{q.prompt}</div>}
+      </div>
+    );
+  };
+
+  const renderChoice = (choice: string, index: number) => {
+    const choiceKey = String.fromCharCode(65 + index) as 'A' | 'B' | 'C' | 'D' | 'E';
+    const hasImage = q.image_urls?.choices?.[choiceKey] && 
+                     Array.isArray(q.image_urls.choices[choiceKey]) && 
+                     (q.image_urls.choices[choiceKey] as string[]).length > 0;
+    const hasText = choice && choice.trim() !== "";
+
+    if (!hasImage && !hasText) {
+      return <span className="text-gray-400">N/A</span>;
+    }
+
+    return (
+      <div>
+        {hasImage && (
+          <div className="mb-1 space-x-1">
+            {(q.image_urls.choices[choiceKey] as string[]).map((url, idx) => (
+              <div key={idx} className="group relative inline-block">
+                <img
+                  src={url}
+                  alt={`Choice ${choiceKey} image ${idx + 1}`}
+                  className="h-6 w-auto rounded border border-gray-300 cursor-pointer"
+                />
+                <img
+                  src={url}
+                  alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
+                  className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        {hasText && <span>{choice}</span>}
+      </div>
+    );
+  };
+
   if (!edit) {
     return (
       <tr className="border-b hover:bg-gray-50">
@@ -721,13 +800,13 @@ function Row({
         </td>
         <td className="p-3 align-top">{q.subject_code || "-"}</td>
         <td className="p-3 align-top">{q.section_code || "-"}</td>
-        <td className="p-3 align-top max-w-xs truncate">{q.prompt}</td>
+        <td className="p-3 align-top">{renderQuestionPrompt()}</td>
         <td className="p-3 align-top">
           <div className="text-xs space-y-1">
             {Array.isArray(q.choices) &&
               q.choices.map((c, i) => (
                 <div key={i}>
-                  {String.fromCharCode(65 + i)}. {c}
+                  {String.fromCharCode(65 + i)}. {renderChoice(c, i)}
                 </div>
               ))}
           </div>
@@ -735,7 +814,7 @@ function Row({
         <td className="p-3 text-center align-top font-semibold">
           ({String.fromCharCode(65 + q.answerIndex)})
         </td>
-        <td className="p-3 align-top max-w-xs truncate text-xs">{q.explanation}</td>
+        <td className="p-3 align-top max-w-xs truncate text-xs">{q.explanation || "-"}</td>
         <td className="p-3 text-center align-top">
           <div className="flex gap-2 justify-center">
             <Button
