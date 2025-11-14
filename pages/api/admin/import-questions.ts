@@ -47,7 +47,8 @@ interface QuestionJSON {
 
 async function uploadImageToStorage(
   localPath: string,
-  storagePath: string
+  storagePath: string,
+  subjectCode: string
 ): Promise<string> {
   const bucket = storage.bucket('gen-lang-client-0260042933.firebasestorage.app');
   
@@ -62,17 +63,19 @@ async function uploadImageToStorage(
     throw new Error(`Cannot access storage bucket: ${error.message}`);
   }
 
-  const file = bucket.file(storagePath);
+  // Add subject_code to the path: questions/{subject_code}/{question_id}/{filename}
+  const pathWithSubject = `questions/${subjectCode}/${storagePath.replace('questions/', '')}`;
+  const file = bucket.file(pathWithSubject);
 
   await bucket.upload(localPath, {
-    destination: storagePath,
+    destination: pathWithSubject,
     metadata: {
       contentType: 'image/png',
     },
   });
 
   await file.makePublic();
-  return `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+  return `https://storage.googleapis.com/${bucket.name}/${pathWithSubject}`;
 }
 
 async function processQuestion(
@@ -134,7 +137,7 @@ async function processQuestion(
         const stats = await fs.stat(localPath);
         if (stats.isFile()) {
           const storagePath = `questions/${question_id}/${filename}`;
-          const url = await uploadImageToStorage(localPath, storagePath);
+          const url = await uploadImageToStorage(localPath, storagePath, section_code);
           imageUrls.question.push(url);
           imagesUploaded++;
           console.log(`✓ Uploaded: ${filename} → ${url}`);
@@ -157,7 +160,7 @@ async function processQuestion(
             const stats = await fs.stat(localPath);
             if (stats.isFile()) {
               const storagePath = `questions/${question_id}/${filename}`;
-              const url = await uploadImageToStorage(localPath, storagePath);
+              const url = await uploadImageToStorage(localPath, storagePath, section_code);
               imageUrls[choiceKey as keyof typeof imageUrls].push(url);
               imagesUploaded++;
               console.log(`✓ Uploaded choice image: ${filename} → ${url}`);
