@@ -4,7 +4,7 @@ import formidable from 'formidable';
 import AdmZip from 'adm-zip';
 import fs from 'fs/promises';
 import path from 'path';
-import { getFirebaseAdmin } from '../../server/firebase-admin';
+import { getFirebaseAdmin } from '../../../server/firebase-admin';
 
 // Disable Next.js body parsing for file uploads
 export const config = {
