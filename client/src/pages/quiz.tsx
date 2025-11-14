@@ -1334,9 +1334,18 @@ export default function Quiz() {
                     </CardHeader>
                     <CardContent className="pt-2 pb-3">
                       <div className="space-y-1.5">
-                        {options.map((option) => {
+                        {options
+                          .filter((option) => {
+                            const choiceImages = q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices];
+                            const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+                            const hasText = option.value && option.value.trim() !== "";
+                            return hasImage || hasText;
+                          })
+                          .map((option) => {
                           const isSelected =
                             userAnswers[globalIndex] === option.label;
+                          const choiceImages = q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices];
+                          const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
 
                           return (
                             <button
@@ -1361,11 +1370,9 @@ export default function Quiz() {
                                   {option.label}
                                 </div>
                                 <div className="flex-1 text-sm pt-0.5">
-                                  {q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices] &&
-                                   Array.isArray(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices]) &&
-                                   (q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).length > 0 && (
+                                  {hasImage && (
                                     <div className="mb-2 space-x-1 inline-flex flex-wrap">
-                                      {(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
+                                      {(choiceImages as string[]).map((imageUrl, imgIdx) => (
                                         <div key={imgIdx} className="group relative inline-block">
                                           <img
                                             src={imageUrl}
@@ -1504,7 +1511,14 @@ export default function Quiz() {
                       }),
                     );
 
-                    return options.map((option) => {
+                    return options
+                      .filter((option) => {
+                        const choiceImages = currentQuestion.image_urls?.choices?.[option.label as keyof typeof currentQuestion.image_urls.choices];
+                        const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+                        const hasText = option.value && option.value.trim() !== "";
+                        return hasImage || hasText;
+                      })
+                      .map((option) => {
                       const isSelected = selectedAnswer === option.label;
                       const correctAnswerLabel = String.fromCharCode(
                         65 + currentQuestion.answerIndex,
@@ -1513,6 +1527,8 @@ export default function Quiz() {
                       const showCorrect = isAnswerSubmitted && isCorrect;
                       const showIncorrect =
                         isAnswerSubmitted && isSelected && !isCorrect;
+                      const choiceImages = currentQuestion.image_urls?.choices?.[option.label as keyof typeof currentQuestion.image_urls.choices];
+                      const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
 
                       return (
                         <button
@@ -1544,11 +1560,9 @@ export default function Quiz() {
                               {option.label}
                             </div>
                             <div className="flex-1 pt-0.5 text-sm">
-                              {currentQuestion.image_urls?.choices?.[option.label as keyof typeof currentQuestion.image_urls.choices] &&
-                               Array.isArray(currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices]) &&
-                               (currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices] as string[]).length > 0 && (
+                              {hasImage && (
                                 <div className="mb-2 space-x-1 inline-flex flex-wrap">
-                                  {(currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
+                                  {(choiceImages as string[]).map((imageUrl, imgIdx) => (
                                     <div key={imgIdx} className="group relative inline-block">
                                       <img
                                         src={imageUrl}
