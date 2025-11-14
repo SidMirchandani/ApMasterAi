@@ -31,6 +31,10 @@ interface Question {
   explanation: string;
   subject_code?: string;
   section_code?: string;
+  image_urls?: {
+    question?: string[];
+    choices?: string[];
+  };
 }
 
 // Map subject IDs to their API codes
@@ -1247,9 +1251,23 @@ export default function Quiz() {
                   >
                     <CardHeader className="pb-2 pt-3">
                       <div className="flex justify-between items-start gap-3">
-                        <CardTitle className="text-sm font-medium leading-relaxed flex-1">
-                          {globalIndex + 1}. {q.prompt}
-                        </CardTitle>
+                        <div className="flex-1">
+                          <CardTitle className="text-sm font-medium leading-relaxed">
+                            {globalIndex + 1}. {q.prompt}
+                          </CardTitle>
+                          {q.image_urls?.question && q.image_urls.question.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {q.image_urls.question.map((imageUrl, imgIdx) => (
+                                <img
+                                  key={imgIdx}
+                                  src={imageUrl}
+                                  alt={`Question ${globalIndex + 1} image ${imgIdx + 1}`}
+                                  className="max-w-full h-auto rounded-md border border-gray-200"
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <Button
                           onClick={() => toggleFlag(globalIndex)}
                           variant="outline"
@@ -1391,9 +1409,30 @@ export default function Quiz() {
             {/* Regular quiz: show one question at a time */}
             <Card className="mb-2">
               <CardHeader className="pb-2 pt-3">
-                <CardTitle className="text-sm font-medium leading-relaxed">
-                  {currentQuestion.prompt}
-                </CardTitle>
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1">
+                    <CardTitle className="text-sm font-medium leading-relaxed">
+                      {currentQuestionIndex + 1}. {currentQuestion.prompt}
+                    </CardTitle>
+                    {currentQuestion.image_urls?.question &&
+                      currentQuestion.image_urls.question.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {currentQuestion.image_urls.question.map(
+                            (imageUrl, imgIdx) => (
+                              <img
+                                key={imgIdx}
+                                src={imageUrl}
+                                alt={`Question ${
+                                  currentQuestionIndex + 1
+                                } image ${imgIdx + 1}`}
+                                className="max-w-full h-auto rounded-md border border-gray-200"
+                              />
+                            ),
+                          )}
+                        </div>
+                      )}
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="pt-2 pb-3">
                 <div className="space-y-1.5">
