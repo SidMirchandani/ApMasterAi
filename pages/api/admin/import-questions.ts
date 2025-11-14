@@ -112,6 +112,14 @@ async function processQuestion(
 
   const questionImagesDir = path.join(imagesBasePath, String(question_id));
 
+  // Debug: Check if the question image directory exists
+  try {
+    const dirContents = await fs.readdir(questionImagesDir);
+    console.log(`Images for Q${question_id}:`, dirContents);
+  } catch (err) {
+    console.warn(`Image directory not found for Q${question_id}:`, questionImagesDir);
+  }
+
   // Upload prompt images
   if (prompt_images && Array.isArray(prompt_images)) {
     for (const filename of prompt_images) {
@@ -123,8 +131,9 @@ async function processQuestion(
         const url = await uploadImageToStorage(localPath, storagePath);
         imageUrls.question.push(url);
         imagesUploaded++;
+        console.log(`✓ Uploaded: ${filename} → ${url}`);
       } catch (err) {
-        console.warn(`Image not found: ${localPath}`);
+        console.warn(`✗ Image not found: ${localPath}`);
       }
     }
   }
@@ -212,9 +221,25 @@ export default async function handler(
     await fs.mkdir(tmpDir, { recursive: true });
     zip.extractAllTo(tmpDir, true);
 
-    // Process questions
-    const questionsDir = path.join(tmpDir, 'export', 'questions');
-    const imagesDir = path.join(tmpDir, 'export', 'images');
+    // Debug: Check what was extracted
+    console.log('Extraction complete. Checking structure...');
+    const tmpContents = await fs.readdir(tmpDir);
+    console.log('tmp_import contents:', tmpContents);
+
+    // Process questions - handle both with and without 'export' folder
+    let questionsDir = path.join(tmpDir, 'export', 'questions');
+    let imagesDir = path.join(tmpDir, 'export', 'images');
+    
+    try {
+      await fs.access(questionsDir);
+    } catch {
+      // If export/questions doesn't exist, try questions directly
+      questionsDir = path.join(tmpDir, 'questions');
+      imagesDir = path.join(tmpDir, 'images');
+    }
+
+    console.log('Using questionsDir:', questionsDir);
+    console.log('Using imagesDir:', imagesDir);
 
     const questionFiles = await fs.readdir(questionsDir);
     const results = [];
