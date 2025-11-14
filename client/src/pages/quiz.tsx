@@ -920,15 +920,7 @@ export default function Quiz() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="space-y-2">
-                      {options
-                        .filter((option) => {
-                          const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
-                          const choiceImages = q.image_urls?.choices?.[choiceKey];
-                          const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
-                          const hasText = option.value && option.value.trim() !== "";
-                          return hasImage || hasText;
-                        })
-                        .map((option) => {
+                      {options.map((option) => {
                         const isUserAnswer = userAnswers[globalIndex] === option.label;
                         const isCorrectAnswer =
                           option.label === correctAnswerLabel;
@@ -1341,15 +1333,7 @@ export default function Quiz() {
                     </CardHeader>
                     <CardContent className="pt-2 pb-3">
                       <div className="space-y-1.5">
-                        {options
-                          .filter((option) => {
-                            const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
-                            const choiceImages = q.image_urls?.choices?.[choiceKey];
-                            const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
-                            const hasText = option.value && option.value.trim() !== "";
-                            return hasImage || hasText;
-                          })
-                          .map((option) => {
+                        {options.map((option) => {
                           const isSelected =
                             userAnswers[globalIndex] === option.label;
 
@@ -1519,15 +1503,7 @@ export default function Quiz() {
                       }),
                     );
 
-                    return options
-                      .filter((option) => {
-                        const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
-                        const choiceImages = currentQuestion.image_urls?.choices?.[choiceKey];
-                        const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
-                        const hasText = option.value && option.value.trim() !== "";
-                        return hasImage || hasText;
-                      })
-                      .map((option) => {
+                    return options.map((option) => {
                       const isSelected = selectedAnswer === option.label;
                       const correctAnswerLabel = String.fromCharCode(
                         65 + currentQuestion.answerIndex,
