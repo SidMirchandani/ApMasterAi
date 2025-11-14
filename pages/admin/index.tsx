@@ -35,13 +35,11 @@ type Question = {
   section_code?: string;
   image_urls?: {
     question?: string[];
-    choices?: {
-      A?: string[];
-      B?: string[];
-      C?: string[];
-      D?: string[];
-      E?: string[];
-    };
+    A?: string[];
+    B?: string[];
+    C?: string[];
+    D?: string[];
+    E?: string[];
   };
 };
 
@@ -755,9 +753,8 @@ function Row({
 
   const renderChoice = (choice: string, index: number) => {
     const choiceKey = String.fromCharCode(65 + index) as 'A' | 'B' | 'C' | 'D' | 'E';
-    const hasImage = q.image_urls?.choices?.[choiceKey] && 
-                     Array.isArray(q.image_urls.choices[choiceKey]) && 
-                     (q.image_urls.choices[choiceKey] as string[]).length > 0;
+    const choiceImages = q.image_urls?.[choiceKey];
+    const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
     const hasText = choice && choice.trim() !== "";
 
     if (!hasImage && !hasText) {
@@ -768,7 +765,7 @@ function Row({
       <div>
         {hasImage && (
           <div className="mb-1 space-x-1">
-            {(q.image_urls.choices[choiceKey] as string[]).map((url, idx) => (
+            {choiceImages.map((url, idx) => (
               <div key={idx} className="group relative inline-block">
                 <img
                   src={url}
