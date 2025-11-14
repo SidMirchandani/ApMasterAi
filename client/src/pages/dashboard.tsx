@@ -45,8 +45,6 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [showSecondConfirm, setShowSecondConfirm] = useState(false);
   const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
   const [subjectToArchive, setSubjectToArchive] = useState<DashboardSubject | null>(null);
 
@@ -284,14 +282,6 @@ export default function Dashboard() {
   };
 
   const confirmRemoveSubject = () => {
-    const trimmedText = deleteConfirmText.trim().toLowerCase();
-    console.log('[Dashboard] Delete confirm text:', trimmedText);
-    if (trimmedText === "delete") {
-      setShowSecondConfirm(true);
-    }
-  };
-
-  const finalConfirmRemove = () => {
     if (subjectToRemove) {
       const idToDelete = String(subjectToRemove.id);
       console.log('[Dashboard] User confirmed deletion:', {
@@ -300,8 +290,6 @@ export default function Dashboard() {
         subjectName: subjectToRemove.name
       });
       removeSubjectMutation.mutate(idToDelete);
-      setShowSecondConfirm(false);
-      setDeleteConfirmText("");
       setSubjectToRemove(null);
     }
   };
@@ -498,10 +486,9 @@ export default function Dashboard() {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                            <AlertDialog open={subjectToRemove?.id === subject.id && !showSecondConfirm} onOpenChange={(open) => {
+                            <AlertDialog open={subjectToRemove?.id === subject.id} onOpenChange={(open) => {
                               if (!open) {
                                 setSubjectToRemove(null);
-                                setDeleteConfirmText("");
                               }
                             }}>
                               <AlertDialogTrigger asChild>
@@ -514,52 +501,18 @@ export default function Dashboard() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Permanently Delete Subject</AlertDialogTitle>
+                                  <AlertDialogTitle>Delete Subject?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This action cannot be undone. All your progress for <strong>"{subject.name}"</strong> will be permanently deleted.
-                                    <div className="mt-4">
-                                      <p className="mb-2 font-medium text-gray-900">Type "delete" to confirm:</p>
-                                      <input
-                                        type="text"
-                                        value={deleteConfirmText}
-                                        onChange={(e) => setDeleteConfirmText(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                                        placeholder="Type delete here"
-                                      />
-                                    </div>
+                                    Are you sure you want to delete <strong>"{subject.name}"</strong>? This action cannot be undone and all your progress will be permanently lost.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={confirmRemoveSubject}
-                                    disabled={deleteConfirmText.toLowerCase() !== "delete"}
-                                    className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    Continue
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                            <AlertDialog open={showSecondConfirm} onOpenChange={setShowSecondConfirm}>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Final Confirmation</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you absolutely sure? This will permanently delete all data for <strong>"{subjectToRemove?.name}"</strong>. This action is irreversible.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel onClick={() => {
-                                    setShowSecondConfirm(false);
-                                    setDeleteConfirmText("");
-                                    setSubjectToRemove(null);
-                                  }}>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={finalConfirmRemove}
                                     className="bg-red-600 hover:bg-red-700"
                                   >
-                                    Yes, Delete Forever
+                                    Delete
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
