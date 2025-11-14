@@ -1473,8 +1473,9 @@ export default function Quiz() {
                     <CardTitle className="text-sm font-medium leading-relaxed">
                       {currentQuestionIndex + 1}. {currentQuestion.prompt}
                     </CardTitle>
-                    {currentQuestion.image_urls?.question &&
-                      currentQuestion.image_urls.question.length > 0 && (
+                    {currentQuestion.image_urls?.question && 
+                     Array.isArray(currentQuestion.image_urls.question) && 
+                     currentQuestion.image_urls.question.length > 0 && (
                         <div className="mt-3 space-x-2 inline-flex flex-wrap">
                           {currentQuestion.image_urls.question.map(
                             (imageUrl, imgIdx) => (
@@ -1513,7 +1514,8 @@ export default function Quiz() {
 
                     return options
                       .filter((option) => {
-                        const choiceImages = currentQuestion.image_urls?.choices?.[option.label as keyof typeof currentQuestion.image_urls.choices];
+                        const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
+                        const choiceImages = currentQuestion.image_urls?.[choiceKey];
                         const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
                         const hasText = option.value && option.value.trim() !== "";
                         return hasImage || hasText;
@@ -1527,7 +1529,8 @@ export default function Quiz() {
                       const showCorrect = isAnswerSubmitted && isCorrect;
                       const showIncorrect =
                         isAnswerSubmitted && isSelected && !isCorrect;
-                      const choiceImages = currentQuestion.image_urls?.[option.label as 'A' | 'B' | 'C' | 'D' | 'E'];
+                      const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
+                      const choiceImages = currentQuestion.image_urls?.[choiceKey];
                       const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
 
                       return (
