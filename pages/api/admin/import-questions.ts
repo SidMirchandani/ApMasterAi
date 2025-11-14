@@ -30,10 +30,9 @@ const db = getFirestore();
 const storage = getStorage();
 
 interface QuestionJSON {
-  subject_code: string;
-  section_code: string;
   question_id: number;
   prompt: string;
+  prompt_images: string[];
   choices: {
     A?: string;
     B?: string;
@@ -41,16 +40,16 @@ interface QuestionJSON {
     D?: string;
     E?: string;
   };
-  correct_answer: string;
-  explanation: string;
-  local_images?: {
-    question?: string[];
+  choice_images: {
     A?: string[];
     B?: string[];
     C?: string[];
     D?: string[];
     E?: string[];
   };
+  correct_answer: string;
+  explanation: string;
+  section_code: string;
 }
 
 async function uploadImageToStorage(
@@ -78,7 +77,7 @@ async function processQuestion(
   docId: string;
   imagesUploaded: number;
 }> {
-  const { subject_code, section_code, question_id, prompt, choices, correct_answer, explanation, local_images } = questionData;
+  const { question_id, prompt, prompt_images, choices, choice_images, correct_answer, explanation, section_code } = questionData;
 
   // Build choices array [A, B, C, D, E]
   const choicesArray = [
@@ -90,7 +89,7 @@ async function processQuestion(
   ];
 
   // Calculate answerIndex (0-4)
-  const answerIndex = correct_answer.charCodeAt(0) - 65; // 'A' -> 0, 'B' -> 1, etc.
+  const answerIndex = ['A', 'B', 'C', 'D', 'E'].indexOf(correct_answer);
 
   // Process images
   const imageUrls: {
@@ -111,10 +110,28 @@ async function processQuestion(
 
   let imagesUploaded = 0;
 
-  if (local_images) {
-    const questionImagesDir = path.join(imagesBasePath, String(question_id));
+  const questionImagesDir = path.join(imagesBasePath, String(question_id));
 
-    for (const [key, filenames] of Object.entries(local_images)) {
+  // Upload prompt images
+  if (prompt_images && Array.isArray(prompt_images)) {
+    for (const filename of prompt_images) {
+      const localPath = path.join(questionImagesDir, filename);
+      
+      try {
+        await fs.access(localPath);
+        const storagePath = `questions/${question_id}/${filename}`;
+        const url = await uploadImageToStorage(localPath, storagePath);
+        imageUrls.question.push(url);
+        imagesUploaded++;
+      } catch (err) {
+        console.warn(`Image not found: ${localPath}`);
+      }
+    }
+  }
+
+  // Upload choice images
+  if (choice_images) {
+    for (const [choiceKey, filenames] of Object.entries(choice_images)) {
       if (Array.isArray(filenames)) {
         for (const filename of filenames) {
           const localPath = path.join(questionImagesDir, filename);
@@ -123,7 +140,7 @@ async function processQuestion(
             await fs.access(localPath);
             const storagePath = `questions/${question_id}/${filename}`;
             const url = await uploadImageToStorage(localPath, storagePath);
-            imageUrls[key as keyof typeof imageUrls].push(url);
+            imageUrls[choiceKey as keyof typeof imageUrls].push(url);
             imagesUploaded++;
           } catch (err) {
             console.warn(`Image not found: ${localPath}`);
@@ -134,16 +151,16 @@ async function processQuestion(
   }
 
   // Create Firestore document
-  const docId = `${subject_code}_${section_code}_Q${question_id}`;
+  const docId = `APCSP_${section_code}_Q${question_id}`;
   
   await db.collection('questions').doc(docId).set({
-    subject_code,
+    subject_code: 'APCSP',
     section_code,
     question_id,
     prompt,
     choices: choicesArray,
     answerIndex,
-    explanation,
+    explanation: explanation || '',
     image_urls: imageUrls,
     mode: 'SECTION',
     test_slug: '',
@@ -221,9 +238,9 @@ export default async function handler(
 
     return res.status(200).json({
       success: true,
-      questionsImported: results.length,
-      documentIds: results,
-      imagesUploaded: totalImagesUploaded,
+      imported: results.length,
+      docs: results,
+      images_uploaded: totalImagesUploaded,
     });
 
   } catch (error) {

@@ -216,7 +216,7 @@ export default function AdminPage() {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success(`Success! Imported ${data.questionsImported} questions with ${data.imagesUploaded} images.`);
+        toast.success(`Success! Imported ${data.imported} questions with ${data.images_uploaded} images.`);
         fetchFiltered(); // Re-fetch questions after import
       } else {
         toast.error(`Error: ${data.message || 'Import failed'}`);
