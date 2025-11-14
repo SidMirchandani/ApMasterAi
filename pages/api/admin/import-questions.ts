@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import formidable from 'formidable';
 import AdmZip from 'adm-zip';
@@ -23,6 +22,7 @@ const db = firebaseAdmin.firestore;
 const storage = firebaseAdmin.storage;
 
 interface QuestionJSON {
+  subject_code: string; // ← ADDED HERE
   question_id: number;
   prompt: string;
   prompt_images: string[];
@@ -51,8 +51,8 @@ async function uploadImageToStorage(
   subjectCode: string
 ): Promise<string> {
   const bucket = storage.bucket('gen-lang-client-0260042933.firebasestorage.app');
-  
-  // Check if bucket exists
+
+  // Check bucket exists
   try {
     const [exists] = await bucket.exists();
     if (!exists) {
@@ -63,7 +63,7 @@ async function uploadImageToStorage(
     throw new Error(`Cannot access storage bucket: ${error.message}`);
   }
 
-  // Add subject_code to the path: questions/{subject_code}/{question_id}/{filename}
+  // Add subject folder
   const pathWithSubject = `questions/${subjectCode}/${storagePath.replace('questions/', '')}`;
   const file = bucket.file(pathWithSubject);
 
@@ -75,6 +75,7 @@ async function uploadImageToStorage(
   });
 
   await file.makePublic();
+
   return `https://storage.googleapis.com/${bucket.name}/${pathWithSubject}`;
 }
 
@@ -85,9 +86,21 @@ async function processQuestion(
   docId: string;
   imagesUploaded: number;
 }> {
-  const { question_id, prompt, prompt_images, choices, choice_images, correct_answer, explanation, section_code } = questionData;
 
-  // Build choices array [A, B, C, D, E]
+  // Extract subject_code FROM JSON
+  const {
+    subject_code,
+    question_id,
+    prompt,
+    prompt_images,
+    choices,
+    choice_images,
+    correct_answer,
+    explanation,
+    section_code
+  } = questionData;
+
+  // Build choices array [A-E]
   const choicesArray = [
     choices.A || '',
     choices.B || '',
@@ -96,10 +109,8 @@ async function processQuestion(
     choices.E || '',
   ];
 
-  // Calculate answerIndex (0-4)
   const answerIndex = ['A', 'B', 'C', 'D', 'E'].indexOf(correct_answer);
 
-  // Process images
   const imageUrls: {
     question: string[];
     A: string[];
@@ -120,31 +131,29 @@ async function processQuestion(
 
   const questionImagesDir = path.join(imagesBasePath, String(question_id));
 
-  // Debug: Check if the question image directory exists
+  // Debug dir contents
   try {
     const dirContents = await fs.readdir(questionImagesDir);
     console.log(`Images for Q${question_id}:`, dirContents);
-  } catch (err) {
-    console.warn(`Image directory not found for Q${question_id}:`, questionImagesDir);
+  } catch {
+    console.warn(`Image directory not found for Q${question_id}: ${questionImagesDir}`);
   }
 
   // Upload prompt images
-  if (prompt_images && Array.isArray(prompt_images)) {
+  if (Array.isArray(prompt_images)) {
     for (const filename of prompt_images) {
       const localPath = path.join(questionImagesDir, filename);
-      
+
       try {
         const stats = await fs.stat(localPath);
         if (stats.isFile()) {
           const storagePath = `questions/${question_id}/${filename}`;
-          const url = await uploadImageToStorage(localPath, storagePath, section_code);
+          const url = await uploadImageToStorage(localPath, storagePath, subject_code);
           imageUrls.question.push(url);
           imagesUploaded++;
-          console.log(`✓ Uploaded: ${filename} → ${url}`);
         }
       } catch (err: any) {
-        console.warn(`✗ Image not found: ${localPath}`);
-        console.warn(`Error: ${err.message}`);
+        console.warn(`Missing prompt image: ${localPath}`, err.message);
       }
     }
   }
@@ -155,30 +164,27 @@ async function processQuestion(
       if (Array.isArray(filenames)) {
         for (const filename of filenames) {
           const localPath = path.join(questionImagesDir, filename);
-          
+
           try {
             const stats = await fs.stat(localPath);
             if (stats.isFile()) {
               const storagePath = `questions/${question_id}/${filename}`;
-              const url = await uploadImageToStorage(localPath, storagePath, section_code);
+              const url = await uploadImageToStorage(localPath, storagePath, subject_code);
               imageUrls[choiceKey as keyof typeof imageUrls].push(url);
               imagesUploaded++;
-              console.log(`✓ Uploaded choice image: ${filename} → ${url}`);
             }
           } catch (err: any) {
-            console.warn(`✗ Choice image not found: ${localPath}`);
-            console.warn(`Error: ${err.message}`);
+            console.warn(`Missing choice image: ${localPath}`, err.message);
           }
         }
       }
     }
   }
 
-  // Create Firestore document
-  const docId = `APCSP_${section_code}_Q${question_id}`;
-  
+  const docId = `${subject_code}_${section_code}_Q${question_id}`;
+
   await db.collection('questions').doc(docId).set({
-    subject_code: 'APCSP',
+    subject_code,
     section_code,
     question_id,
     prompt,
@@ -209,11 +215,10 @@ export default async function handler(
   let uploadedFilePath = '';
 
   try {
-    // Parse the uploaded file
     const form = formidable({
       uploadDir: process.cwd(),
       keepExtensions: true,
-      maxFileSize: 500 * 1024 * 1024, // 500MB
+      maxFileSize: 500 * 1024 * 1024,
     });
 
     const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
@@ -224,37 +229,26 @@ export default async function handler(
     });
 
     const uploadedFile = Array.isArray(files.file) ? files.file[0] : files.file;
-    
+
     if (!uploadedFile) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     uploadedFilePath = uploadedFile.filepath;
 
-    // Extract ZIP
     const zip = new AdmZip(uploadedFilePath);
     await fs.mkdir(tmpDir, { recursive: true });
     zip.extractAllTo(tmpDir, true);
 
-    // Debug: Check what was extracted
-    console.log('Extraction complete. Checking structure...');
-    const tmpContents = await fs.readdir(tmpDir);
-    console.log('tmp_import contents:', tmpContents);
-
-    // Process questions - handle both with and without 'export' folder
     let questionsDir = path.join(tmpDir, 'export', 'questions');
     let imagesDir = path.join(tmpDir, 'export', 'images');
-    
+
     try {
       await fs.access(questionsDir);
     } catch {
-      // If export/questions doesn't exist, try questions directly
       questionsDir = path.join(tmpDir, 'questions');
       imagesDir = path.join(tmpDir, 'images');
     }
-
-    console.log('Using questionsDir:', questionsDir);
-    console.log('Using imagesDir:', imagesDir);
 
     const questionFiles = await fs.readdir(questionsDir);
     const results = [];
@@ -272,7 +266,6 @@ export default async function handler(
       totalImagesUploaded += result.imagesUploaded;
     }
 
-    // Cleanup
     await fs.rm(tmpDir, { recursive: true, force: true });
     await fs.unlink(uploadedFilePath);
 
@@ -283,20 +276,17 @@ export default async function handler(
       images_uploaded: totalImagesUploaded,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Import error:', error);
 
-    // Cleanup on error
     try {
       if (tmpDir) await fs.rm(tmpDir, { recursive: true, force: true });
       if (uploadedFilePath) await fs.unlink(uploadedFilePath);
-    } catch (cleanupError) {
-      console.error('Cleanup error:', cleanupError);
-    }
+    } catch {}
 
     return res.status(500).json({
       error: 'Import failed',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error.message || 'Unknown error',
     });
   }
 }
