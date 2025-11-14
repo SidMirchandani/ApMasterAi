@@ -1139,8 +1139,8 @@ export default function Quiz() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Leave Full-Length Test?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Your progress on this full-length test will be lost if you
-                  leave now. Are you sure you want to exit?
+                  Your progress on this full-length test will be lost if
+                  you leave now. Are you sure you want to exit?
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
