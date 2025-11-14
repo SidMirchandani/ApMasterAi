@@ -921,6 +921,17 @@ export default function Quiz() {
                   <CardContent className="space-y-3">
                     <div className="space-y-2">
                       {options.map((option) => {
+                        const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
+                        const choiceImages = q.image_urls?.choices?.[choiceKey];
+                        const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+                        const hasText = option.value && option.value.trim() !== "";
+                        const isEmpty = !hasImage && !hasText;
+
+                        // Hide choice E if it's empty
+                        if (isEmpty && option.label === 'E') {
+                          return null;
+                        }
+
                         const isUserAnswer = userAnswers[globalIndex] === option.label;
                         const isCorrectAnswer =
                           option.label === correctAnswerLabel;
@@ -1040,7 +1051,7 @@ export default function Quiz() {
             {currentPage === totalPages - 1 ? (
               <Button
                 onClick={() => router.push(`/study?subject=${subjectId}`)}
-                className="bg-khan-green hover:bg-khan-green/90 px-8"
+                className="bg-khan-green hover:bg-khan-green/90"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -1334,6 +1345,17 @@ export default function Quiz() {
                     <CardContent className="pt-2 pb-3">
                       <div className="space-y-1.5">
                         {options.map((option) => {
+                          const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
+                          const choiceImages = q.image_urls?.choices?.[choiceKey];
+                          const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+                          const hasText = option.value && option.value.trim() !== "";
+                          const isEmpty = !hasImage && !hasText;
+
+                          // Hide choice E if it's empty
+                          if (isEmpty && option.label === 'E') {
+                            return null;
+                          }
+
                           const isSelected =
                             userAnswers[globalIndex] === option.label;
 
@@ -1504,6 +1526,17 @@ export default function Quiz() {
                     );
 
                     return options.map((option) => {
+                      const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
+                      const choiceImages = currentQuestion.image_urls?.choices?.[choiceKey];
+                      const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+                      const hasText = option.value && option.value.trim() !== "";
+                      const isEmpty = !hasImage && !hasText;
+
+                      // Hide choice E if it's empty
+                      if (isEmpty && option.label === 'E') {
+                        return null;
+                      }
+
                       const isSelected = selectedAnswer === option.label;
                       const correctAnswerLabel = String.fromCharCode(
                         65 + currentQuestion.answerIndex,
