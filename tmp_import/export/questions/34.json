@@ -1,0 +1,28 @@
+{
+  "question_id": 34,
+  "prompt": "7. The abstraction Draw(magnitude, direction) is used to draw line segments at a given magnitude and direction (north, south, east, or west) starting at the tip of the first vector to the tail of the second vector. Consider the following program, where the vector starts in the upper-left corner of a grid of dots. Draw(2, south) Draw(1, east) Draw(2, east) Draw(1, north) Which of the following represents the figure that is drawn by the program?",
+  "prompt_images": [],
+  "choices": {
+    "A": "",
+    "B": "",
+    "C": "",
+    "D": ""
+  },
+  "choice_images": {
+    "A": [
+      "A_1.png"
+    ],
+    "B": [
+      "B_2.png"
+    ],
+    "C": [
+      "C_3.png"
+    ],
+    "D": [
+      "D_4.png"
+    ]
+  },
+  "correct_answer": "B",
+  "explanation": "",
+  "section_code": "GEN"
+}

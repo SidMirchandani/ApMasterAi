@@ -1,0 +1,25 @@
+{
+  "question_id": 128,
+  "prompt": "4. A programmer is creating an algorithm that doubles the square root of an inputted number and prints \"small\" if the result is less than 100. Which of the following would be an appropriate way to express it? input number n1 root square n1 multiply n1 by 2 is n1 < 100? yes -> print \"small\" no -> do nothing",
+  "prompt_images": [],
+  "choices": {
+    "A": "",
+    "B": "",
+    "C": "",
+    "D": "All of the above"
+  },
+  "choice_images": {
+    "A": [
+      "A_1.png"
+    ],
+    "B": [
+      "B_2.png"
+    ],
+    "C": [
+      "C_3.png"
+    ]
+  },
+  "correct_answer": "D",
+  "explanation": "",
+  "section_code": "AAP"
+}

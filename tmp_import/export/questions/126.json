@@ -1,0 +1,30 @@
+{
+  "question_id": 126,
+  "prompt": "2. Line 1: y \u00e2\u0086\u0090 RANDOM ( 1, 10000) Line 2: { Line 3: n \u00e2\u0086\u0090 RANDOM (0, 3) Line 4: REPEAT n TIMES Line 5: { Line 6: if CAN_MOVE FORWARD ; MOVE_FORWARD ( ) Line 7: } Line 8: p \u00e2\u0086\u0090 RANDOM (0, 1) Line 9: REPEAT p TIMES Line 10: { Line 11: TURN_LEFT ( ) Line 12: } Line 13: } What are the possible landing spots for the robot?",
+  "prompt_images": [
+    "prompt_1.png"
+  ],
+  "choices": {
+    "A": "",
+    "B": "",
+    "C": "",
+    "D": ""
+  },
+  "choice_images": {
+    "A": [
+      "A_1.png"
+    ],
+    "B": [
+      "B_2.png"
+    ],
+    "C": [
+      "C_3.png"
+    ],
+    "D": [
+      "D_4.png"
+    ]
+  },
+  "correct_answer": "D",
+  "explanation": "",
+  "section_code": "AAP"
+}

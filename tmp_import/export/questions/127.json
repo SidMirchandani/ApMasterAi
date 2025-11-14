@@ -1,0 +1,28 @@
+{
+  "question_id": 127,
+  "prompt": "3. IF (TRUE = TRUE OR 7 < 6) { MOVE_FORWARD( ) MOVE_FORWARD( ) MOVE_FORWARD( ) } IF (4 > 4 AND TRUE = FALSE) { MOVE_FORWARD( ) } IF (3=3) { MOVE_FORWARD( ) MOVE_FORWARD( ) MOVE_FORWARD( ) }",
+  "prompt_images": [],
+  "choices": {
+    "A": "",
+    "B": "",
+    "C": "",
+    "D": ""
+  },
+  "choice_images": {
+    "A": [
+      "A_1.png"
+    ],
+    "B": [
+      "B_2.png"
+    ],
+    "C": [
+      "C_3.png"
+    ],
+    "D": [
+      "D_4.png"
+    ]
+  },
+  "correct_answer": "C",
+  "explanation": "",
+  "section_code": "AAP"
+}

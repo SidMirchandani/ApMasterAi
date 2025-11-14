@@ -1,0 +1,17 @@
+{
+  "question_id": 162,
+  "prompt": "8. What is returned by the procedure above?",
+  "prompt_images": [
+    "prompt_1.png"
+  ],
+  "choices": {
+    "A": "Nothing, compile-time error",
+    "B": "To find the amount of items in list that equal number",
+    "C": "To find the amount of items in list that are divisible by number",
+    "D": "Nothing, runtime error"
+  },
+  "choice_images": {},
+  "correct_answer": "C",
+  "explanation": "",
+  "section_code": "AAP"
+}

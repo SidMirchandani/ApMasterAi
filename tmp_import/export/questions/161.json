@@ -1,0 +1,17 @@
+{
+  "question_id": 161,
+  "prompt": "7. What is the purpose of the procedure above?",
+  "prompt_images": [
+    "prompt_1.png"
+  ],
+  "choices": {
+    "A": "To find the amount of items in list",
+    "B": "To find the amount of items in list that are equal to number",
+    "C": "To find the amount of items in list that do not equal number",
+    "D": "Nothing, compile-time error"
+  },
+  "choice_images": {},
+  "correct_answer": "B",
+  "explanation": "",
+  "section_code": "AAP"
+}
