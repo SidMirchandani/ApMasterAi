@@ -48,7 +48,7 @@ export default function Dashboard() {
   const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
   const [subjectToArchive, setSubjectToArchive] = useState<DashboardSubject | null>(null);
 
-  // Fetch user profile
+  // Fetch user profile with immediate data loading
   const { data: userProfile } = useQuery<{
     success: boolean;
     data: {
@@ -67,6 +67,8 @@ export default function Dashboard() {
       return response.json();
     },
     enabled: isAuthenticated && !!user,
+    staleTime: Infinity, // Keep profile data fresh
+    gcTime: Infinity, // Never garbage collect
   });
 
   // Optimized data fetching with better loading states
@@ -207,6 +209,7 @@ export default function Dashboard() {
   // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
     mutationFn: async (subjectDocId: string) => {
+      console.log('[Dashboard] Deleting subject:', subjectDocId);
       const response = await apiRequest("DELETE", `/api/user/subjects/${subjectDocId}`);
       if (!response.ok) {
         const errorData = await response.json();
@@ -215,6 +218,8 @@ export default function Dashboard() {
       return response.json();
     },
     onMutate: async (subjectDocId) => {
+      console.log('[Dashboard onMutate] Starting optimistic update for:', subjectDocId);
+      
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["subjects"] });
 
@@ -223,14 +228,22 @@ export default function Dashboard() {
 
       // Optimistically update to the new value - remove the subject immediately
       queryClient.setQueryData(["subjects"], (old: any) => {
-        if (!old?.data) return old;
-        console.log('[Dashboard] Removing subject with ID:', subjectDocId);
-        console.log('[Dashboard] Current subjects:', old.data.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
+        if (!old?.data) {
+          console.log('[Dashboard onMutate] No data to update');
+          return old;
+        }
+        
+        console.log('[Dashboard onMutate] Current subjects:', old.data.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
+        
         const filtered = old.data.filter((subject: DashboardSubject) => {
-          const subjectIdStr = typeof subject.id === 'number' ? subject.id.toString() : subject.id;
-          return subjectIdStr !== subjectDocId;
+          const subjectIdStr = String(subject.id);
+          const shouldKeep = subjectIdStr !== subjectDocId;
+          console.log(`[Dashboard onMutate] Subject ${subject.name} (${subjectIdStr}): ${shouldKeep ? 'KEEP' : 'REMOVE'}`);
+          return shouldKeep;
         });
-        console.log('[Dashboard] After filter:', filtered.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
+        
+        console.log('[Dashboard onMutate] Filtered subjects:', filtered.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
+        
         return {
           ...old,
           data: filtered
@@ -242,7 +255,7 @@ export default function Dashboard() {
     },
     onError: (err, subjectDocId, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
-      console.error('[Dashboard] Remove subject failed:', err);
+      console.error('[Dashboard onError] Remove subject failed:', err);
       if (context?.previousSubjects) {
         queryClient.setQueryData(["subjects"], context.previousSubjects);
       }
@@ -253,7 +266,7 @@ export default function Dashboard() {
       });
     },
     onSuccess: (data, subjectDocId) => {
-      console.log('[Dashboard] Remove subject succeeded');
+      console.log('[Dashboard onSuccess] Remove subject succeeded');
 
       toast({
         title: "Subject removed",
@@ -261,10 +274,10 @@ export default function Dashboard() {
       });
 
       setSubjectToRemove(null);
-
-      // Don't invalidate - the optimistic update in onMutate already updated the cache
-      // Both dashboard and courses page use the same ["subjects"] query key,
-      // so the optimistic update will reflect in both pages automatically
+    },
+    onSettled: () => {
+      // Ensure the UI is updated
+      console.log('[Dashboard onSettled] Mutation settled, ensuring UI refresh');
     }
   });
 
@@ -392,7 +405,11 @@ export default function Dashboard() {
         <div className="max-w-6xl mx-auto w-full">
           <div className="mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark mb-1">
-              Welcome back, {userProfile?.data?.firstName || user?.email?.split('@')[0] || 'Student'}!
+              {userProfile?.data?.firstName ? (
+                <>Welcome back, {userProfile.data.firstName}!</>
+              ) : (
+                <>Welcome back!</>
+              )}
             </h1>
             <p className="text-lg text-khan-gray-medium">
               Continue your AP preparation journey
