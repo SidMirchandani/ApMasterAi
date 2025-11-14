@@ -61,47 +61,28 @@ export default async function handler(
           `Fixing text for Question ${i + 1}/${total} (ID: ${questionId})`,
         );
 
-        // Prompt to fix text formatting issues
-        const prompt = `
-Fix any text formatting issues in the following AP-style multiple-choice question.
+        // Prompt to fix text formatting issues (question prompt only)
+        const promptText = `
+Fix any text formatting issues in the following AP-style multiple-choice question text.
 Ensure proper capitalization, punctuation, and remove any extraneous characters or formatting artifacts.
 Keep the meaning exactly the same, only fix formatting.
 
 Question: ${question.prompt}
-Choices: ${question.choices?.join(" | ")}
-Explanation: ${question.explanation || ""}
 
-Return the fixed text in this exact format:
-QUESTION: [fixed question text]
-CHOICES: [choice A] | [choice B] | [choice C] | [choice D] | [choice E]
-EXPLANATION: [fixed explanation text]
+Return only the fixed question text, without any labels or extra formatting.
 `;
 
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash",
-          contents: prompt,
+          contents: promptText,
         });
 
         let fixedText = response.text?.trim() || "";
 
-        // Parse the response
-        const questionMatch = fixedText.match(/QUESTION:\s*(.+?)(?=CHOICES:|$)/s);
-        const choicesMatch = fixedText.match(/CHOICES:\s*(.+?)(?=EXPLANATION:|$)/s);
-        const explanationMatch = fixedText.match(/EXPLANATION:\s*(.+?)$/s);
-
         const updates: any = {};
 
-        if (questionMatch) {
-          updates.prompt = questionMatch[1].trim();
-        }
-
-        if (choicesMatch) {
-          const choicesText = choicesMatch[1].trim();
-          updates.choices = choicesText.split("|").map((c) => c.trim()).filter(Boolean);
-        }
-
-        if (explanationMatch) {
-          updates.explanation = explanationMatch[1].trim();
+        if (fixedText && fixedText !== question.prompt) {
+          updates.prompt = fixedText;
         }
 
         if (Object.keys(updates).length > 0) {
