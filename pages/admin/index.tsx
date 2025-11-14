@@ -265,6 +265,42 @@ export default function AdminPage() {
     });
   }
 
+  async function fixText() {
+    if (!token || selectedQuestions.size === 0) {
+      toast.error("Please select at least one question");
+      return;
+    }
+
+    setGenerating(true);
+    const questionIds = Array.from(selectedQuestions);
+
+    const fixPromise = fetch("/api/fixText", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}` 
+      },
+      body: JSON.stringify({ questionIds }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Fix text failed");
+        return res.json();
+      })
+      .then((data) => {
+        fetchFiltered();
+        return data;
+      })
+      .finally(() => {
+        setGenerating(false);
+      });
+
+    toast.promise(fixPromise, {
+      loading: `Fixing text for ${questionIds.length} questions...`,
+      success: (data) => `Fixed ${data.updated} questions!`,
+      error: "Failed to fix text",
+    });
+  }
+
   function toggleQuestion(id: string) {
     setSelectedQuestions((prev) => {
       const newSet = new Set(prev);
@@ -289,24 +325,32 @@ export default function AdminPage() {
     if (!confirm(`Delete ${selectedQuestions.size} questions?`)) return;
     if (!token) return;
 
+    const idsToDelete = Array.from(selectedQuestions);
+
     const deletePromise = fetch("/api/admin/questions/bulk-delete", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ ids: Array.from(selectedQuestions) }),
-    }).then((res) => {
-      if (!res.ok) throw new Error("Delete failed");
-      setItems((prev) => prev.filter((q) => !selectedQuestions.has(q.id)));
-      setSelectedQuestions(new Set());
-      return res;
-    });
+      body: JSON.stringify({ ids: idsToDelete }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || "Delete failed");
+        }
+        return res.json();
+      })
+      .then(() => {
+        setItems((prev) => prev.filter((q) => !selectedQuestions.has(q.id)));
+        setSelectedQuestions(new Set());
+      });
 
     toast.promise(deletePromise, {
-      loading: "Deleting selected questions...",
-      success: "Selected questions deleted successfully!",
-      error: "Failed to delete selected questions",
+      loading: `Deleting ${idsToDelete.length} questions...`,
+      success: `Successfully deleted ${idsToDelete.length} questions!`,
+      error: (err) => `Failed to delete: ${err.message}`,
     });
   };
 
@@ -557,6 +601,13 @@ export default function AdminPage() {
                   className="bg-khan-green hover:bg-khan-green-light text-white"
                 >
                   {generating ? "Generating..." : `Generate Explanations (${selectedQuestions.size})`}
+                </Button>
+                <Button
+                  onClick={fixText}
+                  disabled={generating || selectedQuestions.size === 0}
+                  className="bg-khan-blue hover:bg-khan-blue/90 text-white"
+                >
+                  {generating ? "Fixing..." : `Fix Text (${selectedQuestions.size})`}
                 </Button>
                 <Button
                   onClick={deleteSelected}
