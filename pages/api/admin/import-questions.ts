@@ -126,14 +126,17 @@ async function processQuestion(
       const localPath = path.join(questionImagesDir, filename);
       
       try {
-        await fs.access(localPath);
-        const storagePath = `questions/${question_id}/${filename}`;
-        const url = await uploadImageToStorage(localPath, storagePath);
-        imageUrls.question.push(url);
-        imagesUploaded++;
-        console.log(`✓ Uploaded: ${filename} → ${url}`);
-      } catch (err) {
+        const stats = await fs.stat(localPath);
+        if (stats.isFile()) {
+          const storagePath = `questions/${question_id}/${filename}`;
+          const url = await uploadImageToStorage(localPath, storagePath);
+          imageUrls.question.push(url);
+          imagesUploaded++;
+          console.log(`✓ Uploaded: ${filename} → ${url}`);
+        }
+      } catch (err: any) {
         console.warn(`✗ Image not found: ${localPath}`);
+        console.warn(`Error: ${err.message}`);
       }
     }
   }
@@ -146,13 +149,17 @@ async function processQuestion(
           const localPath = path.join(questionImagesDir, filename);
           
           try {
-            await fs.access(localPath);
-            const storagePath = `questions/${question_id}/${filename}`;
-            const url = await uploadImageToStorage(localPath, storagePath);
-            imageUrls[choiceKey as keyof typeof imageUrls].push(url);
-            imagesUploaded++;
-          } catch (err) {
-            console.warn(`Image not found: ${localPath}`);
+            const stats = await fs.stat(localPath);
+            if (stats.isFile()) {
+              const storagePath = `questions/${question_id}/${filename}`;
+              const url = await uploadImageToStorage(localPath, storagePath);
+              imageUrls[choiceKey as keyof typeof imageUrls].push(url);
+              imagesUploaded++;
+              console.log(`✓ Uploaded choice image: ${filename} → ${url}`);
+            }
+          } catch (err: any) {
+            console.warn(`✗ Choice image not found: ${localPath}`);
+            console.warn(`Error: ${err.message}`);
           }
         }
       }
