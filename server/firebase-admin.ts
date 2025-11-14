@@ -26,9 +26,10 @@ export function getFirebaseAdmin() {
       try {
         // Check if we have a service account key
         const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        // Use the correct storage bucket format
         const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
                               process.env.FIREBASE_STORAGE_BUCKET ||
-                              `${projectId}.appspot.com`;
+                              `${projectId}.firebasestorage.app`;
 
         console.log('Storage bucket configuration:', storageBucket);
 
