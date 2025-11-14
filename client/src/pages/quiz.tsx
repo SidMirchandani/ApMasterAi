@@ -905,8 +905,8 @@ export default function Quiz() {
               const correctAnswerLabel = String.fromCharCode(
                 65 + q.answerIndex,
               );
-              const userAnswer = userAnswers[globalIndex];
-              const isCorrect = userAnswer === correctAnswerLabel;
+              const isCorrect =
+                userAnswers[globalIndex] === correctAnswerLabel;
 
               return (
                 <Card
@@ -922,7 +922,7 @@ export default function Quiz() {
                   <CardContent className="space-y-3">
                     <div className="space-y-2">
                       {options.map((option) => {
-                        const isUserAnswer = userAnswer === option.label;
+                        const isUserAnswer = userAnswers[globalIndex] === option.label;
                         const isCorrectAnswer =
                           option.label === correctAnswerLabel;
 
@@ -983,7 +983,7 @@ export default function Quiz() {
                       className={`p-2 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}
                     >
                       <p className="font-semibold">
-                        Your answer: {userAnswer || "Not answered"}
+                        Your answer: {userAnswers[globalIndex] || "Not answered"}
                         {isCorrect
                           ? " ✓ Correct"
                           : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
@@ -1332,7 +1332,7 @@ export default function Quiz() {
                               onClick={() =>
                                 handleAnswerSelect(option.label, idx)
                               }
-                              className={`w-full text-left p-2 rounded-lg border transition-all ${
+                              className={`w-full text-left p-2 rounded-lg border-2 transition-all ${
                                 isSelected
                                   ? "border-khan-blue bg-blue-50"
                                   : "border-gray-200 hover:border-gray-300"
@@ -1505,6 +1505,20 @@ export default function Quiz() {
                             </div>
                             <div className="flex-1 pt-0.5 text-sm">
                               {option.value}
+                              {currentQuestion.image_urls?.choices?.[option.label as keyof typeof currentQuestion.image_urls.choices] &&
+                               Array.isArray(currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices]) &&
+                               (currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices] as string[]).length > 0 && (
+                                <div className="mt-2 space-y-2">
+                                  {(currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
+                                    <img
+                                      key={imgIdx}
+                                      src={imageUrl}
+                                      alt={`Choice ${option.label} image ${imgIdx + 1}`}
+                                      className="max-w-full h-auto rounded-md border border-gray-200"
+                                    />
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             {showCorrect && (
                               <CheckCircle className="text-green-500 flex-shrink-0" />
