@@ -115,7 +115,7 @@ export const apSubjects = [
     id: "computer-science-principles",
     name: "AP Computer Science Principles",
     description: "Computational thinking, programming, internet, data analysis, and impact of computing",
-    units: 7,
+    units: 5,
     difficulty: "Medium",
     examDate: "May 9, 2025"
   }
