@@ -950,11 +950,10 @@ export default function Quiz() {
                                 {option.label}
                               </div>
                               <div className="flex-1 text-sm pt-0.5">
-                                {option.value}
                                 {q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices] &&
                                  Array.isArray(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices]) &&
                                  (q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).length > 0 && (
-                                  <div className="mt-2 space-y-2">
+                                  <div className="mb-2 space-y-2">
                                     {(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
                                       <img
                                         key={imgIdx}
@@ -965,6 +964,7 @@ export default function Quiz() {
                                     ))}
                                   </div>
                                 )}
+                                {option.value && <span>{option.value}</span>}
                               </div>
                               {isCorrectAnswer && (
                                 <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />
@@ -1349,7 +1349,21 @@ export default function Quiz() {
                                   {option.label}
                                 </div>
                                 <div className="flex-1 text-sm pt-0.5">
-                                  {option.value}
+                                  {q.image_urls?.choices?.[option.label as keyof typeof q.image_urls.choices] &&
+                                   Array.isArray(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices]) &&
+                                   (q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).length > 0 && (
+                                    <div className="mb-2 space-y-2">
+                                      {(q.image_urls.choices[option.label as keyof typeof q.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
+                                        <img
+                                          key={imgIdx}
+                                          src={imageUrl}
+                                          alt={`Choice ${option.label} image ${imgIdx + 1}`}
+                                          className="max-w-full h-auto rounded-md border border-gray-200"
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
+                                  {option.value && <span>{option.value}</span>}
                                 </div>
                               </div>
                             </button>
@@ -1504,11 +1518,10 @@ export default function Quiz() {
                               {option.label}
                             </div>
                             <div className="flex-1 pt-0.5 text-sm">
-                              {option.value}
                               {currentQuestion.image_urls?.choices?.[option.label as keyof typeof currentQuestion.image_urls.choices] &&
                                Array.isArray(currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices]) &&
                                (currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices] as string[]).length > 0 && (
-                                <div className="mt-2 space-y-2">
+                                <div className="mb-2 space-y-2">
                                   {(currentQuestion.image_urls.choices[option.label as keyof typeof currentQuestion.image_urls.choices] as string[]).map((imageUrl, imgIdx) => (
                                     <img
                                       key={imgIdx}
@@ -1519,6 +1532,7 @@ export default function Quiz() {
                                   ))}
                                 </div>
                               )}
+                              {option.value && <span>{option.value}</span>}
                             </div>
                             {showCorrect && (
                               <CheckCircle className="text-green-500 flex-shrink-0" />
