@@ -49,7 +49,19 @@ async function uploadImageToStorage(
   localPath: string,
   storagePath: string
 ): Promise<string> {
-  const bucket = storage.bucket();
+  const bucket = storage.bucket('gen-lang-client-0260042933.firebasestorage.app');
+  
+  // Check if bucket exists
+  try {
+    const [exists] = await bucket.exists();
+    if (!exists) {
+      throw new Error(`Storage bucket does not exist: ${bucket.name}`);
+    }
+  } catch (error: any) {
+    console.error('Bucket check failed:', error.message);
+    throw new Error(`Cannot access storage bucket: ${error.message}`);
+  }
+
   const file = bucket.file(storagePath);
 
   await bucket.upload(localPath, {
