@@ -20,9 +20,16 @@ if (!getApps().length) {
   const serviceAccount = JSON.parse(
     process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}'
   );
+  
+  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
+                        process.env.FIREBASE_STORAGE_BUCKET ||
+                        'gen-lang-client-0260042933.firebasestorage.app';
+  
+  console.log('Initializing Firebase Admin with storage bucket:', storageBucket);
+  
   initializeApp({
     credential: cert(serviceAccount),
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    storageBucket: storageBucket,
   });
 }
 
