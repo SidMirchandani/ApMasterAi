@@ -434,34 +434,14 @@ export default function Dashboard() {
             <>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-khan-gray-dark">My Subjects</h2>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={async () => {
-                      try {
-                        const response = await apiRequest("POST", "/api/user/subjects/sync-metadata");
-                        if (response.ok) {
-                          toast({ title: "Success", description: "Subject metadata updated!" });
-                          refetchSubjects();
-                        }
-                      } catch (error) {
-                        toast({ title: "Error", description: "Failed to sync metadata", variant: "destructive" });
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white"
-                  >
-                    Sync Metadata
-                  </Button>
-                  <Button
-                    onClick={() => router.push('/learn')}
-                    variant="outline"
-                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold"
-                  >
-                    <Plus className="mr-2 w-4 h-4" />
-                    Browse Subjects
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => router.push('/learn')}
+                  variant="outline"
+                  className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold"
+                >
+                  <Plus className="mr-2 w-4 h-4" />
+                  Browse Subjects
+                </Button>
               </div>
 
               {subjectsFetching && subjects.length > 0 && (
