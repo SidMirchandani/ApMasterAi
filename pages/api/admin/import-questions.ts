@@ -4,9 +4,7 @@ import formidable from 'formidable';
 import AdmZip from 'adm-zip';
 import fs from 'fs/promises';
 import path from 'path';
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
+import { getFirebaseAdmin } from '../../server/firebase-admin';
 
 // Disable Next.js body parsing for file uploads
 export const config = {
@@ -15,26 +13,14 @@ export const config = {
   },
 };
 
-// Initialize Firebase Admin if not already initialized
-if (!getApps().length) {
-  const serviceAccount = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}'
-  );
-  
-  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
-                        process.env.FIREBASE_STORAGE_BUCKET ||
-                        'gen-lang-client-0260042933.firebasestorage.app';
-  
-  console.log('Initializing Firebase Admin with storage bucket:', storageBucket);
-  
-  initializeApp({
-    credential: cert(serviceAccount),
-    storageBucket: storageBucket,
-  });
+// Get Firebase Admin instances
+const firebaseAdmin = getFirebaseAdmin();
+if (!firebaseAdmin) {
+  throw new Error('Firebase Admin not initialized');
 }
 
-const db = getFirestore();
-const storage = getStorage();
+const db = firebaseAdmin.firestore;
+const storage = firebaseAdmin.storage;
 
 interface QuestionJSON {
   question_id: number;
