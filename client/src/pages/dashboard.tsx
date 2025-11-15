@@ -45,12 +45,10 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [showSecondConfirm, setShowSecondConfirm] = useState(false);
   const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
   const [subjectToArchive, setSubjectToArchive] = useState<DashboardSubject | null>(null);
 
-  // Fetch user profile
+  // Fetch user profile with immediate data loading
   const { data: userProfile } = useQuery<{
     success: boolean;
     data: {
@@ -69,6 +67,8 @@ export default function Dashboard() {
       return response.json();
     },
     enabled: isAuthenticated && !!user,
+    staleTime: Infinity, // Keep profile data fresh
+    gcTime: Infinity, // Never garbage collect
   });
 
   // Optimized data fetching with better loading states
@@ -209,6 +209,7 @@ export default function Dashboard() {
   // Simplified remove subject mutation
   const removeSubjectMutation = useMutation({
     mutationFn: async (subjectDocId: string) => {
+      console.log('[Dashboard] Deleting subject:', subjectDocId);
       const response = await apiRequest("DELETE", `/api/user/subjects/${subjectDocId}`);
       if (!response.ok) {
         const errorData = await response.json();
@@ -217,6 +218,8 @@ export default function Dashboard() {
       return response.json();
     },
     onMutate: async (subjectDocId) => {
+      console.log('[Dashboard onMutate] Starting optimistic update for:', subjectDocId);
+      
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["subjects"] });
 
@@ -225,14 +228,22 @@ export default function Dashboard() {
 
       // Optimistically update to the new value - remove the subject immediately
       queryClient.setQueryData(["subjects"], (old: any) => {
-        if (!old?.data) return old;
-        console.log('[Dashboard] Removing subject with ID:', subjectDocId);
-        console.log('[Dashboard] Current subjects:', old.data.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
+        if (!old?.data) {
+          console.log('[Dashboard onMutate] No data to update');
+          return old;
+        }
+        
+        console.log('[Dashboard onMutate] Current subjects:', old.data.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
+        
         const filtered = old.data.filter((subject: DashboardSubject) => {
-          const subjectIdStr = typeof subject.id === 'number' ? subject.id.toString() : subject.id;
-          return subjectIdStr !== subjectDocId;
+          const subjectIdStr = String(subject.id);
+          const shouldKeep = subjectIdStr !== subjectDocId;
+          console.log(`[Dashboard onMutate] Subject ${subject.name} (${subjectIdStr}): ${shouldKeep ? 'KEEP' : 'REMOVE'}`);
+          return shouldKeep;
         });
-        console.log('[Dashboard] After filter:', filtered.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
+        
+        console.log('[Dashboard onMutate] Filtered subjects:', filtered.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
+        
         return {
           ...old,
           data: filtered
@@ -244,7 +255,7 @@ export default function Dashboard() {
     },
     onError: (err, subjectDocId, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
-      console.error('[Dashboard] Remove subject failed:', err);
+      console.error('[Dashboard onError] Remove subject failed:', err);
       if (context?.previousSubjects) {
         queryClient.setQueryData(["subjects"], context.previousSubjects);
       }
@@ -255,7 +266,7 @@ export default function Dashboard() {
       });
     },
     onSuccess: (data, subjectDocId) => {
-      console.log('[Dashboard] Remove subject succeeded');
+      console.log('[Dashboard onSuccess] Remove subject succeeded');
 
       toast({
         title: "Subject removed",
@@ -263,10 +274,10 @@ export default function Dashboard() {
       });
 
       setSubjectToRemove(null);
-
-      // Don't invalidate - the optimistic update in onMutate already updated the cache
-      // Both dashboard and courses page use the same ["subjects"] query key,
-      // so the optimistic update will reflect in both pages automatically
+    },
+    onSettled: () => {
+      // Ensure the UI is updated
+      console.log('[Dashboard onSettled] Mutation settled, ensuring UI refresh');
     }
   });
 
@@ -284,19 +295,14 @@ export default function Dashboard() {
   };
 
   const confirmRemoveSubject = () => {
-    const trimmedText = deleteConfirmText.trim().toLowerCase();
-    console.log('[Dashboard] Delete confirm text:', trimmedText);
-    if (trimmedText === "delete") {
-      setShowSecondConfirm(true);
-    }
-  };
-
-  const finalConfirmRemove = () => {
     if (subjectToRemove) {
-      console.log('[Dashboard] Final confirm - removing subject:', subjectToRemove.id);
-      removeSubjectMutation.mutate(subjectToRemove.id.toString());
-      setShowSecondConfirm(false);
-      setDeleteConfirmText("");
+      const idToDelete = String(subjectToRemove.id);
+      console.log('[Dashboard] User confirmed deletion:', {
+        originalId: subjectToRemove.id,
+        convertedId: idToDelete,
+        subjectName: subjectToRemove.name
+      });
+      removeSubjectMutation.mutate(idToDelete);
       setSubjectToRemove(null);
     }
   };
@@ -399,7 +405,11 @@ export default function Dashboard() {
         <div className="max-w-6xl mx-auto w-full">
           <div className="mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark mb-1">
-              Welcome back, {userProfile?.data?.firstName || user?.email?.split('@')[0] || 'Student'}!
+              {userProfile?.data?.firstName ? (
+                <>Welcome back, {userProfile.data.firstName}!</>
+              ) : (
+                <>Welcome back!</>
+              )}
             </h1>
             <p className="text-lg text-khan-gray-medium">
               Continue your AP preparation journey
@@ -493,10 +503,9 @@ export default function Dashboard() {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                            <AlertDialog open={subjectToRemove?.id === subject.id && !showSecondConfirm} onOpenChange={(open) => {
+                            <AlertDialog open={subjectToRemove?.id === subject.id} onOpenChange={(open) => {
                               if (!open) {
                                 setSubjectToRemove(null);
-                                setDeleteConfirmText("");
                               }
                             }}>
                               <AlertDialogTrigger asChild>
@@ -509,52 +518,18 @@ export default function Dashboard() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Permanently Delete Subject</AlertDialogTitle>
+                                  <AlertDialogTitle>Delete Subject?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This action cannot be undone. All your progress for <strong>"{subject.name}"</strong> will be permanently deleted.
-                                    <div className="mt-4">
-                                      <p className="mb-2 font-medium text-gray-900">Type "delete" to confirm:</p>
-                                      <input
-                                        type="text"
-                                        value={deleteConfirmText}
-                                        onChange={(e) => setDeleteConfirmText(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                                        placeholder="Type delete here"
-                                      />
-                                    </div>
+                                    Are you sure you want to delete <strong>"{subject.name}"</strong>? This action cannot be undone and all your progress will be permanently lost.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={confirmRemoveSubject}
-                                    disabled={deleteConfirmText.toLowerCase() !== "delete"}
-                                    className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    Continue
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                            <AlertDialog open={showSecondConfirm} onOpenChange={setShowSecondConfirm}>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Final Confirmation</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you absolutely sure? This will permanently delete all data for <strong>"{subjectToRemove?.name}"</strong>. This action is irreversible.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel onClick={() => {
-                                    setShowSecondConfirm(false);
-                                    setDeleteConfirmText("");
-                                    setSubjectToRemove(null);
-                                  }}>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={finalConfirmRemove}
                                     className="bg-red-600 hover:bg-red-700"
                                   >
-                                    Yes, Delete Forever
+                                    Delete
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -580,7 +555,10 @@ export default function Dashboard() {
                           </div>
                           <div className="flex items-center space-x-2 group relative">
                             {Array.from({ length: subject.units }).map((_, index) => {
-                              const unitId = `unit${index + 1}`;
+                              // Handle AP CSP's bigidea naming convention
+                              const unitId = subject.subjectId === "computer-science-principles"
+                                ? `bigidea${index + 1}`
+                                : `unit${index + 1}`;
                               const unitData = (subject as any).unitProgress?.[unitId];
                               const score = unitData?.highestScore || 0;
                               const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;

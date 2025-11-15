@@ -31,6 +31,15 @@ interface Question {
   explanation: string;
   subject_code?: string;
   section_code?: string;
+  image_urls?: {
+    question?: string[];
+    // Removed 'choices' here as per the correction
+    A?: string[];
+    B?: string[];
+    C?: string[];
+    D?: string[];
+    E?: string[];
+  };
 }
 
 // Map subject IDs to their API codes
@@ -895,8 +904,8 @@ export default function Quiz() {
               const correctAnswerLabel = String.fromCharCode(
                 65 + q.answerIndex,
               );
-              const userAnswer = userAnswers[globalIndex];
-              const isCorrect = userAnswer === correctAnswerLabel;
+              const isCorrect =
+                userAnswers[globalIndex] === correctAnswerLabel;
 
               return (
                 <Card
@@ -912,7 +921,18 @@ export default function Quiz() {
                   <CardContent className="space-y-3">
                     <div className="space-y-2">
                       {options.map((option) => {
-                        const isUserAnswer = userAnswer === option.label;
+                        const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
+                        const choiceImages = q.image_urls?.choices?.[choiceKey];
+                        const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+                        const hasText = option.value && option.value.trim() !== "";
+                        const isEmpty = !hasImage && !hasText;
+
+                        // Hide choice E if it's empty
+                        if (isEmpty && option.label === 'E') {
+                          return null;
+                        }
+
+                        const isUserAnswer = userAnswers[globalIndex] === option.label;
                         const isCorrectAnswer =
                           option.label === correctAnswerLabel;
 
@@ -940,7 +960,27 @@ export default function Quiz() {
                                 {option.label}
                               </div>
                               <div className="flex-1 text-sm pt-0.5">
-                                {option.value}
+                                {q.image_urls?.[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] &&
+                                 Array.isArray(q.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E']) &&
+                                 (q.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] as string[]).length > 0 && (
+                                  <div className="mb-2 space-x-1 inline-flex flex-wrap">
+                                    {(q.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] as string[]).map((imageUrl, imgIdx) => (
+                                      <div key={imgIdx} className="group relative inline-block">
+                                        <img
+                                          src={imageUrl}
+                                          alt={`Choice ${option.label} image ${imgIdx + 1}`}
+                                          className="h-10 w-auto rounded border border-gray-300 cursor-pointer"
+                                        />
+                                        <img
+                                          src={imageUrl}
+                                          alt={`Choice ${option.label} image ${imgIdx + 1} enlarged`}
+                                          className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {option.value && <span>{option.value}</span>}
                               </div>
                               {isCorrectAnswer && (
                                 <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />
@@ -959,7 +999,7 @@ export default function Quiz() {
                       className={`p-2 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}
                     >
                       <p className="font-semibold">
-                        Your answer: {userAnswer || "Not answered"}
+                        Your answer: {userAnswers[globalIndex] || "Not answered"}
                         {isCorrect
                           ? " ✓ Correct"
                           : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
@@ -1011,7 +1051,7 @@ export default function Quiz() {
             {currentPage === totalPages - 1 ? (
               <Button
                 onClick={() => router.push(`/study?subject=${subjectId}`)}
-                className="bg-khan-green hover:bg-khan-green/90 px-8"
+                className="bg-khan-green hover:bg-khan-green/90"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -1247,9 +1287,29 @@ export default function Quiz() {
                   >
                     <CardHeader className="pb-2 pt-3">
                       <div className="flex justify-between items-start gap-3">
-                        <CardTitle className="text-sm font-medium leading-relaxed flex-1">
-                          {globalIndex + 1}. {q.prompt}
-                        </CardTitle>
+                        <div className="flex-1">
+                          <CardTitle className="text-sm font-medium leading-relaxed">
+                            {globalIndex + 1}. {q.prompt}
+                          </CardTitle>
+                          {q.image_urls?.question && q.image_urls.question.length > 0 && (
+                            <div className="mt-3 space-x-2 inline-flex flex-wrap">
+                              {q.image_urls.question.map((imageUrl, imgIdx) => (
+                                <div key={imgIdx} className="group relative inline-block">
+                                  <img
+                                    src={imageUrl}
+                                    alt={`Question ${globalIndex + 1} image ${imgIdx + 1}`}
+                                    className="h-12 w-auto rounded border border-gray-300 cursor-pointer"
+                                  />
+                                  <img
+                                    src={imageUrl}
+                                    alt={`Question ${globalIndex + 1} image ${imgIdx + 1} enlarged`}
+                                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <Button
                           onClick={() => toggleFlag(globalIndex)}
                           variant="outline"
@@ -1285,6 +1345,17 @@ export default function Quiz() {
                     <CardContent className="pt-2 pb-3">
                       <div className="space-y-1.5">
                         {options.map((option) => {
+                          const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
+                          const choiceImages = q.image_urls?.choices?.[choiceKey];
+                          const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+                          const hasText = option.value && option.value.trim() !== "";
+                          const isEmpty = !hasImage && !hasText;
+
+                          // Hide choice E if it's empty
+                          if (isEmpty && option.label === 'E') {
+                            return null;
+                          }
+
                           const isSelected =
                             userAnswers[globalIndex] === option.label;
 
@@ -1294,7 +1365,7 @@ export default function Quiz() {
                               onClick={() =>
                                 handleAnswerSelect(option.label, idx)
                               }
-                              className={`w-full text-left p-2 rounded-lg border transition-all ${
+                              className={`w-full text-left p-2 rounded-lg border-2 transition-all ${
                                 isSelected
                                   ? "border-khan-blue bg-blue-50"
                                   : "border-gray-200 hover:border-gray-300"
@@ -1311,7 +1382,27 @@ export default function Quiz() {
                                   {option.label}
                                 </div>
                                 <div className="flex-1 text-sm pt-0.5">
-                                  {option.value}
+                                  {q.image_urls?.[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] &&
+                                   Array.isArray(q.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E']) &&
+                                   (q.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] as string[]).length > 0 && (
+                                    <div className="mb-2 space-x-1 inline-flex flex-wrap">
+                                      {(q.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] as string[]).map((imageUrl, imgIdx) => (
+                                        <div key={imgIdx} className="group relative inline-block">
+                                          <img
+                                            src={imageUrl}
+                                            alt={`Choice ${option.label} image ${imgIdx + 1}`}
+                                            className="h-10 w-auto rounded border border-gray-300 cursor-pointer"
+                                          />
+                                          <img
+                                            src={imageUrl}
+                                            alt={`Choice ${option.label} image ${imgIdx + 1} enlarged`}
+                                            className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {option.value && <span>{option.value}</span>}
                                 </div>
                               </div>
                             </button>
@@ -1391,9 +1482,38 @@ export default function Quiz() {
             {/* Regular quiz: show one question at a time */}
             <Card className="mb-2">
               <CardHeader className="pb-2 pt-3">
-                <CardTitle className="text-sm font-medium leading-relaxed">
-                  {currentQuestion.prompt}
-                </CardTitle>
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1">
+                    <CardTitle className="text-sm font-medium leading-relaxed">
+                      {currentQuestionIndex + 1}. {currentQuestion.prompt}
+                    </CardTitle>
+                    {currentQuestion.image_urls?.question &&
+                      currentQuestion.image_urls.question.length > 0 && (
+                        <div className="mt-3 space-x-2 inline-flex flex-wrap">
+                          {currentQuestion.image_urls.question.map(
+                            (imageUrl, imgIdx) => (
+                              <div key={imgIdx} className="group relative inline-block">
+                                <img
+                                  src={imageUrl}
+                                  alt={`Question ${
+                                    currentQuestionIndex + 1
+                                  } image ${imgIdx + 1}`}
+                                  className="h-12 w-auto rounded border border-gray-300 cursor-pointer"
+                                />
+                                <img
+                                  src={imageUrl}
+                                  alt={`Question ${
+                                    currentQuestionIndex + 1
+                                  } image ${imgIdx + 1} enlarged`}
+                                  className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                                />
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      )}
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="pt-2 pb-3">
                 <div className="space-y-1.5">
@@ -1406,6 +1526,17 @@ export default function Quiz() {
                     );
 
                     return options.map((option) => {
+                      const choiceKey = option.label as 'A' | 'B' | 'C' | 'D' | 'E';
+                      const choiceImages = currentQuestion.image_urls?.choices?.[choiceKey];
+                      const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+                      const hasText = option.value && option.value.trim() !== "";
+                      const isEmpty = !hasImage && !hasText;
+
+                      // Hide choice E if it's empty
+                      if (isEmpty && option.label === 'E') {
+                        return null;
+                      }
+
                       const isSelected = selectedAnswer === option.label;
                       const correctAnswerLabel = String.fromCharCode(
                         65 + currentQuestion.answerIndex,
@@ -1445,7 +1576,27 @@ export default function Quiz() {
                               {option.label}
                             </div>
                             <div className="flex-1 pt-0.5 text-sm">
-                              {option.value}
+                              {currentQuestion.image_urls?.[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] &&
+                               Array.isArray(currentQuestion.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E']) &&
+                               (currentQuestion.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] as string[]).length > 0 && (
+                                <div className="mb-2 space-x-1 inline-flex flex-wrap">
+                                  {(currentQuestion.image_urls[option.label as 'A' | 'B' | 'C' | 'D' | 'E'] as string[]).map((imageUrl, imgIdx) => (
+                                    <div key={imgIdx} className="group relative inline-block">
+                                      <img
+                                        src={imageUrl}
+                                        alt={`Choice ${option.label} image ${imgIdx + 1}`}
+                                        className="h-10 w-auto rounded border border-gray-300 cursor-pointer"
+                                      />
+                                      <img
+                                        src={imageUrl}
+                                        alt={`Choice ${option.label} image ${imgIdx + 1} enlarged`}
+                                        className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {option.value && <span>{option.value}</span>}
                             </div>
                             {showCorrect && (
                               <CheckCircle className="text-green-500 flex-shrink-0" />

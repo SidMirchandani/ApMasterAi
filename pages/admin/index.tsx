@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { auth } from "../../lib/firebase";
 import {
   onAuthStateChanged,
@@ -12,7 +11,7 @@ import {
 } from "firebase/auth";
 import Papa from "papaparse";
 import toast, { Toaster } from "react-hot-toast";
-import { BookOpen, Upload, Search, LogOut, AlertCircle } from "lucide-react";
+import { BookOpen, Upload, Search, LogOut, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../../client/src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../client/src/components/ui/card";
@@ -34,6 +33,14 @@ type Question = {
   difficulty?: string | null;
   subject_code?: string;
   section_code?: string;
+  image_urls?: {
+    question?: string[];
+    A?: string[];
+    B?: string[];
+    C?: string[];
+    D?: string[];
+    E?: string[];
+  };
 };
 
 export default function AdminPage() {
@@ -51,10 +58,16 @@ export default function AdminPage() {
   // CSV upload state
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  
+
+  // ZIP import state
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // AI explanation generation state
-  const [generating, setGenerating] = useState(false);
-  
+  const [generatingExplanations, setGeneratingExplanations] = useState(false);
+  const [fixingPrompts, setFixingPrompts] = useState(false);
+  const [deletingQuestions, setDeletingQuestions] = useState(false);
+
   // Checkbox selection state
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
 
@@ -174,7 +187,7 @@ export default function AdminPage() {
 
   async function deleteQuestion(id: string) {
     if (!token) return;
-    
+
     const deletePromise = fetch(`/api/admin/questions/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
@@ -196,15 +209,45 @@ export default function AdminPage() {
     });
   }
 
+  const handleZipImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/admin/import-questions', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success(`Success! Imported ${data.imported} questions with ${data.images_uploaded} images.`);
+        fetchFiltered(); // Re-fetch questions after import
+      } else {
+        toast.error(`Error: ${data.message || 'Import failed'}`);
+      }
+    } catch (err) {
+      toast.error('Import failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   async function generateExplanations() {
     if (!token || selectedQuestions.size === 0) {
       toast.error("Please select at least one question");
       return;
     }
-    
-    setGenerating(true);
+
+    setGeneratingExplanations(true);
     const questionIds = Array.from(selectedQuestions);
-    
+
     const generatePromise = fetch("/api/generateExplanations", {
       method: "POST",
       headers: { 
@@ -222,13 +265,49 @@ export default function AdminPage() {
         return data;
       })
       .finally(() => {
-        setGenerating(false);
+        setGeneratingExplanations(false);
       });
 
     toast.promise(generatePromise, {
       loading: `Generating explanations for ${questionIds.length} questions...`,
       success: (data) => `Generated ${data.updated} explanations!`,
       error: "Failed to generate explanations",
+    });
+  }
+
+  async function fixPrompt() { // Renamed from fixText
+    if (!token || selectedQuestions.size === 0) {
+      toast.error("Please select at least one question");
+      return;
+    }
+
+    setFixingPrompts(true);
+    const questionIds = Array.from(selectedQuestions);
+
+    const fixPromise = fetch("/api/fixText", { // API endpoint remains the same, button text changes
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}` 
+      },
+      body: JSON.stringify({ questionIds }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Fix prompt failed"); // Changed error message
+        return res.json();
+      })
+      .then((data) => {
+        fetchFiltered();
+        return data;
+      })
+      .finally(() => {
+        setFixingPrompts(false);
+      });
+
+    toast.promise(fixPromise, {
+      loading: `Fixing prompts for ${questionIds.length} questions...`,
+      success: (data) => `Fixed ${data.updated} prompts!`, // Changed success message
+      error: "Failed to fix prompts", // Changed error message
     });
   }
 
@@ -251,6 +330,44 @@ export default function AdminPage() {
       setSelectedQuestions(new Set(items.map(q => q.id)));
     }
   }
+
+  const deleteSelected = async () => {
+    if (!confirm(`Delete ${selectedQuestions.size} questions?`)) return;
+    if (!token) return;
+
+    setDeletingQuestions(true);
+    const idsToDelete = Array.from(selectedQuestions);
+
+    const deletePromise = fetch("/api/admin/questions/bulk-delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ ids: idsToDelete }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || "Delete failed");
+        }
+        return res.json();
+      })
+      .then(() => {
+        setItems((prev) => prev.filter((q) => !selectedQuestions.has(q.id)));
+        setSelectedQuestions(new Set());
+      })
+      .finally(() => {
+        setDeletingQuestions(false);
+      });
+
+    toast.promise(deletePromise, {
+      loading: `Deleting ${idsToDelete.length} questions...`,
+      success: `Successfully deleted ${idsToDelete.length} questions!`,
+      error: (err) => `Failed to delete: ${err.message}`,
+    });
+  };
+
 
   if (loading) {
     return (
@@ -337,7 +454,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-khan-background">
       <Toaster position="top-right" />
-      
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -403,6 +520,50 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
+        {/* ZIP Import Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Bulk Import via ZIP
+            </CardTitle>
+            <CardDescription>Import questions and images from a ZIP file</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".zip"
+                onChange={handleZipImport}
+                style={{ display: 'none' }}
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-khan-blue hover:bg-khan-blue/90"
+                disabled={importing}
+              >
+                {importing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Import ZIP
+                  </>
+                )}
+              </Button>
+              {importing && (
+                <p className="text-sm text-khan-gray-medium">
+                  Processing ZIP file... This may take a while.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Filter Card */}
         <Card>
           <CardHeader>
@@ -447,13 +608,29 @@ export default function AdminPage() {
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
               </div>
-              <Button
-                onClick={generateExplanations}
-                disabled={generating || selectedQuestions.size === 0}
-                className="bg-khan-green hover:bg-khan-green-light text-white"
-              >
-                {generating ? "Generating..." : `Generate Explanations (${selectedQuestions.size})`}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={generateExplanations}
+                  disabled={generatingExplanations || selectedQuestions.size === 0}
+                  className="bg-khan-green hover:bg-khan-green-light text-white"
+                >
+                  {generatingExplanations ? "Generating..." : `Generate Explanations (${selectedQuestions.size})`}
+                </Button>
+                <Button
+                  onClick={fixPrompt} // Button now calls fixPrompt
+                  disabled={fixingPrompts || selectedQuestions.size === 0}
+                  className="bg-khan-blue hover:bg-khan-blue/90 text-white"
+                >
+                  {fixingPrompts ? "Fixing..." : `Fix Prompt (${selectedQuestions.size})`}
+                </Button>
+                <Button
+                  onClick={deleteSelected}
+                  variant="destructive"
+                  disabled={deletingQuestions || selectedQuestions.size === 0}
+                >
+                  {deletingQuestions ? "Deleting..." : `Delete Selected (${selectedQuestions.size})`}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -541,6 +718,74 @@ function Row({
     setEdit(false);
   }
 
+  const renderQuestionPrompt = () => {
+    const hasImage = q.image_urls?.question && Array.isArray(q.image_urls.question) && q.image_urls.question.length > 0;
+    const hasText = q.prompt && q.prompt.trim() !== "";
+
+    if (!hasImage && !hasText) {
+      return <span className="text-gray-400">N/A</span>;
+    }
+
+    return (
+      <div className="max-w-xs">
+        {hasImage && (
+          <div className="mb-1 space-y-1">
+            {q.image_urls.question.map((url, idx) => (
+              <div key={idx} className="group relative inline-block">
+                <img
+                  src={url}
+                  alt={`Question image ${idx + 1}`}
+                  className="h-8 w-auto rounded border border-gray-300 cursor-pointer"
+                />
+                <img
+                  src={url}
+                  alt={`Question image ${idx + 1} enlarged`}
+                  className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        {hasText && <div className="truncate text-xs">{q.prompt}</div>}
+      </div>
+    );
+  };
+
+  const renderChoice = (choice: string, index: number) => {
+    const choiceKey = String.fromCharCode(65 + index) as 'A' | 'B' | 'C' | 'D' | 'E';
+    const choiceImages = q.image_urls?.[choiceKey];
+    const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+    const hasText = choice && choice.trim() !== "";
+
+    if (!hasImage && !hasText) {
+      return <span className="text-gray-400">N/A</span>;
+    }
+
+    return (
+      <div>
+        {hasImage && (
+          <div className="mb-1 space-x-1">
+            {choiceImages.map((url, idx) => (
+              <div key={idx} className="group relative inline-block">
+                <img
+                  src={url}
+                  alt={`Choice ${choiceKey} image ${idx + 1}`}
+                  className="h-6 w-auto rounded border border-gray-300 cursor-pointer"
+                />
+                <img
+                  src={url}
+                  alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
+                  className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        {hasText && <span>{choice}</span>}
+      </div>
+    );
+  };
+
   if (!edit) {
     return (
       <tr className="border-b hover:bg-gray-50">
@@ -552,13 +797,13 @@ function Row({
         </td>
         <td className="p-3 align-top">{q.subject_code || "-"}</td>
         <td className="p-3 align-top">{q.section_code || "-"}</td>
-        <td className="p-3 align-top max-w-xs truncate">{q.prompt}</td>
+        <td className="p-3 align-top">{renderQuestionPrompt()}</td>
         <td className="p-3 align-top">
           <div className="text-xs space-y-1">
             {Array.isArray(q.choices) &&
               q.choices.map((c, i) => (
                 <div key={i}>
-                  {String.fromCharCode(65 + i)}. {c}
+                  {String.fromCharCode(65 + i)}. {renderChoice(c, i)}
                 </div>
               ))}
           </div>
@@ -566,7 +811,7 @@ function Row({
         <td className="p-3 text-center align-top font-semibold">
           ({String.fromCharCode(65 + q.answerIndex)})
         </td>
-        <td className="p-3 align-top max-w-xs truncate text-xs">{q.explanation}</td>
+        <td className="p-3 align-top max-w-xs truncate text-xs">{q.explanation || "-"}</td>
         <td className="p-3 text-center align-top">
           <div className="flex gap-2 justify-center">
             <Button

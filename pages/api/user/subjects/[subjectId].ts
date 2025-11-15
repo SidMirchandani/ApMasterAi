@@ -130,20 +130,78 @@ export default async function handler(
     switch (req.method) {
       case "DELETE": {
         try {
-          console.log("[subjectId API][DELETE] Attempting to delete subject with ID:", subjectId);
-          await storage.deleteUserSubject(subjectId);
-          console.log("[subjectId API][DELETE] Successfully deleted subject:", subjectId);
+          console.log("=== DELETE REQUEST START ===");
+          console.log("[subjectId API][DELETE] Subject ID from query:", subjectId);
+          console.log("[subjectId API][DELETE] Subject ID type:", typeof subjectId);
+          console.log("[subjectId API][DELETE] User ID:", userId);
+          console.log("[subjectId API][DELETE] Firebase UID:", firebaseUid);
+          
+          const db = getDb();
+          console.log("[subjectId API][DELETE] Got DB instance:", !!db);
+          
+          const userSubjectsRef = db.collection('user_subjects');
+          console.log("[subjectId API][DELETE] Got collection reference");
+          
+          // Get the document directly by its Firestore document ID
+          const docRef = userSubjectsRef.doc(subjectId as string);
+          console.log("[subjectId API][DELETE] Created doc reference for ID:", subjectId);
+          
+          const doc = await docRef.get();
+          console.log("[subjectId API][DELETE] Doc exists:", doc.exists);
+          console.log("[subjectId API][DELETE] Doc ID:", doc.id);
+          
+          if (!doc.exists) {
+            console.log("[subjectId API][DELETE] ❌ Document not found:", subjectId);
+            
+            // Try to list all documents for this user to debug
+            const userDocs = await userSubjectsRef.where('userId', '==', userId).get();
+            console.log("[subjectId API][DELETE] User has", userDocs.size, "documents total");
+            userDocs.forEach(d => {
+              console.log("[subjectId API][DELETE] Available doc ID:", d.id, "- subjectId:", d.data()?.subjectId);
+            });
+            
+            return res.status(404).json({
+              success: false,
+              message: "Subject not found."
+            });
+          }
+          
+          // Verify it belongs to the user
+          const data = doc.data();
+          console.log("[subjectId API][DELETE] Document data userId:", data?.userId);
+          console.log("[subjectId API][DELETE] Expected userId:", userId);
+          console.log("[subjectId API][DELETE] UserIds match:", data?.userId === userId);
+          
+          if (data?.userId !== userId) {
+            console.log("[subjectId API][DELETE] ❌ Document does not belong to user");
+            return res.status(404).json({
+              success: false,
+              message: "Subject not found or does not belong to the user."
+            });
+          }
+          
+          // Delete the document
+          console.log("[subjectId API][DELETE] About to delete document:", doc.id);
+          await docRef.delete();
+          console.log("[subjectId API][DELETE] ✅ Delete operation completed");
+          
+          // Verify deletion
+          const checkDoc = await docRef.get();
+          console.log("[subjectId API][DELETE] Verification - doc still exists:", checkDoc.exists);
+          
+          console.log("=== DELETE REQUEST SUCCESS ===");
           return res.status(200).json({
             success: true,
             message: "Subject removed successfully",
           });
         } catch (error) {
-          console.error("[subjectId API][DELETE] Error:", error);
-          // Custom message for deletion failure, potentially including subject name if available
-          const errorMessage = `Failed to remove subject${subjectId ? ` "${subjectId}"` : ""}`;
+          console.error("=== DELETE REQUEST ERROR ===");
+          console.error("[subjectId API][DELETE] Error type:", error.constructor.name);
+          console.error("[subjectId API][DELETE] Error message:", error.message);
+          console.error("[subjectId API][DELETE] Error stack:", error.stack);
           return res.status(500).json({
             success: false,
-            message: errorMessage,
+            message: "Failed to remove subject",
             error: error.message
           });
         }

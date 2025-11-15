@@ -1,6 +1,7 @@
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 
 let adminApp: App | null = null;
 
@@ -25,6 +26,10 @@ export function getFirebaseAdmin() {
       try {
         // Check if we have a service account key
         const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        // Use the correct storage bucket format - must match exactly
+        const storageBucket = 'gen-lang-client-0260042933.firebasestorage.app';
+
+        console.log('Storage bucket configuration:', storageBucket);
 
         if (serviceAccountKey) {
           // Use service account key for authentication
@@ -32,12 +37,14 @@ export function getFirebaseAdmin() {
           adminApp = initializeApp({
             credential: cert(serviceAccount),
             projectId,
+            storageBucket,
           });
           console.log('Firebase Admin initialized with service account for project:', projectId);
         } else {
           // Fallback to default credentials
           adminApp = initializeApp({
             projectId,
+            storageBucket,
           });
           console.log('Firebase Admin initialized with default credentials for project:', projectId);
         }
@@ -53,6 +60,7 @@ export function getFirebaseAdmin() {
   return adminApp ? {
     auth: getAuth(adminApp),
     firestore: getFirestore(adminApp),
+    storage: getStorage(adminApp),
     app: adminApp
   } : null;
 }

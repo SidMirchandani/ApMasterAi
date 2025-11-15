@@ -1,0 +1,215 @@
+Here is the **Replit Agent instruction in clean, perfect Markdown format**, ready for copy–paste into Replit:
+
+---
+
+# ✅ **REPLIT AGENT INSTRUCTION (UPDATED FOR NEW PARSER OUTPUT)**
+
+**Create a backend handler that lets me upload a ZIP file containing my scraper output from the APCSP parser.**
+
+The ZIP will *always* contain this folder structure:
+
+```
+export/
+ ├── questions/
+ │     ├── <qid>.json
+ │     ├── <qid>.json
+ │     ├── ...
+ └── images/
+       ├── <qid>/
+       │     ├── prompt_1.png
+       │     ├── prompt_2.png
+       │     ├── A_1.png
+       │     ├── B_1.png
+       │     ├── ...
+```
+
+---
+
+# 🟧 **YOUR TASK**
+
+## **1. Create an Express route `/admin/import-questions` that:**
+
+* Accepts a ZIP upload via `multipart/form-data`
+* Saves the uploaded ZIP to a temporary file (e.g., `./tmp_upload.zip`)
+* Extracts it into a folder:
+
+```
+./tmp_import/
+```
+
+Use **adm-zip** or **unzipper**.
+
+---
+
+## **2. After extracting, load all JSON files from:**
+
+```
+./tmp_import/export/questions/*.json
+```
+
+Each JSON file follows this structure (from my parser):
+
+```json
+{
+  "question_id": 34,
+  "prompt": "...",
+  "prompt_images": ["prompt_1.png", "prompt_2.png"],
+  "choices": { "A": "...", "B": "...", "C": "...", "D": "...", "E": "..." },
+  "choice_images": {
+    "A": ["A_1.png"],
+    "B": ["B_1.png"],
+    "C": [],
+    "D": [],
+    "E": []
+  },
+  "correct_answer": "B",
+  "explanation": "",
+  "section_code": "AAP"
+}
+```
+
+---
+
+## **3. For each question, upload images found at:**
+
+```
+./tmp_import/export/images/<question_id>/
+```
+
+Upload each file in that directory to **Firebase Storage** at:
+
+```
+questions/<question_id>/<filename>
+```
+
+Then build the Firestore-ready image object:
+
+```js
+image_urls: {
+  question: [ URLs for prompt_images ],
+  A: [ URLs for choice_images.A ],
+  B: [ URLs for choice_images.B ],
+  C: [ URLs for choice_images.C ],
+  D: [ URLs for choice_images.D ],
+  E: [ URLs for choice_images.E ]
+}
+```
+
+---
+
+## **4. Create/update a Firestore document for each question**
+
+### **Collection:**
+
+```
+questions
+```
+
+### **Document ID:**
+
+```
+APCSP_${section_code}_Q${question_id}
+```
+
+### **Firestore Document Schema:**
+
+```js
+{
+  subject_code: "APCSP",
+  section_code: json.section_code,
+  question_id: json.question_id,
+  prompt: json.prompt,
+
+  choices: [
+    json.choices.A || "",
+    json.choices.B || "",
+    json.choices.C || "",
+    json.choices.D || "",
+    json.choices.E || ""
+  ],
+
+  answerIndex: ["A","B","C","D","E"].indexOf(json.correct_answer),
+
+  explanation: json.explanation || "",
+
+  image_urls: {
+    question: [...],
+    A: [...],
+    B: [...],
+    C: [...],
+    D: [...],
+    E: [...]
+  },
+
+  mode: "SECTION",
+  test_slug: "",
+  tags: [],
+
+  createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+
+  rand: Math.random()
+}
+```
+
+---
+
+## **5. Cleanup**
+
+After the import:
+
+* Delete `./tmp_import/`
+* Delete the uploaded ZIP file
+* Then return a JSON response:
+
+```json
+{
+  "imported": <number_of_questions>,
+  "docs": ["APCSP_AAP_Q12", "APCSP_DAT_Q45", ...],
+  "images_uploaded": <count>
+}
+```
+
+---
+
+## **6. Use these dependencies:**
+
+* `express`
+* `multer`
+* `adm-zip` or `unzipper`
+* `firebase-admin`
+* `fs/promises`
+* `path`
+
+---
+
+## **7. Produce TWO FILES:**
+
+### **A. `import_questions.js`**
+
+A complete working module that:
+
+* Handles ZIP upload
+* Extracts the ZIP
+* Parses each question
+* Uploads images to Firebase Storage
+* Writes Firestore documents
+* Cleans up temporary files
+
+### **B. Express Router Setup**
+
+```js
+const express = require("express");
+const router = express.Router();
+const importQuestions = require("./import_questions");
+
+router.post("/admin/import-questions", importQuestions);
+
+module.exports = router;
+```
+
+---
+
+# 🎉 **This is the final updated instruction — 100% aligned with the new parser output and Firestore schema.**
+
+If you want, I can now generate the **full working `import_questions.js` file** for you.

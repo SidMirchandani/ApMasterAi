@@ -61,14 +61,36 @@ export default async function handler(
           `Generating explanation for Question ${i + 1}/${total} (ID: ${questionId})`,
         );
 
-        // ✅ Prompt
-        const prompt = `
-Explain why the correct answer is correct for the following AP-style multiple-choice question.
-Question: ${question.prompt}
-Choices: ${question.choices?.join(", ")}
-Correct answer: ${question.choices?.[question.answerIndex]}
-Keep your explanation concise (2–3 sentences).
-`;
+        // Build comprehensive prompt with images
+        let promptText = `Explain why the correct answer is correct for the following AP-style multiple-choice question.\n\n`;
+        
+        // Add question text
+        if (question.prompt) {
+          promptText += `Question: ${question.prompt}\n`;
+        }
+        
+        // Add question images if they exist
+        if (question.image_urls?.question && Array.isArray(question.image_urls.question) && question.image_urls.question.length > 0) {
+          promptText += `Question Image URLs:\n${question.image_urls.question.map((url: string, idx: number) => `  - Image ${idx + 1}: ${url}`).join('\n')}\n`;
+        }
+        
+        // Add choices with their images
+        promptText += `\nChoices:\n`;
+        question.choices?.forEach((choice: string, idx: number) => {
+          const choiceLabel = String.fromCharCode(65 + idx); // A, B, C, D, E
+          promptText += `${choiceLabel}. ${choice}\n`;
+          
+          const choiceKey = choiceLabel as 'A' | 'B' | 'C' | 'D' | 'E';
+          const choiceImages = question.image_urls?.[choiceKey];
+          if (choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0) {
+            promptText += `   Choice ${choiceLabel} Image URLs:\n${choiceImages.map((url: string, imgIdx: number) => `   - Image ${imgIdx + 1}: ${url}`).join('\n')}\n`;
+          }
+        });
+        
+        promptText += `\nCorrect answer: ${String.fromCharCode(65 + question.answerIndex)}. ${question.choices?.[question.answerIndex]}\n`;
+        promptText += `\nKeep your explanation concise (2–3 sentences). If there are images, reference them in your explanation when relevant.`;
+
+        const prompt = promptText;
 
         // ✅ Correct Gemini 2.5 Flash call
         const response = await ai.models.generateContent({

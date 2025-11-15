@@ -1,0 +1,97 @@
+Write a backend handler for my admin page that lets me upload a ZIP file
+containing my scraper output.
+
+The ZIP will ALWAYS contain this folder structure:
+
+export/
+ ├── questions/
+ │     ├── 1.json
+ │     ├── 2.json
+ │     ├── ...
+ └── images/
+       ├── 1/
+       │     ├── question_1.png
+       │     ├── A_1.png
+       │     └── ...
+       ├── 2/
+       └── ...
+
+Your task:
+
+1. Create an API route or handler `/admin/import-questions` that:
+   - Accepts a ZIP file upload (`multipart/form-data`)
+   - Saves the ZIP temporarily
+   - Extracts it into a temp directory `./tmp_import/`
+
+2. After extracting:
+   - Read every JSON file in `./tmp_import/export/questions/`
+   - For each question file, parse:
+       subject_code
+       section_code
+       question_id
+       prompt
+       choices (object A–E)
+       correct_answer
+       explanation
+       local_images (arrays: question, A, B, C, D, E)
+
+3. For images found in:
+       ./tmp_import/export/images/<qid>/
+   upload each file to Firebase Storage path:
+       questions/<qid>/<filename>
+
+   Then replace each entry in local_images with the Firebase download URL.
+
+4. Build the Firestore document using THIS schema:
+
+   Collection: `questions`
+   Document ID: `${subject_code}_${section_code}_Q${question_id}`
+
+   Fields:
+     subject_code: string
+     section_code: string
+     question_id: number
+     prompt: string
+     choices: array [A,B,C,D,E] (empty string if missing)
+     answerIndex: 0–4
+     explanation: string
+     image_urls:
+        {
+          question: array of URLs,
+          A: array of URLs,
+          B: array of URLs,
+          C: array of URLs,
+          D: array of URLs,
+          E: array of URLs
+        }
+     mode: "SECTION"
+     test_slug: ""
+     tags: []
+     createdAt: server timestamp
+     updatedAt: server timestamp
+     rand: random float 0–1
+
+5. Insert or update each Firestore doc.
+
+6. After processing:
+   - delete the temp extracted folder
+   - delete the uploaded zip
+
+7. Return a JSON response listing:
+   - how many questions imported
+   - Firestore doc IDs
+   - number of images uploaded
+
+Use Node.js with:
+
+- express (for the upload endpoint)
+- multer (for multipart file upload)
+- adm-zip or unzipper (for extraction)
+- firebase-admin SDK
+- fs/promises
+
+Finally:
+Produce a full working file named `import_questions.js` that I can run from my Replit backend,
+and also produce the corresponding Express route handler code.
+
+Begin now.
