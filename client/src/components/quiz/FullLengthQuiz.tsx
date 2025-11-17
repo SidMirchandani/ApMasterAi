@@ -154,7 +154,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         canGoNext={currentQuestionIndex < questions.length - 1}
         isLastQuestion={currentQuestionIndex === questions.length - 1}
         onSubmit={handleSubmitTest}
-        onReview={() => setIsReviewMode(true)} // Add onReview prop
+        onReview={currentQuestionIndex === questions.length - 1 ? () => setIsReviewMode(true) : undefined}
       />
 
       <EnhancedQuestionPalette

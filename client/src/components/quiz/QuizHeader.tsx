@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Clock, Flag, BookOpen, Calculator, FileText, MoreVertical, LogOut, ChevronDown } from "lucide-react";
 import {
@@ -21,9 +20,11 @@ interface QuizHeaderProps {
   onHideTimer?: () => void;
   timerHidden?: boolean;
   onExitExam?: () => void;
+  isLastQuestion?: boolean; // Added prop to indicate if it's the last question
+  onGoToReview?: () => void; // Added prop to navigate to review screen
 }
 
-export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = false, onExitExam }: QuizHeaderProps) {
+export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = false, onExitExam, isLastQuestion = false, onGoToReview }: QuizHeaderProps) {
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -90,7 +91,7 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
               <Button variant="ghost" size="icon" title="Reference">
                 <FileText className="h-5 w-5" />
               </Button>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" title="More">
@@ -101,7 +102,7 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
                   {onExitExam && (
                     <DropdownMenuItem onClick={onExitExam}>
                       <LogOut className="mr-2 h-4 w-4" />
-                      Exit the Exam
+                      <span>Exit to Main</span>
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -138,7 +139,7 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
               </SheetContent>
             </Sheet>
           </div>
-          
+
           {/* Second row: Timer and tools */}
           <div className="flex justify-between items-center h-10 mt-1">
             <div className="flex items-center gap-2 text-gray-700">
@@ -156,7 +157,7 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
               <Button variant="ghost" size="icon" className="h-8 w-8" title="Reference">
                 <FileText className="h-4 w-4" />
               </Button>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8" title="More">
@@ -167,7 +168,7 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
                   {onExitExam && (
                     <DropdownMenuItem onClick={onExitExam}>
                       <LogOut className="mr-2 h-4 w-4" />
-                      Exit the Exam
+                      <span>Exit to Main</span>
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
