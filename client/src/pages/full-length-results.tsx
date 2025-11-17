@@ -82,7 +82,7 @@ export default function FullLengthResults() {
       query: {
         subject: subjectId,
         testId: testId,
-        section: sectionCode, // This will be the actual section code like "BEC", "NIPD", etc.
+        section: sectionCode,
       },
     });
   };
@@ -254,9 +254,9 @@ export default function FullLengthResults() {
                               <h3 className="font-semibold text-sm text-gray-900">
                                 {section.name}
                               </h3>
-                              <span className="text-xs text-gray-600">
-                                ({section.correct}/{section.total})
-                              </span>
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1">
+                              ({section.correct}/{section.total})
                             </div>
                           </div>
                           <div

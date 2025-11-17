@@ -55,20 +55,27 @@ export function QuizResults({
 
   // Calculate section breakdown for full-length tests
   const sectionPerformance = isFullLength ? (() => {
-    const map: Record<string, { name: string; correct: number; total: number; percentage: number }> = {};
-    const sectionNames: Record<string, string> = {
-      BEC: "Basic Economic Concepts",
-      EIBC: "Economic Indicators & Business Cycle",
-      NIPD: "National Income & Price Determination",
-      FS: "Financial Sector",
-      LRCSP: "Long-Run Consequences of Stabilization Policies",
-      OEITF: "Open Economy - International Trade & Finance",
+    const map: Record<string, { name: string; unitNumber: number; correct: number; total: number; percentage: number }> = {};
+    const sectionInfo: Record<string, { name: string; unitNumber: number }> = {
+      // AP Macroeconomics
+      BEC: { name: "Basic Economic Concepts", unitNumber: 1 },
+      EIBC: { name: "Economic Indicators & Business Cycle", unitNumber: 2 },
+      NIPD: { name: "National Income & Price Determination", unitNumber: 3 },
+      FS: { name: "Financial Sector", unitNumber: 4 },
+      LRCSP: { name: "Long-Run Consequences of Stabilization Policies", unitNumber: 5 },
+      OEITF: { name: "Open Economy - International Trade & Finance", unitNumber: 6 },
+      // AP Computer Science Principles
+      CRD: { name: "Creative Development", unitNumber: 1 },
+      DAT: { name: "Data", unitNumber: 2 },
+      AAP: { name: "Algorithms and Programming", unitNumber: 3 },
+      CSN: { name: "Computer Systems and Networks", unitNumber: 4 },
+      IOC: { name: "Impact of Computing", unitNumber: 5 },
     };
 
     questions.forEach((q, i) => {
       const code = q.section_code || "Unknown";
-      const label = sectionNames[code] || code;
-      if (!map[code]) map[code] = { name: label, correct: 0, total: 0, percentage: 0 };
+      const info = sectionInfo[code] || { name: code, unitNumber: 0 };
+      if (!map[code]) map[code] = { name: info.name, unitNumber: info.unitNumber, correct: 0, total: 0, percentage: 0 };
       map[code].total++;
       const userAns = userAnswers[i];
       const correctAns = String.fromCharCode(65 + q.answerIndex);
@@ -171,10 +178,17 @@ export function QuizResults({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {Object.entries(sectionPerformance).map(([code, sec]) => (
+              {Object.entries(sectionPerformance)
+                .sort(([, a], [, b]) => (a.unitNumber || 0) - (b.unitNumber || 0))
+                .map(([code, sec]) => (
                 <div key={code} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-semibold">{sec.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-khan-green bg-khan-green/10 px-2 py-0.5 rounded">
+                        Unit {sec.unitNumber || 0}
+                      </span>
+                      <h3 className="font-semibold">{sec.name}</h3>
+                    </div>
                     <span className="font-bold text-gray-700">{sec.percentage}%</span>
                   </div>
                   <Progress value={sec.percentage} />
