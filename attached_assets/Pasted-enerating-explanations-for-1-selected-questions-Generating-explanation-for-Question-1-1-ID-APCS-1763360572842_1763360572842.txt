@@ -1,0 +1,26 @@
+enerating explanations for 1 selected questions...
+Generating explanation for Question 1/1 (ID: APCSP_AAP_Q100)
+✗ Failed to generate explanation for APCSP_AAP_Q100: ApiError: {"error":{"code":400,"message":"Invalid value at 'contents[0].parts[1].inline_data.data' (TYPE_BYTES), Base64 decoding failed for \"https://storage.googleapis.com/gen-lang-client-0260042933.firebasestorage.app/questions/APCSP/100/prompt_1.png\"","status":"INVALID_ARGUMENT","details":[{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"contents[0].parts[1].inline_data.data","description":"Invalid value at 'contents[0].parts[1].inline_data.data' (TYPE_BYTES), Base64 decoding failed for \"https://storage.googleapis.com/gen-lang-client-0260042933.firebasestorage.app/questions/APCSP/100/prompt_1.png\""}]}]}}
+    at throwErrorIfNotOK (file:///home/runner/workspace/node_modules/@google/genai/dist/node/index.mjs:11025:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///home/runner/workspace/node_modules/@google/genai/dist/node/index.mjs:10801:13
+    at async Models.generateContent (file:///home/runner/workspace/node_modules/@google/genai/dist/node/index.mjs:12059:24)
+    at async handler (webpack-internal:///(api)/./pages/api/generateExplanations.ts:113:34)
+    at async K (/home/runner/workspace/node_modules/next/dist/compiled/next-server/pages-api.runtime.dev.js:21:2871)
+    at async U.render (/home/runner/workspace/node_modules/next/dist/compiled/next-server/pages-api.runtime.dev.js:21:3955)
+    at async DevServer.runApi (/home/runner/workspace/node_modules/next/dist/server/next-server.js:600:9)
+    at async NextNodeServer.handleCatchallRenderRequest (/home/runner/workspace/node_modules/next/dist/server/next-server.js:269:37)
+    at async DevServer.handleRequestImpl (/home/runner/workspace/node_modules/next/dist/server/base-server.js:816:17)
+    at async /home/runner/workspace/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/home/runner/workspace/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/home/runner/workspace/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:353:24) {
+  status: 400
+}
+✅ Completed: Regenerated 0/1 explanations
+ POST /api/generateExplanations 200 in 1543ms
+Query params: APCSP 
+Token decoded email: siddharthmirchandani@gmail.com
+Docs found: 654
+ GET /api/admin/questions/query?subject=APCSP&section= 304 in 273ms
