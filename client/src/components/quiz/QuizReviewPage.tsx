@@ -54,6 +54,7 @@ export function QuizReviewPage({
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const [localAnswers, setLocalAnswers] = useState(userAnswers);
   const [localFlagged, setLocalFlagged] = useState(flaggedQuestions);
+  const [showPalette, setShowPalette] = useState(false);
 
   const handleAnswerChange = (questionIndex: number, answer: string) => {
     setLocalAnswers((prev) => ({ ...prev, [questionIndex]: answer }));
@@ -159,7 +160,10 @@ export function QuizReviewPage({
                     return (
                       <button
                         key={index}
-                        onClick={() => setSelectedQuestion(index)}
+                        onClick={() => {
+                          setSelectedQuestion(index);
+                          setShowPalette(false);
+                        }}
                         className={`${base} ${cls}`}
                       >
                         {index + 1}
@@ -219,6 +223,7 @@ export function QuizReviewPage({
           totalQuestions={questions.length}
           onOpenPalette={() => {
             setSelectedQuestion(null);
+            setShowPalette(false);
           }}
           onPrevious={() => {
             if (selectedQuestion > 0) {
@@ -227,17 +232,23 @@ export function QuizReviewPage({
               // Going back from first question - return to palette view
               setSelectedQuestion(null);
             }
+            setShowPalette(false);
           }}
-          onNext={() =>
-            selectedQuestion < questions.length - 1 &&
-            setSelectedQuestion(selectedQuestion + 1)
-          }
+          onNext={() => {
+            if (selectedQuestion < questions.length - 1) {
+              setSelectedQuestion(selectedQuestion + 1);
+            }
+            setShowPalette(false);
+          }}
           canGoPrevious
           canGoNext={selectedQuestion < questions.length - 1}
           isLastQuestion={selectedQuestion === questions.length - 1}
           onReview={
             selectedQuestion === questions.length - 1
-              ? () => setSelectedQuestion(null)
+              ? () => {
+                  setSelectedQuestion(null);
+                  setShowPalette(false);
+                }
               : undefined
           }
           subjectId={subjectId}
