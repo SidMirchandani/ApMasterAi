@@ -1,0 +1,166 @@
+
+import { useRouter } from "next/router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { CheckCircle, XCircle, BookOpen } from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
+
+interface Question {
+  id: string;
+  prompt: string;
+  choices: string[];
+  answerIndex: number;
+  explanation: string;
+  subject_code?: string;
+  section_code?: string;
+}
+
+interface QuizResultsProps {
+  score: number;
+  totalQuestions: number;
+  questions: Question[];
+  userAnswers: { [key: number]: string };
+  subjectId: string;
+  isFullLength: boolean;
+  onReview: () => void;
+  onRetake: () => void;
+}
+
+export function QuizResults({
+  score,
+  totalQuestions,
+  questions,
+  userAnswers,
+  subjectId,
+  isFullLength,
+  onReview,
+  onRetake,
+}: QuizResultsProps) {
+  const router = useRouter();
+  const percentage = Math.round((score / totalQuestions) * 100);
+
+  const getPerformanceLevel = (pct: number) => {
+    if (pct >= 90) return { label: "Excellent", color: "text-green-600", bg: "bg-green-100" };
+    if (pct >= 75) return { label: "Good", color: "text-blue-600", bg: "bg-blue-100" };
+    if (pct >= 60) return { label: "Fair", color: "text-yellow-600", bg: "bg-yellow-100" };
+    return { label: "Needs Work", color: "text-red-600", bg: "bg-red-100" };
+  };
+
+  const overall = getPerformanceLevel(percentage);
+
+  // Calculate section breakdown for full-length tests
+  const sectionPerformance = isFullLength ? (() => {
+    const map: Record<string, { name: string; correct: number; total: number; percentage: number }> = {};
+    const sectionNames: Record<string, string> = {
+      BEC: "Basic Economic Concepts",
+      EIBC: "Economic Indicators & Business Cycle",
+      NIPD: "National Income & Price Determination",
+      FS: "Financial Sector",
+      LRCSP: "Long-Run Consequences of Stabilization Policies",
+      OEITF: "Open Economy - International Trade & Finance",
+    };
+
+    questions.forEach((q, i) => {
+      const code = q.section_code || "Unknown";
+      const label = sectionNames[code] || code;
+      if (!map[code]) map[code] = { name: label, correct: 0, total: 0, percentage: 0 };
+      map[code].total++;
+      const userAns = userAnswers[i];
+      const correctAns = String.fromCharCode(65 + q.answerIndex);
+      if (userAns === correctAns) map[code].correct++;
+    });
+
+    Object.values(map).forEach((s) => {
+      s.percentage = Math.round((s.correct / s.total) * 100);
+    });
+
+    return map;
+  })() : null;
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-3">
+      <Card className="border-t-4 border-t-khan-green">
+        <CardContent className="pt-6 pb-6">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Test Results</h2>
+              <p className="text-sm text-gray-500">
+                {formatDateTime(new Date())}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className={`inline-block px-6 py-2 rounded-full ${overall.bg} ${overall.color} font-semibold`}>
+                {overall.label}
+              </div>
+              <p className="text-sm text-gray-600">
+                {score} out of {totalQuestions} questions correct
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 mt-2">
+              <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                <div className="flex justify-center mb-2">
+                  <CheckCircle className="h-12 w-12 text-green-500" />
+                </div>
+                <p className="text-3xl font-bold">{score}</p>
+                <p className="text-sm text-gray-600 mt-1">Correct Answers</p>
+              </div>
+
+              <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                <div className="flex justify-center mb-2">
+                  <XCircle className="h-12 w-12 text-red-500" />
+                </div>
+                <p className="text-3xl font-bold">{totalQuestions - score}</p>
+                <p className="text-sm text-gray-600 mt-1">Incorrect Answers</p>
+              </div>
+
+              <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
+                <div className="flex justify-center mb-2">
+                  <div className="h-12 w-12 rounded-full bg-khan-blue flex items-center justify-center">
+                    <span className="text-white font-bold text-xl">{totalQuestions}</span>
+                  </div>
+                </div>
+                <p className="text-3xl font-bold">Total</p>
+                <p className="text-sm text-gray-600 mt-1">Questions</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {isFullLength && sectionPerformance && (
+        <Card className="border-t-4 border-t-khan-blue">
+          <CardHeader>
+            <CardTitle>Performance by Unit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Object.entries(sectionPerformance).map(([code, sec]) => (
+                <div key={code} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-semibold">{sec.name}</h3>
+                    <span className="font-bold text-gray-700">{sec.percentage}%</span>
+                  </div>
+                  <Progress value={sec.percentage} />
+                  <div className="flex justify-between mt-2 text-sm text-gray-600">
+                    <span>{sec.correct} correct</span>
+                    <span>{sec.total} total</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="flex justify-end gap-3 mt-6">
+        <Button variant="outline" onClick={onReview}>
+          Review Answers
+        </Button>
+        <Button onClick={onRetake}>Retake {isFullLength ? "Test" : "Quiz"}</Button>
+      </div>
+    </div>
+  );
+}
