@@ -135,12 +135,14 @@ export default function Navigation() {
     } else if (location === "/section-review") {
       const subjectId = router.query.subject as string;
       const testId = router.query.testId as string;
+      const sectionCode = router.query.section as string;
       const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
       breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
-      breadcrumbs.push({ label: "Full Length Test", href: `/full-length-results?subject=${subjectId}&testId=${testId}` });
+      breadcrumbs.push({ label: "Test Results", href: `/full-length-results?subject=${subjectId}&testId=${testId}` });
+      breadcrumbs.push({ label: sectionCode === "all" ? "Full Test Review" : "Unit Review", href: "#" });
     } else if (location === "/full-length-history") {
       const subjectId = router.query.subject as string;
       const abbreviatedName = getAbbreviatedCourseName(subjectId);

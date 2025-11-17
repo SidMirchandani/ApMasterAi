@@ -10,7 +10,6 @@ import { ExplanationChat } from "@/components/ui/explanation-chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { BlockRenderer } from "@/components/quiz/BlockRenderer";
-import { QuizHeader } from "@/components/quiz/QuizHeader";
 import { QuizBottomBar } from "@/components/quiz/QuizBottomBar";
 import { ReviewQuestionPalette } from "@/components/quiz/ReviewQuestionPalette";
 
@@ -173,22 +172,10 @@ export default function SectionReview() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Main Navigation */}
+      {/* Main Navigation with Breadcrumbs */}
       <Navigation />
-      
-      {/* Quiz Header */}
-      <div className="sticky top-0 z-50">
-        <QuizHeader
-          title={sectionCode === "all" 
-            ? `Full Test Review` 
-            : `Unit ${sectionData?.unitNumber || ""} Review - ${sectionData?.sectionName || ""}`}
-          timeElapsed={0}
-          timerHidden={true}
-          onExitExam={handleBackNavigation}
-        />
-      </div>
 
-      <div className="flex-1 overflow-y-auto mb-14">
+      <div className="flex-1 overflow-y-auto mb-14 pt-6">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <Card>
             <CardHeader className="pb-3">
