@@ -1,15 +1,9 @@
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, MoreVertical, Flag } from "lucide-react";
+import { useState } from "react";
+import { QuizHeader } from "./QuizHeader";
+import { QuizBottomBar } from "./QuizBottomBar";
 import { QuestionCard } from "./QuestionCard";
-import { QuestionPalette } from "./QuestionPalette";
+import { EnhancedQuestionPalette } from "./EnhancedQuestionPalette";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
-import { ExitConfirmDialog } from "./ExitConfirmDialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Question {
   id: string;
@@ -38,50 +32,38 @@ interface FullLengthQuizProps {
 }
 
 export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit }: FullLengthQuizProps) {
-  const router = useRouter();
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
   const [showQuestionPalette, setShowQuestionPalette] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
-  const [showExitDialog, setShowExitDialog] = useState(false);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [timerHidden, setTimerHidden] = useState(false);
 
-  const questionsPerPage = 5;
-  const totalPages = Math.ceil(questions.length / questionsPerPage);
-  const currentQuestions = questions.slice(
-    currentPage * questionsPerPage,
-    (currentPage + 1) * questionsPerPage
-  );
-  const progress = ((currentPage + 1) / totalPages) * 100;
+  const currentQuestion = questions[currentQuestionIndex];
 
-  const formatTime = (seconds: number) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  const handleAnswerSelect = (answer: string) => {
+    setUserAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }));
   };
 
-  const handleAnswerSelect = (answer: string, questionIndex: number) => {
-    const globalIndex = currentPage * questionsPerPage + questionIndex;
-    setUserAnswers((prev) => ({ ...prev, [globalIndex]: answer }));
-  };
-
-  const toggleFlag = (questionIndex: number) => {
+  const toggleFlag = () => {
     setFlaggedQuestions((prev) => {
       const ns = new Set(prev);
-      if (ns.has(questionIndex)) ns.delete(questionIndex);
-      else ns.add(questionIndex);
+      if (ns.has(currentQuestionIndex)) ns.delete(currentQuestionIndex);
+      else ns.add(currentQuestionIndex);
       return ns;
     });
   };
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages - 1) setCurrentPage((p) => p + 1);
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex((i) => i + 1);
+    }
   };
 
-  const handlePreviousPage = () => {
-    if (currentPage > 0) setCurrentPage((p) => p - 1);
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex((i) => i - 1);
+    }
   };
 
   const handleSubmitTest = () => {
@@ -94,98 +76,50 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   };
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" onClick={() => setShowExitDialog(true)}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <QuizHeader
+        title={`AP® ${subjectId.charAt(0).toUpperCase() + subjectId.slice(1).replace(/-/g, ' ')} Practice Exam`}
+        timeElapsed={timeElapsed}
+        onHideTimer={() => setTimerHidden(!timerHidden)}
+        timerHidden={timerHidden}
+      />
 
-          <div className="text-gray-600 text-sm">
-            Time: {formatTime(timeElapsed)}
-          </div>
-
-          <DropdownMenu open={showMoreMenu} onOpenChange={setShowMoreMenu}>
-            <DropdownMenuTrigger>
-              <MoreVertical className="h-5 w-5" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="right">
-              <DropdownMenuItem onClick={() => setShowQuestionPalette(true)}>
-                Question Palette
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowExitDialog(true)}>
-                Exit Test
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <Progress value={progress} className="mb-6" />
-
-        {/* Questions */}
-        <div className="space-y-8">
-          {currentQuestions.map((q, idx) => {
-            const globalIndex = currentPage * questionsPerPage + idx;
-            const userAnswer = userAnswers[globalIndex];
-            const flagged = flaggedQuestions.has(globalIndex);
-
-            return (
-              <QuestionCard
-                key={globalIndex}
-                question={q}
-                questionNumber={globalIndex + 1}
-                selectedAnswer={userAnswer}
-                isFlagged={flagged}
-                onAnswerSelect={(answer) => handleAnswerSelect(answer, idx)}
-                onToggleFlag={() => toggleFlag(globalIndex)}
-                isFullLength={true}
-              />
-            );
-          })}
-        </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between mt-8">
-          <Button
-            variant="outline"
-            disabled={currentPage === 0}
-            onClick={handlePreviousPage}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-          </Button>
-
-          {currentPage === totalPages - 1 ? (
-            <Button onClick={handleSubmitTest}>Submit Test</Button>
-          ) : (
-            <Button onClick={handleNextPage}>
-              Next <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          )}
+      <div className="flex-1 overflow-y-auto pb-20">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <QuestionCard
+            question={currentQuestion}
+            questionNumber={currentQuestionIndex + 1}
+            selectedAnswer={userAnswers[currentQuestionIndex]}
+            isFlagged={flaggedQuestions.has(currentQuestionIndex)}
+            onAnswerSelect={handleAnswerSelect}
+            onToggleFlag={toggleFlag}
+            isFullLength={true}
+          />
         </div>
       </div>
 
-      {/* Question Palette Modal */}
-      <QuestionPalette
+      <QuizBottomBar
+        currentQuestion={currentQuestionIndex + 1}
+        totalQuestions={questions.length}
+        onOpenPalette={() => setShowQuestionPalette(true)}
+        onPrevious={handlePreviousQuestion}
+        onNext={handleNextQuestion}
+        canGoPrevious={currentQuestionIndex > 0}
+        canGoNext={currentQuestionIndex < questions.length - 1}
+        isLastQuestion={currentQuestionIndex === questions.length - 1}
+        onSubmit={handleSubmitTest}
+      />
+
+      <EnhancedQuestionPalette
         isOpen={showQuestionPalette}
         onClose={() => setShowQuestionPalette(false)}
         questions={questions}
+        currentQuestion={currentQuestionIndex}
         userAnswers={userAnswers}
         flaggedQuestions={flaggedQuestions}
-        onQuestionSelect={(index) => {
-          setCurrentPage(Math.floor(index / questionsPerPage));
-          setShowQuestionPalette(false);
-        }}
+        onQuestionSelect={setCurrentQuestionIndex}
       />
 
-      {/* Exit Confirmation */}
-      <ExitConfirmDialog
-        isOpen={showExitDialog}
-        onClose={() => setShowExitDialog(false)}
-        onConfirm={onExit}
-      />
-
-      {/* Submit Confirmation */}
       <SubmitConfirmDialog
         isOpen={showSubmitConfirm}
         onClose={() => setShowSubmitConfirm(false)}

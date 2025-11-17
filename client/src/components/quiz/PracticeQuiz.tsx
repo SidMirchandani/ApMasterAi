@@ -1,13 +1,11 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, Flag } from "lucide-react";
+import { QuizHeader } from "./QuizHeader";
+import { QuizBottomBar } from "./QuizBottomBar";
 import { QuestionCard } from "./QuestionCard";
+import { EnhancedQuestionPalette } from "./EnhancedQuestionPalette";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 interface Question {
   id: string;
@@ -41,16 +39,11 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
+  const [showQuestionPalette, setShowQuestionPalette] = useState(false);
+  const [timerHidden, setTimerHidden] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
 
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-
-  const formatTime = (seconds: number) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
 
   const handleAnswerSelect = (answer: string) => {
     if (!isAnswerSubmitted) {
@@ -70,6 +63,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const handleSubmitAnswer = () => {
     if (!selectedAnswer || !currentQuestion) return;
     setIsAnswerSubmitted(true);
+    setUserAnswers((prev) => ({ ...prev, [currentQuestionIndex]: selectedAnswer }));
     const correctLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
     if (selectedAnswer === correctLabel) setScore(score + 1);
   };
@@ -84,71 +78,70 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
     }
   };
 
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex((i) => i - 1);
+      setSelectedAnswer(null);
+      setIsAnswerSubmitted(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" onClick={onExit}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <QuizHeader
+        title={`AP® ${subjectId.charAt(0).toUpperCase() + subjectId.slice(1).replace(/-/g, ' ')} Practice Quiz`}
+        timeElapsed={timeElapsed}
+        onHideTimer={() => setTimerHidden(!timerHidden)}
+        timerHidden={timerHidden}
+      />
 
-          <div className="text-gray-600 text-sm">
-            Time: {formatTime(timeElapsed)}
-          </div>
+      <div className="flex-1 overflow-y-auto pb-20">
+        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+          <QuestionCard
+            question={currentQuestion}
+            questionNumber={currentQuestionIndex + 1}
+            selectedAnswer={selectedAnswer}
+            isFlagged={flaggedQuestions.has(currentQuestionIndex)}
+            onAnswerSelect={handleAnswerSelect}
+            onToggleFlag={toggleFlag}
+            isFullLength={false}
+            isAnswerSubmitted={isAnswerSubmitted}
+          />
 
-          <div className="w-20"></div>
-        </div>
-
-        <Progress value={progress} className="mb-6" />
-
-        {/* Question */}
-        <QuestionCard
-          question={currentQuestion}
-          questionNumber={currentQuestionIndex + 1}
-          selectedAnswer={selectedAnswer}
-          isFlagged={flaggedQuestions.has(currentQuestionIndex)}
-          onAnswerSelect={handleAnswerSelect}
-          onToggleFlag={toggleFlag}
-          isFullLength={false}
-          isAnswerSubmitted={isAnswerSubmitted}
-        />
-
-        {/* Explanation (shown after submission) */}
-        {isAnswerSubmitted && currentQuestion.explanation && (
-          <Card className="mt-6 border-khan-blue bg-blue-50">
-            <CardHeader className="pb-2 pt-3">
-              <CardTitle className="text-sm">Explanation</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 pb-3">
-              <ExplanationChat explanation={currentQuestion.explanation} />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Navigation */}
-        <div className="flex justify-between mt-8">
-          <Button
-            variant="outline"
-            disabled={currentQuestionIndex === 0}
-            onClick={() => setCurrentQuestionIndex((i) => i - 1)}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-          </Button>
-
-          {!isAnswerSubmitted ? (
-            <Button onClick={handleSubmitAnswer} disabled={!selectedAnswer}>
-              Submit Answer
-            </Button>
-          ) : currentQuestionIndex === questions.length - 1 ? (
-            <Button onClick={handleNextQuestion}>Finish Quiz</Button>
-          ) : (
-            <Button onClick={handleNextQuestion}>
-              Next <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+          {isAnswerSubmitted && currentQuestion.explanation && (
+            <Card className="border-khan-blue bg-blue-50">
+              <CardHeader className="pb-2 pt-3">
+                <CardTitle className="text-sm">Explanation</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 pb-3">
+                <ExplanationChat explanation={currentQuestion.explanation} />
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
+
+      <QuizBottomBar
+        currentQuestion={currentQuestionIndex + 1}
+        totalQuestions={questions.length}
+        onOpenPalette={() => setShowQuestionPalette(true)}
+        onPrevious={handlePreviousQuestion}
+        onNext={isAnswerSubmitted ? handleNextQuestion : undefined}
+        canGoPrevious={currentQuestionIndex > 0}
+        canGoNext={isAnswerSubmitted}
+        isLastQuestion={currentQuestionIndex === questions.length - 1}
+        onSubmit={isAnswerSubmitted ? handleNextQuestion : handleSubmitAnswer}
+      />
+
+      <EnhancedQuestionPalette
+        isOpen={showQuestionPalette}
+        onClose={() => setShowQuestionPalette(false)}
+        questions={questions}
+        currentQuestion={currentQuestionIndex}
+        userAnswers={userAnswers}
+        flaggedQuestions={flaggedQuestions}
+        onQuestionSelect={setCurrentQuestionIndex}
+      />
     </div>
   );
 }

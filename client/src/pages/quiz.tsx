@@ -329,7 +329,6 @@ export default function Quiz() {
 
   return (
     <div className="min-h-screen bg-khan-background">
-      <Navigation />
       {isFullLength ? (
         <FullLengthQuiz
           questions={questions}
