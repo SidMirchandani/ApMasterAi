@@ -550,12 +550,19 @@ export class Storage {
     // Calculate section breakdown
     const sectionBreakdown: { [key: string]: { name: string; unitNumber: number; correct: number; total: number; percentage: number } } = {};
     const sectionInfo: Record<string, { name: string; unitNumber: number }> = {
+      // AP Macroeconomics
       "BEC": { name: "Basic Economic Concepts", unitNumber: 1 },
       "EIBC": { name: "Economic Indicators & Business Cycle", unitNumber: 2 },
       "NIPD": { name: "National Income & Price Determination", unitNumber: 3 },
       "FS": { name: "Financial Sector", unitNumber: 4 },
       "LRCSP": { name: "Long-Run Consequences of Stabilization Policies", unitNumber: 5 },
       "OEITF": { name: "Open Economy - International Trade & Finance", unitNumber: 6 },
+      // AP Computer Science Principles
+      "CRD": { name: "Creative Development", unitNumber: 1 },
+      "DAT": { name: "Data", unitNumber: 2 },
+      "AAP": { name: "Algorithms and Programming", unitNumber: 3 },
+      "CSN": { name: "Computer Systems and Networks", unitNumber: 4 },
+      "IOC": { name: "Impact of Computing", unitNumber: 5 },
     };
 
     questions.forEach((q, idx) => {

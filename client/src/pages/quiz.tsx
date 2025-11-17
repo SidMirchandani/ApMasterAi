@@ -56,11 +56,11 @@ const SUBJECT_UNIT_MAPS: Record<string, Record<string, string>> = {
     unit6: "MFROG",
   },
   "computer-science-principles": {
-    bigidea1: "CD",
-    bigidea2: "DATA",
-    bigidea3: "AAP",
-    bigidea4: "CSN",
-    bigidea5: "IOC",
+    unit1: "CRD",
+    unit2: "DAT",
+    unit3: "AAP",
+    unit4: "CSN",
+    unit5: "IOC",
   },
   "calculus-ab": {
     unit1: "LC",
