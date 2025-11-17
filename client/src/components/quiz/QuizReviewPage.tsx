@@ -44,15 +44,16 @@ interface QuizReviewPageProps {
 export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBack, onSubmit }: QuizReviewPageProps) {
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const [localAnswers, setLocalAnswers] = useState(userAnswers);
+  const [localFlagged, setLocalFlagged] = useState(flaggedQuestions);
 
   const getQuestionState = (index: number) => {
-    if (flaggedQuestions.has(index)) return "flagged";
+    if (localFlagged.has(index)) return "flagged";
     if (localAnswers[index]) return "answered";
     return "unanswered";
   };
 
   const getQuestionClass = (index: number) => {
-    const isFlagged = flaggedQuestions.has(index);
+    const isFlagged = localFlagged.has(index);
     const isAnswered = !!userAnswers[index];
     const isCurrent = index === selectedQuestion;
     const baseClass = "w-12 h-12 rounded border-2 text-center font-semibold flex items-center justify-center transition-all cursor-pointer relative";
@@ -120,7 +121,7 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
                 <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
                   {questions.map((_, index) => {
                     const isAnswered = localAnswers[index] !== undefined;
-                    const isFlagged = flaggedQuestions.has(index);
+                    const isFlagged = localFlagged.has(index);
 
                     return (
                       <button
@@ -153,11 +154,19 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
               question={questions[selectedQuestion]}
               questionNumber={selectedQuestion + 1}
               selectedAnswer={localAnswers[selectedQuestion]}
-              isFlagged={flaggedQuestions.has(selectedQuestion)}
+              isFlagged={localFlagged.has(selectedQuestion)}
               onAnswerSelect={(answer) => {
                 setLocalAnswers({ ...localAnswers, [selectedQuestion]: answer });
               }}
-              onToggleFlag={() => {}}
+              onToggleFlag={() => {
+                const newFlagged = new Set(localFlagged);
+                if (newFlagged.has(selectedQuestion)) {
+                  newFlagged.delete(selectedQuestion);
+                } else {
+                  newFlagged.add(selectedQuestion);
+                }
+                setLocalFlagged(newFlagged);
+              }}
               isFullLength={true}
               isAnswerSubmitted={false}
               renderImage={renderImage}
@@ -176,13 +185,6 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
               </div>
 
               <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  onClick={onBack}
-                  className="flex items-center gap-2"
-                >
-                  Back to Test
-                </Button>
                 {onSubmit && (
                   <Button
                     onClick={onSubmit}
