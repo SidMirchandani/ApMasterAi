@@ -110,19 +110,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
   const currentQuestion = questions[currentQuestionIndex];
 
-  // Added logic for review mode rendering
-  if (isReviewMode) {
-    return (
-      <QuizReviewPage
-        questions={questions}
-        userAnswers={userAnswers}
-        flaggedQuestions={flaggedQuestions}
-        onBack={() => setIsReviewMode(false)}
-        onSubmit={handleSubmitTest}
-      />
-    );
-  }
-
   const handleExitExam = () => {
     setShowExitDialog(true);
   };
@@ -173,6 +160,19 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     onSubmit();
     setShowSubmitConfirm(false);
   };
+
+  // Added logic for review mode rendering
+  if (isReviewMode) {
+    return (
+      <QuizReviewPage
+        questions={questions}
+        userAnswers={userAnswers}
+        flaggedQuestions={flaggedQuestions}
+        onBack={() => setIsReviewMode(false)}
+        onSubmit={handleSubmitTest}
+      />
+    );
+  }
 
   // Function to render image if URLs are present
   const renderImage = (urls: string[] | undefined) => {
