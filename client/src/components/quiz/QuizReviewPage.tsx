@@ -158,6 +158,7 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
               isFullLength={true}
               isAnswerSubmitted={true}
               renderImage={renderImage}
+              isReviewMode={true}
             />
           )}
         </div>

@@ -42,6 +42,7 @@ interface QuestionCardProps {
   onToggleFlag: () => void;
   isFullLength: boolean;
   isAnswerSubmitted?: boolean;
+  isReviewMode?: boolean;
 }
 
 export function QuestionCard({
@@ -53,6 +54,7 @@ export function QuestionCard({
   onToggleFlag,
   isFullLength,
   isAnswerSubmitted = false,
+  isReviewMode = false,
 }: QuestionCardProps) {
   if (!question) {
     return null;
@@ -99,35 +101,31 @@ export function QuestionCard({
         <div className="space-y-3">
           <RadioGroup value={selectedAnswer || ""} onValueChange={onAnswerSelect}>
             {choices.map((label) => {
-              const isSelected = selectedAnswer === label;
-              const isThisCorrect = label === correctAnswerLabel;
+              const isUserAnswer = selectedAnswer === label;
+              const isCorrectAnswer = label === correctAnswerLabel;
 
-              // Determine the background color based on answer correctness
-              let bgColor = "";
-              let borderColor = "border-gray-300"; // Default border color
+              // Determine background and border colors
+              let bgColor = "bg-white";
+              let borderColor = "border-gray-200";
 
-              if (shouldShowCorrectness) {
-                if (isSelected && isCorrect) {
+              // Only show highlights in review mode
+              if (isReviewMode) {
+                if (isUserAnswer && isCorrect) {
                   // User's answer is correct - light green
                   bgColor = "bg-green-50";
                   borderColor = "border-green-500";
-                } else if (isSelected && !isCorrect) {
+                } else if (isUserAnswer && !isCorrect) {
                   // User's answer is wrong - light red
                   bgColor = "bg-red-50";
                   borderColor = "border-red-500";
-                } else if (!isSelected && isThisCorrect) {
-                  // Show correct answer in green when user was wrong and it's not the selected answer
+                } else if (isCorrectAnswer && !isCorrect) {
+                  // Show correct answer in green when user was wrong
                   bgColor = "bg-green-50";
                   borderColor = "border-green-500";
-                } else if (isSelected) {
-                  // User selected an answer, but it's not the focus for correctness display
-                  bgColor = "bg-gray-50"; // Default background for selected
-                  borderColor = "border-gray-400"; // Default border for selected
                 }
-              } else if (isSelected) {
-                // If not submitted and answer is selected, highlight it
-                bgColor = "bg-gray-50";
-                borderColor = "border-gray-400";
+              } else if (isUserAnswer) {
+                // During quiz, just highlight selected answer without showing correctness
+                borderColor = "border-khan-blue";
               }
 
               return (
@@ -137,10 +135,10 @@ export function QuestionCard({
                     ${bgColor} ${borderColor}
                     ${!shouldShowCorrectness && !isSelected ? "hover:bg-gray-50 hover:border-gray-300" : ""}
                   `}
-                  onClick={() => !isAnswerSubmitted && onAnswerSelect(choiceLabel)}
+                  onClick={() => !isAnswerSubmitted && onAnswerSelect(label)}
                 >
                   <div className={`flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold ${
-                    isSelected
+                    isUserAnswer
                       ? 'border-gray-700 bg-gray-100'
                       : 'border-gray-400 bg-white'
                   }`}>

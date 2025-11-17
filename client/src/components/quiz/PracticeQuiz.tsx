@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { QuizHeader } from "./QuizHeader";
 import { QuestionCard } from "./QuestionCard";
@@ -52,10 +51,10 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   useEffect(() => {
     const generateExplanationIfNeeded = async () => {
       if (!currentQuestion || !isAnswerSubmitted) return;
-      
+
       const hasExplanation = currentQuestion.explanation && currentQuestion.explanation.trim() !== '';
       const alreadyGenerated = generatedExplanations.has(currentQuestionIndex);
-      
+
       if (!hasExplanation && !alreadyGenerated && !isGeneratingExplanation) {
         setIsGeneratingExplanation(true);
         try {
@@ -145,6 +144,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
             onToggleFlag={toggleFlag}
             isFullLength={false}
             isAnswerSubmitted={isAnswerSubmitted}
+            isReviewMode={isAnswerSubmitted}
           />
 
           {isAnswerSubmitted && (
