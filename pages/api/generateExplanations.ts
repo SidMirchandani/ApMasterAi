@@ -71,6 +71,15 @@ export default async function handler(
         }
 
         const question = doc.data();
+        
+        // Skip if explanation already exists and is not empty
+        if (question.explanation && question.explanation.trim() !== '') {
+          console.log(
+            `Skipping Question ${i + 1}/${total} (ID: ${questionId}) - explanation already exists`,
+          );
+          continue;
+        }
+
         console.log(
           `Generating explanation for Question ${i + 1}/${total} (ID: ${questionId})`,
         );

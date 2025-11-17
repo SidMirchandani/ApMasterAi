@@ -168,6 +168,15 @@ async function processQuestion(
 
   const docId = `${subject_code}_${section_code}_Q${question_id}`;
 
+  // Check if document already exists
+  const existingDoc = await db.collection('questions').doc(docId).get();
+  const existingData = existingDoc.exists ? existingDoc.data() : null;
+
+  // Preserve existing explanation if new one is empty
+  const finalExplanation = (explanation && explanation.trim() !== '')
+    ? explanation
+    : (existingData?.explanation || '');
+
   await db.collection('questions').doc(docId).set({
     subject_code,
     section_code,
@@ -175,11 +184,11 @@ async function processQuestion(
     prompt_blocks: updatedPromptBlocks,
     choices: updatedChoices,
     answerIndex,
-    explanation: explanation || '',
+    explanation: finalExplanation,
     mode: 'SECTION',
     test_slug: '',
     tags: [],
-    createdAt: new Date(),
+    createdAt: existingData?.createdAt || new Date(),
     updatedAt: new Date(),
     rand: Math.random(),
   });
