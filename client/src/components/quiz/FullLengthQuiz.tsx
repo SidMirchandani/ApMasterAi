@@ -142,10 +142,13 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
   const toggleFlag = () => {
     setFlaggedQuestions((prev) => {
-      const ns = new Set(prev);
-      if (ns.has(currentQuestionIndex)) ns.delete(currentQuestionIndex);
-      else ns.add(currentQuestionIndex);
-      return ns;
+      const newSet = new Set(prev);
+      if (newSet.has(currentQuestionIndex)) {
+        newSet.delete(currentQuestionIndex);
+      } else {
+        newSet.add(currentQuestionIndex);
+      }
+      return newSet;
     });
   };
 

@@ -92,15 +92,17 @@ export function QuestionCard({
             <div className="bg-black text-white px-3 py-1 font-bold text-sm rounded">
               {questionNumber}
             </div>
-            <button
-              onClick={onToggleFlag}
-              className={`flex items-center gap-2 text-sm font-medium ${
-                isFlagged ? "text-black" : "text-gray-600"
-              }`}
-            >
-              <Flag className={`h-4 w-4 ${isFlagged ? "fill-current" : ""}`} />
-              <span>Mark for Review</span>
-            </button>
+            {isFullLength && (
+              <button
+                onClick={onToggleFlag}
+                className={`flex items-center gap-2 text-sm font-medium ${
+                  isFlagged ? "text-black" : "text-gray-600"
+                }`}
+              >
+                <Flag className={`h-4 w-4 ${isFlagged ? "fill-current" : ""}`} />
+                <span>Mark for Review</span>
+              </button>
+            )}
           </div>
           {/* Placeholder for ABC button if needed, currently not implemented */}
           <button className="px-3 py-1 text-sm font-semibold border border-gray-300 rounded hover:bg-gray-100">
@@ -142,8 +144,8 @@ export function QuestionCard({
                   borderColor = "border-green-500";
                 }
               } else if (isUserAnswer) {
-                // During quiz or review (before submit), just highlight selected answer
-                borderColor = "border-khan-blue";
+                // During quiz or review (before submit), just highlight selected answer with darker border
+                borderColor = "border-blue-600";
               }
 
               return (
@@ -157,7 +159,7 @@ export function QuestionCard({
                 >
                   <div className={`flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold ${
                     isUserAnswer
-                      ? 'border-gray-700 bg-gray-100'
+                      ? 'border-blue-600 bg-blue-50'
                       : 'border-gray-400 bg-white'
                   }`}>
                     {label}
