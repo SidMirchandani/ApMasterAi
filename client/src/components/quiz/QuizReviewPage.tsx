@@ -42,10 +42,11 @@ interface QuizReviewPageProps {
 
 export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBack }: QuizReviewPageProps) {
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
+  const [localAnswers, setLocalAnswers] = useState(userAnswers);
 
   const getQuestionState = (index: number) => {
     if (flaggedQuestions.has(index)) return "flagged";
-    if (userAnswers[index]) return "answered";
+    if (localAnswers[index]) return "answered";
     return "unanswered";
   };
 
@@ -117,7 +118,7 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
 
                 <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
                   {questions.map((_, index) => {
-                    const isAnswered = userAnswers[index] !== undefined;
+                    const isAnswered = localAnswers[index] !== undefined;
                     const isFlagged = flaggedQuestions.has(index);
 
                     return (
@@ -150,9 +151,11 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
             <QuestionCard
               question={questions[selectedQuestion]}
               questionNumber={selectedQuestion + 1}
-              selectedAnswer={userAnswers[selectedQuestion]}
+              selectedAnswer={localAnswers[selectedQuestion]}
               isFlagged={flaggedQuestions.has(selectedQuestion)}
-              onAnswerSelect={() => {}}
+              onAnswerSelect={(answer) => {
+                setLocalAnswers({ ...localAnswers, [selectedQuestion]: answer });
+              }}
               onToggleFlag={() => {}}
               isFullLength={true}
               isAnswerSubmitted={false}

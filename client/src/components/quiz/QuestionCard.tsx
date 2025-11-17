@@ -126,8 +126,8 @@ export function QuestionCard({
               let bgColor = "bg-white";
               let borderColor = "border-gray-200";
 
-              // Only show highlights in review mode
-              if (isReviewMode) {
+              // Only show correct/incorrect highlights after test is submitted
+              if (isAnswerSubmitted && isReviewMode) {
                 if (isUserAnswer && isCorrect) {
                   // User's answer is correct - light green
                   bgColor = "bg-green-50";
@@ -142,7 +142,7 @@ export function QuestionCard({
                   borderColor = "border-green-500";
                 }
               } else if (isUserAnswer) {
-                // During quiz, just highlight selected answer without showing correctness
+                // During quiz or review (before submit), just highlight selected answer
                 borderColor = "border-khan-blue";
               }
 
