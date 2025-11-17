@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -494,7 +493,7 @@ export default function Study() {
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
-      
+
       {/* Header Section */}
       <div className="border-b border-gray-200 bg-white sticky top-0 z-20">
         <div className="container mx-auto px-4 py-4 max-w-6xl">
@@ -631,7 +630,7 @@ export default function Study() {
                                 {level === "Mastered" && "👑 "}
                                 {level}
                               </Badge>
-                              
+
                               {/* Tooltip */}
                               <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white shadow-xl rounded-lg p-3 border-2 border-gray-200 z-10 whitespace-nowrap">
                                 <div className="text-xs font-semibold mb-2 text-gray-900">
