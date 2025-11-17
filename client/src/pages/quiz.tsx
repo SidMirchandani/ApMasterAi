@@ -1360,16 +1360,17 @@ export default function Quiz() {
                 }));
 
                 return (
-                  <div
+                  <Card
                     key={globalIndex}
                     id={`question-${globalIndex}`}
                     className="border-0"
                   >
-                    <div className="flex justify-between items-start gap-4 mb-4">
-                      <div className="flex-1">
-                        <p className="text-base leading-relaxed text-gray-800">
-                          {q.prompt}
-                        </p>
+                    <CardHeader>
+                      <div className="flex justify-between items-start gap-4 mb-4">
+                        <div className="flex-1">
+                          <p className="text-base leading-relaxed text-gray-800">
+                            {q.prompt}
+                          </p>
                           {q.image_urls?.question && q.image_urls.question.length > 0 && (
                             <div className="mt-3 space-x-2 inline-flex flex-wrap">
                               {q.image_urls.question.map((imageUrl, imgIdx) => (
