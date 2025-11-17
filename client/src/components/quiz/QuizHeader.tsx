@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Clock, Flag, BookOpen, Calculator, FileText, MoreVertical, LogOut, ChevronDown } from "lucide-react";
+import { Clock, Flag, BookOpen, Calculator, FileText, MoreVertical, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +14,9 @@ interface QuizHeaderProps {
   onHideTimer?: () => void;
   timerHidden?: boolean;
   onExitExam?: () => void;
-  showDirections?: boolean;
 }
 
-export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = false }: QuizHeaderProps) {
+export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = false, onExitExam }: QuizHeaderProps) {
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -30,21 +29,10 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
-            {showDirections && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-gray-700">
-                    Directions <ChevronDown className="ml-1 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-80 max-h-96 overflow-y-auto">
-                  <div className="p-4">
-                    <p className="text-sm text-gray-600">Directions coming soon.</p>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <h1 className="text-lg font-semibold text-gray-900">
+              <span className="hidden md:inline">{title}</span>
+              <span className="md:hidden">AP Quiz</span>
+            </h1>
           </div>
 
           <div className="flex items-center gap-4">

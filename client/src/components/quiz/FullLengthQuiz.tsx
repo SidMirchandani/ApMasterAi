@@ -100,7 +100,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         onHideTimer={() => setTimerHidden(!timerHidden)}
         timerHidden={timerHidden}
         onExitExam={handleExitExam}
-        showDirections={true}
       />
 
       <div className="flex-1 overflow-y-auto pb-20">
