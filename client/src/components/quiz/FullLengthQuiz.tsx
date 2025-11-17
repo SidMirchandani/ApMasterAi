@@ -5,6 +5,7 @@ import { QuestionCard } from "./QuestionCard";
 import { EnhancedQuestionPalette } from "./EnhancedQuestionPalette";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { QuizReviewPage } from "./QuizReviewPage"; // Assuming QuizReviewPage is in the same directory
 
 interface Question {
   id: string;
@@ -42,8 +43,21 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [timerHidden, setTimerHidden] = useState(false);
+  const [isReviewMode, setIsReviewMode] = useState(false); // State for review mode
 
   const currentQuestion = questions[currentQuestionIndex];
+
+  // Added logic for review mode rendering
+  if (isReviewMode) {
+    return (
+      <QuizReviewPage
+        questions={questions}
+        userAnswers={userAnswers}
+        flaggedQuestions={flaggedQuestions}
+        onBack={() => setIsReviewMode(false)}
+      />
+    );
+  }
 
   const handleExitExam = () => {
     setShowExitDialog(true);
@@ -93,6 +107,14 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     setShowSubmitConfirm(false);
   };
 
+  // Function to render image if URLs are present
+  const renderImage = (urls: string[] | undefined) => {
+    if (!urls || urls.length === 0) {
+      return null;
+    }
+    return urls.map((url, index) => <img key={index} src={url} alt={`Image ${index + 1}`} className="max-w-full h-auto mb-4 rounded-lg shadow-md" />);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <QuizHeader
@@ -113,6 +135,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
             onAnswerSelect={handleAnswerSelect}
             onToggleFlag={toggleFlag}
             isFullLength={true}
+            renderImage={renderImage} // Pass the renderImage function
           />
         </div>
       </div>
@@ -127,6 +150,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         canGoNext={currentQuestionIndex < questions.length - 1}
         isLastQuestion={currentQuestionIndex === questions.length - 1}
         onSubmit={handleSubmitTest}
+        onReview={() => setIsReviewMode(true)} // Add onReview prop
       />
 
       <EnhancedQuestionPalette

@@ -70,8 +70,7 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
     <div className="min-h-screen bg-gray-50">
       <div className="border-b border-gray-200 bg-white sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-lg font-semibold text-gray-900">Check Your Work</h1>
+          <div className="flex justify-end items-center h-16">
             <Button onClick={onBack}>Back</Button>
           </div>
         </div>
@@ -80,14 +79,13 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
       <div className="max-w-4xl mx-auto px-4 py-8">
         {selectedQuestion === null ? (
           <Card className="p-6">
-            <p className="text-center text-gray-600 mb-6">
+            <h2 className="text-center text-xl font-semibold mb-2">Check Your Work</h2>
+            <p className="text-center text-gray-600 mb-8">
               Click on any question to return to it and review your answer.
             </p>
 
             <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-4">Review Your Answers</h3>
-              
-              <div className="flex items-center gap-6 mb-6 text-sm">
+              <div className="flex items-center justify-center gap-6 mb-6 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded border-2 border-gray-300 border-dashed"></div>
                   <span>Unanswered</span>

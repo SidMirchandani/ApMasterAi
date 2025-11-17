@@ -62,8 +62,7 @@ export function EnhancedQuestionPalette({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold">Question Palette</h3>
+        <div className="flex justify-end mb-4">
           <button onClick={onClose}>
             <XCircle className="h-6 w-6 text-gray-500" />
           </button>
@@ -114,7 +113,7 @@ export function EnhancedQuestionPalette({
 
         {onGoToReview && (
           <div className="flex justify-center">
-            <Button onClick={onGoToReview} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+            <Button onClick={onGoToReview} className="bg-blue-600 text-white hover:bg-blue-700">
               Go to Review Page
             </Button>
           </div>

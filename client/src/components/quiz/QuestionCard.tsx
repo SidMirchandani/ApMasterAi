@@ -80,12 +80,16 @@ export function QuestionCard({
         className={className}
         disabled={isAnswerSubmitted}
       >
-        <span className="font-bold mr-2">{label}.</span>
-        {choice && choice.trim() && (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{choice}</ReactMarkdown>
-        )}
+        <div>
+          <span className="font-bold mr-2">{label}.</span>
+          {choice && choice.trim() && (
+            <span className="inline">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{choice}</ReactMarkdown>
+            </span>
+          )}
+        </div>
 
-        {question.image_urls?.[label]?.length && (
+        {question.image_urls?.[label]?.length > 0 && (
           <div className="mt-2 space-y-2">
             {question.image_urls[label]?.map((img, ii) => (
               <img key={ii} src={img} className="rounded border max-w-full" alt={`Choice ${label}`} />
@@ -121,7 +125,7 @@ export function QuestionCard({
           </ReactMarkdown>
         )}
 
-        {question.image_urls?.question?.length && (
+        {question.image_urls?.question?.length > 0 && (
           <div className="space-y-2">
             {question.image_urls.question.map((img, ii) => (
               <img
