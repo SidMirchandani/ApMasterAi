@@ -136,7 +136,7 @@ export default function FullLengthHistory() {
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-khan-blue/10 flex items-center justify-center flex-shrink-0">
                             <span className="text-lg font-bold text-khan-blue">
-                              #{index + 1}
+                              #{testHistory.length - index}
                             </span>
                           </div>
                           <div>
