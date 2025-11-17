@@ -140,8 +140,7 @@ export default function Navigation() {
       breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
-      breadcrumbs.push({ label: "Test Results", href: `/full-length-results?subject=${subjectId}&testId=${testId}` });
-      breadcrumbs.push({ label: "Review", href: "#" });
+      breadcrumbs.push({ label: "Full Length Test", href: `/full-length-results?subject=${subjectId}&testId=${testId}` });
     } else if (location === "/full-length-history") {
       const subjectId = router.query.subject as string;
       const abbreviatedName = getAbbreviatedCourseName(subjectId);

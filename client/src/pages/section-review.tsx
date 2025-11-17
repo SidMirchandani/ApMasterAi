@@ -138,15 +138,8 @@ export default function SectionReview() {
   }
 
   const handleBackNavigation = () => {
-    if (testId === "current") {
-      router.push(`/quiz?subject=${subjectId}&unit=full-length`);
-    } else if (sectionCode === "all") {
-      // Full review goes back to test results
-      router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
-    } else {
-      // Unit-wise review goes back to test results summary
-      router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
-    }
+    // Always go back to test results
+    router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
   };
 
   return (

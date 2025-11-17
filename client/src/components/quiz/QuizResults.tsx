@@ -87,6 +87,15 @@ export function QuizResults({
     router.push(`/full-length-history?subject=${subjectId}`);
   };
 
+  // Handle navigation to results page (previously review mode)
+  const handleBackToResults = () => {
+    // This function should ideally navigate back to the test results page.
+    // For now, we'll assume onReview is intended to close the review mode
+    // and return to the results view. If a different navigation is needed,
+    // this function should be updated accordingly.
+    onReview();
+  };
+
   // Render QuizReviewPage if reviewMode is true
   if (reviewMode) {
     return (
@@ -100,6 +109,11 @@ export function QuizResults({
 
   return (
     <div className="max-w-6xl mx-auto space-y-3">
+      {/* Breadcrumb Navigation */}
+      <nav className="text-sm text-gray-500 mb-4">
+        Dashboard &gt; {subjectId} &gt; Test History &gt; Full Length Test
+      </nav>
+
       <Card className="border-t-4 border-t-khan-green">
         <CardContent className="pt-6 pb-6">
           <div className="flex flex-col gap-4">
@@ -176,10 +190,13 @@ export function QuizResults({
       )}
 
       <div className="flex justify-end gap-3 mt-6">
-        <Button variant="outline" onClick={onReview}>
+        {/* Removed "Back to Test History" button */}
+        <Button
+          onClick={handleBackToResults}
+          className="bg-khan-green hover:bg-khan-green/90"
+        >
           Review Answers
         </Button>
-        <Button onClick={handleBackToHistory}>Back to Test History</Button>
       </div>
     </div>
   );
