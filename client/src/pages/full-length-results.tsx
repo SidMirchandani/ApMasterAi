@@ -6,7 +6,7 @@ import { ArrowLeft, CheckCircle, XCircle, BookOpen, TrendingUp } from "lucide-re
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
-import { formatDateTime } from "@/lib/utils";
+import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -183,7 +183,7 @@ export default function FullLengthResults() {
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col items-center gap-3">
                   <p className="text-sm text-gray-500">
-                    {isMobile ? formatDateTime(testData.date, "MMM d, yyyy") : formatDateTime(testData.date)}
+                    {formatDate(testData.date)}
                   </p>
                   <Button
                     onClick={() =>
