@@ -1,0 +1,100 @@
+**"Do NOT rewrite whole files or change any business logic.
+Only adjust layout, spacing, image behavior, and density.
+Do NOT touch any correct/wrong color logic.
+Do NOT alter state, API logic, or component structure.
+
+Apply the following updates exactly:
+
+================================================================
+
+1. IMAGE LOGIC (APPLY TO BOTH QUESTION STEM + ANSWER CHOICES)
+
+Use the same floating-hover image behavior everywhere an image appears.
+
+WRAPPER:
+
+<div class="relative inline-block group max-w-[240px]">
+
+
+THUMBNAIL IMAGE:
+
+<img class="w-full h-auto object-contain rounded-md shadow cursor-pointer" />
+
+
+HOVER FULL PREVIEW (FLOATING ABOVE, NOT CLIPPED):
+
+<div class="absolute left-0 top-0 z-50 hidden group-hover:block">
+  <img src="SAME_SRC" class="max-w-[600px] max-h-[600px] object-contain rounded-md shadow-xl bg-white p-2" />
+</div>
+
+
+FOR ANSWER CHOICES, reduce the default thumbnail width to half:
+
+max-w-[120px]
+
+
+Everything else (hover preview, wrapper, full-size behavior) stays the same.
+
+================================================================
+
+2. QUESTION HEADER + PROMPT HEIGHT MATCHING ANSWER CHOICE HEIGHT
+
+Make the question number box, the mark for review section, and the question prompt container have the same minimum height as the answer choice card height.
+
+Use:
+
+min-h-[140px]
+flex flex-col justify-center
+
+
+(Adjust height only using Tailwind; do not change layout structure.)
+
+This should ensure:
+
+The question prompt aligns visually with choices
+
+The top section isn’t too thin
+
+================================================================
+
+3. MAKE THE DENSITY/THICKNESS MATCH ACROSS ALL MODES
+
+Apply the same vertical spacing, padding, and compact density to:
+
+Review pages
+
+Unit-wise practice
+
+Full-length practice
+
+Any question rendering pages
+
+Rules:
+
+Choice cards use p-4, font size text-base, gap space-y-2
+
+Question container uses consistent padding (p-6 max)
+
+Do NOT modify correct/wrong color logic
+
+Do NOT change any success/error tailwind classes
+
+Only unify layout density
+
+================================================================
+
+4. DO NOT CHANGE
+
+Correct/wrong color logic
+
+API calls
+
+Navigation logic
+
+Card selection logic
+
+State management
+
+Any component besides layout, spacing, and image wrappers
+
+Only implement the above styling changes."**
