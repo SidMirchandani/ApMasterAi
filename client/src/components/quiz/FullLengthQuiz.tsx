@@ -163,39 +163,35 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     setIsSubmitting(true);
 
     try {
-      const answeredCount = Object.keys(userAnswers).length;
       const correctCount = questions.reduce((count, question, index) => {
         const userAnswer = userAnswers[index];
-        // Assuming choices are always strings for this calculation, adjust if choices can be complex objects
         const correctLabel = String.fromCharCode(65 + question.answerIndex);
         return userAnswer === correctLabel ? count + 1 : count;
       }, 0);
 
-      // Ensure questions have the proper structure with prompt_blocks and choices as objects
+      const percentage = Math.round((correctCount / questions.length) * 100);
+
+      // Format questions with proper structure
       const formattedQuestions = questions.map(q => ({
         ...q,
-        // Use prompt_blocks if available, otherwise default to an empty array
         prompt_blocks: q.prompt_blocks || (q.prompt ? [{ type: 'text', content: q.prompt }] : []),
-        // Ensure choices are in the expected format for the BlockRenderer
-        choices: typeof q.choices === 'string[]' ? q.choices.reduce((obj, choice, index) => {
-          const label = String.fromCharCode(65 + index);
-          return { ...obj, [label]: [choice] }; // Assuming choices are simple strings, wrap in array
-        }, {}) : q.choices || {}
+        choices: typeof q.choices === 'object' && !Array.isArray(q.choices) ? q.choices : 
+          (Array.isArray(q.choices) ? q.choices.reduce((obj, choice, index) => {
+            const label = String.fromCharCode(65 + index);
+            return { ...obj, [label]: [choice] };
+          }, {}) : {})
       }));
-
-
-      const testData = {
-        questions: formattedQuestions,
-        userAnswers,
-        score: correctCount,
-        totalQuestions: questions.length,
-        timeElapsed,
-      };
 
       const response = await apiRequest(
         "POST",
         `/api/user/subjects/${subjectId}/full-length-test`,
-        testData
+        {
+          score: correctCount,
+          percentage: percentage,
+          totalQuestions: questions.length,
+          questions: formattedQuestions,
+          userAnswers: userAnswers
+        }
       );
 
       if (!response.ok) {
