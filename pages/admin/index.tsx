@@ -629,7 +629,7 @@ function Row({
                 <img
                   src={url}
                   alt={`Question image ${idx + 1}`}
-                  className="h-4 w-auto rounded border border-gray-300 cursor-pointer"
+                  className="h-8 w-auto rounded border border-gray-300 cursor-pointer"
                 />
                 <img
                   src={url}
@@ -659,7 +659,7 @@ function Row({
                   <img
                     src={block.url}
                     alt={`Choice ${choiceKey} image ${idx + 1}`}
-                    className="h-3 w-auto rounded border border-gray-300 cursor-pointer"
+                    className="h-6 w-auto rounded border border-gray-300 cursor-pointer"
                   />
                   <img
                     src={block.url}
@@ -695,7 +695,7 @@ function Row({
                 <img
                   src={url}
                   alt={`Choice ${choiceKey} image ${idx + 1}`}
-                  className="h-3 w-auto rounded border border-gray-300 cursor-pointer"
+                  className="h-6 w-auto rounded border border-gray-300 cursor-pointer"
                 />
                 <img
                   src={url}
