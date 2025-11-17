@@ -86,10 +86,10 @@ export function QuestionCard({
 
   return (
     <Card className={`${isFlagged ? "border-red-500 border-2" : ""}`}>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between border-b pb-2 -mx-6 px-6 -mt-6 pt-3 bg-gray-50">
+      <CardHeader className="pb-1.5">
+        <div className="flex items-center justify-between border-b pb-1.5 -mx-4 px-4 -mt-4 pt-2 bg-gray-50">
           <div className="flex items-center gap-2">
-            <div className="bg-black text-white px-2.5 py-0.5 font-bold text-xs rounded">
+            <div className="bg-black text-white px-2 py-0.5 font-bold text-xs rounded">
               {questionNumber}
             </div>
             {isFullLength && (
@@ -105,20 +105,20 @@ export function QuestionCard({
             )}
           </div>
           {/* Placeholder for ABC button if needed, currently not implemented */}
-          <button className="px-2.5 py-0.5 text-xs font-semibold border border-gray-300 rounded hover:bg-gray-100">
+          <button className="px-2 py-0.5 text-xs font-semibold border border-gray-300 rounded hover:bg-gray-100">
             ABC
           </button>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3 pt-3 pb-3">
+      <CardContent className="space-y-2 pt-2 pb-2">
         {/* Question Prompt */}
-        <div className="mb-3 text-sm leading-snug">
+        <div className="mb-2 text-sm leading-snug">
           <BlockRenderer blocks={question.prompt_blocks} />
         </div>
 
         {/* Choices */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <RadioGroup value={selectedAnswer || ""} onValueChange={onAnswerSelect}>
             {choices.map((label) => {
               const isUserAnswer = selectedAnswer === label;
@@ -151,20 +151,20 @@ export function QuestionCard({
               return (
                 <div
                   key={label}
-                  className={`flex items-start gap-3 p-2.5 rounded-lg border transition-all cursor-pointer
+                  className={`flex items-start gap-2 p-2 rounded-lg border transition-all cursor-pointer
                     ${bgColor} ${borderColor}
                     ${!shouldShowCorrectness && !isUserAnswer ? "hover:bg-gray-50 hover:border-gray-300" : ""}
                   `}
                   onClick={() => !isAnswerSubmitted && onAnswerSelect(label)}
                 >
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-semibold text-sm ${
+                  <div className={`flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center font-semibold text-sm ${
                     isUserAnswer
                       ? 'border-blue-600 bg-blue-50'
                       : 'border-gray-400 bg-white'
                   }`}>
                     {label}
                   </div>
-                  <div className="flex-1 pt-1 text-sm">
+                  <div className="flex-1 pt-0.5 text-sm">
                     <BlockRenderer blocks={question.choices[label]} />
                   </div>
                 </div>

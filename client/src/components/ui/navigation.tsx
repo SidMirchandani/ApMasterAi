@@ -184,7 +184,7 @@ export default function Navigation() {
 
           {/* Breadcrumb Navigation - Center */}
           {isAuthenticated && breadcrumbs.length > 0 && (
-            <div className="hidden lg:flex items-center space-x-1.5 text-xs text-khan-gray-medium flex-shrink-0">
+            <div className="flex items-center space-x-1.5 text-xs text-khan-gray-medium flex-shrink-0">
               {breadcrumbs.map((crumb, index) => (
                 <div key={index} className="flex items-center">
                   {index > 0 && <ChevronRight className="w-3.5 h-3.5 mx-0.5" />}
@@ -286,23 +286,7 @@ export default function Navigation() {
           </div>
         </div>
         
-        {/* Mobile Breadcrumbs - Second Line */}
-        {isAuthenticated && breadcrumbs.length > 0 && isMobile && (
-          <div className="lg:hidden flex items-center space-x-2 text-xs text-khan-gray-medium pb-2 overflow-x-auto">
-            {breadcrumbs.map((crumb, index) => (
-              <div key={index} className="flex items-center whitespace-nowrap">
-                {index > 0 && <ChevronRight className="w-3 h-3 mx-1" />}
-                {crumb.href === "#" ? (
-                  <span className="font-medium text-khan-gray-dark">{crumb.label}</span>
-                ) : (
-                  <Link href={crumb.href} className="hover:text-khan-green transition-colors">
-                    {crumb.label}
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        
       </div>
     </nav>
   );

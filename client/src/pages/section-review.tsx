@@ -175,11 +175,11 @@ export default function SectionReview() {
       {/* Main Navigation with Breadcrumbs */}
       <Navigation />
 
-      <div className="flex-1 overflow-y-auto mb-14 pt-4">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <Card className="mb-4">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between border-b pb-3 -mx-6 px-6 -mt-6 pt-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto mb-14 pt-2">
+        <div className="max-w-4xl mx-auto px-4 py-2">
+          <Card className="mb-3">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between border-b pb-2 -mx-4 px-4 -mt-4 pt-2 bg-gray-50">
                 <div className="flex items-center gap-3">
                   <div className="bg-black text-white px-3 py-1 font-bold text-sm rounded">
                     {displayNumber}
@@ -193,14 +193,14 @@ export default function SectionReview() {
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-4 pt-4">
+            <CardContent className="space-y-2 pt-2">
               {/* Question Prompt */}
-              <div className="mb-6 text-base leading-relaxed">
+              <div className="mb-3 text-sm leading-snug">
                 <BlockRenderer blocks={currentQuestion.prompt_blocks} />
               </div>
 
               {/* Choices */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {choices.map((label) => {
                   const isUserAnswer = userAnswer === label;
                   const isCorrectAnswer = label === correctAnswerLabel;
@@ -222,9 +222,9 @@ export default function SectionReview() {
                   return (
                     <div
                       key={label}
-                      className={`flex items-start gap-3 p-3 rounded-lg border-2 ${bgColor} ${borderColor}`}
+                      className={`flex items-start gap-2 p-2 rounded-lg border-2 ${bgColor} ${borderColor}`}
                     >
-                      <div className={`flex-shrink-0 w-9 h-9 rounded-full border-2 flex items-center justify-center font-semibold ${
+                      <div className={`flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center font-semibold text-sm ${
                         isCorrectAnswer 
                           ? 'border-green-600 bg-green-100 text-green-700'
                           : isUserAnswer && !isCorrect
@@ -233,17 +233,17 @@ export default function SectionReview() {
                       }`}>
                         {label}
                       </div>
-                      <div className={`flex-1 pt-1.5 ${textColor}`}>
+                      <div className={`flex-1 pt-0.5 text-sm ${textColor}`}>
                         <BlockRenderer blocks={currentQuestion.choices[label]} />
                         {isCorrectAnswer && (
-                          <div className="mt-2 text-sm font-semibold text-green-600 flex items-center gap-1">
-                            <CheckCircle className="h-4 w-4" />
+                          <div className="mt-1.5 text-xs font-semibold text-green-600 flex items-center gap-1">
+                            <CheckCircle className="h-3.5 w-3.5" />
                             Correct Answer
                           </div>
                         )}
                         {isUserAnswer && !isCorrect && (
-                          <div className="mt-2 text-sm font-semibold text-red-600 flex items-center gap-1">
-                            <XCircle className="h-4 w-4" />
+                          <div className="mt-1.5 text-xs font-semibold text-red-600 flex items-center gap-1">
+                            <XCircle className="h-3.5 w-3.5" />
                             Your Answer
                           </div>
                         )}
@@ -253,7 +253,7 @@ export default function SectionReview() {
                 })}
               </div>
 
-              <div className={`p-2 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
+              <div className={`p-1.5 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
                 <p className="font-semibold">
                   Your answer: {userAnswer || "Not answered"}
                   {isCorrect
