@@ -232,8 +232,8 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     // Update local state first
     setUserAnswers(updatedAnswers);
     setFlaggedQuestions(updatedFlagged);
-    // Stay in review mode and show confirmation dialog
-    setShowSubmitConfirm(true);
+    // Directly call submit handler
+    handleSubmitTest();
   };
 
   // Added logic for review mode rendering

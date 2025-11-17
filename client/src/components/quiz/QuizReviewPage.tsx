@@ -179,14 +179,15 @@ export function QuizReviewPage({
           <div className="border-t border-gray-200 bg-white fixed bottom-0 left-0 right-0 z-50">
             <div className="max-w-7xl mx-auto px-4">
               <div className="flex justify-between items-center h-16">
-                <span className="text-sm text-gray-600">APMaster</span>
+                <span className="text-xl font-bold text-green-600">APMaster</span>
 
                 {onSubmit && (
                   <Button
                     onClick={() => onSubmit(localAnswers, localFlagged)}
                     className="bg-green-600 hover:bg-green-700 text-white"
+                    disabled={isSubmitting}
                   >
-                    Submit Test
+                    {isSubmitting ? "Submitting..." : "Submit Test"}
                   </Button>
                 )}
               </div>

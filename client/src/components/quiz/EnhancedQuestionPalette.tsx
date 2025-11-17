@@ -61,12 +61,6 @@ export function EnhancedQuestionPalette({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-end mb-4">
-          <button onClick={onClose}>
-            <XCircle className="h-6 w-6 text-gray-500" />
-          </button>
-        </div>
-
         <div className="flex items-center gap-6 mb-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center">
@@ -108,12 +102,6 @@ export function EnhancedQuestionPalette({
               </button>
             );
           })}
-        </div>
-
-        <div className="mt-4 flex justify-end items-center">
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
         </div>
       </div>
     </div>
