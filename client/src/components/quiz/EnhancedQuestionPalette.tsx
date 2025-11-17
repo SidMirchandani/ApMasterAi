@@ -111,13 +111,19 @@ export function EnhancedQuestionPalette({
           })}
         </div>
 
-        {onGoToReview && (
-          <div className="flex justify-center">
-            <Button onClick={onGoToReview} className="bg-blue-600 text-white hover:bg-blue-700">
-              Go to Review Page
-            </Button>
-          </div>
-        )}
+        <div className="flex justify-center">
+          <Button 
+            onClick={() => {
+              if (onGoToReview) {
+                onGoToReview();
+                onClose();
+              }
+            }} 
+            className="bg-blue-600 text-white hover:bg-blue-700"
+          >
+            Go to Review Page
+          </Button>
+        </div>
       </div>
     </div>
   );

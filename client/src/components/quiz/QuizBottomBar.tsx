@@ -13,6 +13,7 @@ interface QuizBottomBarProps {
   canGoNext: boolean;
   isLastQuestion: boolean;
   onSubmit?: () => void;
+  onReview?: () => void;
 }
 
 export function QuizBottomBar({
@@ -26,6 +27,7 @@ export function QuizBottomBar({
   canGoNext,
   isLastQuestion,
   onSubmit,
+  onReview,
 }: QuizBottomBarProps) {
   return (
     <div className="border-t border-gray-200 bg-white sticky bottom-0 z-50">
@@ -54,9 +56,9 @@ export function QuizBottomBar({
             <Button variant="outline" onClick={onPrevious} disabled={!canGoPrevious}>
               Back
             </Button>
-            {isLastQuestion && onSubmit ? (
-              <Button onClick={onSubmit} className="bg-blue-600 hover:bg-blue-700">
-                Submit
+            {isLastQuestion && onReview ? (
+              <Button onClick={onReview} className="bg-blue-600 hover:bg-blue-700">
+                Next
               </Button>
             ) : (
               <Button onClick={onNext} disabled={!canGoNext} className="bg-blue-600 hover:bg-blue-700">
