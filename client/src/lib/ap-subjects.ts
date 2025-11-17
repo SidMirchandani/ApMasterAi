@@ -114,7 +114,7 @@ export const apSubjects = [
   {
     id: "computer-science-principles",
     name: "AP Computer Science Principles",
-    description: "Computational thinking, programming, internet, data analysis, and impact of computing",
+    description: "70 multiple-choice questions | 120 minutes | 70% of score | Computational thinking, programming, internet, data analysis, and impact of computing",
     units: 5,
     difficulty: "Medium",
     examDate: "May 9, 2025"

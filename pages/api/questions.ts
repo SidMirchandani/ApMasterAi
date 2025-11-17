@@ -13,11 +13,11 @@ const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
     "OEITF": 10,   // Open Economy: 10-13%
   },
   "APCSP": {
-    "CRD": 20,     // Creative Development: ~20%
-    "DAT": 17,     // Data: ~17%
-    "AAP": 22,     // Algorithms and Programming: ~22%
-    "CSN": 15,     // Computing Systems and Networks: ~15%
-    "IOC": 26,     // Impact of Computing: ~26%
+    "CRD": 11.5,   // Creative Development: 10-13%
+    "DAT": 19.5,   // Data: 17-22%
+    "AAP": 32.5,   // Algorithms and Programming: 30-35%
+    "CSN": 13,     // Computer Systems and Networks: 11-15%
+    "IOC": 23.5,   // Impact of Computing: 21-26%
   },
   // Add other subjects as needed
 };
