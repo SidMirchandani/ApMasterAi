@@ -68,7 +68,6 @@ export default function AdminPage() {
 
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
-  const [deletingQuestions, setDeletingQuestions] = useState(false);
 
   // Checkbox selection state
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
@@ -238,43 +237,6 @@ export default function AdminPage() {
       setSelectedQuestions(new Set(items.map(q => q.id)));
     }
   }
-
-  const deleteSelected = async () => {
-    if (!confirm(`Delete ${selectedQuestions.size} questions?`)) return;
-    if (!token) return;
-
-    setDeletingQuestions(true);
-    const idsToDelete = Array.from(selectedQuestions);
-
-    const deletePromise = fetch("/api/admin/questions/bulk-delete", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ ids: idsToDelete }),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.error || "Delete failed");
-        }
-        return res.json();
-      })
-      .then(() => {
-        setItems((prev) => prev.filter((q) => !selectedQuestions.has(q.id)));
-        setSelectedQuestions(new Set());
-      })
-      .finally(() => {
-        setDeletingQuestions(false);
-      });
-
-    toast.promise(deletePromise, {
-      loading: `Deleting ${idsToDelete.length} questions...`,
-      success: `Successfully deleted ${idsToDelete.length} questions!`,
-      error: (err) => `Failed to delete: ${err.message}`,
-    });
-  };
 
 
   if (loading) {
@@ -487,13 +449,6 @@ export default function AdminPage() {
                   className="bg-khan-green hover:bg-khan-green-light text-white"
                 >
                   {generatingExplanations ? "Generating..." : `Generate Explanations (${selectedQuestions.size})`}
-                </Button>
-                <Button
-                  onClick={deleteSelected}
-                  variant="destructive"
-                  disabled={deletingQuestions || selectedQuestions.size === 0}
-                >
-                  {deletingQuestions ? "Deleting..." : `Delete Selected (${selectedQuestions.size})`}
                 </Button>
               </div>
             </div>
