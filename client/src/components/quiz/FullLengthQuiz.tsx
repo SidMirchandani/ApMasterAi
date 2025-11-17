@@ -282,43 +282,43 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         />
       </div>
 
-      <div className="flex-1 overflow-hidden mt-16 md:mt-16 mb-14">
+      <div className="flex-1 overflow-hidden mt-14 mb-12">
         <div className="h-full flex">
           {/* Left side - Question Prompt */}
-          <div className="w-1/2 bg-white border-r border-gray-300 overflow-y-auto p-8">
-            <div className="max-w-2xl">
+          <div className="w-1/2 bg-white border-r border-gray-300 overflow-y-auto p-4 py-3">
+            <div className="max-w-2xl text-sm leading-snug">
               <BlockRenderer blocks={currentQuestion?.prompt_blocks || []} />
             </div>
           </div>
 
           {/* Right side - Answer Choices */}
-          <div className="w-1/2 bg-gray-50 overflow-y-auto p-8">
-            <div className="max-w-2xl mx-auto">
+          <div className="w-1/2 bg-gray-50 overflow-y-auto p-4 py-3">
+            <div className="max-w-2xl mx-auto text-sm leading-snug">
               {/* Question number and flag */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="bg-black text-white px-3 py-1 font-bold text-sm rounded">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="bg-black text-white px-2.5 py-0.5 font-bold text-xs rounded">
                     {currentQuestionIndex + 1}
                   </div>
                   <button
                     onClick={toggleFlag}
-                    className={`flex items-center gap-2 text-sm font-medium px-3 py-1 rounded border ${
+                    className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded border ${
                       flaggedQuestions.has(currentQuestionIndex) 
                         ? "bg-white border-gray-300 text-black" 
                         : "bg-white border-gray-300 text-gray-600 hover:text-black"
                     }`}
                   >
-                    <Flag className={`h-4 w-4 ${flaggedQuestions.has(currentQuestionIndex) ? "fill-current" : ""}`} />
+                    <Flag className={`h-3.5 w-3.5 ${flaggedQuestions.has(currentQuestionIndex) ? "fill-current" : ""}`} />
                     <span>Mark for Review</span>
                   </button>
                 </div>
-                <button className="px-3 py-1 text-sm font-semibold border border-gray-300 rounded bg-white hover:bg-gray-100">
+                <button className="px-2.5 py-0.5 text-xs font-semibold border border-gray-300 rounded bg-white hover:bg-gray-100">
                   ABC
                 </button>
               </div>
 
               {/* Answer choices */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <RadioGroup value={userAnswers[currentQuestionIndex] || ""} onValueChange={handleAnswerSelect}>
                   {choices.map((label) => {
                     const isSelected = userAnswers[currentQuestionIndex] === label;
@@ -326,21 +326,21 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
                     return (
                       <div
                         key={label}
-                        className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                        className={`flex items-start gap-2 p-2.5 rounded border-2 transition-all cursor-pointer ${
                           isSelected 
                             ? "border-blue-600 bg-white shadow-sm" 
                             : "border-gray-200 bg-white hover:border-gray-300"
                         }`}
                         onClick={() => handleAnswerSelect(label)}
                       >
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-semibold text-sm ${
+                        <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center font-semibold text-xs ${
                           isSelected
                             ? 'border-blue-600 bg-blue-50 text-blue-600'
                             : 'border-gray-400 bg-white text-gray-700'
                         }`}>
                           {label}
                         </div>
-                        <div className="flex-1 pt-0.5 text-sm leading-relaxed">
+                        <div className="flex-1 pt-0 text-xs leading-snug">
                           <BlockRenderer blocks={currentQuestion?.choices[label] || []} />
                         </div>
                       </div>
