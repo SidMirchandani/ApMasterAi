@@ -13,15 +13,15 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import React, { useState, useEffect } from "react";
-import Link from "next/link"; // Changed from wouter's Link
-import { useRouter } from "next/router"; // Changed from wouter's useLocation
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/ui/navigation";
 import { apSubjects, difficultyColors } from "@/lib/ap-subjects";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { formatDate, safeDateParse } from "@/lib/utils";
+import { apiRequest } from "@/lib/api";
+import { formatDate, safeDateParse } from "@/lib/date";
 
 // Interface for a course, including optional isAdded status
 interface Course {

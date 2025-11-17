@@ -14,8 +14,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { logout } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { apiRequest } from "@/lib/api";
+import { useIsMobile } from "@/lib/hooks/useMobile";
 import { apSubjects } from "@/lib/ap-subjects";
 
 export default function Navigation() {

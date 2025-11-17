@@ -7,8 +7,8 @@ import { BookOpen, Clock, Trash2, Plus, Calendar, AlertTriangle, ArrowRight } fr
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { apiRequest } from "@/lib/api";
+import { formatDate, formatDateTime } from "@/lib/date";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";

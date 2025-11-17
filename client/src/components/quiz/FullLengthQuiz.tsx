@@ -7,7 +7,7 @@ import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QuizReviewPage } from "./QuizReviewPage";
 import { useRouter } from "next/router";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/api";
 
 interface Question {
   id: string;
