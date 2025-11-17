@@ -157,6 +157,8 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   };
 
   const confirmSubmit = () => {
+    // Update the parent state with any changes made in review mode
+    // This is handled by the onSubmit callback
     onSubmit();
     setShowSubmitConfirm(false);
   };
@@ -169,7 +171,9 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         userAnswers={userAnswers}
         flaggedQuestions={flaggedQuestions}
         onBack={() => setIsReviewMode(false)}
-        onSubmit={() => {
+        onSubmit={(updatedAnswers, updatedFlagged) => {
+          setUserAnswers(updatedAnswers);
+          setFlaggedQuestions(updatedFlagged);
           setShowSubmitConfirm(true);
         }}
       />

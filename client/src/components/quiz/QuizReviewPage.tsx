@@ -38,7 +38,7 @@ interface QuizReviewPageProps {
   userAnswers: { [key: number]: string };
   flaggedQuestions: Set<number>;
   onBack: () => void;
-  onSubmit?: () => void;
+  onSubmit?: (updatedAnswers: { [key: number]: string }, updatedFlagged: Set<number>) => void;
 }
 
 export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBack, onSubmit }: QuizReviewPageProps) {
@@ -61,11 +61,11 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
     // For flagged questions, show red border but background based on state
     if (isFlagged) {
       if (isCurrent) {
-        return `${baseClass} bg-gray-900 text-white border-red-500`;
+        return `${baseClass} bg-gray-900 text-white border-red-600`;
       } else if (isAnswered) {
-        return `${baseClass} bg-blue-600 text-white border-red-500`;
+        return `${baseClass} bg-blue-700 text-white border-red-600`;
       } else {
-        return `${baseClass} bg-white text-gray-900 border-red-500`;
+        return `${baseClass} bg-white text-gray-900 border-red-600`;
       }
     }
 
@@ -73,9 +73,9 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
     if (isCurrent) {
       return `${baseClass} bg-gray-900 text-white border-gray-900`;
     } else if (isAnswered) {
-      return `${baseClass} bg-blue-600 text-white border-blue-600`;
+      return `${baseClass} bg-blue-700 text-white border-blue-700`;
     } else {
-      return `${baseClass} bg-white text-gray-900 border-gray-300 border-dashed`;
+      return `${baseClass} bg-white text-gray-900 border-gray-400 border-dashed`;
     }
   };
 
@@ -107,12 +107,12 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
               <div className="mb-4">
                 <div className="flex items-center justify-center gap-6 mb-6 text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded border-2 border-gray-300 border-dashed"></div>
+                    <div className="w-6 h-6 rounded border-2 border-gray-400 border-dashed"></div>
                     <span>Unanswered</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded border-2 border-red-500 flex items-center justify-center">
-                      <Flag className="h-3 w-3 text-red-500" />
+                    <div className="w-6 h-6 rounded border-2 border-red-600 flex items-center justify-center">
+                      <Flag className="h-3 w-3 text-red-600" />
                     </div>
                     <span>For Review</span>
                   </div>
@@ -128,20 +128,22 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
                         key={index}
                         onClick={() => setSelectedQuestion(index)}
                         className={`
-                          relative w-full aspect-square rounded flex items-center justify-center font-medium text-xs
+                          relative w-full aspect-square rounded flex items-center justify-center font-semibold text-sm
                           transition-all hover:shadow-md
                           ${
-                            isAnswered
-                              ? isFlagged
-                                ? "bg-red-50 border-2 border-red-500"
-                                : "bg-blue-50 border-2 border-blue-500"
-                              : "border-2 border-gray-300 border-dashed bg-white"
+                            isFlagged
+                              ? isAnswered
+                                ? "bg-blue-700 text-white border-2 border-red-600"
+                                : "bg-white text-gray-900 border-2 border-red-600"
+                              : isAnswered
+                              ? "bg-blue-700 text-white border-2 border-blue-700"
+                              : "border-2 border-gray-400 border-dashed bg-white"
                           }
                         `}
                       >
                         {index + 1}
                         {isFlagged && (
-                          <Flag className="h-3 w-3 text-red-500 absolute -top-1 -right-1" />
+                          <Flag className="h-3 w-3 text-red-600 absolute -top-1 -right-1" />
                         )}
                       </button>
                     );
@@ -187,7 +189,7 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
               <div className="flex items-center gap-3">
                 {onSubmit && (
                   <Button
-                    onClick={onSubmit}
+                    onClick={() => onSubmit(localAnswers, localFlagged)}
                     className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
                   >
                     Submit Test
