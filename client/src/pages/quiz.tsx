@@ -260,10 +260,11 @@ export default function Quiz() {
     router.push(`/study?subject=${subjectId}`);
   };
 
-  const handleSubmitFullLength = async () => {
+  const handleSubmitFullLength = async (finalAnswers?: { [key: number]: string }) => {
+    const answersToUse = finalAnswers || userAnswers;
     let correct = 0;
     questions.forEach((q, i) => {
-      const userAns = userAnswers[i];
+      const userAns = answersToUse[i];
       const correctAns = String.fromCharCode(65 + q.answerIndex);
       if (userAns === correctAns) correct++;
     });
@@ -280,7 +281,7 @@ export default function Quiz() {
           percentage,
           totalQuestions: questions.length,
           questions,
-          userAnswers,
+          userAnswers: answersToUse,
         },
       );
       

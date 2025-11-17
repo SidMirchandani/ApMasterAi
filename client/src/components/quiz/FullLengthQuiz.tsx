@@ -30,7 +30,7 @@ interface FullLengthQuizProps {
   subjectId: string;
   timeElapsed: number;
   onExit: () => void;
-  onSubmit: () => void;
+  onSubmit: (answers?: { [key: number]: string }) => void;
   onSaveAndExit: (state: any) => void;
   savedState?: any;
 }
@@ -157,10 +157,17 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   };
 
   const confirmSubmit = () => {
-    // Update the parent state with any changes made in review mode
-    // This is handled by the onSubmit callback
-    onSubmit();
+    // Pass the current userAnswers to the parent submit handler
+    (onSubmit as any)(userAnswers);
     setShowSubmitConfirm(false);
+  };
+
+  const handleReviewSubmit = (updatedAnswers: { [key: number]: string }, updatedFlagged: Set<number>) => {
+    // Update local state first
+    setUserAnswers(updatedAnswers);
+    setFlaggedQuestions(updatedFlagged);
+    // Then show confirmation dialog
+    setShowSubmitConfirm(true);
   };
 
   // Added logic for review mode rendering
@@ -171,11 +178,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         userAnswers={userAnswers}
         flaggedQuestions={flaggedQuestions}
         onBack={() => setIsReviewMode(false)}
-        onSubmit={(updatedAnswers, updatedFlagged) => {
-          setUserAnswers(updatedAnswers);
-          setFlaggedQuestions(updatedFlagged);
-          setShowSubmitConfirm(true);
-        }}
+        onSubmit={handleReviewSubmit}
       />
     );
   }
