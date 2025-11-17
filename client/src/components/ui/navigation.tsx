@@ -87,55 +87,79 @@ export default function Navigation() {
     }
   };
 
+  // Helper function to abbreviate course names
+  const getAbbreviatedCourseName = (subjectId: string) => {
+    const abbreviations: Record<string, string> = {
+      "computer-science-principles": "APCSP",
+      "computer-science-a": "APCSA",
+      "macroeconomics": "AP Macro",
+      "microeconomics": "AP Micro",
+      "calculus-ab": "AP Calc AB",
+      "calculus-bc": "AP Calc BC",
+      "biology": "AP Bio",
+      "chemistry": "AP Chem",
+      "physics-1": "AP Physics 1",
+      "physics-c-mechanics": "AP Physics C",
+      "english-literature": "AP Lit",
+      "us-history": "APUSH",
+      "european-history": "AP Euro",
+      "psychology": "AP Psych",
+      "statistics": "AP Stats"
+    };
+    return abbreviations[subjectId] || "AP Course";
+  };
+
   // Generate breadcrumb based on current route
   const getBreadcrumbs = () => {
     const breadcrumbs = [];
     
     if (location === "/learn" || location === "/courses") {
+      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: "Courses", href: "/learn" });
     } else if (location === "/study") {
       const subjectId = router.query.subject as string;
-      const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
-      const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
+      const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
-      breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
+      breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
     } else if (location === "/quiz") {
       const subjectId = router.query.subject as string;
       const unitId = router.query.unit as string;
-      const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
-      const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
+      const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
-      breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
+      breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
       if (unitId) {
         breadcrumbs.push({ label: `${unitId.replace("unit", "Unit ").replace("bigidea", "Unit ")}`, href: "#" });
       }
     } else if (location === "/section-review") {
       const subjectId = router.query.subject as string;
       const testId = router.query.testId as string;
-      const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
-      const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
+      const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
-      breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
+      breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test Results", href: `/full-length-results?subject=${subjectId}&testId=${testId}` });
       breadcrumbs.push({ label: "Review", href: "#" });
     } else if (location === "/full-length-history") {
       const subjectId = router.query.subject as string;
-      const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
-      const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
+      const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
-      breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
+      breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test History", href: "#" });
     } else if (location === "/full-length-results") {
       const subjectId = router.query.subject as string;
       const testId = router.query.testId as string;
-      const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
-      const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
+      const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
-      breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
+      breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test Results", href: "#" });
     } else if (location === "/profile") {
+      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: "Profile", href: "/profile" });
     }
     
