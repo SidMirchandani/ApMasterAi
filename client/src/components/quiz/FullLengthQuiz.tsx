@@ -313,7 +313,10 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         currentQuestion={currentQuestionIndex}
         userAnswers={userAnswers}
         flaggedQuestions={flaggedQuestions}
-        onQuestionSelect={setCurrentQuestionIndex}
+        onQuestionSelect={(index) => {
+          setCurrentQuestionIndex(index);
+          setShowQuestionPalette(false);
+        }}
         onGoToReview={() => setIsReviewMode(true)}
       />
 

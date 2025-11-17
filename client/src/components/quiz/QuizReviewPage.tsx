@@ -132,7 +132,7 @@ export function QuizReviewPage({
                 </div>
 
                 {/* Grid */}
-                <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(40px,1fr))]">
+                <div className="grid gap-2 grid-cols-10">
                   {questions.map((_, index) => {
                     const answered = localAnswers[index] != null;
                     const flagged = localFlagged.has(index);
