@@ -63,26 +63,19 @@ export function QuizBottomBar({
                 <span className="hidden sm:inline">{currentQuestion === 0 ? "Back" : "Previous"}</span>
                 <span className="sm:hidden">{currentQuestion === 0 ? "Back" : "Prev"}</span>
               </Button>
-              {isLastQuestion && onSubmit ? (
-                <Button
-                  onClick={onSubmit}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Submit Test
-                </Button>
-              ) : onReview ? (
+              {onReview ? (
                 <Button
                   onClick={onReview}
-                  variant="outline"
-                  className="flex items-center gap-2"
+                  className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
                 >
-                  Review
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               ) : (
                 <Button
                   onClick={onNext}
                   disabled={!canGoNext}
-                  className="flex items-center gap-2"
+                  className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
                 >
                   <span className="hidden sm:inline">Next</span>
                   <ChevronRight className="h-4 w-4" />

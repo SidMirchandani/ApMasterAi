@@ -1,12 +1,19 @@
 
 import { Button } from "@/components/ui/button";
-import { Clock, Flag, BookOpen, Calculator, FileText, MoreVertical, LogOut } from "lucide-react";
+import { Clock, Flag, BookOpen, Calculator, FileText, MoreVertical, LogOut, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface QuizHeaderProps {
   title: string;
@@ -40,20 +47,37 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
         {/* Desktop: single row */}
         <div className="hidden md:flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold text-gray-900">
-              {title}
-            </h1>
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">
+                {title}
+              </h1>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-gray-600 hover:text-gray-900">
+                    Directions <ChevronDown className="ml-1 h-3 w-3" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[600px] sm:w-[700px] overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle className="text-xl font-bold">Please read the below directions carefully.</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6 space-y-4 text-sm">
+                    <p>This AP® Practice Exam has 50 multiple-choice questions and lasts 90 minutes.</p>
+                    <p>Each of the questions is followed by four suggested answers. Select the one that best answers each question.</p>
+                    <p>A calculator is allowed in this section. You may use a handheld calculator or the calculator available in their application.</p>
+                    <p>Reference information is available in this application and can be accessed throughout the exam.</p>
+                    <p>You can go back and forth between questions in this section until time expires. The clock will turn red when 5 minutes remain—<strong>the proctor will not give you any time updates or warnings.</strong></p>
+                    <p className="mt-6"><strong>Copyright:</strong> "AP®" is a registered trademark of the College Board. The College Board is not affiliated with, nor does it endorse, this product. This is not an official test provided by the College Board. The user interface (UI) is intended solely for educational purposes and aims to mimic the appearance of the official Bluebook interface.</p>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-gray-700">
               <Clock className="h-5 w-5" />
               {!timerHidden && <span className="font-mono text-lg">{formatTime(timeElapsed)}</span>}
-              {onHideTimer && (
-                <Button variant="ghost" size="sm" onClick={onHideTimer}>
-                  {timerHidden ? "Show" : "Hide"}
-                </Button>
-              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -88,15 +112,35 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
 
         {/* Mobile: two rows */}
         <div className="md:hidden py-2">
-          {/* First row: Title */}
-          <div className="flex justify-center items-center h-8">
+          {/* First row: Title and Directions */}
+          <div className="flex flex-col items-center">
             <h1 className="text-base font-semibold text-gray-900">
               {getShortTitle(title)}
             </h1>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-5 px-2 text-xs text-gray-600 hover:text-gray-900">
+                  Directions <ChevronDown className="ml-1 h-3 w-3" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[90vw] overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle className="text-lg font-bold">Please read the below directions carefully.</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-4 text-sm">
+                  <p>This AP® Practice Exam has 50 multiple-choice questions and lasts 90 minutes.</p>
+                  <p>Each of the questions is followed by four suggested answers. Select the one that best answers each question.</p>
+                  <p>A calculator is allowed in this section. You may use a handheld calculator or the calculator available in their application.</p>
+                  <p>Reference information is available in this application and can be accessed throughout the exam.</p>
+                  <p>You can go back and forth between questions in this section until time expires. The clock will turn red when 5 minutes remain—<strong>the proctor will not give you any time updates or warnings.</strong></p>
+                  <p className="mt-6"><strong>Copyright:</strong> "AP®" is a registered trademark of the College Board. The College Board is not affiliated with, nor does it endorse, this product. This is not an official test provided by the College Board. The user interface (UI) is intended solely for educational purposes and aims to mimic the appearance of the official Bluebook interface.</p>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
           
           {/* Second row: Timer and tools */}
-          <div className="flex justify-between items-center h-10">
+          <div className="flex justify-between items-center h-10 mt-1">
             <div className="flex items-center gap-2 text-gray-700">
               <Clock className="h-4 w-4" />
               {!timerHidden && <span className="font-mono text-sm">{formatTime(timeElapsed)}</span>}
@@ -120,11 +164,6 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {onHideTimer && (
-                    <DropdownMenuItem onClick={onHideTimer}>
-                      {timerHidden ? "Show" : "Hide"} Timer
-                    </DropdownMenuItem>
-                  )}
                   {onExitExam && (
                     <DropdownMenuItem onClick={onExitExam}>
                       <LogOut className="mr-2 h-4 w-4" />
