@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Flag } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -43,20 +42,23 @@ export function QuestionCard({
   isFullLength,
   isAnswerSubmitted = false,
 }: QuestionCardProps) {
+  if (!question) {
+    return null;
+  }
   const renderChoice = (choice: string, index: number) => {
     const label = String.fromCharCode(65 + index);
-    
+
     // Skip choice E if both text and images are empty
     if (label === 'E' && (!choice || choice.trim() === '') && (!question.image_urls?.[label]?.length)) {
       return null;
     }
-    
+
     const isSelected = selectedAnswer === label;
     const correctLabel = String.fromCharCode(65 + question.answerIndex);
     const isCorrect = label === correctLabel;
 
     let className = "w-full text-left p-3 rounded border transition ";
-    
+
     if (isAnswerSubmitted) {
       if (isCorrect) {
         className += "border-green-500 bg-green-50";
