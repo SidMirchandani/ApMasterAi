@@ -48,8 +48,11 @@ export function QuestionCard({
   const renderChoice = (choice: string, index: number) => {
     const label = String.fromCharCode(65 + index);
 
-    // Skip choice E if both text and images are empty
-    if (label === 'E' && (!choice || choice.trim() === '') && (!question.image_urls?.[label]?.length)) {
+    const hasText = choice && choice.trim() !== '';
+    const hasImages = question.image_urls?.[label]?.length > 0;
+
+    // Skip choice E only if both text and images are completely empty
+    if (label === 'E' && !hasText && !hasImages) {
       return null;
     }
 
@@ -82,14 +85,14 @@ export function QuestionCard({
       >
         <div>
           <span className="font-bold mr-2">{label}.</span>
-          {choice && choice.trim() && (
+          {hasText && (
             <span className="inline">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{choice}</ReactMarkdown>
             </span>
           )}
         </div>
 
-        {question.image_urls?.[label]?.length > 0 && (
+        {hasImages && (
           <div className="mt-2 space-y-2">
             {question.image_urls[label]?.map((img, ii) => (
               <img key={ii} src={img} className="rounded border max-w-full" alt={`Choice ${label}`} />

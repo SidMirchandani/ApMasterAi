@@ -108,13 +108,22 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
             isAnswerSubmitted={isAnswerSubmitted}
           />
 
-          {isAnswerSubmitted && currentQuestion.explanation && (
+          {isAnswerSubmitted && (
             <Card className="border-khan-blue bg-blue-50">
               <CardHeader className="pb-2 pt-3">
                 <CardTitle className="text-sm">Explanation</CardTitle>
               </CardHeader>
               <CardContent className="pt-0 pb-3">
-                <ExplanationChat explanation={currentQuestion.explanation} />
+                {currentQuestion.explanation ? (
+                  <ExplanationChat 
+                    questionPrompt={currentQuestion.prompt}
+                    explanation={currentQuestion.explanation}
+                    correctAnswer={currentQuestion.choices[currentQuestion.answerIndex]}
+                    choices={currentQuestion.choices}
+                  />
+                ) : (
+                  <p className="text-sm text-gray-600 italic">No explanation available for this question.</p>
+                )}
               </CardContent>
             </Card>
           )}
