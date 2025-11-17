@@ -252,7 +252,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     <div className="h-screen bg-gray-50 flex flex-col">
       <div className="fixed top-0 left-0 right-0 z-50">
         <QuizHeader
-          title={`AP® ${subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Practice Exam`}
+          title={`${subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Practice Exam`}
           timeElapsed={timeElapsed}
           onHideTimer={() => setTimerHidden(!timerHidden)}
           timerHidden={timerHidden}

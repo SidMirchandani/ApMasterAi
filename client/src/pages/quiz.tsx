@@ -198,34 +198,34 @@ export default function Quiz() {
             unitMap,
             availableUnits: Object.keys(unitMap || {})
           });
-          
+
           if (!unitMap) {
             setError(`Quiz not yet available for ${subjectId}`);
             setIsLoading(false);
             return;
           }
-          
+
           const sectionCode = unitMap[unit as string];
           console.log("🎯 [Quiz] Section code mapping:", {
             unit,
             sectionCode,
             subjectApiCode
           });
-          
+
           if (!sectionCode) {
             console.error("❌ [Quiz] No section code found for unit:", unit);
             setError("Invalid unit");
             setIsLoading(false);
             return;
           }
-          
+
           const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`;
           console.log("📡 [Quiz] Fetching questions:", apiUrl);
-          
+
           const response = await apiRequest("GET", apiUrl);
           if (!response.ok) throw new Error("Failed to fetch");
           const data = await response.json();
-          
+
           console.log("📥 [Quiz] API response:", {
             success: data.success,
             questionCount: data.data?.length || 0,
@@ -235,7 +235,7 @@ export default function Quiz() {
               section_code: data.data[0].section_code
             } : null
           });
-          
+
           if (data.success && data.data?.length > 0) {
             const shuffled = [...data.data].sort(() => Math.random() - 0.5);
             setQuestions(shuffled.slice(0, 25));
@@ -257,7 +257,8 @@ export default function Quiz() {
   const isFullLength = unit === "full-length";
 
   const handleExitQuiz = () => {
-    router.push(`/study?subject=${subjectId}`);
+    // Force navigation to study page
+    router.replace(`/study?subject=${subjectId}`);
   };
 
   const handleSubmitFullLength = async (finalAnswers?: { [key: number]: string }) => {
@@ -268,9 +269,9 @@ export default function Quiz() {
       const correctAns = String.fromCharCode(65 + q.answerIndex);
       if (userAns === correctAns) correct++;
     });
-    
+
     const percentage = Math.round((correct / questions.length) * 100);
-    
+
     // Save the test results
     try {
       const response = await apiRequest(
@@ -284,18 +285,18 @@ export default function Quiz() {
           userAnswers: answersToUse,
         },
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         const testId = data.data?.id;
-        
+
         // Clear saved exam state after submission
         await apiRequest(
           "DELETE",
           `/api/user/subjects/${subjectId}/delete-exam-state`,
         );
         setSavedExamState(null);
-        
+
         // Redirect to the full-length results page
         if (testId) {
           router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
@@ -339,7 +340,7 @@ export default function Quiz() {
   const handleResumeExam = async () => {
     setShowResumeDialog(false);
     setIsLoading(true);
-    
+
     // Restore timer state
     if (savedExamState) {
       setTimeElapsed(savedExamState.timeElapsed || 0);
@@ -376,13 +377,13 @@ export default function Quiz() {
     } catch (error) {
       console.error("Failed to delete saved exam state:", error);
     }
-    
+
     setSavedExamState(null);
     setShowResumeDialog(false);
-    
+
     // Continue with normal flow - trigger useEffect to fetch questions
     setIsLoading(true);
-    
+
     // Fetch questions
     try {
       const subjectApiCode = SUBJECT_API_CODES[subjectId as string];

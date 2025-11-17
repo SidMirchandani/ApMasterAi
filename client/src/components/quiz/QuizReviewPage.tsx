@@ -33,6 +33,7 @@ interface QuizReviewPageProps {
   questions: Question[];
   userAnswers: { [key: number]: string };
   flaggedQuestions: Set<number>;
+  subjectId: string;
   onBack: () => void;
   onSubmit?: (
     updatedAnswers: { [key: number]: string },
@@ -44,6 +45,7 @@ export function QuizReviewPage({
   questions,
   userAnswers,
   flaggedQuestions,
+  subjectId,
   onBack,
   onSubmit,
 }: QuizReviewPageProps) {
@@ -79,7 +81,11 @@ export function QuizReviewPage({
     <div className="h-screen bg-gray-50 flex flex-col">
       {/* HEADER */}
       <div className="fixed top-0 left-0 right-0 z-50">
-        <QuizHeader title="Review Your Answers" timeElapsed={0} timerHidden />
+        <QuizHeader 
+          title={selectedQuestion === null ? "Review Your Answers" : subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} 
+          timeElapsed={0} 
+          timerHidden 
+        />
       </div>
 
       {/* ====================== PALETTE MODE ====================== */}
@@ -96,35 +102,46 @@ export function QuizReviewPage({
                 </p>
 
                 {/* Legend */}
-                <div className="flex items-center justify-center gap-6 mb-6 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded border-2 border-gray-400 border-dashed"></div>
+                <div className="flex items-center justify-center gap-4 mb-6 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded border-2 border-gray-400 border-dashed"></div>
                     <span>Unanswered</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded border-2 border-red-600 flex items-center justify-center">
-                      <Flag className="h-3 w-3 text-red-600" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded bg-blue-700 border-2 border-blue-700"></div>
+                    <span>Answered</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded bg-gray-800 border-2 border-gray-800"></div>
+                    <span>Current</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded border-2 border-red-600 flex items-center justify-center">
+                      <Flag className="h-2.5 w-2.5 text-red-600" />
                     </div>
                     <span>For Review</span>
                   </div>
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                <div className="grid grid-cols-10 sm:grid-cols-15 lg:grid-cols-20 gap-1.5">
                   {questions.map((_, index) => {
                     const answered = localAnswers[index] != null;
                     const flagged = localFlagged.has(index);
+                    const isCurrent = selectedQuestion === index;
 
                     const base =
-                      "relative w-full aspect-square rounded flex items-center justify-center font-semibold text-sm transition-all hover:shadow-md cursor-pointer";
+                      "relative w-full aspect-square rounded flex items-center justify-center font-semibold text-xs transition-all hover:shadow-md cursor-pointer";
 
-                    const cls = flagged
-                      ? answered
-                        ? "bg-blue-700 text-white border-2 border-red-600"
-                        : "bg-white text-gray-900 border-2 border-red-600"
-                      : answered
-                        ? "bg-blue-700 text-white border-2 border-blue-700"
-                        : "border-2 border-gray-400 border-dashed bg-white";
+                    const cls = isCurrent
+                      ? "bg-gray-800 text-white border-2 border-gray-800"
+                      : flagged
+                        ? answered
+                          ? "bg-blue-700 text-white border-2 border-red-600"
+                          : "bg-white text-gray-900 border-2 border-red-600"
+                        : answered
+                          ? "bg-blue-700 text-white border-2 border-blue-700"
+                          : "border-2 border-gray-400 border-dashed bg-white";
 
                     return (
                       <button
@@ -133,8 +150,8 @@ export function QuizReviewPage({
                         className={`${base} ${cls}`}
                       >
                         {index + 1}
-                        {flagged && (
-                          <Flag className="h-3 w-3 text-red-600 absolute -top-1 -right-1" />
+                        {flagged && !isCurrent && (
+                          <Flag className="h-2.5 w-2.5 text-red-600 absolute -top-0.5 -right-0.5" />
                         )}
                       </button>
                     );
