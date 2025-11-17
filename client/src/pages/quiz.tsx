@@ -267,18 +267,44 @@ export default function Quiz() {
       const correctAns = String.fromCharCode(65 + q.answerIndex);
       if (userAns === correctAns) correct++;
     });
-    setScore(correct);
-    setQuizCompleted(true);
     
-    // Clear saved exam state after submission
+    const percentage = Math.round((correct / questions.length) * 100);
+    
+    // Save the test results
     try {
-      await apiRequest(
-        "DELETE",
-        `/api/user/subjects/${subjectId}/delete-exam-state`,
+      const response = await apiRequest(
+        "POST",
+        `/api/user/subjects/${subjectId}/full-length-test`,
+        {
+          score: correct,
+          percentage,
+          totalQuestions: questions.length,
+          questions,
+          userAnswers,
+        },
       );
-      setSavedExamState(null);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const testId = data.data?.id;
+        
+        // Clear saved exam state after submission
+        await apiRequest(
+          "DELETE",
+          `/api/user/subjects/${subjectId}/delete-exam-state`,
+        );
+        setSavedExamState(null);
+        
+        // Redirect to the full-length results page
+        if (testId) {
+          router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
+        }
+      }
     } catch (error) {
-      console.error("Failed to delete saved exam state:", error);
+      console.error("Failed to save test results:", error);
+      // Fall back to showing results on the same page if save fails
+      setScore(correct);
+      setQuizCompleted(true);
     }
   };
 
@@ -377,31 +403,17 @@ export default function Quiz() {
     }
   };
 
-  // Save score
+  // Save score for practice tests only (full-length handled in submit)
   useEffect(() => {
     const saveScore = async () => {
-      if (!quizCompleted || !subjectId || !unit) return;
+      if (!quizCompleted || !subjectId || !unit || isFullLength) return;
       const pct = Math.round((score / questions.length) * 100);
       try {
-        if (isFullLength) {
-          await apiRequest(
-            "POST",
-            `/api/user/subjects/${subjectId}/full-length-test`,
-            {
-              score,
-              percentage: pct,
-              totalQuestions: questions.length,
-              questions,
-              userAnswers,
-            },
-          );
-        } else {
-          await apiRequest(
-            "PUT",
-            `/api/user/subjects/${subjectId}/unit-progress`,
-            { unitId: unit, mcqScore: pct },
-          );
-        }
+        await apiRequest(
+          "PUT",
+          `/api/user/subjects/${subjectId}/unit-progress`,
+          { unitId: unit, mcqScore: pct },
+        );
       } catch (e) {}
     };
     saveScore();
@@ -412,8 +424,6 @@ export default function Quiz() {
     score,
     questions.length,
     isFullLength,
-    questions,
-    userAnswers,
   ]);
 
   if (loading || isLoading) {
