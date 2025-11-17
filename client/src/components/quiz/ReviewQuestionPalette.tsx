@@ -1,4 +1,3 @@
-
 import { XCircle, CheckCircle, AlertCircle, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -30,7 +29,7 @@ export function ReviewQuestionPalette({
   const getQuestionState = (index: number) => {
     const userAnswer = userAnswers[index];
     const correctAnswer = correctAnswers[index];
-    
+
     if (!userAnswer) return "skipped";
     if (userAnswer === correctAnswer) return "correct";
     return "incorrect";
@@ -39,8 +38,9 @@ export function ReviewQuestionPalette({
   const getQuestionClass = (index: number) => {
     const state = getQuestionState(index);
     const isCurrent = index === currentQuestion;
-    const baseClass = "w-12 h-12 rounded border-2 text-center font-semibold flex items-center justify-center transition-all relative";
-    
+    const baseClass =
+      "w-12 h-12 rounded border-2 text-center font-semibold flex items-center justify-center transition-all relative";
+
     if (isCurrent) {
       // Current question - show with darker border
       if (state === "correct") {
@@ -51,7 +51,7 @@ export function ReviewQuestionPalette({
         return `${baseClass} bg-white text-gray-900 border-red-500`;
       }
     }
-    
+
     // Non-current questions
     switch (state) {
       case "correct":
@@ -73,8 +73,14 @@ export function ReviewQuestionPalette({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-end mb-4">
           <button onClick={onClose}>
             <XCircle className="h-6 w-6 text-gray-500" />
@@ -104,7 +110,7 @@ export function ReviewQuestionPalette({
           {questions.map((_, i) => {
             const state = getQuestionState(i);
             const displayNum = getDisplayNumber(i);
-            
+
             return (
               <button
                 key={i}

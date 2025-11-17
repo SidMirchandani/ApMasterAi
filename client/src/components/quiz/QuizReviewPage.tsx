@@ -81,10 +81,17 @@ export function QuizReviewPage({
     <div className="h-screen bg-gray-50 flex flex-col">
       {/* HEADER */}
       <div className="fixed top-0 left-0 right-0 z-50">
-        <QuizHeader 
-          title={selectedQuestion === null ? "Review Your Answers" : `AP® ${subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Practice Exam`} 
-          timeElapsed={0} 
-          timerHidden 
+        <QuizHeader
+          title={
+            selectedQuestion === null
+              ? "Review Your Answers"
+              : `AP® ${subjectId
+                  .split("-")
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(" ")} Practice Exam`
+          }
+          timeElapsed={0}
+          timerHidden
           subjectId={subjectId}
         />
       </div>
