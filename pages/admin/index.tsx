@@ -9,7 +9,6 @@ import {
   signOut,
   User,
 } from "firebase/auth";
-import Papa from "papaparse";
 import toast, { Toaster } from "react-hot-toast";
 import { BookOpen, Upload, Search, LogOut, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -55,10 +54,6 @@ export default function AdminPage() {
   const [subject, setSubject] = useState("");
   const [section, setSection] = useState("");
 
-  // CSV upload state
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-
   // ZIP import state
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -92,64 +87,6 @@ export default function AdminPage() {
     if (!process.env.NEXT_PUBLIC_ADMIN_HINT) return true;
     return allowedEmails.includes(user.email.toLowerCase());
   }, [user, allowedEmails]);
-
-  function handleCSVSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    setCsvFile(file || null);
-  }
-
-  async function handleCSVUpload() {
-    if (!csvFile || !token) return;
-
-    setUploading(true);
-    const uploadPromise = new Promise(async (resolve, reject) => {
-      Papa.parse(csvFile, {
-        header: true,
-        complete: async (results) => {
-          const rows = results.data as any[];
-          console.log("Parsed CSV rows:", rows);
-
-          try {
-            const res = await fetch("/api/admin/questions/bulk", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ rows }),
-            });
-
-            if (res.ok) {
-              const data = await res.json();
-              setCsvFile(null);
-              fetchFiltered();
-              resolve(data);
-            } else {
-              const error = await res.json();
-              console.error("Upload failed:", error);
-              reject(new Error(error.error || "Upload failed"));
-            }
-          } catch (err) {
-            console.error("Upload error:", err);
-            reject(err);
-          } finally {
-            setUploading(false);
-          }
-        },
-        error: (err) => {
-          console.error("CSV parsing error:", err);
-          reject(new Error("CSV parsing failed"));
-          setUploading(false);
-        },
-      });
-    });
-
-    toast.promise(uploadPromise, {
-      loading: "Uploading questions...",
-      success: (data: any) => `Successfully uploaded ${data.count} questions!`,
-      error: (err) => `Upload failed: ${err.message}`,
-    });
-  }
 
   async function fetchFiltered() {
     if (!token) return;
@@ -484,42 +421,6 @@ export default function AdminPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* CSV Upload Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              Bulk Upload via CSV
-            </CardTitle>
-            <CardDescription>Upload questions in bulk using a CSV file</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                type="file"
-                accept=".csv"
-                onChange={handleCSVSelect}
-                className="flex-1"
-              />
-              {csvFile && (
-                <Button
-                  onClick={handleCSVUpload}
-                  disabled={uploading}
-                  className="bg-khan-green hover:bg-khan-green-light text-white"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  {uploading ? "Uploading..." : "Upload CSV"}
-                </Button>
-              )}
-            </div>
-            {csvFile && (
-              <p className="text-sm text-khan-gray-medium">
-                Selected: {csvFile.name}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
         {/* ZIP Import Card */}
         <Card>
           <CardHeader>

@@ -1,3 +1,4 @@
+
 import type { NextApiRequest, NextApiResponse } from 'next';
 import formidable from 'formidable';
 import AdmZip from 'adm-zip';
@@ -21,25 +22,23 @@ if (!firebaseAdmin) {
 const db = firebaseAdmin.firestore;
 const storage = firebaseAdmin.storage;
 
+interface BlockText {
+  type: "text";
+  value: string;
+}
+
+interface BlockImage {
+  type: "image";
+  url: string;
+}
+
+type Block = BlockText | BlockImage;
+
 interface QuestionJSON {
-  subject_code: string; // ← ADDED HERE
+  subject_code: string;
   question_id: number;
-  prompt: string;
-  prompt_images: string[];
-  choices: {
-    A?: string;
-    B?: string;
-    C?: string;
-    D?: string;
-    E?: string;
-  };
-  choice_images: {
-    A?: string[];
-    B?: string[];
-    C?: string[];
-    D?: string[];
-    E?: string[];
-  };
+  prompt_blocks: Block[];
+  choices: Record<"A"|"B"|"C"|"D"|"E", Block[]>;
   correct_answer: string;
   explanation: string;
   section_code: string;
@@ -79,6 +78,43 @@ async function uploadImageToStorage(
   return `https://storage.googleapis.com/${bucket.name}/${pathWithSubject}`;
 }
 
+async function uploadBlockImages(
+  blocks: Block[],
+  imagesBasePath: string,
+  questionId: number,
+  subjectCode: string
+): Promise<{ blocks: Block[]; imagesUploaded: number }> {
+  const updatedBlocks: Block[] = [];
+  let imagesUploaded = 0;
+
+  for (const block of blocks) {
+    if (block.type === 'image') {
+      const filename = block.url;
+      const localPath = path.join(imagesBasePath, String(questionId), filename);
+
+      try {
+        const stats = await fs.stat(localPath);
+        if (stats.isFile()) {
+          const storagePath = `questions/${questionId}/${filename}`;
+          const url = await uploadImageToStorage(localPath, storagePath, subjectCode);
+          updatedBlocks.push({ type: 'image', url });
+          imagesUploaded++;
+        } else {
+          console.warn(`Not a file: ${localPath}`);
+          updatedBlocks.push(block);
+        }
+      } catch (err: any) {
+        console.warn(`Missing image: ${localPath}`, err.message);
+        updatedBlocks.push(block);
+      }
+    } else {
+      updatedBlocks.push(block);
+    }
+  }
+
+  return { blocks: updatedBlocks, imagesUploaded };
+}
+
 async function processQuestion(
   questionData: QuestionJSON,
   imagesBasePath: string
@@ -86,99 +122,48 @@ async function processQuestion(
   docId: string;
   imagesUploaded: number;
 }> {
-
-  // Extract subject_code FROM JSON
   const {
     subject_code,
     question_id,
-    prompt,
-    prompt_images,
+    prompt_blocks,
     choices,
-    choice_images,
     correct_answer,
     explanation,
     section_code
   } = questionData;
 
-  // Build choices array [A-E]
-  const choicesArray = [
-    choices.A || '',
-    choices.B || '',
-    choices.C || '',
-    choices.D || '',
-    choices.E || '',
-  ];
-
   const answerIndex = ['A', 'B', 'C', 'D', 'E'].indexOf(correct_answer);
 
-  const imageUrls: {
-    question: string[];
-    A: string[];
-    B: string[];
-    C: string[];
-    D: string[];
-    E: string[];
-  } = {
-    question: [],
+  let totalImagesUploaded = 0;
+
+  // Upload images in prompt_blocks
+  const { blocks: updatedPromptBlocks, imagesUploaded: promptImages } = await uploadBlockImages(
+    prompt_blocks,
+    imagesBasePath,
+    question_id,
+    subject_code
+  );
+  totalImagesUploaded += promptImages;
+
+  // Upload images in choices
+  const updatedChoices: Record<"A"|"B"|"C"|"D"|"E", Block[]> = {
     A: [],
     B: [],
     C: [],
     D: [],
-    E: [],
+    E: []
   };
 
-  let imagesUploaded = 0;
-
-  const questionImagesDir = path.join(imagesBasePath, String(question_id));
-
-  // Debug dir contents
-  try {
-    const dirContents = await fs.readdir(questionImagesDir);
-    console.log(`Images for Q${question_id}:`, dirContents);
-  } catch {
-    console.warn(`Image directory not found for Q${question_id}: ${questionImagesDir}`);
-  }
-
-  // Upload prompt images
-  if (Array.isArray(prompt_images)) {
-    for (const filename of prompt_images) {
-      const localPath = path.join(questionImagesDir, filename);
-
-      try {
-        const stats = await fs.stat(localPath);
-        if (stats.isFile()) {
-          const storagePath = `questions/${question_id}/${filename}`;
-          const url = await uploadImageToStorage(localPath, storagePath, subject_code);
-          imageUrls.question.push(url);
-          imagesUploaded++;
-        }
-      } catch (err: any) {
-        console.warn(`Missing prompt image: ${localPath}`, err.message);
-      }
-    }
-  }
-
-  // Upload choice images
-  if (choice_images) {
-    for (const [choiceKey, filenames] of Object.entries(choice_images)) {
-      if (Array.isArray(filenames)) {
-        for (const filename of filenames) {
-          const localPath = path.join(questionImagesDir, filename);
-
-          try {
-            const stats = await fs.stat(localPath);
-            if (stats.isFile()) {
-              const storagePath = `questions/${question_id}/${filename}`;
-              const url = await uploadImageToStorage(localPath, storagePath, subject_code);
-              imageUrls[choiceKey as keyof typeof imageUrls].push(url);
-              imagesUploaded++;
-            }
-          } catch (err: any) {
-            console.warn(`Missing choice image: ${localPath}`, err.message);
-          }
-        }
-      }
-    }
+  for (const choiceKey of ['A', 'B', 'C', 'D', 'E'] as const) {
+    const choiceBlocks = choices[choiceKey] || [];
+    const { blocks: updatedChoiceBlocks, imagesUploaded: choiceImages } = await uploadBlockImages(
+      choiceBlocks,
+      imagesBasePath,
+      question_id,
+      subject_code
+    );
+    updatedChoices[choiceKey] = updatedChoiceBlocks;
+    totalImagesUploaded += choiceImages;
   }
 
   const docId = `${subject_code}_${section_code}_Q${question_id}`;
@@ -187,11 +172,10 @@ async function processQuestion(
     subject_code,
     section_code,
     question_id,
-    prompt,
-    choices: choicesArray,
+    prompt_blocks: updatedPromptBlocks,
+    choices: updatedChoices,
     answerIndex,
     explanation: explanation || '',
-    image_urls: imageUrls,
     mode: 'SECTION',
     test_slug: '',
     tags: [],
@@ -200,7 +184,7 @@ async function processQuestion(
     rand: Math.random(),
   });
 
-  return { docId, imagesUploaded };
+  return { docId, imagesUploaded: totalImagesUploaded };
 }
 
 export default async function handler(
