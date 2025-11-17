@@ -106,19 +106,27 @@ export function QuestionCard({
   return (
     <Card className="border border-gray-300">
       <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          <span>Question {questionNumber}</span>
-          <button
-            className={`p-2 rounded border ${
-              isFlagged
-                ? "border-red-400 text-red-500"
-                : "border-gray-300 text-gray-500"
-            }`}
-            onClick={onToggleFlag}
-          >
-            <Flag className="h-4 w-4" />
+        <div className="flex items-center justify-between border-b pb-3 -mx-6 px-6 -mt-6 pt-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-black text-white px-3 py-1 font-semibold text-sm">
+              {questionNumber}
+            </div>
+            <button
+              onClick={onToggleFlag}
+              className={`flex items-center gap-2 text-sm ${
+                isFlagged ? "text-black" : "text-gray-600"
+              }`}
+            >
+              <Flag className={`h-4 w-4 ${isFlagged ? "fill-current" : ""}`} />
+              <span>Mark for Review</span>
+            </button>
+          </div>
+          <button className="p-2 text-gray-600 hover:text-gray-900">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
           </button>
-        </CardTitle>
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
