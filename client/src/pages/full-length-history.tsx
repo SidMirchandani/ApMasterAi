@@ -6,7 +6,7 @@ import { ArrowLeft, Trophy, Calendar, Target, PlayCircle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
-import { formatDateTime } from "@/lib/utils";
+import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TestHistory {
@@ -143,7 +143,7 @@ export default function FullLengthHistory() {
                             <div className="flex items-center gap-2 mb-0.5">
                               <Calendar className="h-4 w-4 text-khan-gray-medium" />
                               <span className="text-sm text-khan-gray-medium">
-                                {formatDateTime(test.date)}
+                                {formatDate(test.date)}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
