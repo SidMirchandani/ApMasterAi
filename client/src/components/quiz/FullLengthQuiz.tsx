@@ -246,7 +246,10 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         questions={questions}
         userAnswers={userAnswers}
         flaggedQuestions={flaggedQuestions}
-        onBack={() => setIsReviewMode(false)}
+        onBack={() => {
+          setIsReviewMode(false);
+          setShowQuestionPalette(false);
+        }}
         onSubmit={handleReviewSubmit}
         subjectId={subjectId} // Pass subjectId for review page navigation
       />
@@ -317,7 +320,10 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           setCurrentQuestionIndex(index);
           setShowQuestionPalette(false);
         }}
-        onGoToReview={() => setIsReviewMode(true)}
+        onGoToReview={() => {
+          setIsReviewMode(true);
+          setShowQuestionPalette(false);
+        }}
       />
 
       <SubmitConfirmDialog

@@ -100,17 +100,10 @@ export function QuizReviewPage({
       {selectedQuestion === null ? (
         <>
           <div className="flex-1 overflow-y-auto mt-16 mb-14">
-            <div className="max-w-7xl mx-auto px-4 py-8">
-              <Card className="p-6">
-                <h2 className="text-center text-xl font-semibold mb-2">
-                  Check Your Work
-                </h2>
-                <p className="text-center text-gray-600 mb-8">
-                  Click on any question to review your answer.
-                </p>
-
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <Card className="p-4">
                 {/* Legend */}
-                <div className="flex items-center justify-center gap-4 mb-6 text-xs">
+                <div className="flex items-center justify-center gap-4 mb-4 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-5 h-5 rounded border-2 border-gray-400 border-dashed"></div>
                     <span>Unanswered</span>
