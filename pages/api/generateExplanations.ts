@@ -62,7 +62,7 @@ export default async function handler(
         );
 
         // Build comprehensive prompt with images
-        let promptText = `Explain why the correct answer is correct for the following AP-style multiple-choice question.\n\n`;
+        let promptText = `You are an expert AP tutor. Generate a clear, educational explanation for this AP question.\n\n`;
         
         // Add question text
         if (question.prompt) {
@@ -75,7 +75,7 @@ export default async function handler(
         }
         
         // Add choices with their images
-        promptText += `\nChoices:\n`;
+        promptText += `\nAnswer Choices:\n`;
         question.choices?.forEach((choice: string, idx: number) => {
           const choiceLabel = String.fromCharCode(65 + idx); // A, B, C, D, E
           promptText += `${choiceLabel}. ${choice}\n`;
@@ -87,8 +87,17 @@ export default async function handler(
           }
         });
         
-        promptText += `\nCorrect answer: ${String.fromCharCode(65 + question.answerIndex)}. ${question.choices?.[question.answerIndex]}\n`;
-        promptText += `\nKeep your explanation concise (2–3 sentences). If there are images, reference them in your explanation when relevant.`;
+        const correctLabel = String.fromCharCode(65 + question.answerIndex);
+        const correctAnswer = question.choices?.[question.answerIndex];
+        promptText += `\nCorrect Answer: ${correctLabel}. ${correctAnswer}\n`;
+        promptText += `\nProvide a comprehensive explanation that:\n`;
+        promptText += `1. Explains the key concept or principle being tested\n`;
+        promptText += `2. Explains why the correct answer (${correctLabel}) is right with specific reasoning\n`;
+        promptText += `3. Explains why each of the other answer choices is wrong\n`;
+        promptText += `4. Uses clear, student-friendly language appropriate for AP students\n`;
+        promptText += `5. References any images when relevant to the explanation\n\n`;
+        promptText += `Format your explanation with clear sections. Be thorough but concise.\n\n`;
+        promptText += `Your explanation:`;
 
         const prompt = promptText;
 

@@ -68,7 +68,6 @@ export default function AdminPage() {
 
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
-  const [fixingPrompts, setFixingPrompts] = useState(false);
   const [deletingQuestions, setDeletingQuestions] = useState(false);
 
   // Checkbox selection state
@@ -217,42 +216,6 @@ export default function AdminPage() {
       loading: `Generating explanations for ${questionIds.length} questions...`,
       success: (data) => `Generated ${data.updated} explanations!`,
       error: "Failed to generate explanations",
-    });
-  }
-
-  async function fixPrompt() { // Renamed from fixText
-    if (!token || selectedQuestions.size === 0) {
-      toast.error("Please select at least one question");
-      return;
-    }
-
-    setFixingPrompts(true);
-    const questionIds = Array.from(selectedQuestions);
-
-    const fixPromise = fetch("/api/fixText", { // API endpoint remains the same, button text changes
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}` 
-      },
-      body: JSON.stringify({ questionIds }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Fix prompt failed"); // Changed error message
-        return res.json();
-      })
-      .then((data) => {
-        fetchFiltered();
-        return data;
-      })
-      .finally(() => {
-        setFixingPrompts(false);
-      });
-
-    toast.promise(fixPromise, {
-      loading: `Fixing prompts for ${questionIds.length} questions...`,
-      success: (data) => `Fixed ${data.updated} prompts!`, // Changed success message
-      error: "Failed to fix prompts", // Changed error message
     });
   }
 
@@ -524,13 +487,6 @@ export default function AdminPage() {
                   className="bg-khan-green hover:bg-khan-green-light text-white"
                 >
                   {generatingExplanations ? "Generating..." : `Generate Explanations (${selectedQuestions.size})`}
-                </Button>
-                <Button
-                  onClick={fixPrompt} // Button now calls fixPrompt
-                  disabled={fixingPrompts || selectedQuestions.size === 0}
-                  className="bg-khan-blue hover:bg-khan-blue/90 text-white"
-                >
-                  {fixingPrompts ? "Fixing..." : `Fix Prompt (${selectedQuestions.size})`}
                 </Button>
                 <Button
                   onClick={deleteSelected}
