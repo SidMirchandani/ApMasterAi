@@ -38,9 +38,10 @@ interface QuizReviewPageProps {
   userAnswers: { [key: number]: string };
   flaggedQuestions: Set<number>;
   onBack: () => void;
+  onSubmit?: () => void;
 }
 
-export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBack }: QuizReviewPageProps) {
+export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBack, onSubmit }: QuizReviewPageProps) {
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const [localAnswers, setLocalAnswers] = useState(userAnswers);
 
@@ -180,8 +181,16 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
                   onClick={onBack}
                   className="flex items-center gap-2"
                 >
-                  Back to Questions
+                  Back to Test
                 </Button>
+                {onSubmit && (
+                  <Button
+                    onClick={onSubmit}
+                    className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                  >
+                    Submit Test
+                  </Button>
+                )}
               </div>
             </div>
           </div>
