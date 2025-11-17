@@ -45,6 +45,12 @@ export function QuestionCard({
 }: QuestionCardProps) {
   const renderChoice = (choice: string, index: number) => {
     const label = String.fromCharCode(65 + index);
+    
+    // Skip choice E if both text and images are empty
+    if (label === 'E' && (!choice || choice.trim() === '') && (!question.image_urls?.[label]?.length)) {
+      return null;
+    }
+    
     const isSelected = selectedAnswer === label;
     const correctLabel = String.fromCharCode(65 + question.answerIndex);
     const isCorrect = label === correctLabel;
@@ -73,7 +79,9 @@ export function QuestionCard({
         disabled={isAnswerSubmitted}
       >
         <span className="font-bold mr-2">{label}.</span>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{choice}</ReactMarkdown>
+        {choice && choice.trim() && (
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{choice}</ReactMarkdown>
+        )}
 
         {question.image_urls?.[label]?.length && (
           <div className="mt-2 space-y-2">
@@ -105,9 +113,11 @@ export function QuestionCard({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {question.prompt}
-        </ReactMarkdown>
+        {question.prompt && question.prompt.trim() && (
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {question.prompt}
+          </ReactMarkdown>
+        )}
 
         {question.image_urls?.question?.length && (
           <div className="space-y-2">

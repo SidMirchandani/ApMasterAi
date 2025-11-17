@@ -34,13 +34,24 @@ export function EnhancedQuestionPalette({
 
   const getQuestionClass = (index: number) => {
     const state = getQuestionState(index);
+    const isFlagged = flaggedQuestions.has(index);
     const baseClass = "w-12 h-12 rounded border-2 text-center font-semibold flex items-center justify-center transition-all relative";
     
+    // For flagged questions, show red border but background based on state
+    if (isFlagged) {
+      if (index === currentQuestion) {
+        return `${baseClass} bg-gray-900 text-white border-red-500`;
+      } else if (userAnswers[index]) {
+        return `${baseClass} bg-blue-600 text-white border-red-500`;
+      } else {
+        return `${baseClass} bg-white text-gray-900 border-red-500`;
+      }
+    }
+    
+    // Non-flagged questions
     switch (state) {
       case "current":
         return `${baseClass} bg-gray-900 text-white border-gray-900`;
-      case "flagged":
-        return `${baseClass} bg-white text-gray-900 border-red-500`;
       case "answered":
         return `${baseClass} bg-blue-600 text-white border-blue-600`;
       default:
@@ -52,7 +63,7 @@ export function EnhancedQuestionPalette({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold">AP® Biology Practice Exam</h3>
+          <h3 className="text-xl font-bold">Question Palette</h3>
           <button onClick={onClose}>
             <XCircle className="h-6 w-6 text-gray-500" />
           </button>

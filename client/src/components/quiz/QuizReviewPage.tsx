@@ -40,16 +40,29 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
   };
 
   const getQuestionClass = (index: number) => {
-    const state = getQuestionState(index);
-    const baseClass = "w-12 h-12 rounded border-2 text-center font-semibold flex items-center justify-center transition-all cursor-pointer";
+    const isFlagged = flaggedQuestions.has(index);
+    const isAnswered = !!userAnswers[index];
+    const isCurrent = index === selectedQuestion;
+    const baseClass = "w-12 h-12 rounded border-2 text-center font-semibold flex items-center justify-center transition-all cursor-pointer relative";
     
-    switch (state) {
-      case "flagged":
+    // For flagged questions, show red border but background based on state
+    if (isFlagged) {
+      if (isCurrent) {
+        return `${baseClass} bg-gray-900 text-white border-red-500`;
+      } else if (isAnswered) {
+        return `${baseClass} bg-blue-600 text-white border-red-500`;
+      } else {
         return `${baseClass} bg-white text-gray-900 border-red-500`;
-      case "answered":
-        return `${baseClass} bg-blue-600 text-white border-blue-600`;
-      default:
-        return `${baseClass} bg-white text-gray-900 border-gray-300 border-dashed`;
+      }
+    }
+    
+    // Non-flagged questions
+    if (isCurrent) {
+      return `${baseClass} bg-gray-900 text-white border-gray-900`;
+    } else if (isAnswered) {
+      return `${baseClass} bg-blue-600 text-white border-blue-600`;
+    } else {
+      return `${baseClass} bg-white text-gray-900 border-gray-300 border-dashed`;
     }
   };
 
@@ -72,7 +85,7 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
             </p>
 
             <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-4">AP® Biology (Practice Exam)</h3>
+              <h3 className="text-lg font-semibold mb-4">Review Your Answers</h3>
               
               <div className="flex items-center gap-6 mb-6 text-sm">
                 <div className="flex items-center gap-2">
