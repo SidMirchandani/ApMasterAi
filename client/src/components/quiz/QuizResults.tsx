@@ -192,7 +192,7 @@ export function QuizResults({
       <div className="flex justify-end gap-3 mt-6">
         {/* Removed "Back to Test History" button */}
         <Button
-          onClick={handleBackToResults}
+          onClick={() => router.push(`/section-review?subject=${subjectId}&testId=current&section=all&data=${encodeURIComponent(JSON.stringify({ questions, userAnswers }))}`)}
           className="bg-khan-green hover:bg-khan-green/90"
         >
           Review Answers

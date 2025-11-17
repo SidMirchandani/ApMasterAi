@@ -12,6 +12,13 @@ const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
     "LRCSP": 20,   // Long-Run Consequences: 20-30%
     "OEITF": 10,   // Open Economy: 10-13%
   },
+  "APCSP": {
+    "CRD": 20,     // Creative Development: ~20%
+    "DAT": 17,     // Data: ~17%
+    "AAP": 22,     // Algorithms and Programming: ~22%
+    "CSN": 15,     // Computing Systems and Networks: ~15%
+    "IOC": 26,     // Impact of Computing: ~26%
+  },
   // Add other subjects as needed
 };
 
