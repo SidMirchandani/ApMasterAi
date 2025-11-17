@@ -60,7 +60,25 @@ export function QuestionCard({
     return null;
   }
 
-  const choices = Object.keys(question.choices) as Array<"A" | "B" | "C" | "D" | "E">;
+  const allChoices = Object.keys(question.choices) as Array<"A" | "B" | "C" | "D" | "E">;
+  
+  // Filter out choice E if it's blank
+  const choices = allChoices.filter((label) => {
+    if (label !== "E") return true;
+    
+    const choiceBlocks = question.choices[label];
+    if (!choiceBlocks || choiceBlocks.length === 0) return false;
+    
+    // Check if it's only empty text
+    if (choiceBlocks.length === 1 && 
+        choiceBlocks[0].type === "text" && 
+        (!choiceBlocks[0].value || choiceBlocks[0].value.trim() === "")) {
+      return false;
+    }
+    
+    return true;
+  });
+  
   const correctAnswerLabel = String.fromCharCode(65 + question.answerIndex); // A = 65
 
   const isCorrect = selectedAnswer === correctAnswerLabel;
