@@ -274,7 +274,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       </div>
 
       <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-14">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto px-4 py-3">
           <QuestionCard
             question={currentQuestion}
             questionNumber={currentQuestionIndex + 1}

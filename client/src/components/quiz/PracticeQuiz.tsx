@@ -182,9 +182,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-16 pb-4">
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-          <div className="text-sm text-gray-600 mb-4">
+      <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-16 pb-2">
+        <div className="max-w-4xl mx-auto px-4 py-3 space-y-2">
+          <div className="text-sm text-gray-600 mb-2">
             Question {currentQuestionIndex + 1} of {orderedQuestions.length}
           </div>
 
