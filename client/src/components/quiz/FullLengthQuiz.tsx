@@ -119,14 +119,26 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     setShowExitDialog(true);
   };
 
-  const handleConfirmExit = () => {
+  const handleConfirmExit = async () => {
     const examState = {
       currentQuestionIndex,
       userAnswers,
       flaggedQuestions: Array.from(flaggedQuestions),
       timeElapsed,
     };
-    onSaveAndExit(examState);
+    
+    try {
+      await apiRequest(
+        "POST",
+        `/api/user/subjects/${subjectId}/save-exam-state`,
+        { examState }
+      );
+      router.push(`/study?subject=${subjectId}`);
+    } catch (error) {
+      console.error("Failed to save exam state:", error);
+      // Still navigate even if save fails
+      router.push(`/study?subject=${subjectId}`);
+    }
   };
 
   const handleAnswerSelect = (answer: string) => {

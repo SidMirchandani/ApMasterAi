@@ -1,6 +1,6 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
-import { storage } from "../../../../../server/storage";
+import { storage } from "@/server/storage";
+import admin from "@/server/firebase-admin";
 
 async function getOrCreateUser(firebaseUid: string): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
@@ -31,6 +31,7 @@ export default async function handler(
     const token = authHeader.split(" ")[1];
     let decodedToken;
     try {
+      // Dynamically import firebase-admin to avoid potential issues if it's not available
       const { verifyFirebaseToken } = await import("../../../../../server/firebase-admin");
       decodedToken = await verifyFirebaseToken(token);
     } catch (error) {
