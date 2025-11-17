@@ -1,0 +1,526 @@
+GET /api/user/me 500 in 51ms
+Performing Firestore health check...
+Firestore health check failed: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/resolving-call.js:135:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:242:33
+    at /home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:234:40)
+    at makeRequest (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/home/runner/workspace/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:225:37)
+    at StreamingApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:112:30
+Caused by: Error
+    at QueryUtil._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Query.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:744:43)
+    at DatabaseManager.healthCheck (webpack-internal:///(api)/./server/db.ts:55:58)
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:20:90)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(2) {
+      'www-authenticate' => [Array],
+      'x-debug-tracking-id' => [Array]
+    },
+    options: {}
+  }
+}
+Firestore operation failed (attempt 3/4): Firestore is not available
+Error fetching user profile: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/resolving-call.js:135:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:242:33
+    at /home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:234:40)
+    at makeRequest (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/home/runner/workspace/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:225:37)
+    at StreamingApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:112:30
+Caused by: Error
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(2) {
+      'www-authenticate' => [Array],
+      'x-debug-tracking-id' => [Array]
+    },
+    options: {}
+  }
+}
+ GET /api/user/me 500 in 48ms
+Performing Firestore health check...
+Firestore health check failed: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/resolving-call.js:135:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:242:33
+    at /home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:234:40)
+    at makeRequest (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/home/runner/workspace/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:225:37)
+    at StreamingApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:112:30
+Caused by: Error
+    at QueryUtil._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Query.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:744:43)
+    at DatabaseManager.healthCheck (webpack-internal:///(api)/./server/db.ts:55:58)
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:20:90)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(2) {
+      'www-authenticate' => [Array],
+      'x-debug-tracking-id' => [Array]
+    },
+    options: {}
+  }
+}
+Firestore operation failed (attempt 4/4): Firestore is not available
+[subjects API] Error in getOrCreateUser: Error: Firestore is not available
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:22:27)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24)
+    at async K (/home/runner/workspace/node_modules/next/dist/compiled/next-server/pages-api.runtime.dev.js:21:2871)
+    at async U.render (/home/runner/workspace/node_modules/next/dist/compiled/next-server/pages-api.runtime.dev.js:21:3955)
+    at async DevServer.runApi (/home/runner/workspace/node_modules/next/dist/server/next-server.js:600:9)
+    at async NextNodeServer.handleCatchallRenderRequest (/home/runner/workspace/node_modules/next/dist/server/next-server.js:269:37)
+    at async DevServer.handleRequestImpl (/home/runner/workspace/node_modules/next/dist/server/base-server.js:816:17)
+    at async /home/runner/workspace/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/home/runner/workspace/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/home/runner/workspace/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:377:13)
+[subjects API][GET] Unhandled error: Error: Firestore is not available
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:22:27)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24)
+    at async K (/home/runner/workspace/node_modules/next/dist/compiled/next-server/pages-api.runtime.dev.js:21:2871)
+    at async U.render (/home/runner/workspace/node_modules/next/dist/compiled/next-server/pages-api.runtime.dev.js:21:3955)
+    at async DevServer.runApi (/home/runner/workspace/node_modules/next/dist/server/next-server.js:600:9)
+    at async NextNodeServer.handleCatchallRenderRequest (/home/runner/workspace/node_modules/next/dist/server/next-server.js:269:37)
+    at async DevServer.handleRequestImpl (/home/runner/workspace/node_modules/next/dist/server/base-server.js:816:17)
+    at async /home/runner/workspace/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/home/runner/workspace/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/home/runner/workspace/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:377:13)
+ GET /api/user/subjects 503 in 8808ms
+Performing Firestore health check...
+Firestore health check failed: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/resolving-call.js:135:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:242:33
+    at /home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:234:40)
+    at makeRequest (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/home/runner/workspace/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:225:37)
+    at StreamingApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:112:30
+Caused by: Error
+    at QueryUtil._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Query.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:744:43)
+    at DatabaseManager.healthCheck (webpack-internal:///(api)/./server/db.ts:55:58)
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:20:90)
+    at Storage.getUserByFirebaseUid (webpack-internal:///(api)/./server/storage.ts:169:84)
+    at getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:79) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(2) {
+      'www-authenticate' => [Array],
+      'x-debug-tracking-id' => [Array]
+    },
+    options: {}
+  }
+}
+Firestore operation failed (attempt 1/4): Firestore is not available
+Performing Firestore health check...
+Firestore health check failed: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/resolving-call.js:135:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:242:33
+    at /home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:234:40)
+    at makeRequest (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/home/runner/workspace/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:225:37)
+    at StreamingApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:112:30
+Caused by: Error
+    at QueryUtil._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Query.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:744:43)
+    at DatabaseManager.healthCheck (webpack-internal:///(api)/./server/db.ts:55:58)
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:20:90)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(2) {
+      'www-authenticate' => [Array],
+      'x-debug-tracking-id' => [Array]
+    },
+    options: {}
+  }
+}
+Firestore operation failed (attempt 2/4): Firestore is not available
+Performing Firestore health check...
+Firestore health check failed: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/resolving-call.js:135:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:242:33
+    at /home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:234:40)
+    at makeRequest (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/home/runner/workspace/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:225:37)
+    at StreamingApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:112:30
+Caused by: Error
+    at QueryUtil._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Query.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:744:43)
+    at DatabaseManager.healthCheck (webpack-internal:///(api)/./server/db.ts:55:58)
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:20:90)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(2) {
+      'www-authenticate' => [Array],
+      'x-debug-tracking-id' => [Array]
+    },
+    options: {}
+  }
+}
+Firestore operation failed (attempt 3/4): Firestore is not available
+Performing Firestore health check...
+Firestore health check failed: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/resolving-call.js:135:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:242:33
+    at /home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:234:40)
+    at makeRequest (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/home/runner/workspace/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:225:37)
+    at StreamingApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:112:30
+Caused by: Error
+    at QueryUtil._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Query.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:744:43)
+    at DatabaseManager.healthCheck (webpack-internal:///(api)/./server/db.ts:55:58)
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:20:90)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(2) {
+      'www-authenticate' => [Array],
+      'x-debug-tracking-id' => [Array]
+    },
+    options: {}
+  }
+}
+Firestore operation failed (attempt 4/4): Firestore is not available
+[subjects API] Error in getOrCreateUser: Error: Firestore is not available
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:22:27)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24)
+    at async K (/home/runner/workspace/node_modules/next/dist/compiled/next-server/pages-api.runtime.dev.js:21:2871)
+    at async U.render (/home/runner/workspace/node_modules/next/dist/compiled/next-server/pages-api.runtime.dev.js:21:3955)
+    at async DevServer.runApi (/home/runner/workspace/node_modules/next/dist/server/next-server.js:600:9)
+    at async NextNodeServer.handleCatchallRenderRequest (/home/runner/workspace/node_modules/next/dist/server/next-server.js:269:37)
+    at async DevServer.handleRequestImpl (/home/runner/workspace/node_modules/next/dist/server/base-server.js:816:17)
+    at async /home/runner/workspace/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/home/runner/workspace/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/home/runner/workspace/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:377:13)
+[subjects API][GET] Unhandled error: Error: Firestore is not available
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:22:27)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24)
+    at async K (/home/runner/workspace/node_modules/next/dist/compiled/next-server/pages-api.runtime.dev.js:21:2871)
+    at async U.render (/home/runner/workspace/node_modules/next/dist/compiled/next-server/pages-api.runtime.dev.js:21:3955)
+    at async DevServer.runApi (/home/runner/workspace/node_modules/next/dist/server/next-server.js:600:9)
+    at async NextNodeServer.handleCatchallRenderRequest (/home/runner/workspace/node_modules/next/dist/server/next-server.js:269:37)
+    at async DevServer.handleRequestImpl (/home/runner/workspace/node_modules/next/dist/server/base-server.js:816:17)
+    at async /home/runner/workspace/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/home/runner/workspace/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/home/runner/workspace/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/home/runner/workspace/node_modules/next/dist/server/lib/router-server.js:377:13)
+ GET /api/user/subjects 503 in 9238ms
+Performing Firestore health check...
+Firestore health check failed: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/resolving-call.js:135:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:242:33
+    at /home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:234:40)
+    at makeRequest (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/home/runner/workspace/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:225:37)
+    at StreamingApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:112:30
+Caused by: Error
+    at QueryUtil._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Query.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:744:43)
+    at DatabaseManager.healthCheck (webpack-internal:///(api)/./server/db.ts:55:58)
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:20:90)
+    at Storage.getUserByFirebaseUid (webpack-internal:///(api)/./server/storage.ts:169:84)
+    at getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:79) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(2) {
+      'www-authenticate' => [Array],
+      'x-debug-tracking-id' => [Array]
+    },
+    options: {}
+  }
+}
+Firestore operation failed (attempt 1/4): Firestore is not available
+Performing Firestore health check...
+Firestore health check failed: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/resolving-call.js:135:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:242:33
+    at /home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:234:40)
+    at makeRequest (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/home/runner/workspace/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:225:37)
+    at StreamingApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:112:30
+Caused by: Error
+    at QueryUtil._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Query.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:744:43)
+    at DatabaseManager.healthCheck (webpack-internal:///(api)/./server/db.ts:55:58)
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:20:90)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(2) {
+      'www-authenticate' => [Array],
+      'x-debug-tracking-id' => [Array]
+    },
+    options: {}
+  }
+}
+Firestore operation failed (attempt 2/4): Firestore is not available
+Performing Firestore health check...
+Firestore health check failed: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/resolving-call.js:135:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/google-gax/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:242:33
+    at /home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:234:40)
+    at makeRequest (/home/runner/workspace/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/home/runner/workspace/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streaming.js:225:37)
+    at StreamingApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:112:30
+Caused by: Error
+    at QueryUtil._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/runner/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Query.get (/home/runner/workspace/node_modules/@google-cloud/firestore/build/src/reference/query.js:744:43)
+    at DatabaseManager.healthCheck (webpack-internal:///(api)/./server/db.ts:55:58)
+    at DatabaseRetryHandler.withRetry (webpack-internal:///(api)/./server/db-retry-handler.ts:20:90)
+    at async getOrCreateUser (webpack-internal:///(api)/./pages/api/user/subjects.ts:32:20)
+    at async handler (webpack-internal:///(api)/./pages/api/user/subjects.ts:66:24) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(2) {
+      'www-authenticate' => [Array],
+      'x-debug-tracking-id' => [Array]
+    },
+    options: {}
+  }
+}
+Firestore operation failed (attempt 3/4): Firestore is not available
