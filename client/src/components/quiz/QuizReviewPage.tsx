@@ -132,14 +132,14 @@ export function QuizReviewPage({
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-cols-10 sm:grid-cols-15 lg:grid-cols-20 gap-1.5">
+                <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(40px,1fr))]">
                   {questions.map((_, index) => {
                     const answered = localAnswers[index] != null;
                     const flagged = localFlagged.has(index);
                     const isCurrent = selectedQuestion === index;
 
                     const base =
-                      "relative w-full aspect-square rounded flex items-center justify-center font-semibold text-xs transition-all hover:shadow-md cursor-pointer";
+                      "relative aspect-square max-w-[55px] min-w-[40px] rounded flex items-center justify-center font-semibold text-[11px] transition-all hover:shadow-md cursor-pointer";
 
                     const cls = isCurrent
                       ? "bg-gray-800 text-white border-2 border-gray-800"

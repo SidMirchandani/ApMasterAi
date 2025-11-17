@@ -301,7 +301,7 @@ export default function SectionReview() {
         <QuizBottomBar
           currentQuestion={currentQuestionIndex + 1}
           totalQuestions={questions.length}
-          onOpenPalette={() => setShowQuestionPalette((prev) => !prev)}
+          onOpenPalette={() => setShowQuestionPalette(true)}
           onPrevious={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
           onNext={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))}
           canGoPrevious={currentQuestionIndex > 0}
