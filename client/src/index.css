@@ -93,6 +93,7 @@ html, body {
     @apply font-sans antialiased bg-background text-foreground;
     font-family: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-size: 14px;
   }
 
   html {
@@ -104,6 +105,11 @@ html, body {
     font-weight: 600;
     letter-spacing: -0.025em;
   }
+
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+  h4 { font-size: 1.1rem; }
 
   button {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);

@@ -86,39 +86,39 @@ export function QuestionCard({
 
   return (
     <Card className={`${isFlagged ? "border-red-500 border-2" : ""}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between border-b pb-3 -mx-6 px-6 -mt-6 pt-4 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <div className="bg-black text-white px-3 py-1 font-bold text-sm rounded">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between border-b pb-2 -mx-6 px-6 -mt-6 pt-3 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <div className="bg-black text-white px-2.5 py-0.5 font-bold text-xs rounded">
               {questionNumber}
             </div>
             {isFullLength && (
               <button
                 onClick={onToggleFlag}
-                className={`flex items-center gap-2 text-sm font-medium ${
+                className={`flex items-center gap-1.5 text-xs font-medium ${
                   isFlagged ? "text-black" : "text-gray-600"
                 }`}
               >
-                <Flag className={`h-4 w-4 ${isFlagged ? "fill-current" : ""}`} />
+                <Flag className={`h-3.5 w-3.5 ${isFlagged ? "fill-current" : ""}`} />
                 <span>Mark for Review</span>
               </button>
             )}
           </div>
           {/* Placeholder for ABC button if needed, currently not implemented */}
-          <button className="px-3 py-1 text-sm font-semibold border border-gray-300 rounded hover:bg-gray-100">
+          <button className="px-2.5 py-0.5 text-xs font-semibold border border-gray-300 rounded hover:bg-gray-100">
             ABC
           </button>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 pt-4">
+      <CardContent className="space-y-3 pt-3 pb-3">
         {/* Question Prompt */}
-        <div className="mb-6 text-base leading-relaxed">
+        <div className="mb-3 text-sm leading-snug">
           <BlockRenderer blocks={question.prompt_blocks} />
         </div>
 
         {/* Choices */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <RadioGroup value={selectedAnswer || ""} onValueChange={onAnswerSelect}>
             {choices.map((label) => {
               const isUserAnswer = selectedAnswer === label;
@@ -151,20 +151,20 @@ export function QuestionCard({
               return (
                 <div
                   key={label}
-                  className={`flex items-start gap-4 p-4 rounded-lg border transition-all cursor-pointer
+                  className={`flex items-start gap-3 p-2.5 rounded-lg border transition-all cursor-pointer
                     ${bgColor} ${borderColor}
                     ${!shouldShowCorrectness && !isUserAnswer ? "hover:bg-gray-50 hover:border-gray-300" : ""}
                   `}
                   onClick={() => !isAnswerSubmitted && onAnswerSelect(label)}
                 >
-                  <div className={`flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold ${
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-semibold text-sm ${
                     isUserAnswer
                       ? 'border-blue-600 bg-blue-50'
                       : 'border-gray-400 bg-white'
                   }`}>
                     {label}
                   </div>
-                  <div className="flex-1 pt-1.5">
+                  <div className="flex-1 pt-1 text-sm">
                     <BlockRenderer blocks={question.choices[label]} />
                   </div>
                 </div>

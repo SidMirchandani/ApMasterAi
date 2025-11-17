@@ -219,7 +219,7 @@ export default function Dashboard() {
     },
     onMutate: async (subjectDocId) => {
       console.log('[Dashboard onMutate] Starting optimistic update for:', subjectDocId);
-      
+
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["subjects"] });
 
@@ -232,18 +232,18 @@ export default function Dashboard() {
           console.log('[Dashboard onMutate] No data to update');
           return old;
         }
-        
+
         console.log('[Dashboard onMutate] Current subjects:', old.data.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
-        
+
         const filtered = old.data.filter((subject: DashboardSubject) => {
           const subjectIdStr = String(subject.id);
           const shouldKeep = subjectIdStr !== subjectDocId;
           console.log(`[Dashboard onMutate] Subject ${subject.name} (${subjectIdStr}): ${shouldKeep ? 'KEEP' : 'REMOVE'}`);
           return shouldKeep;
         });
-        
+
         console.log('[Dashboard onMutate] Filtered subjects:', filtered.map((s: DashboardSubject) => ({ id: s.id, name: s.name })));
-        
+
         return {
           ...old,
           data: filtered

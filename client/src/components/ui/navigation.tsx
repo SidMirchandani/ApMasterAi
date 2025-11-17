@@ -169,8 +169,8 @@ export default function Navigation() {
 
   return (
     <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-12">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-12 min-h-[3rem]">
           <Link
             href={isAuthenticated ? "/dashboard" : "/"}
             className={`flex items-center space-x-2 sm:space-x-3 flex-shrink-0 ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
@@ -184,14 +184,14 @@ export default function Navigation() {
 
           {/* Breadcrumb Navigation - Center */}
           {isAuthenticated && breadcrumbs.length > 0 && (
-            <div className="hidden lg:flex items-center space-x-2 text-sm text-khan-gray-medium">
+            <div className="hidden lg:flex items-center space-x-1.5 text-xs text-khan-gray-medium flex-shrink-0">
               {breadcrumbs.map((crumb, index) => (
                 <div key={index} className="flex items-center">
-                  {index > 0 && <ChevronRight className="w-4 h-4 mx-1" />}
+                  {index > 0 && <ChevronRight className="w-3.5 h-3.5 mx-0.5" />}
                   {crumb.href === "#" ? (
-                    <span className="font-medium text-khan-gray-dark">{crumb.label}</span>
+                    <span className="font-medium text-khan-gray-dark whitespace-nowrap">{crumb.label}</span>
                   ) : (
-                    <Link href={crumb.href} className="hover:text-khan-green transition-colors">
+                    <Link href={crumb.href} className="hover:text-khan-green transition-colors whitespace-nowrap">
                       {crumb.label}
                     </Link>
                   )}

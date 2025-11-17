@@ -177,7 +177,7 @@ export default function SectionReview() {
 
       <div className="flex-1 overflow-y-auto mb-14 pt-4">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <Card>
+          <Card className="mb-4">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between border-b pb-3 -mx-6 px-6 -mt-6 pt-4 bg-gray-50">
                 <div className="flex items-center gap-3">
@@ -222,9 +222,9 @@ export default function SectionReview() {
                   return (
                     <div
                       key={label}
-                      className={`flex items-start gap-4 p-4 rounded-lg border-2 ${bgColor} ${borderColor}`}
+                      className={`flex items-start gap-3 p-3 rounded-lg border-2 ${bgColor} ${borderColor}`}
                     >
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold ${
+                      <div className={`flex-shrink-0 w-9 h-9 rounded-full border-2 flex items-center justify-center font-semibold ${
                         isCorrectAnswer 
                           ? 'border-green-600 bg-green-100 text-green-700'
                           : isUserAnswer && !isCorrect
