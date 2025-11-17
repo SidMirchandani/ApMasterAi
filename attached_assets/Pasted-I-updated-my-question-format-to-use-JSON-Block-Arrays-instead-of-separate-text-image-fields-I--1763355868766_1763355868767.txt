@@ -1,0 +1,76 @@
+I updated my question format to use JSON Block Arrays instead of separate text + image fields.
+
+I need you to update my front-end renderer components to support this new structure.
+
+Here is the new schema:
+
+type Block =
+  | { type: "text"; value: string }
+  | { type: "image"; url: string };
+
+interface Question {
+  question_id: number;
+  subject_code: string;
+  section_code: string;
+  prompt_blocks: Block[];
+  choices: Record<"A" | "B" | "C" | "D" | "E", Block[]>;
+  correct_answer: string;
+  explanation: string;
+}
+
+Here is what I want you to build:
+
+─────────────────────────────────────────────
+1. Create a reusable <BlockRenderer blocks={...} /> component.
+
+BlockRenderer rules:
+ - For each block:
+   - If block.type === "text": render <p>{block.value}</p>
+   - If block.type === "image": render <img src={block.url} className="rounded-md my-2" />
+ - Blocks should render in order, maintaining correct inline ordering.
+ - Images must be responsive and maintain aspect ratio.
+
+─────────────────────────────────────────────
+2. Update the main question renderer (<QuestionView /> or equivalent):
+
+Replace old fields:
+  • prompt
+  • prompt_images
+  • choices.A
+  • choice_images
+
+with:
+
+  <BlockRenderer blocks={question.prompt_blocks} />
+
+For choices:
+  For each letter A–E:
+      <BlockRenderer blocks={question.choices[letter]} />
+
+If a choice has:
+    - only a text block → render normally
+    - only an image block → render centered image
+    - text + image → maintain original order
+
+─────────────────────────────────────────────
+3. For the admin preview page:
+    Update the UI so that the preview reads from prompt_blocks and choices (same BlockRenderer).
+
+─────────────────────────────────────────────
+4. Update TypeScript types wherever needed:
+   - Remove old fields (prompt, prompt_images, choices.{A..E}: string)
+   - Replace with prompt_blocks: Block[]
+   - Replace choices: Record<"A"|"B"|"C"|"D"|"E", Block[]>
+
+─────────────────────────────────────────────
+5. Ensure styles match the existing UI:
+   - Ensure spacing between blocks is correct
+   - Choices should still render A., B., C., D., E. labels
+   - Avoid breaking the layout on mobile
+
+─────────────────────────────────────────────
+6. After updating code, show me:
+   - BlockRenderer.tsx (or .jsx)
+   - Updated QuestionView
+   - Any modified type definitions
+   - Any changes to import paths or components
