@@ -47,9 +47,8 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [timerHidden, setTimerHidden] = useState(false);
-  const [isReviewMode, setIsReviewMode] = useState(false); // State for review mode
-  const [isSubmitting, setIsSubmitting] = useState(false); // State for submission process
-  const [showSubmitDialog, setShowSubmitDialog] = useState(false); // Assuming this is used in the provided snippet
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Subject-specific directions
   const getExamDirections = () => {
@@ -160,8 +159,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
   // Updated handleSubmitTest to format question data correctly
   const handleSubmitTest = async () => {
-    setShowSubmitDialog(false); // Assuming setShowSubmitDialog is for a different dialog
-    setShowSubmitConfirm(false); // Use the correct state for submit confirmation
+    setShowSubmitConfirm(false);
     setIsSubmitting(true);
 
     try {
@@ -311,7 +309,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       <SubmitConfirmDialog
         isOpen={showSubmitConfirm}
         onClose={() => setShowSubmitConfirm(false)}
-        onConfirm={confirmSubmit} // Ensure confirmSubmit is defined or remove if not used
+        onConfirm={handleSubmitTest}
       />
 
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
