@@ -489,6 +489,7 @@ export default function Quiz() {
 
   return (
     <div className="min-h-screen bg-khan-background">
+      {/* No navigation bar in quiz mode */}
       {isFullLength ? (
         <FullLengthQuiz
           questions={questions}

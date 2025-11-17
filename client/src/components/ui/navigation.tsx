@@ -109,25 +109,27 @@ export default function Navigation() {
     return abbreviations[subjectId] || "AP Course";
   };
 
-  // Generate breadcrumb based on current route
+  // Generate breadcrumb based on current route (only show when NOT on dashboard)
   const getBreadcrumbs = () => {
     const breadcrumbs = [];
     
+    // Don't show breadcrumbs on dashboard itself
+    if (location === "/dashboard") {
+      return breadcrumbs;
+    }
+    
     if (location === "/learn" || location === "/courses") {
-      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: "Courses", href: "/learn" });
     } else if (location === "/study") {
       const subjectId = router.query.subject as string;
       const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
-      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
     } else if (location === "/quiz") {
       const subjectId = router.query.subject as string;
       const unitId = router.query.unit as string;
       const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
-      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
       if (unitId) {
         breadcrumbs.push({ label: `${unitId.replace("unit", "Unit ").replace("bigidea", "Unit ")}`, href: "#" });
@@ -138,7 +140,6 @@ export default function Navigation() {
       const sectionCode = router.query.section as string;
       const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
-      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test Results", href: `/full-length-results?subject=${subjectId}&testId=${testId}` });
@@ -147,7 +148,6 @@ export default function Navigation() {
       const subjectId = router.query.subject as string;
       const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
-      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test History", href: "#" });
     } else if (location === "/full-length-results") {
@@ -155,12 +155,10 @@ export default function Navigation() {
       const testId = router.query.testId as string;
       const abbreviatedName = getAbbreviatedCourseName(subjectId);
       
-      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test Results", href: "#" });
     } else if (location === "/profile") {
-      breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
       breadcrumbs.push({ label: "Profile", href: "/profile" });
     }
     
@@ -172,7 +170,7 @@ export default function Navigation() {
   return (
     <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-12">
           <Link
             href={isAuthenticated ? "/dashboard" : "/"}
             className={`flex items-center space-x-2 sm:space-x-3 flex-shrink-0 ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
@@ -202,67 +200,22 @@ export default function Navigation() {
             </div>
           )}
 
-          <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-6">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {isAuthenticated && (
-              <>
-                <Link
-                  href="/learn"
-                  className={`hidden sm:block text-sm sm:text-base text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
-                    location === "/learn"
-                      ? "text-khan-green"
-                      : ""
-                  } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
-                  data-testid="link-courses"
-                  onClick={handleDisabledClick}
-                  title="Courses"
-                >
-                  Courses
-                </Link>
-
-                {/* Mobile: Icon only */}
-                <Link
-                  href="/learn"
-                  className={`sm:hidden text-khan-gray-medium hover:text-khan-gray-dark transition-colors ${
-                    location === "/learn"
-                      ? "text-khan-green"
-                      : ""
-                  } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
-                  data-testid="link-courses-mobile"
-                  onClick={handleDisabledClick}
-                  title="Courses"
-                >
-                  <GraduationCap className="w-5 h-5" />
-                </Link>
-
-                <Link
-                  href="/dashboard"
-                  className={`hidden sm:block text-sm sm:text-base text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
-                    location === "/dashboard"
-                      ? "text-khan-green"
-                      : ""
-                  } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
-                  data-testid="link-dashboard"
-                  onClick={handleDisabledClick}
-                  title="Dashboard"
-                >
-                  Dashboard
-                </Link>
-
-                {/* Mobile: Icon only */}
-                <Link
-                  href="/dashboard"
-                  className={`sm:hidden text-khan-gray-medium hover:text-khan-gray-dark transition-colors ${
-                    location === "/dashboard"
-                      ? "text-khan-green"
-                      : ""
-                  } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
-                  data-testid="link-dashboard-mobile"
-                  onClick={handleDisabledClick}
-                  title="Dashboard"
-                >
-                  <LayoutDashboard className="w-5 h-5" />
-                </Link>
-              </>
+              <Link
+                href="/dashboard"
+                className={`text-sm sm:text-base text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
+                  location === "/dashboard"
+                    ? "text-khan-green"
+                    : ""
+                } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
+                data-testid="link-dashboard"
+                onClick={handleDisabledClick}
+                title="Dashboard"
+              >
+                <span className="hidden sm:inline">Dashboard</span>
+                <LayoutDashboard className="sm:hidden w-5 h-5" />
+              </Link>
             )}
 
             {loading ? (
@@ -335,7 +288,7 @@ export default function Navigation() {
         
         {/* Mobile Breadcrumbs - Second Line */}
         {isAuthenticated && breadcrumbs.length > 0 && isMobile && (
-          <div className="lg:hidden flex items-center space-x-2 text-xs text-khan-gray-medium pb-3 overflow-x-auto">
+          <div className="lg:hidden flex items-center space-x-2 text-xs text-khan-gray-medium pb-2 overflow-x-auto">
             {breadcrumbs.map((crumb, index) => (
               <div key={index} className="flex items-center whitespace-nowrap">
                 {index > 0 && <ChevronRight className="w-3 h-3 mx-1" />}

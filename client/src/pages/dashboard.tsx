@@ -401,9 +401,9 @@ export default function Dashboard() {
 
       <Navigation />
 
-      <main className="py-6 md:py-8 px-4 sm:px-6 lg:px-8 relative z-10">
+      <main className="py-4 md:py-6 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto w-full">
-          <div className="mb-6">
+          <div className="mb-4">
             <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark mb-1">
               {userProfile?.data?.firstName ? (
                 <>Welcome back, {userProfile.data.firstName}!</>
@@ -434,10 +434,10 @@ export default function Dashboard() {
               </p>
               <Button
                 onClick={() => router.push('/learn')}
-                className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-8"
+                className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold px-6"
               >
                 <Plus className="mr-2 w-5 h-5" />
-                Browse Subjects
+                Courses
               </Button>
             </div>
           ) : (
@@ -450,7 +450,7 @@ export default function Dashboard() {
                   className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold"
                 >
                   <Plus className="mr-2 w-4 h-4" />
-                  Browse Subjects
+                  Courses
                 </Button>
               </div>
 
@@ -463,10 +463,10 @@ export default function Dashboard() {
                 </div>
               )}
               {(
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {activeSubjects.map((subject: DashboardSubject) => (
                     <Card key={subject.id} className="bg-white hover:shadow-md transition-all border-2 border-gray-100 w-full">
-                      <CardHeader className="pb-3">
+                      <CardHeader className="pb-2">
                         <div className="flex items-start justify-between mb-1.5">
                           <CardTitle className="text-lg md:text-xl font-bold text-khan-gray-dark">
                             {subject.name}
@@ -541,8 +541,8 @@ export default function Dashboard() {
                         </p>
                       </CardHeader>
 
-                      <CardContent className="pt-3">
-                        <div className="flex flex-col sm:flex-row items-center justify-between mb-4 space-y-3 sm:space-y-0 sm:space-x-6">
+                      <CardContent className="pt-2">
+                        <div className="flex flex-col sm:flex-row items-center justify-between mb-3 space-y-2 sm:space-y-0 sm:space-x-6">
                           <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 w-full sm:w-auto">
                             <div className="flex items-center space-x-2 text-khan-gray-medium">
                               <BookOpen className="w-4 h-4" />

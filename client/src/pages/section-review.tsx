@@ -175,8 +175,8 @@ export default function SectionReview() {
       {/* Main Navigation with Breadcrumbs */}
       <Navigation />
 
-      <div className="flex-1 overflow-y-auto mb-14 pt-6">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto mb-14 pt-4">
+        <div className="max-w-4xl mx-auto px-4 py-4">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between border-b pb-3 -mx-6 px-6 -mt-6 pt-4 bg-gray-50">
