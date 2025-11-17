@@ -6,8 +6,8 @@ import { EnhancedQuestionPalette } from "./EnhancedQuestionPalette";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QuizReviewPage } from "./QuizReviewPage";
-import { useRouter } from "next/router"; // Assuming useRouter is needed for navigation
-import { apiRequest } from "@/lib/api"; // Assuming apiRequest is defined elsewhere
+import { useRouter } from "next/router";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Question {
   id: string;
