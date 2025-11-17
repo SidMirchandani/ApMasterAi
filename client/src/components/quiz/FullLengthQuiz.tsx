@@ -173,6 +173,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const handleSubmitTest = async () => {
     setShowSubmitConfirm(false);
     setIsSubmitting(true);
+    // Stay on review page during submit - don't change isReviewMode
 
     try {
       const correctCount = questions.reduce((count, question, index) => {
@@ -231,12 +232,8 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     // Update local state first
     setUserAnswers(updatedAnswers);
     setFlaggedQuestions(updatedFlagged);
-    // Close review mode and show confirmation dialog
-    setIsReviewMode(false);
-    // Use a small timeout to ensure state is updated before showing dialog
-    setTimeout(() => {
-      setShowSubmitConfirm(true);
-    }, 100);
+    // Stay in review mode and show confirmation dialog
+    setShowSubmitConfirm(true);
   };
 
   // Added logic for review mode rendering
@@ -248,10 +245,10 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         flaggedQuestions={flaggedQuestions}
         onBack={() => {
           setIsReviewMode(false);
-          setShowQuestionPalette(false);
         }}
         onSubmit={handleReviewSubmit}
-        subjectId={subjectId} // Pass subjectId for review page navigation
+        subjectId={subjectId}
+        isSubmitting={isSubmitting}
       />
     );
   }

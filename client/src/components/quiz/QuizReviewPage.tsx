@@ -39,6 +39,7 @@ interface QuizReviewPageProps {
     updatedAnswers: { [key: number]: string },
     updatedFlagged: Set<number>,
   ) => void;
+  isSubmitting?: boolean;
 }
 
 export function QuizReviewPage({
@@ -48,6 +49,7 @@ export function QuizReviewPage({
   subjectId,
   onBack,
   onSubmit,
+  isSubmitting,
 }: QuizReviewPageProps) {
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const [localAnswers, setLocalAnswers] = useState(userAnswers);
@@ -78,7 +80,17 @@ export function QuizReviewPage({
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col relative">
+      {/* Blur overlay during submit */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[60] flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-lg font-semibold text-gray-700">Submitting your test...</p>
+          </div>
+        </div>
+      )}
+      
       {/* HEADER */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <QuizHeader
@@ -208,11 +220,14 @@ export function QuizReviewPage({
           onOpenPalette={() => {
             setSelectedQuestion(null);
           }}
-          onPrevious={() =>
-            selectedQuestion > 0
-              ? setSelectedQuestion(selectedQuestion - 1)
-              : setSelectedQuestion(null)
-          }
+          onPrevious={() => {
+            if (selectedQuestion > 0) {
+              setSelectedQuestion(selectedQuestion - 1);
+            } else {
+              // Going back from first question - return to palette view
+              setSelectedQuestion(null);
+            }
+          }}
           onNext={() =>
             selectedQuestion < questions.length - 1 &&
             setSelectedQuestion(selectedQuestion + 1)
