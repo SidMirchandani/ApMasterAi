@@ -137,20 +137,9 @@ export default function Profile() {
       <Navigation />
       <main className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-3xl mx-auto">
-          <div className="mb-8 flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/dashboard")}
-              size="sm"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
-            <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
-              <h1 className="text-3xl font-bold text-khan-gray-dark">Profile Settings</h1>
-              <p className="text-khan-gray-medium mt-1">Manage your account information</p>
-            </div>
-            <div className="w-36"></div>
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-khan-gray-dark">Profile Settings</h1>
+            <p className="text-khan-gray-medium mt-1">Manage your account information</p>
           </div>
 
           <Card>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { BookOpen, LogOut, User } from "lucide-react";
+import { BookOpen, LogOut, User, Home, GraduationCap, ChevronRight, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,12 +15,15 @@ import { logout } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { apSubjects } from "@/lib/ap-subjects";
 
 export default function Navigation() {
   const router = useRouter();
   const location = router.pathname;
   const { user, isAuthenticated, loading } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Detect if user is in quiz/test mode
   const isInQuizMode = location === "/quiz" && router.query.unit;
@@ -56,6 +59,18 @@ export default function Navigation() {
     enabled: isAuthenticated && !!user,
   });
 
+  const { data: subjectsResponse } = useQuery<{success: boolean, data: any[]}>({
+    queryKey: ["subjects"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/subjects");
+      if (!response.ok) {
+        throw new Error("Failed to fetch subjects");
+      }
+      return response.json();
+    },
+    enabled: isAuthenticated,
+  });
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -72,6 +87,66 @@ export default function Navigation() {
     }
   };
 
+  // Generate breadcrumb based on current route
+  const getBreadcrumbs = () => {
+    const breadcrumbs = [];
+    
+    if (location === "/learn" || location === "/courses") {
+      breadcrumbs.push({ label: "Courses", href: "/learn" });
+    } else if (location === "/study") {
+      const subjectId = router.query.subject as string;
+      const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
+      const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
+      
+      breadcrumbs.push({ label: "Courses", href: "/learn" });
+      breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+    } else if (location === "/quiz") {
+      const subjectId = router.query.subject as string;
+      const unitId = router.query.unit as string;
+      const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
+      const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
+      
+      breadcrumbs.push({ label: "Courses", href: "/learn" });
+      breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+      if (unitId) {
+        breadcrumbs.push({ label: `${unitId.replace("unit", "Unit ").replace("bigidea", "Unit ")}`, href: "#" });
+      }
+    } else if (location === "/section-review") {
+      const subjectId = router.query.subject as string;
+      const unitId = router.query.unit as string;
+      const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
+      const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
+      
+      breadcrumbs.push({ label: "Courses", href: "/learn" });
+      breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+      if (unitId) {
+        breadcrumbs.push({ label: `${unitId.replace("unit", "Unit ").replace("bigidea", "Unit ")} Review`, href: "#" });
+      }
+    } else if (location === "/full-length-history") {
+      const subjectId = router.query.subject as string;
+      const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
+      const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
+      
+      breadcrumbs.push({ label: "Courses", href: "/learn" });
+      breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+      breadcrumbs.push({ label: "Test History", href: "#" });
+    } else if (location === "/full-length-results") {
+      const subjectId = router.query.subject as string;
+      const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
+      const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
+      
+      breadcrumbs.push({ label: "Courses", href: "/learn" });
+      breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+      breadcrumbs.push({ label: "Test Results", href: "#" });
+    } else if (location === "/profile") {
+      breadcrumbs.push({ label: "Profile", href: "/profile" });
+    }
+    
+    return breadcrumbs;
+  };
+
+  const breadcrumbs = getBreadcrumbs();
+
   return (
     <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -87,33 +162,83 @@ export default function Navigation() {
             <span className="text-xl sm:text-2xl font-bold text-khan-gray-dark">APMaster</span>
           </Link>
 
+          {/* Breadcrumb Navigation - Center */}
+          {isAuthenticated && breadcrumbs.length > 0 && (
+            <div className="hidden lg:flex items-center space-x-2 text-sm text-khan-gray-medium">
+              {breadcrumbs.map((crumb, index) => (
+                <div key={index} className="flex items-center">
+                  {index > 0 && <ChevronRight className="w-4 h-4 mx-1" />}
+                  {crumb.href === "#" ? (
+                    <span className="font-medium text-khan-gray-dark">{crumb.label}</span>
+                  ) : (
+                    <Link href={crumb.href} className="hover:text-khan-green transition-colors">
+                      {crumb.label}
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-6">
             {isAuthenticated && (
               <>
                 <Link
                   href="/learn"
-                  className={`text-sm sm:text-base text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
+                  className={`hidden sm:block text-sm sm:text-base text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
                     location === "/learn"
                       ? "text-khan-green"
                       : ""
                   } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
                   data-testid="link-courses"
                   onClick={handleDisabledClick}
+                  title="Courses"
                 >
                   Courses
                 </Link>
 
+                {/* Mobile: Icon only */}
+                <Link
+                  href="/learn"
+                  className={`sm:hidden text-khan-gray-medium hover:text-khan-gray-dark transition-colors ${
+                    location === "/learn"
+                      ? "text-khan-green"
+                      : ""
+                  } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
+                  data-testid="link-courses-mobile"
+                  onClick={handleDisabledClick}
+                  title="Courses"
+                >
+                  <GraduationCap className="w-5 h-5" />
+                </Link>
+
                 <Link
                   href="/dashboard"
-                  className={`text-sm sm:text-base text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
+                  className={`hidden sm:block text-sm sm:text-base text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
                     location === "/dashboard"
                       ? "text-khan-green"
                       : ""
                   } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
                   data-testid="link-dashboard"
                   onClick={handleDisabledClick}
+                  title="Dashboard"
                 >
                   Dashboard
+                </Link>
+
+                {/* Mobile: Icon only */}
+                <Link
+                  href="/dashboard"
+                  className={`sm:hidden text-khan-gray-medium hover:text-khan-gray-dark transition-colors ${
+                    location === "/dashboard"
+                      ? "text-khan-green"
+                      : ""
+                  } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
+                  data-testid="link-dashboard-mobile"
+                  onClick={handleDisabledClick}
+                  title="Dashboard"
+                >
+                  <LayoutDashboard className="w-5 h-5" />
                 </Link>
               </>
             )}
@@ -129,6 +254,7 @@ export default function Navigation() {
                     data-testid="button-user-menu"
                     disabled={isInQuizMode}
                     onClick={handleDisabledClick}
+                    title="Account"
                   >
                     <User className="w-4 h-4 sm:mr-2" />
                     <span className="hidden sm:inline">Account</span>
@@ -184,6 +310,24 @@ export default function Navigation() {
             )}
           </div>
         </div>
+        
+        {/* Mobile Breadcrumbs - Second Line */}
+        {isAuthenticated && breadcrumbs.length > 0 && isMobile && (
+          <div className="lg:hidden flex items-center space-x-2 text-xs text-khan-gray-medium pb-3 overflow-x-auto">
+            {breadcrumbs.map((crumb, index) => (
+              <div key={index} className="flex items-center whitespace-nowrap">
+                {index > 0 && <ChevronRight className="w-3 h-3 mx-1" />}
+                {crumb.href === "#" ? (
+                  <span className="font-medium text-khan-gray-dark">{crumb.label}</span>
+                ) : (
+                  <Link href={crumb.href} className="hover:text-khan-green transition-colors">
+                    {crumb.label}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </nav>
   );

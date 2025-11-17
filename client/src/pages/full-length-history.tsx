@@ -96,6 +96,12 @@ export default function FullLengthHistory() {
       <Navigation />
       <main className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark text-center">
+              Full-Length Test History
+            </h1>
+          </div>
+
           <div className="flex items-center justify-center gap-3 mb-3">
             <Button
               onClick={handleStartNewTest}
@@ -114,10 +120,6 @@ export default function FullLengthHistory() {
               Exit
             </Button>
           </div>
-
-          <h1 className="text-xl font-bold text-khan-gray-dark text-center mb-3">
-            Test History
-          </h1>
 
           {testHistory.length === 0 ? (
             <Card>

@@ -330,23 +330,14 @@ export default function SectionReview() {
               {!isMobile && "Previous"}
             </Button>
 
-            {currentPage === totalPages - 1 ? (
-              <Button
-                onClick={handleBackNavigation}
-                variant="outline"
-                className="px-4"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                className="bg-khan-blue hover:bg-khan-blue/90 px-8"
-              >
-                {!isMobile && "Next"}
-                <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
-              </Button>
-            )}
+            <Button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage === totalPages - 1}
+              className="bg-khan-blue hover:bg-khan-blue/90 px-8"
+            >
+              {!isMobile && "Next"}
+              <ArrowRight className={isMobile ? "" : "ml-2 h-4 w-4"} />
+            </Button>
           </div>
         </div>
       </main>

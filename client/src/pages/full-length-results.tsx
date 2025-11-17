@@ -160,22 +160,10 @@ export default function FullLengthResults() {
       <Navigation />
       <main className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              onClick={() =>
-                router.push(`/full-length-history?subject=${subjectId}`)
-              }
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-            >
-              <ArrowLeft className={isMobile ? "" : "h-4 w-4"} />
-              {!isMobile && "Test History"}
-            </Button>
-            <h1 className="text-xl md:text-3xl font-bold text-khan-gray-dark absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark text-center">
               Results Summary
             </h1>
-            <div className="w-24"></div>
           </div>
 
           {/* Overall Score Card - Compact */}
