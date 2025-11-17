@@ -133,7 +133,7 @@ export function QuestionCard({
                   key={label}
                   className={`flex items-start gap-4 p-4 rounded-lg border transition-all cursor-pointer
                     ${bgColor} ${borderColor}
-                    ${!shouldShowCorrectness && !isSelected ? "hover:bg-gray-50 hover:border-gray-300" : ""}
+                    ${!shouldShowCorrectness && !isUserAnswer ? "hover:bg-gray-50 hover:border-gray-300" : ""}
                   `}
                   onClick={() => !isAnswerSubmitted && onAnswerSelect(label)}
                 >
