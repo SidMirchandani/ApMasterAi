@@ -96,24 +96,23 @@ export default function FullLengthHistory() {
       <Navigation />
       <main className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <Button
-              onClick={() => router.push(`/study?subject=${subjectId}`)}
-              variant="outline"
-              size="sm"
-            >
-              <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
-              {!isMobile && "Study"}
-            </Button>
+          <div className="flex items-center justify-center gap-3 mb-3">
             <Button
               onClick={handleStartNewTest}
-              className="bg-khan-green hover:bg-khan-green/90 w-full max-w-md"
+              className="bg-khan-green hover:bg-khan-green/90"
               size="sm"
             >
               <PlayCircle className="mr-2 h-4 w-4" />
               Start New Test
             </Button>
-            <div className="w-[72px]"></div> {/* Spacer for balance */}
+            <Button
+              onClick={() => router.push(`/study?subject=${subjectId}`)}
+              variant="outline"
+              size="sm"
+              className="border-gray-300"
+            >
+              Exit
+            </Button>
           </div>
 
           <h1 className="text-xl font-bold text-khan-gray-dark text-center mb-3">

@@ -498,25 +498,10 @@ export default function Study() {
       {/* Header Section */}
       <div className="border-b border-gray-200 bg-white sticky top-0 z-20">
         <div className="container mx-auto px-4 py-4 max-w-6xl">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/dashboard")}
-              size="sm"
-              data-testid="button-back"
-              className="border-gray-300"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
-            
-            <div className="text-center flex-1 mx-4">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                {currentSubject.name}
-              </h1>
-            </div>
-            
-            <div className="w-28"></div>
+          <div className="text-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              {currentSubject.name}
+            </h1>
           </div>
         </div>
       </div>

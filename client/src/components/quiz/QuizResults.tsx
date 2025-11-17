@@ -6,7 +6,7 @@ import { CheckCircle, XCircle, BookOpen } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 
 // Import the QuizReviewPage component
-import QuizReviewPage from "./quizReviewPage"; // Assuming QuizReviewPage is in the same directory
+import { QuizReviewPage } from "./QuizReviewPage";
 
 interface Question {
   id: string;
