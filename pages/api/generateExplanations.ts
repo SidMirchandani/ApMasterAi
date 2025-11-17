@@ -69,45 +69,65 @@ export default async function handler(
         );
 
         // Build comprehensive prompt with images
-        let promptText = `You are an expert AP tutor. Generate a clear, educational explanation for this AP question.\n\n`;
+        const promptParts: any[] = [];
+        
+        let promptText = `You are an expert AP tutor. Generate a SHORT, focused explanation for this AP question.\n\n`;
         
         // Add question text
-        if (question.prompt) {
-          promptText += `Question: ${question.prompt}\n`;
+        if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
+          const questionText = flattenChoiceText(question.prompt_blocks);
+          promptText += `Question: ${questionText}\n`;
         }
         
-        // Add question images if they exist
-        if (question.image_urls?.question && Array.isArray(question.image_urls.question) && question.image_urls.question.length > 0) {
-          promptText += `Question Image URLs:\n${question.image_urls.question.map((url: string, idx: number) => `  - Image ${idx + 1}: ${url}`).join('\n')}\n`;
+        promptParts.push({ text: promptText });
+        
+        // Add question images
+        if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
+          question.prompt_blocks.forEach((block: any) => {
+            if (block.type === "image" && block.url) {
+              promptParts.push({
+                inlineData: {
+                  mimeType: "image/jpeg",
+                  data: block.url
+                }
+              });
+            }
+          });
         }
         
         // Add choices with their images
-        promptText += `\nAnswer Choices:\n`;
+        let choicesText = `\nAnswer Choices:\n`;
         Object.entries(question.choices ?? {}).forEach(([letter, blocks]: [string, any]) => {
           const choiceText = flattenChoiceText(blocks);
-          promptText += `${letter}. ${choiceText}\n`;
-          
-          // Check for images in the blocks
-          const imageBlocks = blocks.filter((b: any) => b.type === "image");
-          if (imageBlocks.length > 0) {
-            promptText += `   Choice ${letter} Image URLs:\n${imageBlocks.map((b: any, imgIdx: number) => `   - Image ${imgIdx + 1}: ${b.url}`).join('\n')}\n`;
-          }
+          choicesText += `${letter}. ${choiceText}\n`;
         });
         
         const correctLabel = String.fromCharCode(65 + question.answerIndex);
         const correctAnswerBlocks = question.choices?.[correctLabel];
         const correctAnswer = correctAnswerBlocks ? flattenChoiceText(correctAnswerBlocks) : "";
-        promptText += `\nCorrect Answer: ${correctLabel}. ${correctAnswer}\n`;
-        promptText += `\nProvide a comprehensive explanation that:\n`;
-        promptText += `1. Explains the key concept or principle being tested\n`;
-        promptText += `2. Explains why the correct answer (${correctLabel}) is right with specific reasoning\n`;
-        promptText += `3. Explains why each of the other answer choices is wrong\n`;
-        promptText += `4. Uses clear, student-friendly language appropriate for AP students\n`;
-        promptText += `5. References any images when relevant to the explanation\n\n`;
-        promptText += `Format your explanation with clear sections. Be thorough but concise.\n\n`;
-        promptText += `Your explanation:`;
+        choicesText += `\nCorrect Answer: ${correctLabel}. ${correctAnswer}\n\n`;
+        
+        promptParts.push({ text: choicesText });
+        
+        // Add choice images
+        Object.entries(question.choices ?? {}).forEach(([letter, blocks]: [string, any]) => {
+          blocks.forEach((block: any) => {
+            if (block.type === "image" && block.url) {
+              promptParts.push({
+                inlineData: {
+                  mimeType: "image/jpeg",
+                  data: block.url
+                }
+              });
+            }
+          });
+        });
+        
+        promptParts.push({
+          text: `\nProvide a CONCISE explanation that:\n1. Explains the concept being tested (1-2 sentences)\n2. Explains why ${correctLabel} is correct (1-2 sentences)\n3. Briefly explains why the other choices are wrong (1 sentence each)\n\nKeep it short and student-friendly.\n\nYour explanation:`
+        });
 
-        const prompt = promptText;
+        const prompt = promptParts;
 
         // ✅ Correct Gemini 2.5 Flash call
         const response = await ai.models.generateContent({
