@@ -8,11 +8,16 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDateTime } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { ExplanationChat } from "@/components/ui/explanation-chat";
+import { BlockRenderer } from "@/components/quiz/BlockRenderer";
 
 interface Question {
   id: string;
   prompt: string;
-  choices: string[];
+  prompt_blocks?: any[]; // Assuming prompt_blocks is an array of block objects
+  choices: { [key: string]: any[] }; // Assuming choices are objects where values are arrays of block objects
   answerIndex: number;
   explanation: string;
   subject_code?: string;
@@ -280,6 +285,116 @@ export default function FullLengthResults() {
                       </div>
                     );
                   })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Detailed Question Review */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-khan-gray-dark">
+                Question Review
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {testData.questions.map((q, globalIndex) => {
+                  const userAnswerIndex = q.id ? parseInt(testData.userAnswers[globalIndex]) : -1;
+                  const correctAnswerIndex = q.answerIndex;
+                  const isCorrect = userAnswerIndex === correctAnswerIndex;
+                  const sectionCode = q.section_code || 'unknown';
+                  const sectionData = testData; // Assuming sectionData is available or passed correctly
+                  const displayNumber = globalIndex + 1;
+
+                  // Determine colors based on user's answer
+                  let bgColor = "bg-white";
+                  let borderColor = "border-gray-200";
+                  if (userAnswerIndex !== -1) {
+                    if (isCorrect) {
+                      bgColor = "bg-green-50";
+                      borderColor = "border-green-200";
+                    } else {
+                      bgColor = "bg-red-50";
+                      borderColor = "border-red-200";
+                    }
+                  }
+
+                  return (
+                    <Card key={globalIndex} className="border">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-medium leading-relaxed">
+                          <div className="flex items-start gap-2">
+                            <span className="flex-shrink-0">{displayNumber}.</span>
+                            <div className="flex-1">
+                              <BlockRenderer blocks={q.prompt_blocks} />
+                            </div>
+                            {sectionCode === "all" &&
+                              sectionData?.sectionBreakdown &&
+                              q.section_code && (
+                                <span className="ml-2 font-bold text-khan-green flex-shrink-0">
+                                  (UNIT{" "}
+                                  {sectionData.sectionBreakdown[q.section_code]
+                                    ?.unitNumber || ""}
+                                  )
+                                </span>
+                              )}
+                          </div>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="space-y-1.5">
+                          {["A", "B", "C", "D", "E"].map((label) => {
+                            const choiceBlocks = q.choices[label];
+                            if (
+                              !choiceBlocks ||
+                              choiceBlocks.length === 0 ||
+                              (choiceBlocks.length === 1 &&
+                                choiceBlocks[0].type === "text" &&
+                                !choiceBlocks[0].value)
+                            ) {
+                              return null;
+                            }
+
+                            const isCorrectAnswer = correctAnswerIndex === ["A", "B", "C", "D", "E"].indexOf(label);
+                            const isUserAnswer = userAnswerIndex === ["A", "B", "C", "D", "E"].indexOf(label);
+
+                            return (
+                              <div
+                                key={label}
+                                className={`flex items-start space-x-3 rounded-lg border-2 p-3 transition-all ${bgColor} ${borderColor}`}
+                              >
+                                <div className="flex items-center gap-2 min-w-[2rem]">
+                                  <span className="font-semibold text-sm">{label}.</span>
+                                  {isCorrectAnswer && (
+                                    <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />
+                                  )}
+                                  {isUserAnswer && !isCorrect && (
+                                    <XCircle className="text-red-500 flex-shrink-0 h-5 w-5" />
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <BlockRenderer blocks={choiceBlocks} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Explanation */}
+                        {q.explanation && (
+                          <div className="mt-4 pt-4 border-t">
+                            <ExplanationChat
+                              questionId={q.id}
+                              explanation={q.explanation}
+                              userAnswerIndex={userAnswerIndex}
+                              correctAnswerIndex={correctAnswerIndex}
+                            />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
