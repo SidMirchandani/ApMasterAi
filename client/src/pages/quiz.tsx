@@ -61,6 +61,11 @@ const SUBJECT_UNIT_MAPS: Record<string, Record<string, string>> = {
     unit3: "AAP",
     unit4: "CSN",
     unit5: "IOC",
+    bigidea1: "CRD",
+    bigidea2: "DAT",
+    bigidea3: "AAP",
+    bigidea4: "CSN",
+    bigidea5: "IOC",
   },
   "calculus-ab": {
     unit1: "LC",
