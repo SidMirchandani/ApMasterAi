@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,7 +46,7 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
     const isAnswered = !!userAnswers[index];
     const isCurrent = index === selectedQuestion;
     const baseClass = "w-12 h-12 rounded border-2 text-center font-semibold flex items-center justify-center transition-all cursor-pointer relative";
-    
+
     // For flagged questions, show red border but background based on state
     if (isFlagged) {
       if (isCurrent) {
@@ -58,7 +57,7 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
         return `${baseClass} bg-white text-gray-900 border-red-500`;
       }
     }
-    
+
     // Non-flagged questions
     if (isCurrent) {
       return `${baseClass} bg-gray-900 text-white border-gray-900`;
@@ -108,18 +107,30 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
                   </div>
                 </div>
 
-                <div className="grid grid-cols-10 gap-3">
-                  {questions.map((_, i) => {
-                    const state = getQuestionState(i);
+                <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                  {questions.map((_, index) => {
+                    const isAnswered = userAnswers[index] !== undefined;
+                    const isFlagged = flaggedQuestions.has(index);
+
                     return (
                       <button
-                        key={i}
-                        onClick={() => setSelectedQuestion(i)}
-                        className={getQuestionClass(i)}
+                        key={index}
+                        onClick={() => setSelectedQuestion(index)}
+                        className={`
+                          relative w-full aspect-square rounded flex items-center justify-center font-medium text-xs
+                          transition-all hover:shadow-md
+                          ${
+                            isAnswered
+                              ? isFlagged
+                                ? "bg-red-50 border-2 border-red-500"
+                                : "bg-blue-50 border-2 border-blue-500"
+                              : "border-2 border-gray-300 border-dashed bg-white"
+                          }
+                        `}
                       >
-                        {i + 1}
-                        {state === "flagged" && (
-                          <Flag className="h-3 w-3 text-red-500 absolute -top-1 -right-1" fill="currentColor" />
+                        {index + 1}
+                        {isFlagged && (
+                          <Flag className="h-3 w-3 text-red-500 absolute -top-1 -right-1" />
                         )}
                       </button>
                     );

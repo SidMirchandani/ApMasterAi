@@ -83,8 +83,8 @@ export function QuestionCard({
         className={className}
         disabled={isAnswerSubmitted}
       >
-        <div>
-          <span className="font-bold mr-2">{label}.</span>
+        <div className="text-sm">
+          <span className="font-bold mr-1.5">{label}.</span>
           {hasText && (
             <span className="inline">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{choice}</ReactMarkdown>
@@ -93,7 +93,7 @@ export function QuestionCard({
         </div>
 
         {hasImages && (
-          <div className="mt-2 space-y-2">
+          <div className="mt-1.5 space-y-1.5">
             {question.image_urls[label]?.map((img, ii) => (
               <img key={ii} src={img} className="rounded border max-w-full" alt={`Choice ${label}`} />
             ))}
@@ -105,31 +105,31 @@ export function QuestionCard({
 
   return (
     <Card className="border border-gray-300">
-      <CardHeader>
-        <div className="flex items-center justify-between border-b pb-3 -mx-6 px-6 -mt-6 pt-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-black text-white px-3 py-1 font-semibold text-sm">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between border-b pb-2 -mx-6 px-6 -mt-6 pt-4">
+          <div className="flex items-center gap-2">
+            <div className="bg-black text-white px-2 py-0.5 font-semibold text-xs">
               {questionNumber}
             </div>
             <button
               onClick={onToggleFlag}
-              className={`flex items-center gap-2 text-sm ${
+              className={`flex items-center gap-1.5 text-xs ${
                 isFlagged ? "text-black" : "text-gray-600"
               }`}
             >
-              <Flag className={`h-4 w-4 ${isFlagged ? "fill-current" : ""}`} />
-              <span>Mark for Review</span>
+              <Flag className={`h-3.5 w-3.5 ${isFlagged ? "fill-current" : ""}`} />
+              <span className="hidden sm:inline">Mark for Review</span>
             </button>
           </div>
-          <button className="p-2 text-gray-600 hover:text-gray-900">
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button className="p-1.5 text-gray-600 hover:text-gray-900">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
             </svg>
           </button>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 pt-3">
         {question.prompt && question.prompt.trim() && (
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {question.prompt}

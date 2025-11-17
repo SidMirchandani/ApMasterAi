@@ -120,7 +120,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col">
       <QuizHeader
         title={`AP® ${subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Practice Exam`}
         timeElapsed={timeElapsed}
@@ -129,8 +129,8 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         onExitExam={handleExitExam}
       />
 
-      <div className="flex-1 overflow-y-auto pb-20">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-4 py-6 pb-24">
           <QuestionCard
             question={currentQuestion}
             questionNumber={currentQuestionIndex + 1}
@@ -144,18 +144,20 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         </div>
       </div>
 
-      <QuizBottomBar
-        currentQuestion={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        onOpenPalette={() => setShowQuestionPalette(true)}
-        onPrevious={handlePreviousQuestion}
-        onNext={handleNextQuestion}
-        canGoPrevious={currentQuestionIndex > 0}
-        canGoNext={currentQuestionIndex < questions.length - 1}
-        isLastQuestion={currentQuestionIndex === questions.length - 1}
-        onSubmit={handleSubmitTest}
-        onReview={currentQuestionIndex === questions.length - 1 ? () => setIsReviewMode(true) : undefined}
-      />
+      <div className="fixed bottom-0 left-0 right-0 z-50">
+        <QuizBottomBar
+          currentQuestion={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+          onOpenPalette={() => setShowQuestionPalette(true)}
+          onPrevious={handlePreviousQuestion}
+          onNext={handleNextQuestion}
+          canGoPrevious={currentQuestionIndex > 0}
+          canGoNext={currentQuestionIndex < questions.length - 1}
+          isLastQuestion={currentQuestionIndex === questions.length - 1}
+          onSubmit={handleSubmitTest}
+          onReview={currentQuestionIndex === questions.length - 1 ? () => setIsReviewMode(true) : undefined}
+        />
+      </div>
 
       <EnhancedQuestionPalette
         isOpen={showQuestionPalette}
