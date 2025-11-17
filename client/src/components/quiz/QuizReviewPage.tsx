@@ -38,10 +38,9 @@ interface QuizReviewPageProps {
   userAnswers: { [key: number]: string };
   flaggedQuestions: Set<number>;
   onBack: () => void;
-  onSubmit?: () => void;
 }
 
-export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBack, onSubmit }: QuizReviewPageProps) {
+export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBack }: QuizReviewPageProps) {
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
 
   const getQuestionState = (index: number) => {
@@ -156,7 +155,7 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
               onAnswerSelect={() => {}}
               onToggleFlag={() => {}}
               isFullLength={true}
-              isAnswerSubmitted={true}
+              isAnswerSubmitted={false}
               renderImage={renderImage}
               isReviewMode={true}
             />
@@ -180,14 +179,6 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
                 >
                   Back to Questions
                 </Button>
-                {onSubmit && (
-                  <Button
-                    onClick={onSubmit}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Submit Test
-                  </Button>
-                )}
               </div>
             </div>
           </div>

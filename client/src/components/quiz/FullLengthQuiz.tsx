@@ -118,10 +118,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         userAnswers={userAnswers}
         flaggedQuestions={flaggedQuestions}
         onBack={() => setIsReviewMode(false)}
-        onSubmit={() => {
-          setIsReviewMode(false);
-          setShowSubmitConfirm(true);
-        }}
       />
     );
   }
