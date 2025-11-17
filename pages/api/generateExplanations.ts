@@ -9,6 +9,13 @@ function flattenChoiceText(blocks: any[]) {
     .join(" ");
 }
 
+// Helper function to fetch image and convert to base64
+async function fetchImageAsBase64(url: string): Promise<string> {
+  const response = await fetch(url);
+  const buffer = await response.arrayBuffer();
+  return Buffer.from(buffer).toString('base64');
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -81,18 +88,23 @@ export default async function handler(
         
         promptParts.push({ text: promptText });
         
-        // Add question images
+        // Add question images (fetch and convert to base64)
         if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
-          question.prompt_blocks.forEach((block: any) => {
+          for (const block of question.prompt_blocks) {
             if (block.type === "image" && block.url) {
-              promptParts.push({
-                inlineData: {
-                  mimeType: "image/jpeg",
-                  data: block.url
-                }
-              });
+              try {
+                const base64Data = await fetchImageAsBase64(block.url);
+                promptParts.push({
+                  inlineData: {
+                    mimeType: "image/png",
+                    data: base64Data
+                  }
+                });
+              } catch (err) {
+                console.error(`Failed to fetch image ${block.url}:`, err);
+              }
             }
-          });
+          }
         }
         
         // Add choices with their images
@@ -109,19 +121,24 @@ export default async function handler(
         
         promptParts.push({ text: choicesText });
         
-        // Add choice images
-        Object.entries(question.choices ?? {}).forEach(([letter, blocks]: [string, any]) => {
-          blocks.forEach((block: any) => {
+        // Add choice images (fetch and convert to base64)
+        for (const [letter, blocks] of Object.entries(question.choices ?? {})) {
+          for (const block of blocks as any[]) {
             if (block.type === "image" && block.url) {
-              promptParts.push({
-                inlineData: {
-                  mimeType: "image/jpeg",
-                  data: block.url
-                }
-              });
+              try {
+                const base64Data = await fetchImageAsBase64(block.url);
+                promptParts.push({
+                  inlineData: {
+                    mimeType: "image/png",
+                    data: base64Data
+                  }
+                });
+              } catch (err) {
+                console.error(`Failed to fetch choice image ${block.url}:`, err);
+              }
             }
-          });
-        });
+          }
+        }
         
         promptParts.push({
           text: `\nProvide a CONCISE explanation that:\n1. Explains the concept being tested (1-2 sentences)\n2. Explains why ${correctLabel} is correct (1-2 sentences)\n3. Briefly explains why the other choices are wrong (1 sentence each)\n\nKeep it short and student-friendly.\n\nYour explanation:`
