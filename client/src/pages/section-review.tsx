@@ -12,7 +12,7 @@ import remarkGfm from "remark-gfm";
 import { BlockRenderer } from "@/components/quiz/BlockRenderer";
 import { QuizHeader } from "@/components/quiz/QuizHeader";
 import { QuizBottomBar } from "@/components/quiz/QuizBottomBar";
-import { EnhancedQuestionPalette } from "@/components/quiz/EnhancedQuestionPalette";
+import { ReviewQuestionPalette } from "@/components/quiz/ReviewQuestionPalette";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
@@ -159,9 +159,25 @@ export default function SectionReview() {
     return acc;
   }, {} as { [key: number]: string });
 
+  // Create correct answers map
+  const correctAnswers = questions.reduce((acc, q, idx) => {
+    const correctLabel = String.fromCharCode(65 + q.answerIndex);
+    acc[idx] = correctLabel;
+    return acc;
+  }, {} as { [key: number]: string });
+
+  // Create original indices array for unit reviews
+  const originalIndices = questions.map((q) => 
+    q.originalTestIndex !== undefined ? q.originalTestIndex : 0
+  );
+
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
-      <div className="fixed top-0 left-0 right-0 z-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Main Navigation */}
+      <Navigation />
+      
+      {/* Quiz Header */}
+      <div className="sticky top-0 z-50">
         <QuizHeader
           title={sectionCode === "all" 
             ? `Full Test Review` 
@@ -172,7 +188,7 @@ export default function SectionReview() {
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-14">
+      <div className="flex-1 overflow-y-auto mb-14">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <Card>
             <CardHeader className="pb-3">
@@ -302,17 +318,19 @@ export default function SectionReview() {
         />
       </div>
 
-      <EnhancedQuestionPalette
+      <ReviewQuestionPalette
         isOpen={showQuestionPalette}
         onClose={() => setShowQuestionPalette(false)}
         questions={questions}
         currentQuestion={currentQuestionIndex}
         userAnswers={userAnswersForPalette}
-        flaggedQuestions={new Set()}
+        correctAnswers={correctAnswers}
         onQuestionSelect={(index) => {
           setCurrentQuestionIndex(index);
           setShowQuestionPalette(false);
         }}
+        showOriginalNumbers={sectionCode !== "all"}
+        originalIndices={originalIndices}
       />
     </div>
   );
