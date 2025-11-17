@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useRouter } from "next/router";
+import { PracticeQuizReview } from "./PracticeQuizReview";
 
 interface Question {
   id: string;
@@ -47,7 +48,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const [timerHidden, setTimerHidden] = useState(false);
   const [generatedExplanations, setGeneratedExplanations] = useState<Map<number, string>>(new Map());
   const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
-  const [showResults, setShowResults] = useState(false); // State to control results display
+  const [showResults, setShowResults] = useState(false);
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [finalUserAnswers, setFinalUserAnswers] = useState<{ [key: number]: string }>({});
 
   const router = useRouter();
 
@@ -105,6 +108,13 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const handleSubmitAnswer = () => {
     if (!selectedAnswer || !currentQuestion) return;
     setIsAnswerSubmitted(true);
+    
+    // Save the answer
+    setFinalUserAnswers(prev => ({
+      ...prev,
+      [currentQuestionIndex]: selectedAnswer
+    }));
+    
     const correctLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
     if (selectedAnswer === correctLabel) setScore((s) => s + 1);
   };
@@ -129,9 +139,16 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       // Navigate to the full-length-results page
       router.push(`/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`);
     } else {
-      setShowResults(false); // Close results if not full length or no testId
-      onComplete(score); // Call original onComplete for non-full length tests
+      // For practice quizzes, open review mode
+      setShowResults(false);
+      setIsReviewMode(true);
     }
+  };
+
+  const handleCloseReview = () => {
+    setIsReviewMode(false);
+    // Don't save, just exit
+    onExit();
   };
 
   // Helper function to capitalize subject name
@@ -141,6 +158,17 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+
+  // Render review mode if active
+  if (isReviewMode) {
+    return (
+      <PracticeQuizReview
+        questions={orderedQuestions}
+        userAnswers={finalUserAnswers}
+        onClose={handleCloseReview}
+      />
+    );
+  }
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -233,21 +261,22 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <Card className="w-11/12 max-w-md">
             <CardHeader>
-              <CardTitle>Quiz Complete!</CardTitle>
+              <CardTitle className="text-center">Quiz Complete!</CardTitle>
             </CardHeader>
-            <CardContent className="text-center space-y-4">
-              <p>Your Score: {score} out of {orderedQuestions.length}</p>
-              <p>You got {score} questions correct.</p>
-              <div className="flex justify-center gap-4">
-                <Button onClick={handleReview} className="bg-blue-600 hover:bg-blue-700">
-                  {isFullLength && lastSavedTestId ? "View Full Results" : "Review Answers"}
-                </Button>
-                {(!isFullLength || !lastSavedTestId) && (
-                  <Button onClick={() => setShowResults(false)} className="bg-gray-400 hover:bg-gray-500">
-                    Close
-                  </Button>
-                )}
+            <CardContent className="text-center space-y-6">
+              <div>
+                <div className="text-4xl font-bold text-blue-600 mb-2">
+                  {score}/{orderedQuestions.length}
+                </div>
+                <p className="text-gray-600">You got {score} question{score !== 1 ? 's' : ''} correct.</p>
               </div>
+              <Button 
+                onClick={handleReview} 
+                size="lg"
+                className="bg-blue-600 hover:bg-blue-700 w-full text-lg py-6"
+              >
+                Review Answers
+              </Button>
             </CardContent>
           </Card>
         </div>
