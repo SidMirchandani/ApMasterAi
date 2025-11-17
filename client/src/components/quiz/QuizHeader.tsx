@@ -24,14 +24,24 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
     return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Extract short subject code from title (e.g., "AP® Computer Science Principles" -> "APCSP")
+  const getShortTitle = (fullTitle: string) => {
+    if (fullTitle.includes("Computer Science Principles")) return "APCSP";
+    if (fullTitle.includes("Macroeconomics")) return "AP Macro";
+    if (fullTitle.includes("Microeconomics")) return "AP Micro";
+    if (fullTitle.includes("Review")) return "Review";
+    // Default fallback
+    return fullTitle.replace("AP® ", "AP ").substring(0, 20);
+  };
+
   return (
     <div className="border-b border-gray-200 bg-white sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        {/* Desktop: single row */}
+        <div className="hidden md:flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-semibold text-gray-900">
-              <span className="hidden md:inline">{title}</span>
-              <span className="md:hidden">AP Quiz</span>
+              {title}
             </h1>
           </div>
 
@@ -64,6 +74,57 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {onExitExam && (
+                    <DropdownMenuItem onClick={onExitExam}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Exit the Exam
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile: two rows */}
+        <div className="md:hidden py-2">
+          {/* First row: Title */}
+          <div className="flex justify-center items-center h-8">
+            <h1 className="text-base font-semibold text-gray-900">
+              {getShortTitle(title)}
+            </h1>
+          </div>
+          
+          {/* Second row: Timer and tools */}
+          <div className="flex justify-between items-center h-10">
+            <div className="flex items-center gap-2 text-gray-700">
+              <Clock className="h-4 w-4" />
+              {!timerHidden && <span className="font-mono text-sm">{formatTime(timeElapsed)}</span>}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight and Notes">
+                <Flag className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="Calculator">
+                <Calculator className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="Reference">
+                <FileText className="h-4 w-4" />
+              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" title="More">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {onHideTimer && (
+                    <DropdownMenuItem onClick={onHideTimer}>
+                      {timerHidden ? "Show" : "Hide"} Timer
+                    </DropdownMenuItem>
+                  )}
                   {onExitExam && (
                     <DropdownMenuItem onClick={onExitExam}>
                       <LogOut className="mr-2 h-4 w-4" />

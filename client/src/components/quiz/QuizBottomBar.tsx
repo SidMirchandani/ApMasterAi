@@ -1,6 +1,5 @@
-
 import { Button } from "@/components/ui/button";
-import { ChevronUp } from "lucide-react";
+import { ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface QuizBottomBarProps {
   currentQuestion: number;
@@ -53,18 +52,43 @@ export function QuizBottomBar({
                 Report Error
               </Button>
             )}
-            <Button variant="outline" onClick={onPrevious} disabled={!canGoPrevious}>
-              Back
-            </Button>
-            {isLastQuestion && onReview ? (
-              <Button onClick={onReview} className="bg-blue-600 hover:bg-blue-700">
-                Next
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={onPrevious}
+                disabled={!canGoPrevious}
+                className="flex items-center gap-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">{currentQuestion === 0 ? "Back" : "Previous"}</span>
+                <span className="sm:hidden">{currentQuestion === 0 ? "Back" : "Prev"}</span>
               </Button>
-            ) : (
-              <Button onClick={onNext} disabled={!canGoNext} className="bg-blue-600 hover:bg-blue-700">
-                Next
-              </Button>
-            )}
+              {isLastQuestion && onSubmit ? (
+                <Button
+                  onClick={onSubmit}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Submit Test
+                </Button>
+              ) : onReview ? (
+                <Button
+                  onClick={onReview}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  Review
+                </Button>
+              ) : (
+                <Button
+                  onClick={onNext}
+                  disabled={!canGoNext}
+                  className="flex items-center gap-2"
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

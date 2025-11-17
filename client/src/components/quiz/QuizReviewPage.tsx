@@ -1,9 +1,10 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Flag, FileQuestion } from "lucide-react";
+import { Flag } from "lucide-react";
 import { QuestionCard } from "./QuestionCard";
+import { QuizHeader } from "./QuizHeader";
+import { QuizBottomBar } from "./QuizBottomBar";
 
 interface Question {
   id: string;
@@ -67,68 +68,65 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
     }
   };
 
+  // Function to render image if URLs are present
+  const renderImage = (urls: string[] | undefined) => {
+    if (!urls || urls.length === 0) {
+      return null;
+    }
+    return urls.map((url, index) => <img key={index} src={url} alt={`Image ${index + 1}`} className="max-w-full h-auto mb-4 rounded-lg shadow-md" />);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="border-b border-gray-200 bg-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Button variant="outline" onClick={onBack}>Back</Button>
-            {onSubmit && (
-              <Button onClick={onSubmit} className="bg-blue-600 hover:bg-blue-700">
-                Submit
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <QuizHeader
+        title="Review Your Answers"
+        timeElapsed={0}
+        timerHidden={true}
+      />
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {selectedQuestion === null ? (
-          <Card className="p-6">
-            <h2 className="text-center text-xl font-semibold mb-2">Check Your Work</h2>
-            <p className="text-center text-gray-600 mb-8">
-              Click on any question to return to it and review your answer.
-            </p>
+      <div className="flex-1 overflow-y-auto pb-20">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          {selectedQuestion === null ? (
+            <Card className="p-6">
+              <h2 className="text-center text-xl font-semibold mb-2">Check Your Work</h2>
+              <p className="text-center text-gray-600 mb-8">
+                Click on any question to return to it and review your answer.
+              </p>
 
-            <div className="mb-4">
-              <div className="flex items-center justify-center gap-6 mb-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded border-2 border-gray-300 border-dashed"></div>
-                  <span>Unanswered</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-red-50 border-2 border-red-500 flex items-center justify-center">
-                    <Flag className="h-3 w-3 text-red-500" />
+              <div className="mb-4">
+                <div className="flex items-center justify-center gap-6 mb-6 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded border-2 border-gray-300 border-dashed"></div>
+                    <span>Unanswered</span>
                   </div>
-                  <span>For Review</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded bg-red-50 border-2 border-red-500 flex items-center justify-center">
+                      <Flag className="h-3 w-3 text-red-500" />
+                    </div>
+                    <span>For Review</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-10 gap-3">
+                  {questions.map((_, i) => {
+                    const state = getQuestionState(i);
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedQuestion(i)}
+                        className={getQuestionClass(i)}
+                      >
+                        {i + 1}
+                        {state === "flagged" && (
+                          <Flag className="h-3 w-3 text-red-500 absolute -top-1 -right-1" fill="currentColor" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-
-              <div className="grid grid-cols-10 gap-3">
-                {questions.map((_, i) => {
-                  const state = getQuestionState(i);
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedQuestion(i)}
-                      className={getQuestionClass(i)}
-                    >
-                      {i + 1}
-                      {state === "flagged" && (
-                        <Flag className="h-3 w-3 text-red-500 absolute -top-1 -right-1" fill="currentColor" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            <Button variant="outline" onClick={() => setSelectedQuestion(null)}>
-              ← Back to Overview
-            </Button>
-            
+            </Card>
+          ) : (
             <QuestionCard
               question={questions[selectedQuestion]}
               questionNumber={selectedQuestion + 1}
@@ -138,10 +136,44 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
               onToggleFlag={() => {}}
               isFullLength={true}
               isAnswerSubmitted={true}
+              renderImage={renderImage}
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {selectedQuestion === null ? (
+        <QuizBottomBar
+          currentQuestion={0}
+          totalQuestions={questions.length}
+          onOpenPalette={() => {}}
+          onPrevious={onBack}
+          onNext={() => {}}
+          canGoPrevious={true}
+          canGoNext={false}
+          isLastQuestion={true}
+          onSubmit={onSubmit}
+        />
+      ) : (
+        <QuizBottomBar
+          currentQuestion={selectedQuestion + 1}
+          totalQuestions={questions.length}
+          onOpenPalette={() => setSelectedQuestion(null)}
+          onPrevious={() => {
+            if (selectedQuestion > 0) {
+              setSelectedQuestion(selectedQuestion - 1);
+            }
+          }}
+          onNext={() => {
+            if (selectedQuestion < questions.length - 1) {
+              setSelectedQuestion(selectedQuestion + 1);
+            }
+          }}
+          canGoPrevious={selectedQuestion > 0}
+          canGoNext={selectedQuestion < questions.length - 1}
+          isLastQuestion={selectedQuestion === questions.length - 1}
+        />
+      )}
     </div>
   );
 }
