@@ -289,11 +289,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
             <div className="max-w-2xl">
               <BlockRenderer blocks={currentQuestion?.prompt_blocks || []} />
             </div>
-            
-            {/* APMaster Logo at bottom left */}
-            <div className="fixed bottom-20 left-8">
-              <div className="text-2xl font-bold text-khan-green">APMaster</div>
-            </div>
           </div>
 
           {/* Right side - Answer Choices */}
@@ -320,15 +315,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
                 <button className="px-3 py-1 text-sm font-semibold border border-gray-300 rounded bg-white hover:bg-gray-100">
                   ABC
                 </button>
-              </div>
-
-              {/* Question text */}
-              <div className="mb-6 text-base leading-relaxed">
-                {currentQuestion?.prompt_blocks?.[0]?.type === 'text' && (
-                  <p className="font-medium">
-                    Which of the following most accurately describes a potential outcome of this program on the local digital divide?
-                  </p>
-                )}
               </div>
 
               {/* Answer choices */}
