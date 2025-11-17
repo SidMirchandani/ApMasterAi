@@ -193,17 +193,19 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col">
-      <QuizHeader
-        title={`AP® ${subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Practice Exam`}
-        timeElapsed={timeElapsed}
-        onHideTimer={() => setTimerHidden(!timerHidden)}
-        timerHidden={timerHidden}
-        onExitExam={handleExitExam}
-        examDirections={examDirections}
-      />
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <QuizHeader
+          title={`AP® ${subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Practice Exam`}
+          timeElapsed={timeElapsed}
+          onHideTimer={() => setTimerHidden(!timerHidden)}
+          timerHidden={timerHidden}
+          onExitExam={handleExitExam}
+          examDirections={examDirections}
+        />
+      </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 py-6 pb-24">
+      <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-14">
+        <div className="max-w-4xl mx-auto px-4 py-6">
           <QuestionCard
             question={currentQuestion}
             questionNumber={currentQuestionIndex + 1}
@@ -212,7 +214,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
             onAnswerSelect={handleAnswerSelect}
             onToggleFlag={toggleFlag}
             isFullLength={true}
-            renderImage={renderImage} // Pass the renderImage function
+            renderImage={renderImage}
           />
         </div>
       </div>

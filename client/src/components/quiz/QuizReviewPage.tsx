@@ -87,17 +87,33 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
     return urls.map((url, index) => <img key={index} src={url} alt={`Image ${index + 1}`} className="max-w-full h-auto mb-4 rounded-lg shadow-md" />);
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <QuizHeader
-        title="Review Your Answers"
-        timeElapsed={0}
-        timerHidden={true}
-      />
+  const handleAnswerChange = (questionIndex: number, answer: string) => {
+    setLocalAnswers({ ...localAnswers, [questionIndex]: answer });
+  };
 
-      <div className="flex-1 overflow-y-auto pb-20">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          {selectedQuestion === null ? (
+  const handleToggleFlag = (questionIndex: number) => {
+    const newFlagged = new Set(localFlagged);
+    if (newFlagged.has(questionIndex)) {
+      newFlagged.delete(questionIndex);
+    } else {
+      newFlagged.add(questionIndex);
+    }
+    setLocalFlagged(newFlagged);
+  };
+
+  return (
+    <div className="h-screen bg-gray-50 flex flex-col">
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <QuizHeader
+          title="Review Your Answers"
+          timeElapsed={0}
+          timerHidden={true}
+        />
+      </div>
+
+      {selectedQuestion === null ? (
+        <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-14">
+          <div className="max-w-7xl mx-auto px-4 py-8">
             <Card className="p-6">
               <h2 className="text-center text-xl font-semibold mb-2">Check Your Work</h2>
               <p className="text-center text-gray-600 mb-8">
@@ -151,55 +167,51 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
                 </div>
               </div>
             </Card>
-          ) : (
+          </div>
+          </div>
+        </div>
+
+          {/* Fixed Bottom Bar for Review Mode */}
+          <div className="border-t border-gray-200 bg-white fixed bottom-0 left-0 right-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center h-16">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600">APMaster</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {onSubmit && (
+                    <Button
+                      onClick={() => onSubmit(localAnswers, localFlagged)}
+                      className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                    >
+                      Submit Test
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-14">
+          <div className="max-w-4xl mx-auto px-4 py-6">
             <QuestionCard
               question={questions[selectedQuestion]}
               questionNumber={selectedQuestion + 1}
               selectedAnswer={localAnswers[selectedQuestion]}
               isFlagged={localFlagged.has(selectedQuestion)}
-              onAnswerSelect={(answer) => {
-                setLocalAnswers({ ...localAnswers, [selectedQuestion]: answer });
-              }}
-              onToggleFlag={() => {
-                const newFlagged = new Set(localFlagged);
-                if (newFlagged.has(selectedQuestion)) {
-                  newFlagged.delete(selectedQuestion);
-                } else {
-                  newFlagged.add(selectedQuestion);
-                }
-                setLocalFlagged(newFlagged);
-              }}
+              onAnswerSelect={(answer) => handleAnswerChange(selectedQuestion, answer)}
+              onToggleFlag={() => handleToggleFlag(selectedQuestion)}
               isFullLength={true}
-              isAnswerSubmitted={false}
-              renderImage={renderImage}
               isReviewMode={true}
+              renderImage={renderImage}
+              isAnswerSubmitted={false}
             />
-          )}
-        </div>
-      </div>
-
-      {selectedQuestion === null ? (
-        <div className="border-t border-gray-200 bg-white sticky bottom-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">APMaster</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {onSubmit && (
-                  <Button
-                    onClick={() => onSubmit(localAnswers, localFlagged)}
-                    className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-                  >
-                    Submit Test
-                  </Button>
-                )}
-              </div>
-            </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {selectedQuestion !== null && (
         <QuizBottomBar
           currentQuestion={selectedQuestion + 1}
           totalQuestions={questions.length}
