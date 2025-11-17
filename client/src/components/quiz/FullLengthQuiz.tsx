@@ -1,22 +1,35 @@
+
 import { useState, useEffect } from "react";
 import { QuizHeader } from "./QuizHeader";
 import { QuizBottomBar } from "./QuizBottomBar";
-import { QuestionCard } from "./QuestionCard";
 import { EnhancedQuestionPalette } from "./EnhancedQuestionPalette";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QuizReviewPage } from "./QuizReviewPage";
 import { useRouter } from "next/router";
 import { apiRequest } from "@/lib/queryClient";
+import { BlockRenderer } from "./BlockRenderer";
+import { Flag } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Question {
   id: string;
-  prompt: string; // Keep prompt for backward compatibility or simpler questions
-  choices: string[] | { [key: string]: string[] }; // Allow for object structure too
-  answerIndex: number;
-  explanation: string;
+  question_id?: number;
   subject_code?: string;
   section_code?: string;
+  prompt_blocks: any[];
+  choices: Record<"A" | "B" | "C" | "D" | "E", any[]>;
+  answerIndex: number;
+  correct_answer?: string;
+  explanation?: string;
+  prompt?: string;
   image_urls?: {
     question?: string[];
     A?: string[];
@@ -25,7 +38,6 @@ interface Question {
     D?: string[];
     E?: string[];
   };
-  prompt_blocks?: any[]; // Add prompt_blocks for complex prompts
 }
 
 interface FullLengthQuizProps {
@@ -39,7 +51,7 @@ interface FullLengthQuizProps {
 }
 
 export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit, savedState }: FullLengthQuizProps) {
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(savedState?.currentQuestionIndex || 0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>(savedState?.userAnswers || {});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set(savedState?.flaggedQuestions || []));
@@ -49,6 +61,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [timerHidden, setTimerHidden] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDirections, setShowDirections] = useState(true);
 
   // Subject-specific directions
   const getExamDirections = () => {
@@ -98,7 +111,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       };
     }
 
-    // Default generic directions
     return {
       title: 'Practice Exam Directions',
       sections: [
@@ -136,7 +148,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       router.push(`/study?subject=${subjectId}`);
     } catch (error) {
       console.error("Failed to save exam state:", error);
-      // Still navigate even if save fails
       router.push(`/study?subject=${subjectId}`);
     }
   };
@@ -169,7 +180,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     }
   };
 
-  // Updated handleSubmitTest to format question data correctly
   const handleSubmitTest = async () => {
     setShowSubmitConfirm(false);
     setIsSubmitting(true);
@@ -183,7 +193,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
       const percentage = Math.round((correctCount / questions.length) * 100);
 
-      // Format questions with proper structure
       const formattedQuestions = questions.map(q => ({
         ...q,
         prompt_blocks: q.prompt_blocks || (q.prompt ? [{ type: 'text', content: q.prompt }] : []),
@@ -223,23 +232,18 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     } catch (error) {
       console.error("Error submitting test:", error);
       setIsSubmitting(false);
-      // Optionally, show an error message to the user
     }
   };
 
   const handleReviewSubmit = (updatedAnswers: { [key: number]: string }, updatedFlagged: Set<number>) => {
-    // Update local state first
     setUserAnswers(updatedAnswers);
     setFlaggedQuestions(updatedFlagged);
-    // Close review mode and show confirmation dialog
     setIsReviewMode(false);
-    // Use a small timeout to ensure state is updated before showing dialog
     setTimeout(() => {
       setShowSubmitConfirm(true);
     }, 100);
   };
 
-  // Added logic for review mode rendering
   if (isReviewMode) {
     return (
       <QuizReviewPage
@@ -252,19 +256,24 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     );
   }
 
-  // Function to render image if URLs are present
-  const renderImage = (urls: string[] | undefined) => {
-    if (!urls || urls.length === 0) {
-      return null;
+  const allChoices = Object.keys(currentQuestion?.choices || {}) as Array<"A" | "B" | "C" | "D" | "E">;
+  const choices = allChoices.filter((label) => {
+    if (label !== "E") return true;
+    const choiceBlocks = currentQuestion?.choices[label];
+    if (!choiceBlocks || choiceBlocks.length === 0) return false;
+    if (choiceBlocks.length === 1 && 
+        choiceBlocks[0].type === "text" && 
+        (!choiceBlocks[0].value || choiceBlocks[0].value.trim() === "")) {
+      return false;
     }
-    return urls.map((url, index) => <img key={index} src={url} alt={`Image ${index + 1}`} className="max-w-full h-auto mb-4 rounded-lg shadow-md" />);
-  };
+    return true;
+  });
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-100 flex flex-col">
       <div className="fixed top-0 left-0 right-0 z-50">
         <QuizHeader
-          title={`${subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Practice Exam`}
+          title={`AP® ${subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Practice Exam`}
           timeElapsed={timeElapsed}
           onHideTimer={() => setTimerHidden(!timerHidden)}
           timerHidden={timerHidden}
@@ -273,18 +282,88 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-14">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <QuestionCard
-            question={currentQuestion}
-            questionNumber={currentQuestionIndex + 1}
-            selectedAnswer={userAnswers[currentQuestionIndex]}
-            isFlagged={flaggedQuestions.has(currentQuestionIndex)}
-            onAnswerSelect={handleAnswerSelect}
-            onToggleFlag={toggleFlag}
-            isFullLength={true}
-            renderImage={renderImage}
-          />
+      <div className="flex-1 overflow-hidden mt-16 md:mt-16 mb-14">
+        <div className="h-full flex">
+          {/* Left side - Question Prompt */}
+          <div className="w-1/2 bg-white border-r border-gray-300 overflow-y-auto p-8">
+            <div className="max-w-2xl">
+              <BlockRenderer blocks={currentQuestion?.prompt_blocks || []} />
+            </div>
+            
+            {/* APMaster Logo at bottom left */}
+            <div className="fixed bottom-20 left-8">
+              <div className="text-2xl font-bold text-khan-green">APMaster</div>
+            </div>
+          </div>
+
+          {/* Right side - Answer Choices */}
+          <div className="w-1/2 bg-gray-50 overflow-y-auto p-8">
+            <div className="max-w-2xl mx-auto">
+              {/* Question number and flag */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="bg-black text-white px-3 py-1 font-bold text-sm rounded">
+                    {currentQuestionIndex + 1}
+                  </div>
+                  <button
+                    onClick={toggleFlag}
+                    className={`flex items-center gap-2 text-sm font-medium px-3 py-1 rounded border ${
+                      flaggedQuestions.has(currentQuestionIndex) 
+                        ? "bg-white border-gray-300 text-black" 
+                        : "bg-white border-gray-300 text-gray-600 hover:text-black"
+                    }`}
+                  >
+                    <Flag className={`h-4 w-4 ${flaggedQuestions.has(currentQuestionIndex) ? "fill-current" : ""}`} />
+                    <span>Mark for Review</span>
+                  </button>
+                </div>
+                <button className="px-3 py-1 text-sm font-semibold border border-gray-300 rounded bg-white hover:bg-gray-100">
+                  ABC
+                </button>
+              </div>
+
+              {/* Question text */}
+              <div className="mb-6 text-base leading-relaxed">
+                {currentQuestion?.prompt_blocks?.[0]?.type === 'text' && (
+                  <p className="font-medium">
+                    Which of the following most accurately describes a potential outcome of this program on the local digital divide?
+                  </p>
+                )}
+              </div>
+
+              {/* Answer choices */}
+              <div className="space-y-3">
+                <RadioGroup value={userAnswers[currentQuestionIndex] || ""} onValueChange={handleAnswerSelect}>
+                  {choices.map((label) => {
+                    const isSelected = userAnswers[currentQuestionIndex] === label;
+                    
+                    return (
+                      <div
+                        key={label}
+                        className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                          isSelected 
+                            ? "border-blue-600 bg-white shadow-sm" 
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}
+                        onClick={() => handleAnswerSelect(label)}
+                      >
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-semibold text-sm ${
+                          isSelected
+                            ? 'border-blue-600 bg-blue-50 text-blue-600'
+                            : 'border-gray-400 bg-white text-gray-700'
+                        }`}>
+                          {label}
+                        </div>
+                        <div className="flex-1 pt-0.5 text-sm leading-relaxed">
+                          <BlockRenderer blocks={currentQuestion?.choices[label] || []} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </RadioGroup>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -336,6 +415,87 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Directions Sheet - shown on first load */}
+      <Sheet open={showDirections} onOpenChange={setShowDirections}>
+        <SheetContent side="left" className="w-[600px] sm:w-[700px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="text-xl font-bold">Please read the directions carefully before beginning.</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4 text-sm">
+            {examDirections && (
+              <>
+                <h3 className="font-bold text-base">{examDirections.title}</h3>
+
+                {examDirections.sections?.map((section, idx) => (
+                  <div key={idx}>
+                    <h4 className="font-semibold">{section.title}</h4>
+                    <p className="font-medium">{section.details}</p>
+                    {section.description && <p className="mt-2">{section.description}</p>}
+                  </div>
+                ))}
+
+                {examDirections.breakdown && (
+                  <ul className="list-disc pl-5 space-y-1">
+                    {examDirections.breakdown.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                )}
+
+                {examDirections.units && (
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-blue-50">
+                        <tr>
+                          <th className="text-left p-2 font-semibold">Units</th>
+                          <th className="text-right p-2 font-semibold">Exam Weighting</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {examDirections.units.map((unit, idx) => (
+                          <tr key={idx}>
+                            <td className="p-2">{unit.name}</td>
+                            <td className="p-2 text-right font-semibold text-blue-700">{unit.weight}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {examDirections.bigIdeas && (
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-blue-50">
+                        <tr>
+                          <th className="text-left p-2 font-semibold">Big Ideas</th>
+                          <th className="text-right p-2 font-semibold">Exam Weighting</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {examDirections.bigIdeas.map((idea, idx) => (
+                          <tr key={idx}>
+                            <td className="p-2">{idea.name}</td>
+                            <td className="p-2 text-right font-semibold text-blue-700">{idea.weight}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <p>Each question is followed by four suggested answers. Choose the one that best answers the question.</p>
+              </>
+            )}
+            
+            <p>You may use a calculator for this section. A calculator tool is available within the application.</p>
+            <p>Reference materials can be accessed throughout the exam via the application toolbar.</p>
+            <p>Navigate freely between questions until time runs out. The timer will display in red when 5 minutes remain.</p>
+            <p className="mt-6"><strong>Note:</strong> AP® is a registered trademark of the College Board, which does not sponsor or endorse this practice exam. This interface is designed for educational purposes only.</p>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
