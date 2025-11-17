@@ -127,6 +127,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
         timeElapsed={timeElapsed}
         onHideTimer={() => setTimerHidden(!timerHidden)}
         timerHidden={timerHidden}
+        onExitExam={onExit}
       />
 
       <div className="flex-1 overflow-y-auto pb-32">
