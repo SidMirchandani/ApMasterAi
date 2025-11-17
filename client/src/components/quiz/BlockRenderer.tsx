@@ -26,14 +26,13 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, className 
           );
         } else if (block.type === "image") {
           return (
-            <div key={index} className="max-w-[280px] max-h-[280px] overflow-hidden rounded-md cursor-zoom-in my-2">
-              <img
-                src={block.url}
-                alt={`Content image ${index + 1}`}
-                className="object-contain w-full h-full hover:scale-150 transition-transform duration-200"
-                loading="lazy"
-              />
-            </div>
+            <img
+              key={index}
+              src={block.url}
+              alt={`Content image ${index + 1}`}
+              className="rounded-md my-2 max-w-full h-auto"
+              loading="lazy"
+            />
           );
         }
         return null;

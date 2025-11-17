@@ -82,7 +82,7 @@ export function QuizReviewPage({
       {/* HEADER */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <QuizHeader 
-          title={selectedQuestion === null ? "Review Your Answers" : (subjectId || '').split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} 
+          title={selectedQuestion === null ? "Review Your Answers" : subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} 
           timeElapsed={0} 
           timerHidden 
         />
@@ -104,34 +104,34 @@ export function QuizReviewPage({
                 {/* Legend */}
                 <div className="flex items-center justify-center gap-4 mb-6 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded border-2 border-gray-400 border-dashed"></div>
+                    <div className="w-5 h-5 rounded border-2 border-gray-400 border-dashed"></div>
                     <span>Unanswered</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded bg-blue-700 border-2 border-blue-700"></div>
+                    <div className="w-5 h-5 rounded bg-blue-700 border-2 border-blue-700"></div>
                     <span>Answered</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded bg-gray-800 border-2 border-gray-800"></div>
+                    <div className="w-5 h-5 rounded bg-gray-800 border-2 border-gray-800"></div>
                     <span>Current</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded border-2 border-red-600 flex items-center justify-center">
-                      <Flag className="h-2 w-2 text-red-600" />
+                    <div className="w-5 h-5 rounded border-2 border-red-600 flex items-center justify-center">
+                      <Flag className="h-2.5 w-2.5 text-red-600" />
                     </div>
                     <span>For Review</span>
                   </div>
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-cols-15 sm:grid-cols-20 lg:grid-cols-25 gap-1">
+                <div className="grid grid-cols-10 sm:grid-cols-15 lg:grid-cols-20 gap-1.5">
                   {questions.map((_, index) => {
                     const answered = localAnswers[index] != null;
                     const flagged = localFlagged.has(index);
                     const isCurrent = selectedQuestion === index;
 
                     const base =
-                      "relative w-full aspect-square rounded flex items-center justify-center font-semibold text-[10px] transition-all hover:shadow-md cursor-pointer";
+                      "relative w-full aspect-square rounded flex items-center justify-center font-semibold text-xs transition-all hover:shadow-md cursor-pointer";
 
                     const cls = isCurrent
                       ? "bg-gray-800 text-white border-2 border-gray-800"
@@ -151,7 +151,7 @@ export function QuizReviewPage({
                       >
                         {index + 1}
                         {flagged && !isCurrent && (
-                          <Flag className="h-2 w-2 text-red-600 absolute -top-0.5 -right-0.5" />
+                          <Flag className="h-2.5 w-2.5 text-red-600 absolute -top-0.5 -right-0.5" />
                         )}
                       </button>
                     );
@@ -165,7 +165,7 @@ export function QuizReviewPage({
           <div className="border-t border-gray-200 bg-white fixed bottom-0 left-0 right-0 z-50">
             <div className="max-w-7xl mx-auto px-4">
               <div className="flex justify-between items-center h-16">
-                <span className="text-xl font-bold text-khan-green">APMaster</span>
+                <span className="text-sm text-gray-600">APMaster</span>
 
                 {onSubmit && (
                   <Button
