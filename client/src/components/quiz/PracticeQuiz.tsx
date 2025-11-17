@@ -115,7 +115,12 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       setSelectedAnswer(null);
       setIsAnswerSubmitted(false);
     } else {
-      setShowResults(true); // Show results instead of calling onComplete directly
+      // For full-length tests, navigate directly to results page
+      if (isFullLength && lastSavedTestId) {
+        router.push(`/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`);
+      } else {
+        setShowResults(true); // Show results modal for practice quizzes only
+      }
     }
   };
 
