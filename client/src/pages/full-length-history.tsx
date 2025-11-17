@@ -128,7 +128,7 @@ export default function FullLengthHistory() {
             </Card>
           ) : (
             <div className="space-y-2">
-              {testHistory.map((test, index) => (
+              {[...testHistory].reverse().map((test, index) => (
                 <Card key={test.id} className="relative group">
                   <CardContent className="py-2 px-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -136,7 +136,7 @@ export default function FullLengthHistory() {
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-khan-blue/10 flex items-center justify-center flex-shrink-0">
                             <span className="text-lg font-bold text-khan-blue">
-                              #{testHistory.length - index}
+                              #{index + 1}
                             </span>
                           </div>
                           <div>

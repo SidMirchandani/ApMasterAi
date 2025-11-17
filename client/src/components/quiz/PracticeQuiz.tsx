@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useRouter } from "next/router";
 
 interface Question {
   id: string;
@@ -33,9 +34,11 @@ interface PracticeQuizProps {
   timeElapsed: number;
   onExit: () => void;
   onComplete: (score: number) => void;
+  isFullLength?: boolean;
+  lastSavedTestId?: string;
 }
 
-export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComplete }: PracticeQuizProps) {
+export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComplete, isFullLength = false, lastSavedTestId }: PracticeQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
@@ -44,8 +47,13 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const [timerHidden, setTimerHidden] = useState(false);
   const [generatedExplanations, setGeneratedExplanations] = useState<Map<number, string>>(new Map());
   const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
+  const [showResults, setShowResults] = useState(false); // State to control results display
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const router = useRouter();
+
+  // Reverse the questions array to show the newest test first if it's a full-length test
+  const orderedQuestions = isFullLength ? [...questions].reverse() : questions;
+  const currentQuestion = orderedQuestions[currentQuestionIndex];
   const currentExplanation = generatedExplanations.get(currentQuestionIndex) || currentQuestion?.explanation;
 
   useEffect(() => {
@@ -102,12 +110,22 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < orderedQuestions.length - 1) {
       setCurrentQuestionIndex((i) => i + 1);
       setSelectedAnswer(null);
       setIsAnswerSubmitted(false);
     } else {
-      onComplete(score);
+      setShowResults(true); // Show results instead of calling onComplete directly
+    }
+  };
+
+  const handleReview = () => {
+    if (isFullLength && lastSavedTestId) {
+      // Navigate to the full-length-results page
+      router.push(`/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`);
+    } else {
+      setShowResults(false); // Close results if not full length or no testId
+      onComplete(score); // Call original onComplete for non-full length tests
     }
   };
 
@@ -132,7 +150,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       <div className="flex-1 overflow-y-auto pb-32">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
           <div className="text-sm text-gray-600 mb-4">
-            Question {currentQuestionIndex + 1} of {questions.length}
+            Question {currentQuestionIndex + 1} of {orderedQuestions.length}
           </div>
 
           <QuestionCard
@@ -165,7 +183,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
                         {currentExplanation}
                       </ReactMarkdown>
                     </div>
-                    <ExplanationChat 
+                    <ExplanationChat
                       questionPrompt={currentQuestion.prompt}
                       explanation={currentExplanation}
                       correctAnswer={currentQuestion.choices[currentQuestion.answerIndex]}
@@ -184,7 +202,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-center items-center gap-4">
             {!isAnswerSubmitted ? (
-              <Button 
+              <Button
                 onClick={handleSubmitAnswer}
                 disabled={!selectedAnswer}
                 className="bg-blue-600 hover:bg-blue-700 px-8"
@@ -192,16 +210,41 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
                 Submit Answer
               </Button>
             ) : (
-              <Button 
+              <Button
                 onClick={handleNextQuestion}
                 className="bg-blue-600 hover:bg-blue-700 px-8"
               >
-                {currentQuestionIndex === questions.length - 1 ? "Finish Quiz" : "Next Question"}
+                {currentQuestionIndex === orderedQuestions.length - 1 ? "Finish Quiz" : "Next Question"}
               </Button>
             )}
           </div>
         </div>
       </div>
+
+      {/* Results Summary (Conditionally Rendered) */}
+      {showResults && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <Card className="w-11/12 max-w-md">
+            <CardHeader>
+              <CardTitle>Quiz Complete!</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p>Your Score: {score} out of {orderedQuestions.length}</p>
+              <p>You got {score} questions correct.</p>
+              <div className="flex justify-center gap-4">
+                <Button onClick={handleReview} className="bg-blue-600 hover:bg-blue-700">
+                  {isFullLength && lastSavedTestId ? "View Full Results" : "Review Answers"}
+                </Button>
+                {(!isFullLength || !lastSavedTestId) && (
+                  <Button onClick={() => setShowResults(false)} className="bg-gray-400 hover:bg-gray-500">
+                    Close
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
