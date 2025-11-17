@@ -2,6 +2,13 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 
+function flattenChoiceText(blocks: any[]) {
+  return blocks
+    .filter(b => b.type === "text")
+    .map(b => b.value)
+    .join(" ");
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -76,19 +83,20 @@ export default async function handler(
         
         // Add choices with their images
         promptText += `\nAnswer Choices:\n`;
-        question.choices?.forEach((choice: string, idx: number) => {
-          const choiceLabel = String.fromCharCode(65 + idx); // A, B, C, D, E
-          promptText += `${choiceLabel}. ${choice}\n`;
+        Object.entries(question.choices ?? {}).forEach(([letter, blocks]: [string, any]) => {
+          const choiceText = flattenChoiceText(blocks);
+          promptText += `${letter}. ${choiceText}\n`;
           
-          const choiceKey = choiceLabel as 'A' | 'B' | 'C' | 'D' | 'E';
-          const choiceImages = question.image_urls?.[choiceKey];
-          if (choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0) {
-            promptText += `   Choice ${choiceLabel} Image URLs:\n${choiceImages.map((url: string, imgIdx: number) => `   - Image ${imgIdx + 1}: ${url}`).join('\n')}\n`;
+          // Check for images in the blocks
+          const imageBlocks = blocks.filter((b: any) => b.type === "image");
+          if (imageBlocks.length > 0) {
+            promptText += `   Choice ${letter} Image URLs:\n${imageBlocks.map((b: any, imgIdx: number) => `   - Image ${imgIdx + 1}: ${b.url}`).join('\n')}\n`;
           }
         });
         
         const correctLabel = String.fromCharCode(65 + question.answerIndex);
-        const correctAnswer = question.choices?.[question.answerIndex];
+        const correctAnswerBlocks = question.choices?.[correctLabel];
+        const correctAnswer = correctAnswerBlocks ? flattenChoiceText(correctAnswerBlocks) : "";
         promptText += `\nCorrect Answer: ${correctLabel}. ${correctAnswer}\n`;
         promptText += `\nProvide a comprehensive explanation that:\n`;
         promptText += `1. Explains the key concept or principle being tested\n`;
