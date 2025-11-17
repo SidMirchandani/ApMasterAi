@@ -11,15 +11,30 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { BlockRenderer } from "@/components/quiz/BlockRenderer";
+
+type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
 interface Question {
   id: string;
-  prompt: string;
-  choices: string[];
-  answerIndex: number;
-  explanation: string;
+  question_id?: number;
+  subject_code?: string;
   section_code?: string;
-  originalTestIndex?: number; // Added to store the original test index
+  prompt_blocks: Block[];
+  choices: Record<"A" | "B" | "C" | "D" | "E", Block[]>;
+  answerIndex: number;
+  correct_answer?: string;
+  explanation?: string;
+  prompt?: string;
+  image_urls?: {
+    question?: string[];
+    A?: string[];
+    B?: string[];
+    C?: string[];
+    D?: string[];
+    E?: string[];
+  };
+  originalTestIndex?: number;
 }
 
 export default function SectionReview() {
@@ -186,81 +201,88 @@ export default function SectionReview() {
                 ];
               const isCorrect = userAnswer === correctAnswerLabel;
 
+              const allChoices = Object.keys(q.choices) as Array<"A" | "B" | "C" | "D" | "E">;
+              const choices = allChoices.filter((label) => {
+                if (label !== "E") return true;
+                const choiceBlocks = q.choices[label];
+                if (!choiceBlocks || choiceBlocks.length === 0) return false;
+                if (choiceBlocks.length === 1 && 
+                    choiceBlocks[0].type === "text" && 
+                    (!choiceBlocks[0].value || choiceBlocks[0].value.trim() === "")) {
+                  return false;
+                }
+                return true;
+              });
+
               return (
                 <Card key={globalIndex} className="border">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base font-medium leading-relaxed">
-                      {displayNumber}. {q.prompt}
-                      {sectionCode === "all" &&
-                        sectionData?.sectionBreakdown &&
-                        q.section_code && (
-                          <span className="ml-2 font-bold text-khan-green">
-                            (UNIT{" "}
-                            {sectionData.sectionBreakdown[q.section_code]
-                              ?.unitNumber || ""}
-                            )
-                          </span>
-                        )}
+                      <div className="mb-2">
+                        <span className="font-bold">{displayNumber}.</span>
+                        {sectionCode === "all" &&
+                          sectionData?.sectionBreakdown &&
+                          q.section_code && (
+                            <span className="ml-2 font-bold text-khan-green">
+                              (UNIT{" "}
+                              {sectionData.sectionBreakdown[q.section_code]
+                                ?.unitNumber || ""}
+                              )
+                            </span>
+                          )}
+                      </div>
+                      <div className="font-normal">
+                        <BlockRenderer blocks={q.prompt_blocks} />
+                      </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="space-y-1.5">
-                      {["A", "B", "C", "D", "E"].map((label) => {
-                        const choiceBlocks = q.choices[label];
-                        if (
-                          !choiceBlocks ||
-                          choiceBlocks.length === 0 ||
-                          (choiceBlocks.length === 1 &&
-                            choiceBlocks[0].type === "text" &&
-                            !choiceBlocks[0].value)
-                        ) {
-                          return null;
-                        }
-
+                    <div className="space-y-2">
+                      {choices.map((label) => {
                         const isUserAnswer = userAnswer === label;
                         const isCorrectAnswer = label === correctAnswerLabel;
 
-                        // Determine background and border colors
                         let bgColor = "bg-white";
                         let borderColor = "border-gray-200";
+                        let textColor = "text-gray-800";
 
-                        if (isUserAnswer && isCorrect) {
-                          // User's answer is correct - light green
+                        if (isCorrectAnswer) {
                           bgColor = "bg-green-50";
                           borderColor = "border-green-500";
+                          textColor = "text-green-900";
                         } else if (isUserAnswer && !isCorrect) {
-                          // User's answer is wrong - light red
                           bgColor = "bg-red-50";
                           borderColor = "border-red-500";
-                        } else if (isCorrectAnswer && !isCorrect) {
-                          // Show correct answer in green when user was wrong
-                          bgColor = "bg-green-50";
-                          borderColor = "border-green-500";
+                          textColor = "text-red-900";
                         }
 
                         return (
                           <div
                             key={label}
-                            className={`flex items-start space-x-3 rounded-lg border-2 p-3 transition-all ${bgColor} ${borderColor}`}
+                            className={`flex items-start gap-4 p-4 rounded-lg border-2 ${bgColor} ${borderColor}`}
                           >
-                            <div className="flex items-center gap-2 min-w-[2rem]">
-                              <span className="font-semibold text-sm">{label}.</span>
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold ${
+                              isCorrectAnswer 
+                                ? 'border-green-600 bg-green-100 text-green-700'
+                                : isUserAnswer && !isCorrect
+                                  ? 'border-red-600 bg-red-100 text-red-700'
+                                  : 'border-gray-400 bg-white'
+                            }`}>
+                              {label}
+                            </div>
+                            <div className={`flex-1 pt-1.5 ${textColor}`}>
+                              <BlockRenderer blocks={q.choices[label]} />
                               {isCorrectAnswer && (
-                                <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />
+                                <div className="mt-2 text-sm font-semibold text-green-600 flex items-center gap-1">
+                                  <CheckCircle className="h-4 w-4" />
+                                  Correct Answer
+                                </div>
                               )}
                               {isUserAnswer && !isCorrect && (
-                                <XCircle className="text-red-500 flex-shrink-0 h-5 w-5" />
-                              )}
-                            </div>
-                            <div className="flex-1 prose prose-sm max-w-none">
-                              {/* Assuming BlockRenderer is defined elsewhere and handles rendering blocks */}
-                              {/* If choices are simple strings, render them directly */}
-                              {typeof choiceBlocks === 'string' ? (
-                                choiceBlocks
-                              ) : (
-                                choiceBlocks.map((block, blockIdx) => (
-                                  <span key={blockIdx}>{block.value}</span>
-                                ))
+                                <div className="mt-2 text-sm font-semibold text-red-600 flex items-center gap-1">
+                                  <XCircle className="h-4 w-4" />
+                                  Your Answer
+                                </div>
                               )}
                             </div>
                           </div>
@@ -296,12 +318,11 @@ export default function SectionReview() {
                         </CardContent>
                       </Card>
                     )}
-                    {/* Added ExplanationChat component here */}
                     {q.explanation && (
                       <ExplanationChat
-                        questionPrompt={q.prompt}
+                        questionPrompt={q.prompt_blocks}
                         explanation={q.explanation}
-                        correctAnswer={q.choices[q.answerIndex]}
+                        correctAnswer={q.choices[String.fromCharCode(65 + q.answerIndex) as "A" | "B" | "C" | "D" | "E"]}
                         choices={q.choices}
                       />
                     )}
