@@ -5,6 +5,7 @@ import { Flag } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { BlockRenderer } from "./BlockRenderer";
+import { Button } from "@/components/ui/button";
 
 type Block =
   | { type: "text"; value: string }
@@ -57,8 +58,14 @@ export function QuestionCard({
     return null;
   }
 
+  const choices = Object.keys(question.choices) as Array<"A" | "B" | "C" | "D" | "E">;
+  const correctAnswerLabel = String.fromCharCode(65 + question.answerIndex); // A = 65
+
+  const isCorrect = selectedAnswer === correctAnswerLabel;
+  const shouldShowCorrectness = isAnswerSubmitted || isFullLength;
+
   return (
-    <Card className="border border-gray-300 shadow-sm">
+    <Card className={`${isFlagged ? "border-red-500 border-2" : ""}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between border-b pb-3 -mx-6 px-6 -mt-6 pt-4 bg-gray-50">
           <div className="flex items-center gap-3">
@@ -75,6 +82,7 @@ export function QuestionCard({
               <span>Mark for Review</span>
             </button>
           </div>
+          {/* Placeholder for ABC button if needed, currently not implemented */}
           <button className="px-3 py-1 text-sm font-semibold border border-gray-300 rounded hover:bg-gray-100">
             ABC
           </button>
@@ -89,24 +97,46 @@ export function QuestionCard({
 
         {/* Choices */}
         <div className="space-y-3">
-          <RadioGroup value={selectedAnswer || undefined} onValueChange={onAnswerSelect}>
-            {(['A', 'B', 'C', 'D', 'E'] as const).map((choiceLabel) => {
-              const choiceBlocks = question.choices[choiceLabel];
+          <RadioGroup value={selectedAnswer || ""} onValueChange={onAnswerSelect}>
+            {choices.map((label) => {
+              const isSelected = selectedAnswer === label;
+              const isThisCorrect = label === correctAnswerLabel;
 
-              if (!choiceBlocks || choiceBlocks.length === 0) {
-                return null;
+              // Determine the background color based on answer correctness
+              let bgColor = "";
+              let borderColor = "border-gray-300"; // Default border color
+
+              if (shouldShowCorrectness) {
+                if (isSelected && isCorrect) {
+                  // User's answer is correct - light green
+                  bgColor = "bg-green-50";
+                  borderColor = "border-green-500";
+                } else if (isSelected && !isCorrect) {
+                  // User's answer is wrong - light red
+                  bgColor = "bg-red-50";
+                  borderColor = "border-red-500";
+                } else if (!isSelected && isThisCorrect) {
+                  // Show correct answer in green when user was wrong and it's not the selected answer
+                  bgColor = "bg-green-50";
+                  borderColor = "border-green-500";
+                } else if (isSelected) {
+                  // User selected an answer, but it's not the focus for correctness display
+                  bgColor = "bg-gray-50"; // Default background for selected
+                  borderColor = "border-gray-400"; // Default border for selected
+                }
+              } else if (isSelected) {
+                // If not submitted and answer is selected, highlight it
+                bgColor = "bg-gray-50";
+                borderColor = "border-gray-400";
               }
-
-              const isSelected = selectedAnswer === choiceLabel;
 
               return (
                 <div
-                  key={choiceLabel}
-                  className={`flex items-start gap-4 p-4 rounded-lg border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-gray-400 bg-gray-50'
-                      : 'border-gray-300 bg-white hover:bg-gray-50'
-                  }`}
+                  key={label}
+                  className={`flex items-start gap-4 p-4 rounded-lg border transition-all cursor-pointer
+                    ${bgColor} ${borderColor}
+                    ${!shouldShowCorrectness && !isSelected ? "hover:bg-gray-50 hover:border-gray-300" : ""}
+                  `}
                   onClick={() => !isAnswerSubmitted && onAnswerSelect(choiceLabel)}
                 >
                   <div className={`flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold ${
@@ -114,10 +144,10 @@ export function QuestionCard({
                       ? 'border-gray-700 bg-gray-100'
                       : 'border-gray-400 bg-white'
                   }`}>
-                    {choiceLabel}
+                    {label}
                   </div>
                   <div className="flex-1 pt-1.5">
-                    <BlockRenderer blocks={choiceBlocks} />
+                    <BlockRenderer blocks={question.choices[label]} />
                   </div>
                 </div>
               );

@@ -217,42 +217,62 @@ export default function SectionReview() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="space-y-1.5">
-                      {options.map((option) => {
-                        const isUserAnswer = userAnswer === option.label;
-                        const isCorrectAnswer =
-                          option.label === correctAnswerLabel;
+                      {["A", "B", "C", "D", "E"].map((label) => {
+                        const choiceBlocks = q.choices[label];
+                        if (
+                          !choiceBlocks ||
+                          choiceBlocks.length === 0 ||
+                          (choiceBlocks.length === 1 &&
+                            choiceBlocks[0].type === "text" &&
+                            !choiceBlocks[0].value)
+                        ) {
+                          return null;
+                        }
+
+                        const isUserAnswer = userAnswer === label;
+                        const isCorrectAnswer = label === correctAnswerLabel;
+
+                        // Determine background and border colors
+                        let bgColor = "bg-white";
+                        let borderColor = "border-gray-200";
+
+                        if (isUserAnswer && isCorrect) {
+                          // User's answer is correct - light green
+                          bgColor = "bg-green-50";
+                          borderColor = "border-green-500";
+                        } else if (isUserAnswer && !isCorrect) {
+                          // User's answer is wrong - light red
+                          bgColor = "bg-red-50";
+                          borderColor = "border-red-500";
+                        } else if (isCorrectAnswer && !isCorrect) {
+                          // Show correct answer in green when user was wrong
+                          bgColor = "bg-green-50";
+                          borderColor = "border-green-500";
+                        }
 
                         return (
                           <div
-                            key={option.label}
-                            className={`w-full text-left p-2 rounded-lg border ${
-                              isCorrectAnswer
-                                ? "border-green-500 bg-green-50"
-                                : isUserAnswer && !isCorrect
-                                  ? "border-red-500 bg-red-50"
-                                  : "border-gray-200"
-                            }`}
+                            key={label}
+                            className={`flex items-start space-x-3 rounded-lg border-2 p-3 transition-all ${bgColor} ${borderColor}`}
                           >
-                            <div className="flex items-start gap-2">
-                              <div
-                                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-semibold text-sm ${
-                                  isCorrectAnswer
-                                    ? "bg-green-500 text-white"
-                                    : isUserAnswer && !isCorrect
-                                      ? "bg-red-500 text-white"
-                                      : "bg-gray-200 text-gray-700"
-                                }`}
-                              >
-                                {option.label}
-                              </div>
-                              <div className="flex-1 text-sm pt-0.5">
-                                {option.value}
-                              </div>
+                            <div className="flex items-center gap-2 min-w-[2rem]">
+                              <span className="font-semibold text-sm">{label}.</span>
                               {isCorrectAnswer && (
                                 <CheckCircle className="text-green-500 flex-shrink-0 h-5 w-5" />
                               )}
                               {isUserAnswer && !isCorrect && (
                                 <XCircle className="text-red-500 flex-shrink-0 h-5 w-5" />
+                              )}
+                            </div>
+                            <div className="flex-1 prose prose-sm max-w-none">
+                              {/* Assuming BlockRenderer is defined elsewhere and handles rendering blocks */}
+                              {/* If choices are simple strings, render them directly */}
+                              {typeof choiceBlocks === 'string' ? (
+                                choiceBlocks
+                              ) : (
+                                choiceBlocks.map((block, blockIdx) => (
+                                  <span key={blockIdx}>{block.value}</span>
+                                ))
                               )}
                             </div>
                           </div>
@@ -290,7 +310,7 @@ export default function SectionReview() {
                     )}
                     {/* Added ExplanationChat component here */}
                     {q.explanation && (
-                      <ExplanationChat 
+                      <ExplanationChat
                         questionPrompt={q.prompt}
                         explanation={q.explanation}
                         correctAnswer={q.choices[q.answerIndex]}
