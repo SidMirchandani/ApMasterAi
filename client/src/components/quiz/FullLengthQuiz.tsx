@@ -157,17 +157,21 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   };
 
   const confirmSubmit = () => {
+    setShowSubmitConfirm(false);
     // Pass the current userAnswers to the parent submit handler
     onSubmit(userAnswers);
-    setShowSubmitConfirm(false);
   };
 
   const handleReviewSubmit = (updatedAnswers: { [key: number]: string }, updatedFlagged: Set<number>) => {
     // Update local state first
     setUserAnswers(updatedAnswers);
     setFlaggedQuestions(updatedFlagged);
-    // Then show confirmation dialog
-    setShowSubmitConfirm(true);
+    // Close review mode and show confirmation dialog
+    setIsReviewMode(false);
+    // Use a small timeout to ensure state is updated before showing dialog
+    setTimeout(() => {
+      setShowSubmitConfirm(true);
+    }, 100);
   };
 
   // Added logic for review mode rendering
