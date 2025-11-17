@@ -203,10 +203,11 @@ export function QuizResults({
         </Card>
       )}
 
-      <div className="flex justify-center mt-8">
+      <div className="flex justify-end gap-3 mt-6">
+        {/* Removed "Back to Test History" button */}
         <Button
           onClick={onReview}
-          className="bg-khan-green hover:bg-khan-green/90 text-lg px-12 py-6 h-auto"
+          className="bg-khan-green hover:bg-khan-green/90"
         >
           Review Answers
         </Button>
