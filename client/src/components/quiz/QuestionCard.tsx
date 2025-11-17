@@ -1,4 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Flag } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -146,7 +148,7 @@ export function QuestionCard({
 
         <div className="space-y-3">
           {/* Choices */}
-          <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
+          <RadioGroup value={selectedAnswer || undefined} onValueChange={onAnswerSelect}>
               <div className="space-y-3">
                 {(['A', 'B', 'C', 'D', 'E'] as const).map((choiceLabel, index) => {
                   const choiceBlocks = question.choices[choiceLabel];
