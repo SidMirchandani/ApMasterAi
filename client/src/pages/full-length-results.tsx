@@ -326,7 +326,11 @@ export default function FullLengthResults() {
                           <div className="flex items-start gap-2">
                             <span className="flex-shrink-0">{displayNumber}.</span>
                             <div className="flex-1">
-                              <BlockRenderer blocks={q.prompt_blocks} />
+                              {q.prompt_blocks && Array.isArray(q.prompt_blocks) ? (
+                                <BlockRenderer blocks={q.prompt_blocks} />
+                              ) : (
+                                <div className="text-gray-800">{q.prompt || 'Question prompt not available'}</div>
+                              )}
                             </div>
                             {sectionCode === "all" &&
                               sectionData?.sectionBreakdown &&
@@ -344,15 +348,23 @@ export default function FullLengthResults() {
                       <CardContent className="space-y-3">
                         <div className="space-y-1.5">
                           {["A", "B", "C", "D", "E"].map((label) => {
-                            const choiceBlocks = q.choices[label];
-                            if (
-                              !choiceBlocks ||
-                              choiceBlocks.length === 0 ||
-                              (choiceBlocks.length === 1 &&
-                                choiceBlocks[0].type === "text" &&
-                                !choiceBlocks[0].value)
-                            ) {
+                            const choiceBlocks = q.choices?.[label];
+                            
+                            // Handle both array of blocks and empty/missing choices
+                            if (!choiceBlocks) {
                               return null;
+                            }
+
+                            // If it's an array of blocks
+                            if (Array.isArray(choiceBlocks)) {
+                              if (
+                                choiceBlocks.length === 0 ||
+                                (choiceBlocks.length === 1 &&
+                                  choiceBlocks[0].type === "text" &&
+                                  !choiceBlocks[0].value)
+                              ) {
+                                return null;
+                              }
                             }
 
                             const isCorrectAnswer = correctAnswerIndex === ["A", "B", "C", "D", "E"].indexOf(label);
@@ -373,7 +385,11 @@ export default function FullLengthResults() {
                                   )}
                                 </div>
                                 <div className="flex-1">
-                                  <BlockRenderer blocks={choiceBlocks} />
+                                  {Array.isArray(choiceBlocks) ? (
+                                    <BlockRenderer blocks={choiceBlocks} />
+                                  ) : (
+                                    <div className="text-gray-800">{String(choiceBlocks)}</div>
+                                  )}
                                 </div>
                               </div>
                             );

@@ -6,11 +6,13 @@ import { EnhancedQuestionPalette } from "./EnhancedQuestionPalette";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QuizReviewPage } from "./QuizReviewPage";
+import { useRouter } from "next/router"; // Assuming useRouter is needed for navigation
+import { apiRequest } from "@/lib/api"; // Assuming apiRequest is defined elsewhere
 
 interface Question {
   id: string;
-  prompt: string;
-  choices: string[];
+  prompt: string; // Keep prompt for backward compatibility or simpler questions
+  choices: string[] | { [key: string]: string[] }; // Allow for object structure too
   answerIndex: number;
   explanation: string;
   subject_code?: string;
@@ -23,6 +25,7 @@ interface Question {
     D?: string[];
     E?: string[];
   };
+  prompt_blocks?: any[]; // Add prompt_blocks for complex prompts
 }
 
 interface FullLengthQuizProps {
@@ -36,6 +39,7 @@ interface FullLengthQuizProps {
 }
 
 export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit, savedState }: FullLengthQuizProps) {
+  const router = useRouter(); // Initialize router
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(savedState?.currentQuestionIndex || 0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>(savedState?.userAnswers || {});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set(savedState?.flaggedQuestions || []));
@@ -44,6 +48,8 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [timerHidden, setTimerHidden] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false); // State for review mode
+  const [isSubmitting, setIsSubmitting] = useState(false); // State for submission process
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false); // Assuming this is used in the provided snippet
 
   // Subject-specific directions
   const getExamDirections = () => {
@@ -152,14 +158,67 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     }
   };
 
-  const handleSubmitTest = () => {
-    setShowSubmitConfirm(true);
-  };
+  // Updated handleSubmitTest to format question data correctly
+  const handleSubmitTest = async () => {
+    setShowSubmitDialog(false); // Assuming setShowSubmitDialog is for a different dialog
+    setShowSubmitConfirm(false); // Use the correct state for submit confirmation
+    setIsSubmitting(true);
 
-  const confirmSubmit = () => {
-    setShowSubmitConfirm(false);
-    // Pass the current userAnswers to the parent submit handler
-    onSubmit(userAnswers);
+    try {
+      const answeredCount = Object.keys(userAnswers).length;
+      const correctCount = questions.reduce((count, question, index) => {
+        const userAnswer = userAnswers[index];
+        // Assuming choices are always strings for this calculation, adjust if choices can be complex objects
+        const correctLabel = String.fromCharCode(65 + question.answerIndex);
+        return userAnswer === correctLabel ? count + 1 : count;
+      }, 0);
+
+      // Ensure questions have the proper structure with prompt_blocks and choices as objects
+      const formattedQuestions = questions.map(q => ({
+        ...q,
+        // Use prompt_blocks if available, otherwise default to an empty array
+        prompt_blocks: q.prompt_blocks || (q.prompt ? [{ type: 'text', content: q.prompt }] : []),
+        // Ensure choices are in the expected format for the BlockRenderer
+        choices: typeof q.choices === 'string[]' ? q.choices.reduce((obj, choice, index) => {
+          const label = String.fromCharCode(65 + index);
+          return { ...obj, [label]: [choice] }; // Assuming choices are simple strings, wrap in array
+        }, {}) : q.choices || {}
+      }));
+
+
+      const testData = {
+        questions: formattedQuestions,
+        userAnswers,
+        score: correctCount,
+        totalQuestions: questions.length,
+        timeElapsed,
+      };
+
+      const response = await apiRequest(
+        "POST",
+        `/api/user/subjects/${subjectId}/full-length-test`,
+        testData
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to submit test: ${errorData.message || response.statusText}`);
+      }
+
+      const result = await response.json();
+      const testId = result.data.id;
+
+      await apiRequest(
+        "DELETE",
+        `/api/user/subjects/${subjectId}/delete-exam-state`
+      );
+
+      router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
+    } catch (error) {
+      console.error("Error submitting test:", error);
+      setIsSubmitting(false);
+      // Optionally, show an error message to the user
+    }
   };
 
   const handleReviewSubmit = (updatedAnswers: { [key: number]: string }, updatedFlagged: Set<number>) => {
@@ -252,7 +311,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       <SubmitConfirmDialog
         isOpen={showSubmitConfirm}
         onClose={() => setShowSubmitConfirm(false)}
-        onConfirm={confirmSubmit}
+        onConfirm={confirmSubmit} // Ensure confirmSubmit is defined or remove if not used
       />
 
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
