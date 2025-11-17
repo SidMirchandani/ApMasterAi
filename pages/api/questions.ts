@@ -116,6 +116,7 @@ export default async function handler(
     let query = questionsRef.where('subject_code', '==', subject as string);
     
     if (section) {
+      console.log("📍 Adding section filter:", section);
       query = query.where('section_code', '==', section as string);
     }
     
@@ -128,6 +129,22 @@ export default async function handler(
       size: snapshot.size,
       queriedFor: { subject, section: section || "ALL" }
     });
+
+    // If no results and section was specified, log sample documents for debugging
+    if (snapshot.empty && section) {
+      console.log("❌ No questions found with filters - fetching sample docs for debugging");
+      const sampleQuery = await questionsRef
+        .where('subject_code', '==', subject as string)
+        .limit(5)
+        .get();
+      
+      const samples = sampleQuery.docs.map(doc => ({
+        id: doc.id,
+        subject_code: doc.data().subject_code,
+        section_code: doc.data().section_code
+      }));
+      console.log("📋 Sample questions for subject:", samples);
+    }
 
     if (snapshot.empty) {
       const sampleSnapshot = await questionsRef.limit(3).get();

@@ -187,27 +187,57 @@ export default function Quiz() {
           } else setError("No questions found for this subject");
         } else {
           const unitMap = SUBJECT_UNIT_MAPS[subjectId as string];
+          console.log("🔍 [Quiz] Unit mapping lookup:", {
+            subjectId,
+            unit,
+            unitMap,
+            availableUnits: Object.keys(unitMap || {})
+          });
+          
           if (!unitMap) {
             setError(`Quiz not yet available for ${subjectId}`);
             setIsLoading(false);
             return;
           }
+          
           const sectionCode = unitMap[unit as string];
+          console.log("🎯 [Quiz] Section code mapping:", {
+            unit,
+            sectionCode,
+            subjectApiCode
+          });
+          
           if (!sectionCode) {
+            console.error("❌ [Quiz] No section code found for unit:", unit);
             setError("Invalid unit");
             setIsLoading(false);
             return;
           }
-          const response = await apiRequest(
-            "GET",
-            `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`,
-          );
+          
+          const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`;
+          console.log("📡 [Quiz] Fetching questions:", apiUrl);
+          
+          const response = await apiRequest("GET", apiUrl);
           if (!response.ok) throw new Error("Failed to fetch");
           const data = await response.json();
+          
+          console.log("📥 [Quiz] API response:", {
+            success: data.success,
+            questionCount: data.data?.length || 0,
+            firstQuestion: data.data?.[0] ? {
+              id: data.data[0].id,
+              subject_code: data.data[0].subject_code,
+              section_code: data.data[0].section_code
+            } : null
+          });
+          
           if (data.success && data.data?.length > 0) {
             const shuffled = [...data.data].sort(() => Math.random() - 0.5);
             setQuestions(shuffled.slice(0, 25));
-          } else setError("No questions found");
+          } else {
+            console.error("❌ [Quiz] No questions found in response");
+            setError("No questions found");
+          }
         }
       } catch (err) {
         setError("Failed to load quiz questions");
