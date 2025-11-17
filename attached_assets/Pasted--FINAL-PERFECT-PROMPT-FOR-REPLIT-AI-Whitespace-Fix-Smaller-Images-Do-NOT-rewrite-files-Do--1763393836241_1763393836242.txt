@@ -1,0 +1,123 @@
+✅ FINAL PERFECT PROMPT FOR REPLIT AI (Whitespace Fix + Smaller Images)
+
+**"Do NOT rewrite files. Do NOT change logic, correct/wrong colors, or component structure.
+Only adjust layout, whitespace, and image sizing.
+
+Apply ONLY these changes:
+
+====================================================================
+
+1. REDUCE EXCESS WHITESPACE ABOVE QUESTION PROMPT
+
+The question prompt block currently has too much empty vertical space.
+
+Update the prompt container so it uses:
+
+class="p-0 pt-2 pb-2 leading-snug"
+
+
+And ensure the outer question container uses:
+
+class="space-y-2"
+
+
+NOT large paddings like p-6 or p-10.
+
+No top-margin should exceed mt-2.
+No bottom-margin should exceed mb-2.
+
+Make the prompt density match AP Classroom:
+
+minimal white space
+
+tight vertical spacing
+
+prompt sits close to the question number
+
+====================================================================
+
+2. MAKE IMAGES MUCH SMALLER (THUMBNAILS)
+
+All images within questions or answer choices should use this wrapper:
+
+<div class="relative group inline-block max-w-[150px] max-h-[150px]">
+
+
+This forces a much smaller thumbnail than before.
+
+The thumbnail image must use:
+
+class="object-contain w-full h-full rounded-md shadow"
+
+Floating Hover Preview (unchanged):
+<div class="absolute left-0 top-0 z-50 hidden group-hover:block">
+  <img src="SAME_SRC" class="max-w-[600px] max-h-[600px] object-contain rounded-md shadow-xl bg-white p-2" />
+</div>
+
+
+Do NOT zoom the thumbnail.
+Do NOT crop.
+Do NOT enlarge the default image.
+Only show the full-size version on hover.
+
+====================================================================
+
+3. MAKE PROMPT HEIGHT + ANSWER CHOICE HEIGHT CONSISTENT
+
+The question prompt should NOT expand to large empty vertical height.
+
+Use:
+
+min-h-0
+
+
+for prompt containers.
+
+For the question number + mark for review bar:
+
+class="min-h-[48px] flex items-center"
+
+
+For answer choices:
+
+class="min-h-[48px] flex items-center p-3"
+
+
+This creates consistent density across all pages.
+
+====================================================================
+
+4. MAKE SAME DENSITY ACROSS:
+
+Review mode
+
+Unit practice
+
+Full practice
+
+Use the same reduced whitespace + image rules everywhere.
+Do NOT modify correctness colors or any logic.
+
+====================================================================
+
+5. DO NOT CHANGE ANYTHING ELSE
+
+no logic changes
+
+no state changes
+
+no card selection changes
+
+no navigation changes
+
+no correctness logic
+
+Implement ONLY minimal whitespace tightening + smaller thumbnails + floating preview."**
+
+🎯 This prompt ensures:
+✔ Whitespace is reduced (no giant empty areas)
+✔ Images become small thumbnails (150×150 max)
+✔ Full-size preview still appears on hover
+✔ Question page matches AP Classroom density
+✔ Answer choices stay properly compact
+✔ Nothing else breaks
