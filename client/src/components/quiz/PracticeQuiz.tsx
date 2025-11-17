@@ -143,7 +143,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <div className="fixed top-0 left-0 right-0 z-50">
         <QuizHeader
           title={`AP® ${formatSubjectName(subjectId)} Practice Quiz`}
@@ -154,7 +154,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-14">
+      <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-16 pb-4">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
           <div className="text-sm text-gray-600 mb-4">
             Question {currentQuestionIndex + 1} of {orderedQuestions.length}

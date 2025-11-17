@@ -158,7 +158,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
   const confirmSubmit = () => {
     // Pass the current userAnswers to the parent submit handler
-    (onSubmit as any)(userAnswers);
+    onSubmit(userAnswers);
     setShowSubmitConfirm(false);
   };
 
