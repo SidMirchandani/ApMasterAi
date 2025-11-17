@@ -1,10 +1,14 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QuizHeader } from "./QuizHeader";
 import { QuestionCard } from "./QuestionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
 import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/queryClient";
+import { Loader2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Question {
   id: string;
@@ -39,8 +43,42 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const [score, setScore] = useState(0);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
   const [timerHidden, setTimerHidden] = useState(false);
+  const [generatedExplanations, setGeneratedExplanations] = useState<Map<number, string>>(new Map());
+  const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
 
   const currentQuestion = questions[currentQuestionIndex];
+  const currentExplanation = generatedExplanations.get(currentQuestionIndex) || currentQuestion?.explanation;
+
+  useEffect(() => {
+    const generateExplanationIfNeeded = async () => {
+      if (!currentQuestion || !isAnswerSubmitted) return;
+      
+      const hasExplanation = currentQuestion.explanation && currentQuestion.explanation.trim() !== '';
+      const alreadyGenerated = generatedExplanations.has(currentQuestionIndex);
+      
+      if (!hasExplanation && !alreadyGenerated && !isGeneratingExplanation) {
+        setIsGeneratingExplanation(true);
+        try {
+          const response = await apiRequest("POST", "/api/generate-explanation", {
+            questionPrompt: currentQuestion.prompt,
+            choices: currentQuestion.choices,
+            correctAnswerIndex: currentQuestion.answerIndex,
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setGeneratedExplanations(prev => new Map(prev).set(currentQuestionIndex, data.explanation));
+          }
+        } catch (error) {
+          console.error("Error generating explanation:", error);
+        } finally {
+          setIsGeneratingExplanation(false);
+        }
+      }
+    };
+
+    generateExplanationIfNeeded();
+  }, [currentQuestion, currentQuestionIndex, isAnswerSubmitted, generatedExplanations, isGeneratingExplanation]);
 
   const handleAnswerSelect = (answer: string) => {
     if (!isAnswerSubmitted) {
@@ -114,16 +152,26 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
                 <CardTitle className="text-sm">Explanation</CardTitle>
               </CardHeader>
               <CardContent className="pt-0 pb-3">
-                {currentQuestion.explanation ? (
-                  <ExplanationChat 
-                    questionPrompt={currentQuestion.prompt}
-                    explanation={currentQuestion.explanation}
-                    correctAnswer={currentQuestion.choices[currentQuestion.answerIndex]}
-                    choices={currentQuestion.choices}
-                  />
-                ) : (
-                  <p className="text-sm text-gray-600 italic">No explanation available for this question.</p>
-                )}
+                {isGeneratingExplanation ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-khan-blue mr-2" />
+                    <span className="text-sm text-gray-600">Generating explanation...</span>
+                  </div>
+                ) : currentExplanation ? (
+                  <>
+                    <div className="text-sm text-gray-700 prose prose-sm max-w-none mb-3">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {currentExplanation}
+                      </ReactMarkdown>
+                    </div>
+                    <ExplanationChat 
+                      questionPrompt={currentQuestion.prompt}
+                      explanation={currentExplanation}
+                      correctAnswer={currentQuestion.choices[currentQuestion.answerIndex]}
+                      choices={currentQuestion.choices}
+                    />
+                  </>
+                ) : null}
               </CardContent>
             </Card>
           )}
