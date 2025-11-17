@@ -212,7 +212,9 @@ export function QuizReviewPage({
         <QuizBottomBar
           currentQuestion={selectedQuestion + 1}
           totalQuestions={questions.length}
-          onOpenPalette={() => setSelectedQuestion(null)}
+          onOpenPalette={() => {
+            setSelectedQuestion(null);
+          }}
           onPrevious={() =>
             selectedQuestion > 0
               ? setSelectedQuestion(selectedQuestion - 1)

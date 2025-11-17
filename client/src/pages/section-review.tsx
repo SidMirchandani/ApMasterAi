@@ -48,6 +48,11 @@ export default function SectionReview() {
   const [sectionData, setSectionData] = useState<any>(null);
   const [showQuestionPalette, setShowQuestionPalette] = useState(false);
 
+  // Reset palette state when changing questions
+  useEffect(() => {
+    setShowQuestionPalette(false);
+  }, [currentQuestionIndex]);
+
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push("/login");
@@ -296,7 +301,7 @@ export default function SectionReview() {
         <QuizBottomBar
           currentQuestion={currentQuestionIndex + 1}
           totalQuestions={questions.length}
-          onOpenPalette={() => setShowQuestionPalette(true)}
+          onOpenPalette={() => setShowQuestionPalette((prev) => !prev)}
           onPrevious={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
           onNext={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))}
           canGoPrevious={currentQuestionIndex > 0}
