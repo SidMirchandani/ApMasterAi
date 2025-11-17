@@ -105,6 +105,7 @@ export function QuizReviewPage({
           timeElapsed={0}
           timerHidden
           subjectId={subjectId}
+          onExitExam={selectedQuestion === null ? onBack : undefined}
         />
       </div>
 

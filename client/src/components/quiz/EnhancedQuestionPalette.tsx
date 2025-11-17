@@ -1,4 +1,3 @@
-
 import { XCircle, MapPin, Flag, FileQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -36,7 +35,7 @@ export function EnhancedQuestionPalette({
     const state = getQuestionState(index);
     const isFlagged = flaggedQuestions.has(index);
     const baseClass = "w-12 h-12 rounded border-2 text-center font-semibold flex items-center justify-center transition-all relative";
-    
+
     // For flagged questions, show red border but background based on state
     if (isFlagged) {
       if (index === currentQuestion) {
@@ -47,7 +46,7 @@ export function EnhancedQuestionPalette({
         return `${baseClass} bg-white text-gray-900 border-red-500`;
       }
     }
-    
+
     // Non-flagged questions
     switch (state) {
       case "current":
@@ -80,7 +79,7 @@ export function EnhancedQuestionPalette({
             <span>Unanswered</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-red-50 border-2 border-red-500 flex items-center justify-center">
+            <div className="w-6 h-6 rounded border-2 border-red-500 flex items-center justify-center">
               <Flag className="h-3 w-3 text-red-500" />
             </div>
             <span>For Review</span>
@@ -111,17 +110,9 @@ export function EnhancedQuestionPalette({
           })}
         </div>
 
-        <div className="flex justify-center">
-          <Button 
-            onClick={() => {
-              if (onGoToReview) {
-                onGoToReview();
-                onClose();
-              }
-            }} 
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            Go to Review Page
+        <div className="mt-4 flex justify-end items-center">
+          <Button variant="outline" onClick={onClose}>
+            Close
           </Button>
         </div>
       </div>
