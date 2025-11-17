@@ -1,0 +1,73 @@
+I updated my scraping format to use JSON Block Arrays instead of separate prompt text + images. 
+Please update this Next.js API route to support the new schema.
+
+Here is the new JSON format for each question:
+
+{
+  "subject_code": "APCSP",
+  "question_id": 125,
+  "prompt_blocks": [
+    { "type": "text", "value": "Line 1: move ← INPUT()" },
+    { "type": "image", "url": "prompt_1.png" },
+    { "type": "text", "value": "Line 2: REPEAT move TIMES" }
+  ],
+  "choices": {
+    "A": [
+      { "type": "image", "url": "A_1.png" }
+    ],
+    "B": [
+      { "type": "text", "value": "The robot ends here" }
+    ],
+    "C": [],
+    "D": [],
+    "E": []
+  },
+  "correct_answer": "A",
+  "explanation": "",
+  "section_code": "AAP"
+}
+
+**What you need to change in the API route:**
+
+1. Remove all fields:
+   - prompt
+   - prompt_images
+   - choices.A–E strings
+   - choice_images map
+   - image_urls
+
+2. Replace them with:
+   - prompt_blocks: Block[]
+   - choices: Record<"A"|"B"|"C"|"D"|"E", Block[]>
+
+3. Upload images by scanning inside each block where block.type === "image".
+   * Each block.image.url is a filename from the `images/QUESTION_ID/` folder.
+   * Upload to Firebase Storage under:
+        questions/{subject_code}/{question_id}/{filename}
+     and replace block.image.url with the public URL.
+
+4. Save final Firestore document using this schema:
+
+{
+  subject_code,
+  section_code,
+  question_id,
+  prompt_blocks,   // after image URLs replaced
+  choices,         // after image URLs replaced
+  answerIndex,     // same logic as before
+  explanation,
+  mode: "SECTION",
+  test_slug: "",
+  tags: [],
+  createdAt,
+  updatedAt,
+  rand: Math.random()
+}
+
+5. Remove any references to 'choicesArray', 'choice_images', 'prompt_images', or 'image_urls'.
+
+6. Keep uploadImageToStorage but modify processQuestion to iterate over all blocks and upload images.
+
+7. Ensure the code recursively updates URLs inside each block list.
+
+Please update the entire file to match this new schema.
