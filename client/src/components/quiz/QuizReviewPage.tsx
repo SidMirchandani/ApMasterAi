@@ -82,7 +82,7 @@ export function QuizReviewPage({
       {/* HEADER */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <QuizHeader 
-          title={selectedQuestion === null ? "Review Your Answers" : subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} 
+          title={selectedQuestion === null ? "Review Your Answers" : (subjectId ? subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Review")} 
           timeElapsed={0} 
           timerHidden 
         />

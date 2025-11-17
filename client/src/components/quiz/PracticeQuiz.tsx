@@ -10,6 +10,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
+import { CheckCircle, XCircle } from "lucide-react";
 
 interface Question {
   id: string;
@@ -108,13 +109,13 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const handleSubmitAnswer = () => {
     if (!selectedAnswer || !currentQuestion) return;
     setIsAnswerSubmitted(true);
-    
+
     // Save the answer
     setFinalUserAnswers(prev => ({
       ...prev,
       [currentQuestionIndex]: selectedAnswer
     }));
-    
+
     const correctLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
     if (selectedAnswer === correctLabel) setScore((s) => s + 1);
   };
@@ -270,8 +271,8 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
                 </div>
                 <p className="text-gray-600">You got {score} question{score !== 1 ? 's' : ''} correct.</p>
               </div>
-              <Button 
-                onClick={handleReview} 
+              <Button
+                onClick={handleReview}
                 size="lg"
                 className="bg-blue-600 hover:bg-blue-700 w-full text-lg py-6"
               >

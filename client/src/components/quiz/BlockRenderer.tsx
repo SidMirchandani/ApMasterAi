@@ -25,7 +25,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, className 
           );
         } else if (block.type === "image") {
           return (
-            <div key={index} className="relative inline-block group max-w-[240px] my-1">
+            <div key={index} className="relative inline-block group max-w-[240px] my-2">
               <img
                 src={block.url}
                 alt={`Content image ${index + 1}`}
@@ -35,9 +35,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, className 
               <div className="absolute left-0 top-0 z-50 hidden group-hover:block">
                 <img
                   src={block.url}
-                  alt={`Content image ${index + 1} preview`}
+                  alt={`Content image ${index + 1} - Full size`}
                   className="max-w-[600px] max-h-[600px] object-contain rounded-md shadow-xl bg-white p-2"
-                  loading="lazy"
                 />
               </div>
             </div>

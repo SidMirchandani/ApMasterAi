@@ -61,24 +61,24 @@ export function QuestionCard({
   }
 
   const allChoices = Object.keys(question.choices) as Array<"A" | "B" | "C" | "D" | "E">;
-  
+
   // Filter out choice E if it's blank
   const choices = allChoices.filter((label) => {
     if (label !== "E") return true;
-    
+
     const choiceBlocks = question.choices[label];
     if (!choiceBlocks || choiceBlocks.length === 0) return false;
-    
+
     // Check if it's only empty text
-    if (choiceBlocks.length === 1 && 
-        choiceBlocks[0].type === "text" && 
+    if (choiceBlocks.length === 1 &&
+        choiceBlocks[0].type === "text" &&
         (!choiceBlocks[0].value || choiceBlocks[0].value.trim() === "")) {
       return false;
     }
-    
+
     return true;
   });
-  
+
   const correctAnswerLabel = String.fromCharCode(65 + question.answerIndex); // A = 65
 
   const isCorrect = selectedAnswer === correctAnswerLabel;
@@ -112,8 +112,8 @@ export function QuestionCard({
 
       <CardContent className="space-y-1 pt-1.5 pb-1.5 px-3">
         {/* Question Prompt */}
-        <div className="mb-1 text-sm leading-tight">
-          <BlockRenderer blocks={question.prompt_blocks} />
+        <div className="mb-3 space-y-2 min-h-[140px] flex flex-col justify-center">
+          <BlockRenderer blocks={question.prompt_blocks || []} />
         </div>
 
         {/* Choices */}

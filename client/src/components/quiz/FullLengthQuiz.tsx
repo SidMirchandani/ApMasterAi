@@ -126,7 +126,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       flaggedQuestions: Array.from(flaggedQuestions),
       timeElapsed,
     };
-    
+
     try {
       await apiRequest(
         "POST",
@@ -187,7 +187,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       const formattedQuestions = questions.map(q => ({
         ...q,
         prompt_blocks: q.prompt_blocks || (q.prompt ? [{ type: 'text', content: q.prompt }] : []),
-        choices: typeof q.choices === 'object' && !Array.isArray(q.choices) ? q.choices : 
+        choices: typeof q.choices === 'object' && !Array.isArray(q.choices) ? q.choices :
           (Array.isArray(q.choices) ? q.choices.reduce((obj, choice, index) => {
             const label = String.fromCharCode(65 + index);
             return { ...obj, [label]: [choice] };
@@ -248,6 +248,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         flaggedQuestions={flaggedQuestions}
         onBack={() => setIsReviewMode(false)}
         onSubmit={handleReviewSubmit}
+        subjectId={subjectId} // Pass subjectId for review page navigation
       />
     );
   }
@@ -270,6 +271,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           timerHidden={timerHidden}
           onExitExam={handleExitExam}
           examDirections={examDirections}
+          subjectId={subjectId} // Pass subjectId to QuizHeader
         />
       </div>
 
@@ -300,6 +302,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           isLastQuestion={currentQuestionIndex === questions.length - 1}
           onSubmit={handleSubmitTest}
           onReview={currentQuestionIndex === questions.length - 1 ? () => setIsReviewMode(true) : undefined}
+          subjectId={subjectId} // Pass subjectId to QuizBottomBar
         />
       </div>
 
