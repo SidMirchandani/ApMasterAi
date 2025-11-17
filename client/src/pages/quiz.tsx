@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle, XCircle, ArrowRight } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, ArrowRight, MoreVertical, Highlighter, FileText, Calculator, BookOpen, HelpCircle, Printer, LogOut, Flag, ChevronUp } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
@@ -22,6 +22,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 
 interface Question {
   id: string;
@@ -131,6 +139,9 @@ export default function Quiz() {
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(
     new Set(),
   );
+  const [showQuestionPalette, setShowQuestionPalette] = useState(false);
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // Mock functions for navigation and submission to be replaced later
   const handleExitTest = () => {
@@ -138,6 +149,24 @@ export default function Quiz() {
   };
   const handleSubmit = () => {
     setShowSubmitConfirm(true);
+  };
+
+  // Timer
+  useEffect(() => {
+    if (quizCompleted || isReviewMode) return;
+    
+    const timer = setInterval(() => {
+      setTimeElapsed(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [quizCompleted, isReviewMode]);
+
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   useEffect(() => {
@@ -1080,14 +1109,78 @@ export default function Quiz() {
   }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative overflow-hidden">
-      {/* Background decoration - matching hero style */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
-      </div>
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Top Header Bar */}
+      <div className="border-b border-gray-200 bg-white sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          {/* Left: Title and Directions */}
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-khan-green rounded-lg flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-lg font-bold text-khan-gray-dark hidden sm:inline">APMaster</span>
+            </Link>
+            <span className="text-gray-300">|</span>
+            <div>
+              <h1 className="text-sm font-semibold text-gray-900">
+                {isFullLength ? "Full-Length Practice Exam" : `Unit ${unit} Practice Quiz`}
+              </h1>
+              <button className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1">
+                Directions <ChevronUp className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
 
-      <Navigation />
+          {/* Center: Timer */}
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-900">{formatTime(timeElapsed)}</div>
+            <button className="text-xs text-gray-500 hover:text-gray-700 underline">Hide</button>
+          </div>
+
+          {/* Right: Tools */}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+              <Highlighter className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+              <FileText className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+              <Calculator className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+              <BookOpen className="h-4 w-4" />
+            </Button>
+            <DropdownMenu open={showMoreMenu} onOpenChange={setShowMoreMenu}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Exam
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Help
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Shortcuts
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowExitDialog(true)} className="text-red-600">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Exit the Exam
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </div>
       <div className="max-w-4xl mx-auto px-4 py-8 relative z-10">
         {/* Header - Only for regular quiz */}
         {!isFullLength && (
@@ -1167,21 +1260,8 @@ export default function Quiz() {
         )}
         {isFullLength ? (
           <>
-            {/* Top Navigation Bar */}
-            <div className="max-w-6xl mx-auto">
-              <Card className="mb-2 sticky top-0 z-10 bg-white shadow-md">
-                <CardContent className="py-2">
-                  {/* First Line: Exit button centered */}
-                  <div className="flex items-center justify-center mb-2">
-                    <Button
-                      onClick={() => setShowExitDialog(true)}
-                      variant="outline"
-                      size="sm"
-                      className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                    >
-                      Exit Full-Length Test
-                    </Button>
-                  </div>
+            {/* Content Area */}
+            <div className="max-w-5xl mx-auto px-4 py-6 pb-24">
 
                   {/* Second Line: Previous button, numbered boxes, Next button */}
                   <div className="flex items-center justify-between gap-4">
@@ -1270,8 +1350,8 @@ export default function Quiz() {
               </Card>
             </div>
 
-            {/* Full-length exam: show multiple questions per page - Compact */}
-            <div className="space-y-2 mb-4 max-w-6xl mx-auto">
+            {/* Full-length exam: show multiple questions per page */}
+            <div className="space-y-8 mb-4">
               {currentQuestions.map((q, idx) => {
                 const globalIndex = currentPage * questionsPerPage + idx;
                 const options = q.choices.map((choice, i) => ({
@@ -1280,17 +1360,16 @@ export default function Quiz() {
                 }));
 
                 return (
-                  <Card
+                  <div
                     key={globalIndex}
                     id={`question-${globalIndex}`}
-                    className="border"
+                    className="border-0"
                   >
-                    <CardHeader className="pb-2 pt-3">
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="flex-1">
-                          <CardTitle className="text-sm font-medium leading-relaxed">
-                            {globalIndex + 1}. {q.prompt}
-                          </CardTitle>
+                    <div className="flex justify-between items-start gap-4 mb-4">
+                      <div className="flex-1">
+                        <p className="text-base leading-relaxed text-gray-800">
+                          {q.prompt}
+                        </p>
                           {q.image_urls?.question && q.image_urls.question.length > 0 && (
                             <div className="mt-3 space-x-2 inline-flex flex-wrap">
                               {q.image_urls.question.map((imageUrl, imgIdx) => (
@@ -1480,13 +1559,13 @@ export default function Quiz() {
         ) : (
           <>
             {/* Regular quiz: show one question at a time */}
-            <Card className="mb-2">
-              <CardHeader className="pb-2 pt-3">
-                <div className="flex justify-between items-start gap-3">
+            <div className="max-w-5xl mx-auto px-4 py-6">
+              <div className="bg-white border-0 mb-6">
+                <div className="flex justify-between items-start gap-4 mb-4">
                   <div className="flex-1">
-                    <CardTitle className="text-sm font-medium leading-relaxed">
-                      {currentQuestionIndex + 1}. {currentQuestion.prompt}
-                    </CardTitle>
+                    <p className="text-base leading-relaxed text-gray-800">
+                      {currentQuestion.prompt}
+                    </p>
                     {currentQuestion.image_urls?.question &&
                       currentQuestion.image_urls.question.length > 0 && (
                         <div className="mt-3 space-x-2 inline-flex flex-wrap">
@@ -1498,7 +1577,7 @@ export default function Quiz() {
                                   alt={`Question ${
                                     currentQuestionIndex + 1
                                   } image ${imgIdx + 1}`}
-                                  className="h-12 w-auto rounded border border-gray-300 cursor-pointer"
+                                  className="h-16 w-auto rounded border border-gray-300 cursor-pointer"
                                 />
                                 <img
                                   src={imageUrl}
@@ -1513,10 +1592,38 @@ export default function Quiz() {
                         </div>
                       )}
                   </div>
+                  
+                  {/* Mark for Review */}
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="bg-gray-900 text-white px-3 py-1 rounded text-sm font-semibold">
+                      {currentQuestionIndex + 1}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleFlag(currentQuestionIndex)}
+                      className={`text-xs ${
+                        flaggedQuestions.has(currentQuestionIndex)
+                          ? "border-red-500 text-red-600 bg-red-50"
+                          : "border-gray-300"
+                      }`}
+                    >
+                      <Flag className={`h-3 w-3 mr-1 ${flaggedQuestions.has(currentQuestionIndex) ? "fill-red-600" : ""}`} />
+                      Mark for Review
+                    </Button>
+                    <span className="text-xs text-gray-400">MC</span>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-2 pb-3">
-                <div className="space-y-1.5">
+
+                {/* Question Prompt */}
+                <div className="mb-6">
+                  <p className="text-gray-700 leading-relaxed">
+                    Which of the following outcomes would most likely reduce the likelihood of genetic exchange between these populations?
+                  </p>
+                </div>
+
+                {/* Choices */}
+                <div className="space-y-3">
                   {(() => {
                     const options = currentQuestion.choices.map(
                       (choice, index) => ({
@@ -1638,30 +1745,114 @@ export default function Quiz() {
               </Card>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex justify-center gap-4">
-              {!isAnswerSubmitted ? (
-                <Button
-                  onClick={handleSubmitAnswer}
-                  disabled={!selectedAnswer}
-                  className="bg-khan-green hover:bg-khan-green/90 px-8"
-                >
-                  Submit Answer
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleNextQuestion}
-                  className="bg-khan-blue hover:bg-khan-blue/90 px-8"
-                >
-                  {currentQuestionIndex < questions.length - 1 ? (
-                    <>
-                      Next Question
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  ) : (
-                    "Complete Quiz"
-                  )}
-                </Button>
+            </div>
+
+              {/* Bottom Sticky Bar */}
+              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+                <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                  {/* Left: Brand */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-khan-green rounded flex items-center justify-center">
+                      <BookOpen className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">APMaster</span>
+                  </div>
+
+                  {/* Center: Question Palette Toggle */}
+                  <button
+                    onClick={() => setShowQuestionPalette(!showQuestionPalette)}
+                    className="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-800 text-sm font-medium flex items-center gap-2"
+                  >
+                    Question {currentQuestionIndex + 1} of {questions.length}
+                    <ChevronUp className={`h-4 w-4 transition-transform ${showQuestionPalette ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {/* Right: Navigation Buttons */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={handleBackClick}
+                      variant="destructive"
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Report Error
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (currentQuestionIndex > 0) {
+                          setCurrentQuestionIndex(currentQuestionIndex - 1);
+                          setSelectedAnswer(null);
+                          setIsAnswerSubmitted(false);
+                        }
+                      }}
+                      disabled={currentQuestionIndex === 0}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      size="sm"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleNextQuestion}
+                      disabled={!isAnswerSubmitted && currentQuestionIndex === questions.length - 1}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      size="sm"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Question Palette Overlay */}
+              {showQuestionPalette && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-end" onClick={() => setShowQuestionPalette(false)}>
+                  <div className="bg-white w-full max-h-[70vh] overflow-y-auto rounded-t-2xl" onClick={(e) => e.stopPropagation()}>
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">Question Navigator</h3>
+                        <button
+                          onClick={() => setShowQuestionPalette(false)}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium underline"
+                        >
+                          Go to Review Page
+                        </button>
+                      </div>
+                      
+                      {/* Question Grid */}
+                      <div className="grid grid-cols-10 gap-2">
+                        {questions.map((_, idx) => {
+                          const isAnswered = isFullLength ? userAnswers[idx] !== undefined : idx < currentQuestionIndex || (idx === currentQuestionIndex && isAnswerSubmitted);
+                          const isFlagged = flaggedQuestions.has(idx);
+                          const isCurrent = idx === currentQuestionIndex;
+
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setCurrentQuestionIndex(idx);
+                                setShowQuestionPalette(false);
+                                setSelectedAnswer(null);
+                                setIsAnswerSubmitted(false);
+                              }}
+                              className={`relative h-12 rounded border-2 font-semibold text-sm flex items-center justify-center transition-all ${
+                                isCurrent
+                                  ? "border-blue-600 bg-blue-50 text-blue-700"
+                                  : isAnswered
+                                    ? "border-gray-400 bg-gray-100 text-gray-700"
+                                    : "border-gray-300 bg-white text-gray-500"
+                              }`}
+                            >
+                              {idx + 1}
+                              {isFlagged && (
+                                <Flag className="absolute -top-1 -right-1 h-4 w-4 text-red-600 fill-red-600" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </>
