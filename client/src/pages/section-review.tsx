@@ -140,7 +140,11 @@ export default function SectionReview() {
   const handleBackNavigation = () => {
     if (testId === "current") {
       router.push(`/quiz?subject=${subjectId}&unit=full-length`);
+    } else if (sectionCode === "all") {
+      // Full review goes back to test results
+      router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
     } else {
+      // Unit-wise review goes back to test results summary
       router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
     }
   };
@@ -157,17 +161,12 @@ export default function SectionReview() {
       <main className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <Button onClick={handleBackNavigation} variant="outline" size="sm">
-                <ArrowLeft className={isMobile ? "" : "h-4 w-4 mr-2"} />
-                {!isMobile && "Summary"}
-              </Button>
-              <h2 className="text-base md:text-xl font-semibold absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+            <div className="flex items-center justify-center mb-2">
+              <h2 className="text-base md:text-xl font-semibold whitespace-nowrap">
                 {sectionCode === "all"
                   ? `Full Review - Page ${currentPage + 1} of ${totalPages}`
                   : `Review Unit ${sectionData?.unitNumber || ""} - Page ${currentPage + 1} of ${totalPages}`}
               </h2>
-              <div className="w-24"></div> {/* Spacer for layout balance */}
             </div>
             <Progress
               value={((currentPage + 1) / totalPages) * 100}

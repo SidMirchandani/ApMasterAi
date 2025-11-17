@@ -231,13 +231,7 @@ export default function FullLengthResults() {
 
           {/* Unit Performance Breakdown */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <CheckCircle className="text-khan-blue h-5 w-5" />
-                <span className="text-base md:text-lg font-bold">Test History</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="space-y-2">
                 {Object.entries(testData.sectionBreakdown)
                   .sort(

@@ -98,7 +98,6 @@ export default function Navigation() {
       const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
       const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
       
-      breadcrumbs.push({ label: "Courses", href: "/learn" });
       breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
     } else if (location === "/quiz") {
       const subjectId = router.query.subject as string;
@@ -106,37 +105,35 @@ export default function Navigation() {
       const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
       const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
       
-      breadcrumbs.push({ label: "Courses", href: "/learn" });
       breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
       if (unitId) {
         breadcrumbs.push({ label: `${unitId.replace("unit", "Unit ").replace("bigidea", "Unit ")}`, href: "#" });
       }
     } else if (location === "/section-review") {
       const subjectId = router.query.subject as string;
-      const unitId = router.query.unit as string;
+      const testId = router.query.testId as string;
       const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
       const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
       
-      breadcrumbs.push({ label: "Courses", href: "/learn" });
       breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
-      if (unitId) {
-        breadcrumbs.push({ label: `${unitId.replace("unit", "Unit ").replace("bigidea", "Unit ")} Review`, href: "#" });
-      }
+      breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
+      breadcrumbs.push({ label: "Test Results", href: `/full-length-results?subject=${subjectId}&testId=${testId}` });
+      breadcrumbs.push({ label: "Review", href: "#" });
     } else if (location === "/full-length-history") {
       const subjectId = router.query.subject as string;
       const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
       const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
       
-      breadcrumbs.push({ label: "Courses", href: "/learn" });
       breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test History", href: "#" });
     } else if (location === "/full-length-results") {
       const subjectId = router.query.subject as string;
+      const testId = router.query.testId as string;
       const subject = subjectsResponse?.data?.find((s: any) => s.subjectId === subjectId);
       const subjectName = subject?.name || apSubjects.find(s => s.id === subjectId)?.name || "Subject";
       
-      breadcrumbs.push({ label: "Courses", href: "/learn" });
       breadcrumbs.push({ label: isMobile ? subjectName.slice(0, 15) + (subjectName.length > 15 ? "..." : "") : subjectName, href: `/study?subject=${subjectId}` });
+      breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test Results", href: "#" });
     } else if (location === "/profile") {
       breadcrumbs.push({ label: "Profile", href: "/profile" });

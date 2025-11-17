@@ -102,22 +102,14 @@ export default function FullLengthHistory() {
             </h1>
           </div>
 
-          <div className="flex items-center justify-center gap-3 mb-3">
+          <div className="flex items-center justify-center mb-3">
             <Button
               onClick={handleStartNewTest}
-              className="bg-khan-green hover:bg-khan-green/90"
-              size="sm"
+              className="bg-khan-green hover:bg-khan-green/90 w-full max-w-md"
+              size="lg"
             >
-              <PlayCircle className="mr-2 h-4 w-4" />
+              <PlayCircle className="mr-2 h-5 w-5" />
               Start New Test
-            </Button>
-            <Button
-              onClick={() => router.push(`/study?subject=${subjectId}`)}
-              variant="outline"
-              size="sm"
-              className="border-gray-300"
-            >
-              Exit
             </Button>
           </div>
 

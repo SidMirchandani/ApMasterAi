@@ -82,9 +82,9 @@ export function QuizResults({
     return map;
   })() : null;
 
-  // Handle navigation to the study page
-  const handleBackToStudy = () => {
-    router.push(`/subjects/${subjectId}`);
+  // Handle navigation to test history
+  const handleBackToHistory = () => {
+    router.push(`/full-length-history?subject=${subjectId}`);
   };
 
   // Render QuizReviewPage if reviewMode is true
@@ -179,7 +179,7 @@ export function QuizResults({
         <Button variant="outline" onClick={onReview}>
           Review Answers
         </Button>
-        <Button onClick={handleBackToStudy}>Back to Study</Button> {/* Changed button text and handler */}
+        <Button onClick={handleBackToHistory}>Back to Test History</Button>
       </div>
     </div>
   );
