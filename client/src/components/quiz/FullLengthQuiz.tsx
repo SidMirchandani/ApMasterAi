@@ -326,7 +326,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
                     return (
                       <div
                         key={label}
-                        className={`flex items-start gap-2 p-2.5 rounded border-2 transition-all cursor-pointer ${
+                        className={`flex items-start gap-2 p-4 rounded border-2 transition-all cursor-pointer ${
                           isSelected 
                             ? "border-blue-600 bg-white shadow-sm" 
                             : "border-gray-200 bg-white hover:border-gray-300"
@@ -340,7 +340,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
                         }`}>
                           {label}
                         </div>
-                        <div className="flex-1 pt-0 text-xs leading-snug">
+                        <div className="flex-1 pt-0 text-base leading-tight">
                           <BlockRenderer blocks={currentQuestion?.choices[label] || []} />
                         </div>
                       </div>
