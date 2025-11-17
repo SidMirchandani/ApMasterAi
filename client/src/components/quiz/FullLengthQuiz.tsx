@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QuizHeader } from "./QuizHeader";
 import { QuizBottomBar } from "./QuizBottomBar";
 import { QuestionCard } from "./QuestionCard";
 import { EnhancedQuestionPalette } from "./EnhancedQuestionPalette";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Question {
   id: string;
@@ -29,17 +30,33 @@ interface FullLengthQuizProps {
   timeElapsed: number;
   onExit: () => void;
   onSubmit: () => void;
+  onSaveAndExit: (state: any) => void;
 }
 
-export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit }: FullLengthQuizProps) {
+export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit }: FullLengthQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
   const [showQuestionPalette, setShowQuestionPalette] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
   const [timerHidden, setTimerHidden] = useState(false);
 
   const currentQuestion = questions[currentQuestionIndex];
+
+  const handleExitExam = () => {
+    setShowExitDialog(true);
+  };
+
+  const handleConfirmExit = () => {
+    const examState = {
+      currentQuestionIndex,
+      userAnswers,
+      flaggedQuestions: Array.from(flaggedQuestions),
+      timeElapsed,
+    };
+    onSaveAndExit(examState);
+  };
 
   const handleAnswerSelect = (answer: string) => {
     setUserAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }));
@@ -82,6 +99,8 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         timeElapsed={timeElapsed}
         onHideTimer={() => setTimerHidden(!timerHidden)}
         timerHidden={timerHidden}
+        onExitExam={handleExitExam}
+        showDirections={true}
       />
 
       <div className="flex-1 overflow-y-auto pb-20">
@@ -125,6 +144,23 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         onClose={() => setShowSubmitConfirm(false)}
         onConfirm={confirmSubmit}
       />
+
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Exit the Exam?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your progress will be saved and you can continue this exam later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmExit}>
+              Save and Exit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { PracticeQuiz } from "@/components/quiz/PracticeQuiz";
 import { QuizResults } from "@/components/quiz/QuizResults";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Question {
   id: string;
@@ -105,6 +106,10 @@ export default function Quiz() {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [score, setScore] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
+  const [savedExamState, setSavedExamState] = useState<any>(null);
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.push("/login");
@@ -147,6 +152,27 @@ export default function Quiz() {
         }
 
         const isFullLength = unit === "full-length";
+
+        // Check for saved exam state for full-length tests
+        if (isFullLength) {
+          try {
+            const stateResponse = await apiRequest(
+              "GET",
+              `/api/user/subjects/${subjectId}/get-exam-state`,
+            );
+            if (stateResponse.ok) {
+              const stateData = await stateResponse.json();
+              if (stateData.success && stateData.data) {
+                setSavedExamState(stateData.data);
+                setShowResumeDialog(true);
+                setIsLoading(false);
+                return; // Don't fetch questions yet
+              }
+            }
+          } catch (err) {
+            console.log("No saved exam state found");
+          }
+        }
 
         if (isFullLength) {
           const response = await apiRequest(
@@ -221,6 +247,90 @@ export default function Quiz() {
     setUserAnswers({});
     setTimeElapsed(0);
     setQuestions((q) => [...q].sort(() => Math.random() - 0.5));
+  };
+
+  const handleSaveAndExit = async (examState: any) => {
+    try {
+      await apiRequest(
+        "POST",
+        `/api/user/subjects/${subjectId}/save-exam-state`,
+        { examState }
+      );
+      router.push(`/study?subject=${subjectId}`);
+    } catch (error) {
+      console.error("Failed to save exam state:", error);
+    }
+  };
+
+  const handleResumeExam = async () => {
+    setShowResumeDialog(false);
+    setIsLoading(true);
+    
+    // Restore state
+    if (savedExamState) {
+      setCurrentQuestionIndex(savedExamState.currentQuestionIndex || 0);
+      setUserAnswers(savedExamState.userAnswers || {});
+      setFlaggedQuestions(new Set(savedExamState.flaggedQuestions || []));
+      setTimeElapsed(savedExamState.timeElapsed || 0);
+    }
+
+    // Fetch questions
+    try {
+      const subjectApiCode = SUBJECT_API_CODES[subjectId as string];
+      const response = await apiRequest(
+        "GET",
+        `/api/questions?subject=${subjectApiCode}&limit=50`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch questions");
+      const data = await response.json();
+      if (data.success && data.data?.length > 0) {
+        setQuestions(data.data);
+      } else {
+        setError("No questions found for this subject");
+      }
+    } catch (err) {
+      setError("Failed to load quiz questions");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartNewExam = async () => {
+    // Delete saved state
+    try {
+      await apiRequest(
+        "DELETE",
+        `/api/user/subjects/${subjectId}/delete-exam-state`,
+      );
+    } catch (error) {
+      console.error("Failed to delete saved exam state:", error);
+    }
+    
+    setSavedExamState(null);
+    setShowResumeDialog(false);
+    
+    // Continue with normal flow - trigger useEffect to fetch questions
+    setIsLoading(true);
+    
+    // Fetch questions
+    try {
+      const subjectApiCode = SUBJECT_API_CODES[subjectId as string];
+      const response = await apiRequest(
+        "GET",
+        `/api/questions?subject=${subjectApiCode}&limit=50`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch questions");
+      const data = await response.json();
+      if (data.success && data.data?.length > 0) {
+        setQuestions(data.data);
+      } else {
+        setError("No questions found for this subject");
+      }
+    } catch (err) {
+      setError("Failed to load quiz questions");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Save score
@@ -336,6 +446,7 @@ export default function Quiz() {
           timeElapsed={timeElapsed}
           onExit={handleExitQuiz}
           onSubmit={handleSubmitFullLength}
+          onSaveAndExit={handleSaveAndExit}
         />
       ) : (
         <PracticeQuiz
@@ -346,6 +457,25 @@ export default function Quiz() {
           onComplete={handleCompletePractice}
         />
       )}
+
+      <AlertDialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Resume Previous Exam?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have a saved exam in progress. Would you like to continue where you left off or start a new exam?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleStartNewExam}>
+              Start New Exam
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleResumeExam}>
+              Resume Exam
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
