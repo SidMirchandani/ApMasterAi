@@ -80,6 +80,10 @@ export function EnhancedQuestionPalette({
             <span>Unanswered</span>
           </div>
           <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-blue-600"></div>
+            <span>Answered</span>
+          </div>
+          <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-red-50 border-2 border-red-500 flex items-center justify-center">
               <Flag className="h-3 w-3 text-red-500" />
             </div>
