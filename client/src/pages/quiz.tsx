@@ -6,6 +6,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { FullLengthQuiz } from "@/components/quiz/FullLengthQuiz";
 import { PracticeQuiz } from "@/components/quiz/PracticeQuiz";
 import { QuizResults } from "@/components/quiz/QuizResults";
+import { QuizReviewPage } from "@/components/quiz/QuizReviewPage";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -430,18 +431,13 @@ export default function Quiz() {
   }
 
   if (isReviewMode) {
-    // Review mode implementation would go here
-    // For now, redirect back to results
     return (
-      <div className="min-h-screen bg-khan-background">
-        <Navigation />
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
-          <Button variant="outline" onClick={() => setIsReviewMode(false)}>
-            Exit Review
-          </Button>
-          <p className="mt-4 text-center text-gray-600">Review mode - to be implemented</p>
-        </div>
-      </div>
+      <QuizReviewPage
+        questions={questions}
+        userAnswers={userAnswers}
+        flaggedQuestions={flaggedQuestions}
+        onBack={() => setIsReviewMode(false)}
+      />
     );
   }
 

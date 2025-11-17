@@ -184,10 +184,6 @@ export default function SectionReview() {
                   ? q.originalTestIndex + 1
                   : globalIndex + 1;
 
-              const options = q.choices.map((choice, i) => ({
-                label: String.fromCharCode(65 + i),
-                value: choice,
-              }));
               const correctAnswerLabel = String.fromCharCode(65 + q.answerIndex);
               // Use originalTestIndex for userAnswer lookup if available, otherwise globalIndex
               const userAnswer =

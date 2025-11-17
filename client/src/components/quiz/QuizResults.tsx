@@ -1,4 +1,3 @@
-
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +5,13 @@ import { Progress } from "@/components/ui/progress";
 import { CheckCircle, XCircle, BookOpen } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
 
+// Import the QuizReviewPage component
+import QuizReviewPage from "./quizReviewPage"; // Assuming QuizReviewPage is in the same directory
+
 interface Question {
   id: string;
   prompt: string;
-  choices: string[];
+  choices: { [key: string]: string }; // Changed from string[] to object
   answerIndex: number;
   explanation: string;
   subject_code?: string;
@@ -25,6 +27,7 @@ interface QuizResultsProps {
   isFullLength: boolean;
   onReview: () => void;
   onRetake: () => void;
+  reviewMode: boolean; // Add reviewMode prop
 }
 
 export function QuizResults({
@@ -36,6 +39,7 @@ export function QuizResults({
   isFullLength,
   onReview,
   onRetake,
+  reviewMode, // Destructure reviewMode
 }: QuizResultsProps) {
   const router = useRouter();
   const percentage = Math.round((score / totalQuestions) * 100);
@@ -77,6 +81,22 @@ export function QuizResults({
 
     return map;
   })() : null;
+
+  // Handle navigation to the study page
+  const handleBackToStudy = () => {
+    router.push(`/subjects/${subjectId}`);
+  };
+
+  // Render QuizReviewPage if reviewMode is true
+  if (reviewMode) {
+    return (
+      <QuizReviewPage
+        questions={questions}
+        userAnswers={userAnswers}
+        onBack={() => onReview()} // Assuming onReview can toggle reviewMode off
+      />
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-3">
@@ -159,7 +179,7 @@ export function QuizResults({
         <Button variant="outline" onClick={onReview}>
           Review Answers
         </Button>
-        <Button onClick={onRetake}>Retake {isFullLength ? "Test" : "Quiz"}</Button>
+        <Button onClick={handleBackToStudy}>Back to Study</Button> {/* Changed button text and handler */}
       </div>
     </div>
   );
