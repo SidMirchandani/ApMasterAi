@@ -13,6 +13,9 @@
     "paths": {
       "@/*": [
         "client/src/*"
+      ],
+      "@server/*": [
+        "server/*"
       ]
     },
     "allowJs": true, // ✅ lets you mix .js and .ts files

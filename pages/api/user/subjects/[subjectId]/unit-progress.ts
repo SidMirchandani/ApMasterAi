@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../../../server/storage";
 
@@ -54,11 +53,11 @@ export default async function handler(
       case "PUT": {
         const { unitId, mcqScore } = req.body;
 
-        console.log("🔄 [unit-progress API] PUT request received:", { 
-          userId, 
-          subjectId, 
-          unitId, 
-          mcqScore 
+        console.log("🔄 [unit-progress API] PUT request received:", {
+          userId,
+          subjectId,
+          unitId,
+          mcqScore
         });
 
         if (!unitId || typeof unitId !== "string") {
