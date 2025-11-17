@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
-import { useAuth } from "@/contexts/auth-auth-context";
+import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
 import ReactMarkdown from "react-markdown";
