@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useRouter } from "next/router";
+import { QuizReviewPage } from "./QuizReviewPage";
 
 interface Question {
   id: string;
@@ -48,6 +49,8 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const [generatedExplanations, setGeneratedExplanations] = useState<Map<number, string>>(new Map());
   const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
   const [showResults, setShowResults] = useState(false); // State to control results display
+  const [isReviewMode, setIsReviewMode] = useState(false); // State for review mode
+  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({}); // Track all user answers
 
   const router = useRouter();
 
@@ -105,6 +108,8 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const handleSubmitAnswer = () => {
     if (!selectedAnswer || !currentQuestion) return;
     setIsAnswerSubmitted(true);
+    // Store the user's answer
+    setUserAnswers(prev => ({ ...prev, [currentQuestionIndex]: selectedAnswer }));
     const correctLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
     if (selectedAnswer === correctLabel) setScore((s) => s + 1);
   };
@@ -129,8 +134,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       // Navigate to the full-length-results page
       router.push(`/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`);
     } else {
-      setShowResults(false); // Close results if not full length or no testId
-      onComplete(score); // Call original onComplete for non-full length tests
+      // For practice quiz, enter review mode
+      setShowResults(false);
+      setIsReviewMode(true);
     }
   };
 
@@ -141,6 +147,21 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+
+  // Render review mode
+  if (isReviewMode) {
+    return (
+      <QuizReviewPage
+        questions={orderedQuestions}
+        userAnswers={userAnswers}
+        flaggedQuestions={flaggedQuestions}
+        onBack={() => {
+          setIsReviewMode(false);
+          onComplete(score);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -235,15 +256,23 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
             <CardHeader>
               <CardTitle>Quiz Complete!</CardTitle>
             </CardHeader>
-            <CardContent className="text-center space-y-4">
-              <p>Your Score: {score} out of {orderedQuestions.length}</p>
+            <CardContent className="text-center space-y-6">
+              <p className="text-lg">Your Score: {score} out of {orderedQuestions.length}</p>
               <p>You got {score} questions correct.</p>
-              <div className="flex justify-center gap-4">
-                <Button onClick={handleReview} className="bg-blue-600 hover:bg-blue-700">
+              <div className="flex flex-col items-center gap-4">
+                <Button 
+                  onClick={handleReview} 
+                  className="bg-blue-600 hover:bg-blue-700 w-full max-w-xs py-6 text-lg"
+                  size="lg"
+                >
                   {isFullLength && lastSavedTestId ? "View Full Results" : "Review Answers"}
                 </Button>
                 {(!isFullLength || !lastSavedTestId) && (
-                  <Button onClick={() => setShowResults(false)} className="bg-gray-400 hover:bg-gray-500">
+                  <Button 
+                    onClick={() => setShowResults(false)} 
+                    className="bg-gray-400 hover:bg-gray-500"
+                    variant="outline"
+                  >
                     Close
                   </Button>
                 )}
