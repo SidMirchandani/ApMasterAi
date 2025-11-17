@@ -87,7 +87,7 @@ export function QuestionCard({
   return (
     <Card className={`${isFlagged ? "border-red-500 border-2" : ""}`}>
       <CardHeader className="pb-1 pt-2">
-        <div className="flex items-center justify-between border-b pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-gray-50">
+        <div className="flex items-center justify-between border-b pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-gray-50 min-h-[48px]">
           <div className="flex items-center gap-2">
             <div className="bg-black text-white px-2 py-0.5 font-bold text-xs rounded">
               {questionNumber}
@@ -110,9 +110,9 @@ export function QuestionCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-1 pt-1.5 pb-1.5 px-3">
+      <CardContent className="space-y-2 p-0 pt-2 pb-2 px-3">
         {/* Question Prompt */}
-        <div className="mb-3 space-y-2 min-h-[140px] flex flex-col justify-center">
+        <div className="space-y-2 min-h-0 leading-snug">
           <BlockRenderer blocks={question.prompt_blocks || []} />
         </div>
 
@@ -150,7 +150,7 @@ export function QuestionCard({
               return (
                 <div
                   key={label}
-                  className={`flex items-start gap-2 p-2.5 rounded border transition-all cursor-pointer
+                  className={`flex items-center gap-2 p-3 rounded border transition-all cursor-pointer min-h-[48px]
                     ${bgColor} ${borderColor}
                     ${!shouldShowCorrectness && !isUserAnswer ? "hover:bg-gray-50 hover:border-gray-300" : ""}
                   `}
@@ -163,7 +163,7 @@ export function QuestionCard({
                   }`}>
                     {label}
                   </div>
-                  <div className="flex-1 pt-0 text-sm leading-tight">
+                  <div className="flex-1 text-sm leading-snug">
                     <BlockRenderer blocks={question.choices[label]} />
                   </div>
                 </div>

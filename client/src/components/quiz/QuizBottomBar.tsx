@@ -13,6 +13,7 @@ interface QuizBottomBarProps {
   isLastQuestion: boolean;
   onSubmit?: () => void;
   onReview?: () => void;
+  subjectId?: string;
 }
 
 export function QuizBottomBar({
@@ -27,13 +28,14 @@ export function QuizBottomBar({
   isLastQuestion,
   onSubmit,
   onReview,
+  subjectId,
 }: QuizBottomBarProps) {
   return (
     <div className="border-t border-gray-200 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-12">
           <div className="flex items-center gap-3">
-            <span className="text-lg font-bold text-green-600">APMaster</span>
+            <span className="text-xl font-bold text-green-600">APMaster</span>
           </div>
 
           <button
