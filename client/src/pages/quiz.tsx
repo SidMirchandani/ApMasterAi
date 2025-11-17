@@ -224,7 +224,7 @@ export default function Quiz() {
     router.push(`/study?subject=${subjectId}`);
   };
 
-  const handleSubmitFullLength = () => {
+  const handleSubmitFullLength = async () => {
     let correct = 0;
     questions.forEach((q, i) => {
       const userAns = userAnswers[i];
@@ -233,6 +233,17 @@ export default function Quiz() {
     });
     setScore(correct);
     setQuizCompleted(true);
+    
+    // Clear saved exam state after submission
+    try {
+      await apiRequest(
+        "DELETE",
+        `/api/user/subjects/${subjectId}/delete-exam-state`,
+      );
+      setSavedExamState(null);
+    } catch (error) {
+      console.error("Failed to delete saved exam state:", error);
+    }
   };
 
   const handleCompletePractice = (finalScore: number) => {
@@ -266,11 +277,8 @@ export default function Quiz() {
     setShowResumeDialog(false);
     setIsLoading(true);
     
-    // Restore state
+    // Restore timer state
     if (savedExamState) {
-      setCurrentQuestionIndex(savedExamState.currentQuestionIndex || 0);
-      setUserAnswers(savedExamState.userAnswers || {});
-      setFlaggedQuestions(new Set(savedExamState.flaggedQuestions || []));
       setTimeElapsed(savedExamState.timeElapsed || 0);
     }
 
@@ -447,6 +455,7 @@ export default function Quiz() {
           onExit={handleExitQuiz}
           onSubmit={handleSubmitFullLength}
           onSaveAndExit={handleSaveAndExit}
+          savedState={savedExamState}
         />
       ) : (
         <PracticeQuiz

@@ -31,12 +31,13 @@ interface FullLengthQuizProps {
   onExit: () => void;
   onSubmit: () => void;
   onSaveAndExit: (state: any) => void;
+  savedState?: any;
 }
 
-export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit }: FullLengthQuizProps) {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
+export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit, savedState }: FullLengthQuizProps) {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(savedState?.currentQuestionIndex || 0);
+  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>(savedState?.userAnswers || {});
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set(savedState?.flaggedQuestions || []));
   const [showQuestionPalette, setShowQuestionPalette] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
