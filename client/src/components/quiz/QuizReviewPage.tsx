@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Flag } from "lucide-react";
 import { QuestionCard } from "./QuestionCard";
 import { QuizHeader } from "./QuizHeader";
 import { QuizBottomBar } from "./QuizBottomBar";
-import { RadioGroup } from "@radix-ui/react-radio-group";
-import { BlockRenderer } from "./BlockRenderer"; // Assuming BlockRenderer is in a separate file
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
@@ -40,8 +38,6 @@ interface QuizReviewPageProps {
     updatedAnswers: { [key: number]: string },
     updatedFlagged: Set<number>,
   ) => void;
-  isPracticeMode?: boolean; // Added prop to indicate practice mode
-  practiceModeMaxQuestions?: number; // Added prop for max questions in practice mode
 }
 
 export function QuizReviewPage({
@@ -50,8 +46,6 @@ export function QuizReviewPage({
   flaggedQuestions,
   onBack,
   onSubmit,
-  isPracticeMode = false,
-  practiceModeMaxQuestions = 25,
 }: QuizReviewPageProps) {
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const [localAnswers, setLocalAnswers] = useState(userAnswers);
@@ -80,13 +74,6 @@ export function QuizReviewPage({
       />
     ));
   };
-
-  const questionsToReview = isPracticeMode
-    ? questions.slice(0, practiceModeMaxQuestions)
-    : questions;
-
-  const shouldShowReviewButton =
-    isPracticeMode && questions.length >= practiceModeMaxQuestions;
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col">
@@ -124,7 +111,7 @@ export function QuizReviewPage({
 
                 {/* Grid */}
                 <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-                  {questionsToReview.map((_, index) => {
+                  {questions.map((_, index) => {
                     const answered = localAnswers[index] != null;
                     const flagged = localFlagged.has(index);
 
@@ -163,22 +150,12 @@ export function QuizReviewPage({
               <div className="flex justify-between items-center h-16">
                 <span className="text-sm text-gray-600">APMaster</span>
 
-                {onSubmit && !shouldShowReviewButton && (
+                {onSubmit && (
                   <Button
                     onClick={() => onSubmit(localAnswers, localFlagged)}
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     Submit Test
-                  </Button>
-                )}
-
-                {/* Review button for practice mode */}
-                {shouldShowReviewButton && (
-                  <Button
-                    onClick={() => setSelectedQuestion(0)} // Start review from the first question
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-lg"
-                  >
-                    Review Answers
                   </Button>
                 )}
               </div>
@@ -190,7 +167,7 @@ export function QuizReviewPage({
         <div className="flex-1 overflow-y-auto mt-16 mb-14">
           <div className="max-w-4xl mx-auto px-4 py-6">
             <QuestionCard
-              question={questionsToReview[selectedQuestion]}
+              question={questions[selectedQuestion]}
               questionNumber={selectedQuestion + 1}
               selectedAnswer={localAnswers[selectedQuestion]}
               isFlagged={localFlagged.has(selectedQuestion)}
@@ -209,7 +186,7 @@ export function QuizReviewPage({
       {selectedQuestion !== null && (
         <QuizBottomBar
           currentQuestion={selectedQuestion + 1}
-          totalQuestions={questionsToReview.length}
+          totalQuestions={questions.length}
           onOpenPalette={() => setSelectedQuestion(null)}
           onPrevious={() =>
             selectedQuestion > 0
@@ -217,19 +194,15 @@ export function QuizReviewPage({
               : setSelectedQuestion(null)
           }
           onNext={() =>
-            selectedQuestion < questionsToReview.length - 1 &&
+            selectedQuestion < questions.length - 1 &&
             setSelectedQuestion(selectedQuestion + 1)
           }
           canGoPrevious
-          canGoNext={selectedQuestion < questionsToReview.length - 1}
-          isLastQuestion={selectedQuestion === questionsToReview.length - 1}
+          canGoNext={selectedQuestion < questions.length - 1}
+          isLastQuestion={selectedQuestion === questions.length - 1}
           onReview={
-            selectedQuestion === questionsToReview.length - 1 && isPracticeMode
-              ? () => {
-                  // When exiting review in practice mode, do not save
-                  // The onSubmit function is not called here to prevent saving
-                  setSelectedQuestion(null);
-                }
+            selectedQuestion === questions.length - 1
+              ? () => setSelectedQuestion(null)
               : undefined
           }
         />
