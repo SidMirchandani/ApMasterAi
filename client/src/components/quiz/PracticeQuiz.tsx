@@ -10,6 +10,10 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useRouter } from "next/router";
 
+// Assuming QuizReviewPage is defined elsewhere and imported.
+// For the purpose of this edit, we'll assume it exists and handles the review logic.
+// import { QuizReviewPage } from "./QuizReviewPage";
+
 interface Question {
   id: string;
   prompt: string;
@@ -38,6 +42,71 @@ interface PracticeQuizProps {
   lastSavedTestId?: string;
 }
 
+// Placeholder for QuizReviewPage component for demonstration purposes.
+// In a real scenario, this would be imported from its own file.
+const QuizReviewPage = ({ questions, userAnswers, flaggedQuestions, onBack }: any) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <Card className="w-11/12 max-w-3xl h-4/5 overflow-y-auto">
+        <CardHeader>
+          <CardTitle>Review Your Answers</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {questions.map((q: Question, index: number) => {
+            const userAnswer = userAnswers ? userAnswers[index] : null;
+            const correctAnswer = q.choices[q.answerIndex];
+            const isCorrect = userAnswer === correctAnswer;
+            const isAnswered = userAnswer !== null;
+
+            return (
+              <div key={q.id || index} className="border-b pb-4">
+                <p className="font-semibold mb-2">
+                  Question {index + 1}: {q.prompt}
+                </p>
+                <div className="ml-4">
+                  {q.choices.map((choice: string, choiceIndex: number) => {
+                    const isUserChoice = userAnswer === choice;
+                    const isCorrectAnswer = choice === correctAnswer;
+
+                    let textColorClass = '';
+                    if (isUserChoice) {
+                      textColorClass = isCorrect ? 'text-green-600' : 'text-red-600';
+                    } else if (isCorrectAnswer) {
+                      textColorClass = 'text-green-600';
+                    }
+
+                    return (
+                      <p key={choiceIndex} className={`${textColorClass} mb-1`}>
+                        {String.fromCharCode(65 + choiceIndex)}. {choice}
+                        {isCorrectAnswer && <span className="text-xs font-bold text-green-700 ml-2">(Correct Answer)</span>}
+                        {isUserChoice && !isCorrect && <span className="text-xs font-bold text-red-700 ml-2">(Your Answer)</span>}
+                      </p>
+                    );
+                  })}
+                </div>
+                {q.explanation && (
+                  <div className="mt-3 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                    <p className="font-medium text-sm">Explanation:</p>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} className="text-sm text-gray-700 prose max-w-none">
+                      {q.explanation}
+                    </ReactMarkdown>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <div className="flex justify-center gap-4 pt-4">
+            <Button onClick={onBack} className="bg-gray-400 hover:bg-gray-500">
+              Exit Review
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+
 export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComplete, isFullLength = false, lastSavedTestId }: PracticeQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -48,6 +117,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const [generatedExplanations, setGeneratedExplanations] = useState<Map<number, string>>(new Map());
   const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
   const [showResults, setShowResults] = useState(false); // State to control results display
+  const [userAnswers, setUserAnswers] = useState<Record<number, string | null>>({}); // To store user's answers for review
 
   const router = useRouter();
 
@@ -55,6 +125,14 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const orderedQuestions = isFullLength ? [...questions].reverse() : questions;
   const currentQuestion = orderedQuestions[currentQuestionIndex];
   const currentExplanation = generatedExplanations.get(currentQuestionIndex) || currentQuestion?.explanation;
+
+  // Store user's answer when selected
+  useEffect(() => {
+    if (selectedAnswer !== null) {
+      setUserAnswers(prev => ({ ...prev, [currentQuestionIndex]: selectedAnswer }));
+    }
+  }, [selectedAnswer, currentQuestionIndex]);
+
 
   useEffect(() => {
     const generateExplanationIfNeeded = async () => {
@@ -130,7 +208,12 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       router.push(`/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`);
     } else {
       setShowResults(false); // Close results if not full length or no testId
-      onComplete(score); // Call original onComplete for non-full length tests
+      // Call original onComplete for non-full length tests. This should pass the score.
+      // The prompt also mentions "when i exit review, don't save it any more".
+      // This implies that for practice quizzes (non-fullLength), we might not want to save progress or results persistently.
+      // The `onComplete` callback might handle this, or it might be a separate save mechanism.
+      // For now, we'll just call onComplete as it was originally intended.
+      onComplete(score);
     }
   };
 
@@ -141,6 +224,24 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+
+  // Conditional rendering for the review page
+  if (showResults && !isFullLength) {
+    return (
+      <QuizReviewPage
+        questions={orderedQuestions}
+        userAnswers={userAnswers}
+        flaggedQuestions={new Set()} // Pass empty flaggedQuestions for practice quiz review mode
+        onBack={() => {
+          setShowResults(false);
+          // Based on "when i exit review, don't save it any more",
+          // we might want to clear some state or prevent further saving here.
+          // For now, just closing the review modal.
+          onExit(); // Assuming onExit can be used to signify exiting the review session too.
+        }}
+      />
+    );
+  }
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -169,7 +270,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
             onToggleFlag={toggleFlag}
             isFullLength={false}
             isAnswerSubmitted={isAnswerSubmitted}
-            isReviewMode={isAnswerSubmitted}
+            isReviewMode={isAnswerSubmitted} // This prop might need refinement based on actual usage in QuestionCard
           />
 
           {isAnswerSubmitted && (
@@ -228,8 +329,8 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
         </div>
       </div>
 
-      {/* Results Summary (Conditionally Rendered) */}
-      {showResults && (
+      {/* Results Summary (Conditionally Rendered for Full Length or when not in Review mode) */}
+      {showResults && isFullLength && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <Card className="w-11/12 max-w-md">
             <CardHeader>

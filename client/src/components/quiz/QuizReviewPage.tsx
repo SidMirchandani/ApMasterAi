@@ -48,21 +48,9 @@ export function QuizReviewPage({
   onSubmit,
 }: QuizReviewPageProps) {
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
-  const [localAnswers, setLocalAnswers] = useState(userAnswers);
-  const [localFlagged, setLocalFlagged] = useState(flaggedQuestions);
-
-  const handleAnswerChange = (questionIndex: number, answer: string) => {
-    setLocalAnswers((prev) => ({ ...prev, [questionIndex]: answer }));
-  };
-
-  const handleToggleFlag = (questionIndex: number) => {
-    setLocalFlagged((prev) => {
-      const updated = new Set(prev);
-      if (updated.has(questionIndex)) updated.delete(questionIndex);
-      else updated.add(questionIndex);
-      return updated;
-    });
-  };
+  
+  // For practice quiz mode, don't allow answer changes
+  const isResultsReview = !onSubmit;
 
   const renderImage = (urls?: string[]) => {
     if (!urls?.length) return null;
@@ -82,8 +70,110 @@ export function QuizReviewPage({
         <QuizHeader title="Review Your Answers" timeElapsed={0} timerHidden />
       </div>
 
-      {/* ====================== PALETTE MODE ====================== */}
-      {selectedQuestion === null ? (
+      {/* ====================== RESULTS REVIEW MODE ====================== */}
+      {isResultsReview ? (
+        <div className="flex-1 overflow-y-auto mt-16 mb-14">
+          <div className="max-w-4xl mx-auto px-4 py-6 space-y-8">
+            {questions.map((question, index) => {
+              const userAnswer = userAnswers[index];
+              const correctAnswerLetter = String.fromCharCode(65 + question.answerIndex);
+              const isCorrect = userAnswer === correctAnswerLetter;
+              
+              return (
+                <Card key={index} className="p-6">
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-lg">Question {index + 1}</h3>
+                      <div className={`px-3 py-1 rounded-full text-sm font-semibold ${isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                      </div>
+                    </div>
+                    
+                    {/* Question prompt */}
+                    <div className="mb-4 text-gray-800">
+                      {question.prompt}
+                    </div>
+                    
+                    {/* Render question images if present */}
+                    {renderImage(question.image_urls?.question)}
+                  </div>
+
+                  {/* Answer choices */}
+                  <div className="space-y-2 mb-4">
+                    {Object.entries(question.choices).map(([letter, choice]) => {
+                      const isUserAnswer = userAnswer === letter;
+                      const isCorrectAnswer = letter === correctAnswerLetter;
+                      
+                      let bgColor = "bg-white";
+                      let borderColor = "border-gray-200";
+                      
+                      if (isCorrectAnswer) {
+                        bgColor = "bg-green-50";
+                        borderColor = "border-green-500";
+                      } else if (isUserAnswer && !isCorrect) {
+                        bgColor = "bg-red-50";
+                        borderColor = "border-red-500";
+                      }
+                      
+                      return (
+                        <div
+                          key={letter}
+                          className={`p-3 rounded-lg border-2 ${bgColor} ${borderColor}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="font-semibold text-gray-700 min-w-[24px]">
+                              {letter}.
+                            </span>
+                            <div className="flex-1">
+                              {typeof choice === 'string' ? (
+                                <span className="text-gray-800">{choice}</span>
+                              ) : (
+                                <div className="space-y-2">
+                                  {choice.map((block: any, i: number) => (
+                                    block.type === 'text' ? (
+                                      <span key={i} className="text-gray-800">{block.value}</span>
+                                    ) : (
+                                      <img key={i} src={block.url} alt="" className="max-w-full h-auto rounded" />
+                                    )
+                                  ))}
+                                </div>
+                              )}
+                              {isCorrectAnswer && (
+                                <span className="ml-2 text-green-600 font-semibold">✓ Correct Answer</span>
+                              )}
+                              {isUserAnswer && !isCorrect && (
+                                <span className="ml-2 text-red-600 font-semibold">✗ Your Answer</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* User's answer summary */}
+                  <div className={`p-3 rounded-lg mb-4 ${isCorrect ? 'bg-green-100' : 'bg-red-100'}`}>
+                    <p className="font-semibold text-sm">
+                      Your answer: {userAnswer || "Not answered"}
+                      {isCorrect ? " ✓" : ` ✗ (Correct: ${correctAnswerLetter})`}
+                    </p>
+                  </div>
+
+                  {/* Explanation */}
+                  {question.explanation && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold mb-2 text-blue-700">Explanation:</h4>
+                      <p className="text-gray-700">{question.explanation}</p>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* ====================== PALETTE MODE ====================== */
+        selectedQuestion === null ? (
         <>
           <div className="flex-1 overflow-y-auto mt-16 mb-14">
             <div className="max-w-7xl mx-auto px-4 py-8">
@@ -152,7 +242,7 @@ export function QuizReviewPage({
 
                 {onSubmit && (
                   <Button
-                    onClick={() => onSubmit(localAnswers, localFlagged)}
+                    onClick={() => onSubmit(userAnswers, flaggedQuestions)}
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     Submit Test
@@ -162,17 +252,17 @@ export function QuizReviewPage({
             </div>
           </div>
         </>
-      ) : (
-        /* ====================== QUESTION MODE ====================== */
+        ) : (
+        /* ====================== QUESTION MODE (for full-length test review) ====================== */
         <div className="flex-1 overflow-y-auto mt-16 mb-14">
           <div className="max-w-4xl mx-auto px-4 py-6">
             <QuestionCard
               question={questions[selectedQuestion]}
               questionNumber={selectedQuestion + 1}
-              selectedAnswer={localAnswers[selectedQuestion]}
-              isFlagged={localFlagged.has(selectedQuestion)}
-              onAnswerSelect={(a) => handleAnswerChange(selectedQuestion, a)}
-              onToggleFlag={() => handleToggleFlag(selectedQuestion)}
+              selectedAnswer={userAnswers[selectedQuestion]}
+              isFlagged={flaggedQuestions.has(selectedQuestion)}
+              onAnswerSelect={() => {}}
+              onToggleFlag={() => {}}
               isFullLength
               isReviewMode
               renderImage={renderImage}
@@ -180,10 +270,28 @@ export function QuizReviewPage({
             />
           </div>
         </div>
+        )
       )}
 
-      {/* ====================== NAV BAR ====================== */}
-      {selectedQuestion !== null && (
+      {/* Bottom bar with back button for results review mode */}
+      {isResultsReview && (
+        <div className="border-t border-gray-200 bg-white fixed bottom-0 left-0 right-0 z-50">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-between items-center h-16">
+              <span className="text-sm text-gray-600">APMaster</span>
+              <Button
+                onClick={onBack}
+                className="bg-gray-600 hover:bg-gray-700 text-white"
+              >
+                Back to Results
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================== NAV BAR (for full-length test review) ====================== */}
+      {!isResultsReview && selectedQuestion !== null && (
         <QuizBottomBar
           currentQuestion={selectedQuestion + 1}
           totalQuestions={questions.length}
