@@ -20,18 +20,26 @@ import { Checkbox } from "../../client/src/components/ui/checkbox";
 
 const googleProvider = new GoogleAuthProvider();
 
+type Block =
+  | { type: "text"; value: string }
+  | { type: "image"; url: string };
+
 type Question = {
   id: string;
-  prompt: string;
-  choices: string[];
+  question_id?: number;
+  subject_code?: string;
+  section_code?: string;
+  prompt_blocks?: Block[];
+  choices?: Record<"A" | "B" | "C" | "D" | "E", Block[]>;
   answerIndex: number;
+  correct_answer?: string;
   explanation?: string;
   tags?: string[];
   course?: string | null;
   chapter?: string | null;
   difficulty?: string | null;
-  subject_code?: string;
-  section_code?: string;
+  // Legacy fields for backward compatibility
+  prompt?: string;
   image_urls?: {
     question?: string[];
     A?: string[];
@@ -620,6 +628,35 @@ function Row({
   }
 
   const renderQuestionPrompt = () => {
+    if (q.prompt_blocks && q.prompt_blocks.length > 0) {
+      return (
+        <div className="max-w-xs text-xs space-y-1">
+          {q.prompt_blocks.map((block, idx) => {
+            if (block.type === "text") {
+              return <div key={idx} className="truncate">{block.value}</div>;
+            } else if (block.type === "image") {
+              return (
+                <div key={idx} className="group relative inline-block">
+                  <img
+                    src={block.url}
+                    alt={`Question image ${idx + 1}`}
+                    className="h-8 w-auto rounded border border-gray-300 cursor-pointer"
+                  />
+                  <img
+                    src={block.url}
+                    alt={`Question image ${idx + 1} enlarged`}
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                  />
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+      );
+    }
+
+    // Legacy fallback
     const hasImage = q.image_urls?.question && Array.isArray(q.image_urls.question) && q.image_urls.question.length > 0;
     const hasText = q.prompt && q.prompt.trim() !== "";
 
@@ -652,8 +689,39 @@ function Row({
     );
   };
 
-  const renderChoice = (choice: string, index: number) => {
-    const choiceKey = String.fromCharCode(65 + index) as 'A' | 'B' | 'C' | 'D' | 'E';
+  const renderChoice = (choiceKey: 'A' | 'B' | 'C' | 'D' | 'E') => {
+    if (q.choices && q.choices[choiceKey]) {
+      const blocks = q.choices[choiceKey];
+      return (
+        <div className="text-xs">
+          {blocks.map((block, idx) => {
+            if (block.type === "text") {
+              return <span key={idx}>{block.value}</span>;
+            } else if (block.type === "image") {
+              return (
+                <div key={idx} className="group relative inline-block mr-1">
+                  <img
+                    src={block.url}
+                    alt={`Choice ${choiceKey} image ${idx + 1}`}
+                    className="h-6 w-auto rounded border border-gray-300 cursor-pointer"
+                  />
+                  <img
+                    src={block.url}
+                    alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                  />
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+      );
+    }
+
+    // Legacy fallback
+    const index = ['A', 'B', 'C', 'D', 'E'].indexOf(choiceKey);
+    const choice = Array.isArray(q.choices) ? q.choices[index] : "";
     const choiceImages = q.image_urls?.[choiceKey];
     const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
     const hasText = choice && choice.trim() !== "";
@@ -701,12 +769,11 @@ function Row({
         <td className="p-3 align-top">{renderQuestionPrompt()}</td>
         <td className="p-3 align-top">
           <div className="text-xs space-y-1">
-            {Array.isArray(q.choices) &&
-              q.choices.map((c, i) => (
-                <div key={i}>
-                  {String.fromCharCode(65 + i)}. {renderChoice(c, i)}
-                </div>
-              ))}
+            {(['A', 'B', 'C', 'D', 'E'] as const).map((letter) => (
+              <div key={letter}>
+                {letter}. {renderChoice(letter)}
+              </div>
+            ))}
           </div>
         </td>
         <td className="p-3 text-center align-top font-semibold">

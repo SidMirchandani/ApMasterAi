@@ -5,15 +5,24 @@ import { Flag } from "lucide-react";
 import { QuestionCard } from "./QuestionCard";
 import { QuizHeader } from "./QuizHeader";
 import { QuizBottomBar } from "./QuizBottomBar";
+import { BlockRenderer } from './BlockRenderer';
+
+type Block =
+  | { type: "text"; value: string }
+  | { type: "image"; url: string };
 
 interface Question {
   id: string;
-  prompt: string;
-  choices: string[];
-  answerIndex: number;
-  explanation: string;
+  question_id?: number;
   subject_code?: string;
   section_code?: string;
+  prompt_blocks: Block[];
+  choices: Record<"A" | "B" | "C" | "D" | "E", Block[]>;
+  answerIndex: number;
+  correct_answer?: string;
+  explanation?: string;
+  // Legacy fields for backward compatibility
+  prompt?: string;
   image_urls?: {
     question?: string[];
     A?: string[];
@@ -100,7 +109,7 @@ export function QuizReviewPage({ questions, userAnswers, flaggedQuestions, onBac
                     <span>Unanswered</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded bg-red-50 border-2 border-red-500 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded border-2 border-red-500 flex items-center justify-center">
                       <Flag className="h-3 w-3 text-red-500" />
                     </div>
                     <span>For Review</span>

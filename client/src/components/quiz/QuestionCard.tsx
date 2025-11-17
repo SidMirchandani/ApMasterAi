@@ -3,14 +3,22 @@ import { Flag } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+type Block =
+  | { type: "text"; value: string }
+  | { type: "image"; url: string };
+
 interface Question {
   id: string;
-  prompt: string;
-  choices: string[];
-  answerIndex: number;
-  explanation: string;
+  question_id?: number;
   subject_code?: string;
   section_code?: string;
+  prompt_blocks: Block[];
+  choices: Record<"A" | "B" | "C" | "D" | "E", Block[]>;
+  answerIndex: number;
+  correct_answer?: string;
+  explanation?: string;
+  // Legacy fields for backward compatibility
+  prompt?: string;
   image_urls?: {
     question?: string[];
     A?: string[];
@@ -130,27 +138,50 @@ export function QuestionCard({
       </CardHeader>
 
       <CardContent className="space-y-3 pt-3">
-        {question.prompt && question.prompt.trim() && (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {question.prompt}
-          </ReactMarkdown>
-        )}
-
-        {question.image_urls?.question?.length > 0 && (
-          <div className="space-y-2">
-            {question.image_urls.question.map((img, ii) => (
-              <img
-                key={ii}
-                src={img}
-                className="rounded border max-w-full"
-                alt="Question"
-              />
-            ))}
+        {/* Question Prompt */}
+          <div className="mb-6">
+            <BlockRenderer blocks={question.prompt_blocks} />
           </div>
-        )}
 
         <div className="space-y-3">
-          {question.choices.map((choice, i) => renderChoice(choice, i))}
+          {/* Choices */}
+          <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
+              <div className="space-y-3">
+                {(['A', 'B', 'C', 'D', 'E'] as const).map((choiceLabel, index) => {
+                  const choiceBlocks = question.choices[choiceLabel];
+
+                  if (!choiceBlocks || choiceBlocks.length === 0) {
+                    return null;
+                  }
+
+                  return (
+                    <div
+                      key={choiceLabel}
+                      className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all ${
+                        selectedAnswer === choiceLabel
+                          ? 'border-khan-blue bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <RadioGroupItem
+                        value={choiceLabel}
+                        id={`choice-${choiceLabel}`}
+                        className="mt-1"
+                      />
+                      <Label
+                        htmlFor={`choice-${choiceLabel}`}
+                        className="flex-1 cursor-pointer"
+                      >
+                        <span className="font-semibold mr-2">{choiceLabel}.</span>
+                        <div className="inline">
+                          <BlockRenderer blocks={choiceBlocks} className="inline-block" />
+                        </div>
+                      </Label>
+                    </div>
+                  );
+                })}
+              </div>
+            </RadioGroup>
         </div>
       </CardContent>
     </Card>
