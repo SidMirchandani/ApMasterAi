@@ -5,9 +5,7 @@ import { QuestionCard } from "./QuestionCard";
 import { EnhancedQuestionPalette } from "./EnhancedQuestionPalette";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { QuizReviewPage } from "./QuizReviewPage"; // Assuming QuizReviewPage is in the same directory
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { QuizReviewPage } from "./QuizReviewPage";
 
 interface Question {
   id: string;
@@ -46,7 +44,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [timerHidden, setTimerHidden] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false); // State for review mode
-  const [showDirections, setShowDirections] = useState(true); // State for showing directions
 
   // Subject-specific directions
   const getExamDirections = () => {
@@ -193,6 +190,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         onHideTimer={() => setTimerHidden(!timerHidden)}
         timerHidden={timerHidden}
         onExitExam={handleExitExam}
+        examDirections={examDirections}
       />
 
       <div className="flex-1 overflow-y-auto">
@@ -258,113 +256,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Dialog open={showDirections} onOpenChange={setShowDirections}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
-              Please read the below directions carefully.
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 text-sm">
-            <h3 className="font-bold text-base">{examDirections.title}</h3>
-
-            {examDirections.sections?.map((section, idx) => (
-              <div key={idx}>
-                <h4 className="font-semibold">{section.title}</h4>
-                <p className="font-medium">{section.details}</p>
-                {section.description && <p className="mt-2">{section.description}</p>}
-              </div>
-            ))}
-
-            {examDirections.breakdown && (
-              <ul className="list-disc pl-5 space-y-1">
-                {examDirections.breakdown.map((item, idx) => (
-                  <li key={idx}>{item}</li>
-                ))}
-              </ul>
-            )}
-
-            {examDirections.units && (
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-blue-50">
-                    <tr>
-                      <th className="text-left p-2 font-semibold">Units</th>
-                      <th className="text-right p-2 font-semibold">Exam Weighting</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {examDirections.units.map((unit, idx) => (
-                      <tr key={idx}>
-                        <td className="p-2">{unit.name}</td>
-                        <td className="p-2 text-right font-semibold text-blue-700">{unit.weight}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {examDirections.bigIdeas && (
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-blue-50">
-                    <tr>
-                      <th className="text-left p-2 font-semibold">Big Ideas</th>
-                      <th className="text-right p-2 font-semibold">Exam Weighting</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {examDirections.bigIdeas.map((idea, idx) => (
-                      <tr key={idx}>
-                        <td className="p-2">{idea.name}</td>
-                        <td className="p-2 text-right font-semibold text-blue-700">{idea.weight}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            <p>
-              Each of the questions is followed by four suggested answers.
-              Select the best answer for each question.
-            </p>
-            <p>
-              A calculator is allowed in this section. You may use a handheld
-              calculator or the calculator available in their application.
-            </p>
-            <p>
-              Reference information is available in this application and can be
-              accessed throughout the exam.
-            </p>
-            <p>
-              You can go back and forth between questions in this section until
-              time expires. The clock will turn red when 5 minutes remain—
-              <strong>
-                the proctor will not give you any time updates or warnings.
-              </strong>
-            </p>
-            <p className="text-xs text-gray-600">
-              <strong>Copyright:</strong> "AP®" is a registered trademark of
-              the College Board. The College Board is not affiliated with, nor
-              does it endorse, this product. This is not an official test
-              provided by the College Board. The user interface (UI) is intended
-              solely for educational purposes and aims to mimic the appearance
-              of the official Bluebook interface.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() => setShowDirections(false)}
-              className="bg-khan-green hover:bg-khan-green/90"
-            >
-              Start Exam
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -14,17 +14,30 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
+interface ExamDirections {
+  title: string;
+  sections?: Array<{
+    title: string;
+    details: string;
+    description?: string;
+  }>;
+  breakdown?: string[];
+  units?: Array<{ name: string; weight: string }>;
+  bigIdeas?: Array<{ name: string; weight: string }>;
+}
+
 interface QuizHeaderProps {
   title: string;
   timeElapsed: number;
   onHideTimer?: () => void;
   timerHidden?: boolean;
   onExitExam?: () => void;
-  isLastQuestion?: boolean; // Added prop to indicate if it's the last question
-  onGoToReview?: () => void; // Added prop to navigate to review screen
+  isLastQuestion?: boolean;
+  onGoToReview?: () => void;
+  examDirections?: ExamDirections;
 }
 
-export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = false, onExitExam, isLastQuestion = false, onGoToReview }: QuizHeaderProps) {
+export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = false, onExitExam, isLastQuestion = false, onGoToReview, examDirections }: QuizHeaderProps) {
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -63,8 +76,77 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
                     <SheetTitle className="text-xl font-bold">Please read the below directions carefully.</SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 space-y-4 text-sm">
-                    <p>This AP® Practice Exam has 50 multiple-choice questions and lasts 90 minutes.</p>
-                    <p>Each of the questions is followed by four suggested answers. Select the one that best answers each question.</p>
+                    {examDirections ? (
+                      <>
+                        <h3 className="font-bold text-base">{examDirections.title}</h3>
+
+                        {examDirections.sections?.map((section, idx) => (
+                          <div key={idx}>
+                            <h4 className="font-semibold">{section.title}</h4>
+                            <p className="font-medium">{section.details}</p>
+                            {section.description && <p className="mt-2">{section.description}</p>}
+                          </div>
+                        ))}
+
+                        {examDirections.breakdown && (
+                          <ul className="list-disc pl-5 space-y-1">
+                            {examDirections.breakdown.map((item, idx) => (
+                              <li key={idx}>{item}</li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {examDirections.units && (
+                          <div className="border rounded-lg overflow-hidden">
+                            <table className="w-full text-sm">
+                              <thead className="bg-blue-50">
+                                <tr>
+                                  <th className="text-left p-2 font-semibold">Units</th>
+                                  <th className="text-right p-2 font-semibold">Exam Weighting</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y">
+                                {examDirections.units.map((unit, idx) => (
+                                  <tr key={idx}>
+                                    <td className="p-2">{unit.name}</td>
+                                    <td className="p-2 text-right font-semibold text-blue-700">{unit.weight}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {examDirections.bigIdeas && (
+                          <div className="border rounded-lg overflow-hidden">
+                            <table className="w-full text-sm">
+                              <thead className="bg-blue-50">
+                                <tr>
+                                  <th className="text-left p-2 font-semibold">Big Ideas</th>
+                                  <th className="text-right p-2 font-semibold">Exam Weighting</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y">
+                                {examDirections.bigIdeas.map((idea, idx) => (
+                                  <tr key={idx}>
+                                    <td className="p-2">{idea.name}</td>
+                                    <td className="p-2 text-right font-semibold text-blue-700">{idea.weight}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        <p>Each of the questions is followed by four suggested answers. Select the best answer for each question.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p>This AP® Practice Exam has 50 multiple-choice questions and lasts 90 minutes.</p>
+                        <p>Each of the questions is followed by four suggested answers. Select the one that best answers each question.</p>
+                      </>
+                    )}
+                    
                     <p>A calculator is allowed in this section. You may use a handheld calculator or the calculator available in their application.</p>
                     <p>Reference information is available in this application and can be accessed throughout the exam.</p>
                     <p>You can go back and forth between questions in this section until time expires. The clock will turn red when 5 minutes remain—<strong>the proctor will not give you any time updates or warnings.</strong></p>
@@ -129,8 +211,77 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
                   <SheetTitle className="text-lg font-bold">Please read the below directions carefully.</SheetTitle>
                 </SheetHeader>
                 <div className="mt-6 space-y-4 text-sm">
-                  <p>This AP® Practice Exam has 50 multiple-choice questions and lasts 90 minutes.</p>
-                  <p>Each of the questions is followed by four suggested answers. Select the one that best answers each question.</p>
+                  {examDirections ? (
+                    <>
+                      <h3 className="font-bold text-base">{examDirections.title}</h3>
+
+                      {examDirections.sections?.map((section, idx) => (
+                        <div key={idx}>
+                          <h4 className="font-semibold">{section.title}</h4>
+                          <p className="font-medium">{section.details}</p>
+                          {section.description && <p className="mt-2">{section.description}</p>}
+                        </div>
+                      ))}
+
+                      {examDirections.breakdown && (
+                        <ul className="list-disc pl-5 space-y-1">
+                          {examDirections.breakdown.map((item, idx) => (
+                            <li key={idx}>{item}</li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {examDirections.units && (
+                        <div className="border rounded-lg overflow-hidden">
+                          <table className="w-full text-sm">
+                            <thead className="bg-blue-50">
+                              <tr>
+                                <th className="text-left p-2 font-semibold">Units</th>
+                                <th className="text-right p-2 font-semibold">Exam Weighting</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                              {examDirections.units.map((unit, idx) => (
+                                <tr key={idx}>
+                                  <td className="p-2">{unit.name}</td>
+                                  <td className="p-2 text-right font-semibold text-blue-700">{unit.weight}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {examDirections.bigIdeas && (
+                        <div className="border rounded-lg overflow-hidden">
+                          <table className="w-full text-sm">
+                            <thead className="bg-blue-50">
+                              <tr>
+                                <th className="text-left p-2 font-semibold">Big Ideas</th>
+                                <th className="text-right p-2 font-semibold">Exam Weighting</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                              {examDirections.bigIdeas.map((idea, idx) => (
+                                <tr key={idx}>
+                                  <td className="p-2">{idea.name}</td>
+                                  <td className="p-2 text-right font-semibold text-blue-700">{idea.weight}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      <p>Each of the questions is followed by four suggested answers. Select the best answer for each question.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>This AP® Practice Exam has 50 multiple-choice questions and lasts 90 minutes.</p>
+                      <p>Each of the questions is followed by four suggested answers. Select the one that best answers each question.</p>
+                    </>
+                  )}
+
                   <p>A calculator is allowed in this section. You may use a handheld calculator or the calculator available in their application.</p>
                   <p>Reference information is available in this application and can be accessed throughout the exam.</p>
                   <p>You can go back and forth between questions in this section until time expires. The clock will turn red when 5 minutes remain—<strong>the proctor will not give you any time updates or warnings.</strong></p>
