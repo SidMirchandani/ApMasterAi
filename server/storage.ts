@@ -528,7 +528,7 @@ export class Storage {
     } catch (firestoreError) {
       console.error("❌ [updateUnitProgress] Firestore update failed:", firestoreError);
       throw firestoreError;
-    }ted.data() };
+    }
   }
 
   async getUnitProgress(
