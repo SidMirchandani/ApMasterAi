@@ -28,7 +28,7 @@ import { apiRequest } from "@/lib/api";
 import { apSubjects } from "@/lib/ap-subjects";
 import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/lib/hooks/useMobile";
-import { getUnitsForSubject, getSubjectByCode } from "@/subjects";
+import { getUnitsForSubject } from "@/subjects";
 
 interface StudySubject {
   id: number;

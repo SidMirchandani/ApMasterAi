@@ -1,63 +1,33 @@
 
-import { APSubject } from './common/interfaces';
+import { Unit } from './common/types';
+import { macroeconomicsUnits } from './macroeconomics/units';
+import { microeconomicsUnits } from './microeconomics/units';
+import { computerSciencePrinciplesUnits } from './computer-science-principles/units';
+import { calculusUnits } from './calculus/units';
+import { biologyUnits } from './biology/units';
 
-// Auto-import all subjects
-import macroeconomics from './APMACRO';
-import microeconomics from './APMICRO';
-import computerSciencePrinciples from './APCSP';
-import calculus from './APCALCAB';
-import biology from './APBIO';
-
-// Registry of all subjects
-const subjectRegistry: APSubject[] = [
-  macroeconomics,
-  microeconomics,
-  computerSciencePrinciples,
-  calculus,
-  biology,
-];
-
-// Create lookup maps
-const subjectsByCode = new Map<string, APSubject>();
-const subjectsByApiCode = new Map<string, APSubject>();
-
-subjectRegistry.forEach(subject => {
-  subjectsByCode.set(subject.subjectCode, subject);
-  subjectsByApiCode.set(subject.metadata.apiCode, subject);
-});
-
-// Export functions to access subjects
-export function getAllSubjects(): APSubject[] {
-  return subjectRegistry;
+export function getUnitsForSubject(subjectId: string): Unit[] {
+  switch (subjectId) {
+    case "macroeconomics":
+      return macroeconomicsUnits;
+    case "microeconomics":
+      return microeconomicsUnits;
+    case "computer-science-principles":
+      return computerSciencePrinciplesUnits;
+    case "calculus-ab":
+    case "calculus-bc":
+      return calculusUnits;
+    case "biology":
+      return biologyUnits;
+    default:
+      return [
+        {
+          id: "unit1",
+          title: "Core Concepts",
+          description: "Fundamental concepts and principles",
+          examWeight: "100%",
+          progress: 0,
+        },
+      ];
+  }
 }
-
-export function getSubjectByCode(subjectCode: string): APSubject | undefined {
-  return subjectsByCode.get(subjectCode);
-}
-
-export function getSubjectByApiCode(apiCode: string): APSubject | undefined {
-  return subjectsByApiCode.get(apiCode);
-}
-
-export function getUnitsForSubject(subjectCode: string) {
-  const subject = getSubjectByCode(subjectCode);
-  return subject?.units || [];
-}
-
-export function getSectionForUnit(subjectCode: string, unitId: string): string | undefined {
-  const subject = getSubjectByCode(subjectCode);
-  return subject?.unitToSectionMap[unitId];
-}
-
-export function getApiCodeForSubject(subjectCode: string): string | undefined {
-  const subject = getSubjectByCode(subjectCode);
-  return subject?.metadata.apiCode;
-}
-
-export function getSectionByCode(subjectCode: string, sectionCode: string) {
-  const subject = getSubjectByCode(subjectCode);
-  return subject?.sections.find(s => s.code === sectionCode);
-}
-
-// Export common interfaces
-export type { APSubject, SubjectMetadata, SubjectSection, SubjectUnit } from './common/interfaces';

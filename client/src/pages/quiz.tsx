@@ -10,7 +10,6 @@ import { QuizReviewPage } from "@/components/quiz/QuizReviewPage";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { APSUBJECT, getSubjects } from "@/subjects"; // Import APSUBJECT and getSubjects
 
 interface Question {
   id: string;
@@ -30,25 +29,74 @@ interface Question {
   };
 }
 
-// Helper function to get the API code for a subject from the modular subjects
-const getApiCodeForSubject = (subjectCode: string): string | undefined => {
-  const subjects = getSubjects();
-  const subject = subjects[subjectCode];
-  return subject?.metadata?.apiCode || subject?.subjectCode;
+const SUBJECT_API_CODES: Record<string, string> = {
+  macroeconomics: "APMACRO",
+  microeconomics: "APMICRO",
+  "computer-science-principles": "APCSP",
+  "calculus-ab": "APCALCAB",
+  "calculus-bc": "APCALCBC",
+  biology: "APBIO",
 };
 
-// Helper function to get the section code for a unit
-const getSectionCodeForUnit = (subjectCode: string, unitId: string): string | undefined => {
-  const subjects = getSubjects();
-  const subject = subjects[subjectCode];
-  if (!subject?.sections) return undefined;
-  
-  // Find the section that matches this unit ID
-  const sectionEntry = Object.entries(subject.sections).find(([_, section]: [string, any]) => {
-    return section.unitId === unitId;
-  });
-  
-  return sectionEntry?.[0];
+const SUBJECT_UNIT_MAPS: Record<string, Record<string, string>> = {
+  macroeconomics: {
+    unit1: "BEC",
+    unit2: "EIBC",
+    unit3: "NIPD",
+    unit4: "FS",
+    unit5: "LRCSP",
+    unit6: "OEITF",
+  },
+  microeconomics: {
+    unit1: "BEC",
+    unit2: "SD",
+    unit3: "PCCPM",
+    unit4: "IC",
+    unit5: "FM",
+    unit6: "MFROG",
+  },
+  "computer-science-principles": {
+    unit1: "CRD",
+    unit2: "DAT",
+    unit3: "AAP",
+    unit4: "CSN",
+    unit5: "IOC",
+    bigidea1: "CRD",
+    bigidea2: "DAT",
+    bigidea3: "AAP",
+    bigidea4: "CSN",
+    bigidea5: "IOC",
+  },
+  "calculus-ab": {
+    unit1: "LC",
+    unit2: "DDFP",
+    unit3: "DCIF",
+    unit4: "CAD",
+    unit5: "AAD",
+    unit6: "IAC",
+    unit7: "DE",
+    unit8: "AI",
+  },
+  "calculus-bc": {
+    unit1: "LC",
+    unit2: "DDFP",
+    unit3: "DCIF",
+    unit4: "CAD",
+    unit5: "AAD",
+    unit6: "IAC",
+    unit7: "DE",
+    unit8: "AI",
+  },
+  biology: {
+    unit1: "COL",
+    unit2: "CSF",
+    unit3: "CE",
+    unit4: "CCCC",
+    unit5: "HER",
+    unit6: "GER",
+    unit7: "NS",
+    unit8: "ECO",
+  },
 };
 
 export default function Quiz() {
@@ -102,7 +150,7 @@ export default function Quiz() {
       }
 
       try {
-        const subjectApiCode = getApiCodeForSubject(subjectId as string);
+        const subjectApiCode = SUBJECT_API_CODES[subjectId as string];
         if (!subjectApiCode) {
           setError(`Quiz not yet available for ${subjectId}`);
           setIsLoading(false);
@@ -143,29 +191,25 @@ export default function Quiz() {
             setQuestions(data.data);
           } else setError("No questions found for this subject");
         } else {
-          const sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
-          console.log("🎯 [Quiz] Section code mapping:", {
+          const unitMap = SUBJECT_UNIT_MAPS[subjectId as string];
+          console.log("🔍 [Quiz] Unit mapping lookup:", {
             subjectId,
             unit,
+            unitMap,
+            availableUnits: Object.keys(unitMap || {})
+          });
+
+          if (!unitMap) {
+            setError(`Quiz not yet available for ${subjectId}`);
+            setIsLoading(false);
+            return;
+          }
+
+          const sectionCode = unitMap[unit as string];
+          console.log("🎯 [Quiz] Section code mapping:", {
+            unit,
             sectionCode,
-            subjectApiCode,
-            fullMapping: {
-              APCSP: {
-                bigidea1: 'CRD',
-                bigidea2: 'DAT',
-                bigidea3: 'AAP',
-                bigidea4: 'CSN',
-                bigidea5: 'IOC'
-              },
-              APMACRO: {
-                unit1: 'BEC',
-                unit2: 'EIBC',
-                unit3: 'NIPD',
-                unit4: 'FS',
-                unit5: 'LRCSP',
-                unit6: 'OEITF'
-              }
-            }
+            subjectApiCode
           });
 
           if (!sectionCode) {
@@ -304,7 +348,7 @@ export default function Quiz() {
 
     // Fetch questions
     try {
-      const subjectApiCode = getApiCodeForSubject(subjectId as string);
+      const subjectApiCode = SUBJECT_API_CODES[subjectId as string];
       const response = await apiRequest(
         "GET",
         `/api/questions?subject=${subjectApiCode}&limit=50`,
@@ -342,7 +386,7 @@ export default function Quiz() {
 
     // Fetch questions
     try {
-      const subjectApiCode = getApiCodeForSubject(subjectId as string);
+      const subjectApiCode = SUBJECT_API_CODES[subjectId as string];
       const response = await apiRequest(
         "GET",
         `/api/questions?subject=${subjectApiCode}&limit=50`,
