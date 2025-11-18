@@ -555,32 +555,48 @@ export default function Dashboard() {
                           </div>
                           <div className="flex items-center space-x-2 group relative">
                             {(() => {
-                              // Get the actual unit codes from the subject metadata
+                              // Get subject metadata and units
                               const subjectData = getSubjectByCode(subject.subjectId);
                               const units = subjectData?.units || [];
                               const unitProgress = (subject as any).unitProgress || {};
 
+                              console.log(`[Dashboard] Subject ${subject.subjectId} - Unit Progress:`, {
+                                totalUnits: units.length,
+                                unitIds: units.map(u => u.id),
+                                progressKeys: Object.keys(unitProgress),
+                                unitProgress
+                              });
+
                               return units.map((unit, index) => {
-                                const unitId = unit?.id;
+                                const unitId = unit.id;
                                 const unitData = unitProgress[unitId];
                                 
+                                // Determine the score - check highestScore first, then mcqScore
+                                let score = 0;
+                                let hasAttempted = false;
+
+                                if (unitData) {
+                                  if (typeof unitData.highestScore === 'number') {
+                                    score = unitData.highestScore;
+                                    hasAttempted = true;
+                                  } else if (typeof unitData.mcqScore === 'number') {
+                                    score = unitData.mcqScore;
+                                    hasAttempted = unitData.mcqScore > 0;
+                                  } else if (unitData.scores && Array.isArray(unitData.scores) && unitData.scores.length > 0) {
+                                    hasAttempted = true;
+                                    score = Math.max(...unitData.scores.map((s: any) => s.percentage || 0));
+                                  }
+                                }
+
                                 console.log(`[Dashboard] Unit ${index + 1} (${unitId}):`, {
-                                  unitData,
-                                  hasData: !!unitData,
-                                  highestScore: unitData?.highestScore,
-                                  mcqScore: unitData?.mcqScore,
-                                  scores: unitData?.scores
+                                  hasUnitData: !!unitData,
+                                  score,
+                                  hasAttempted,
+                                  rawUnitData: unitData
                                 });
 
-                                // Check both highestScore and mcqScore for backwards compatibility
-                                const score = unitData?.highestScore || unitData?.mcqScore || 0;
-                                const hasAttempted = unitData && (
-                                  (unitData.scores && unitData.scores.length > 0) || 
-                                  unitData.mcqScore > 0 || 
-                                  unitData.highestScore > 0
-                                );
-
-                                let bgColor = "bg-gray-200"; // not-started
+                                // Determine status and color based on score
+                                let bgColor = "bg-gray-200";
                                 let status = "Not Started";
 
                                 if (hasAttempted) {
@@ -598,9 +614,9 @@ export default function Dashboard() {
 
                                 return (
                                   <div
-                                    key={unitId || `unit-${index}`}
+                                    key={unitId}
                                     className={`w-8 h-8 rounded ${bgColor} border border-black transition-all flex items-center justify-center text-xs font-semibold text-white`}
-                                    title={`Unit ${index + 1} (${unitId}): ${status} - ${score}%`}
+                                    title={`Unit ${index + 1} - ${unit.title}: ${status}${hasAttempted ? ` (${score}%)` : ''}`}
                                   >
                                     {status === "Mastered" && "👑"}
                                   </div>
