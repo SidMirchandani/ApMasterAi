@@ -148,6 +148,12 @@ export default function Courses() {
       adjustedDifficulty = "Hard";
     }
 
+    // Adjust units if it exceeds the limit
+    let adjustedUnits = subject.units;
+    if (subject.units > 8) {
+      adjustedUnits = 8;
+    }
+
     // Format examDate to YYYY-MM-DD with safe date handling
     let formattedExamDate: string;
     try {
@@ -176,6 +182,7 @@ export default function Courses() {
     addSubjectMutation.mutate({
       ...subject,
       difficulty: adjustedDifficulty,
+      units: adjustedUnits,
       examDate: formattedExamDate
     });
   };
