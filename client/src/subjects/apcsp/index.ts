@@ -20,7 +20,7 @@ const metadata = {
   description: 'Computational thinking, programming, internet, data analysis, and impact of computing',
   units: 5,
   difficulty: 'Medium',
-  examDate: 'May 9, 2025',
+  examDate: 'May 14, 2026',
   examTitle: 'AP® Computer Science Principles Practice Exam',
   examSections: [
     {

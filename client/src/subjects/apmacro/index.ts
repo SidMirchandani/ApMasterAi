@@ -16,7 +16,7 @@ const metadata = {
   description: 'National income, price determination, economic performance measures, and fiscal/monetary policy',
   units: 6,
   difficulty: 'Medium',
-  examDate: 'May 14, 2025',
+  examDate: 'May 8, 2026',
   examTitle: 'AP® Macroeconomics Practice Exam',
   examSections: [
     {

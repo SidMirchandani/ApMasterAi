@@ -19,7 +19,7 @@ const metadata = {
   description: 'Atomic structure, bonding, reactions, kinetics, thermodynamics, and equilibrium',
   units: 9,
   difficulty: 'Hard',
-  examDate: 'May 6, 2025',
+  examDate: 'May 5, 2026',
   examTitle: 'AP® Chemistry Practice Exam',
   examSections: [
     {

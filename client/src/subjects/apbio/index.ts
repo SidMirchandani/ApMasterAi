@@ -18,7 +18,7 @@ const metadata = {
   description: 'Molecular biology, genetics, evolution, ecology, and organism structure/function',
   units: 8,
   difficulty: 'Hard',
-  examDate: 'May 12, 2025',
+  examDate: 'May 4, 2026',
 };
 
 export const apbio: APSubject = {

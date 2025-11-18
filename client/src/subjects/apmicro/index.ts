@@ -16,7 +16,7 @@ const metadata = {
   description: 'Supply and demand, market structures, factor markets, and market failure',
   units: 6,
   difficulty: 'Medium',
-  examDate: 'May 15, 2025',
+  examDate: 'May 4, 2026',
   examTitle: 'AP® Microeconomics Practice Exam',
   examSections: [
     {
