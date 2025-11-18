@@ -1,4 +1,3 @@
-
 import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../server/db";
 
@@ -38,7 +37,20 @@ const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
     "ACB": 13,     // Acids & Bases: 11-15%
     "ATD": 8,      // Applications of Thermodynamics: 7-9%
   },
-  // Add other subjects as needed
+  "APGOV": {
+    "FAD": 18.5,   // Foundations of American Democracy: 15-22% (avg 18.5%)
+    "IAB": 30.5,   // Interactions Among Branches: 25-36% (avg 30.5%)
+    "CLCR": 15.5,  // Civil Liberties and Civil Rights: 13-18% (avg 15.5%)
+    "APIB": 12.5,  // American Political Ideologies: 10-15% (avg 12.5%)
+    "PP": 23.5,    // Political Participation: 20-27% (avg 23.5%)
+  },
+  "APPSYCH": {
+    "BBB": 20,     // Biological Bases of Behavior: 15-25% (avg 20%)
+    "COG": 20,     // Cognition: 15-25% (avg 20%)
+    "DEV": 20,     // Development and Learning: 15-25% (avg 20%)
+    "SOC": 20,     // Social Psychology and Personality: 15-25% (avg 20%)
+    "MNT": 20,     // Mental and Physical Health: 15-25% (avg 20%)
+  }
 };
 
 export default async function handler(
@@ -61,57 +73,57 @@ export default async function handler(
   try {
     const db = getDb();
     const questionLimit = limit ? parseInt(limit as string) : 25;
-    
+
     // For full-length tests without a section, use proportional distribution
     if (!section && EXAM_WEIGHTS[subject as string]) {
       const weights = EXAM_WEIGHTS[subject as string];
       const questionsRef = db.collection('questions');
       const selectedQuestions: any[] = [];
-      
+
       console.log("🔍 Fetching proportional questions for full-length test:", {
         subject,
         totalQuestions: questionLimit,
         weights
       });
-      
+
       // Calculate questions per section based on weights
       const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
       const sectionEntries = Object.entries(weights);
       let remainingQuestions = questionLimit;
-      
+
       for (let i = 0; i < sectionEntries.length; i++) {
         const [sectionCode, weight] = sectionEntries[i];
-        
+
         // For the last section, use all remaining questions to ensure we hit exactly the limit
         const sectionQuestionCount = i === sectionEntries.length - 1 
           ? remainingQuestions 
           : Math.round((weight / totalWeight) * questionLimit);
-        
+
         if (sectionQuestionCount > 0) {
           const sectionSnapshot = await questionsRef
             .where('subject_code', '==', subject as string)
             .where('section_code', '==', sectionCode)
             .limit(sectionQuestionCount * 3) // Fetch extra for randomization
             .get();
-          
+
           const sectionQuestions = sectionSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           }));
-          
+
           // Shuffle and select the needed amount
           const shuffled = sectionQuestions.sort(() => Math.random() - 0.5);
           const selected = shuffled.slice(0, sectionQuestionCount);
           selectedQuestions.push(...selected);
           remainingQuestions -= selected.length;
-          
+
           console.log(`  📊 ${sectionCode}: ${selected.length} questions (${weight}% weight)`);
         }
       }
-      
+
       // Final shuffle of all selected questions
       const finalQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
-      
+
       console.log("✅ Returning proportional questions:", {
         requested: questionLimit,
         returning: finalQuestions.length,
@@ -121,13 +133,13 @@ export default async function handler(
           weight: `${weight}%`
         }))
       });
-      
+
       return res.status(200).json({
         success: true,
         data: finalQuestions,
       });
     }
-    
+
     // Regular query logic for unit quizzes or subjects without weight config
     const fetchLimit = questionLimit * 4;
 
@@ -144,7 +156,7 @@ export default async function handler(
 
     const questionsRef = db.collection('questions');
     let query = questionsRef.where('subject_code', '==', subject as string);
-    
+
     if (section) {
       console.log("📍 [API/questions] Adding section filter:", {
         field: 'section_code',
@@ -152,7 +164,7 @@ export default async function handler(
       });
       query = query.where('section_code', '==', section as string);
     }
-    
+
     const snapshot = await query
       .limit(fetchLimit)
       .get();
@@ -174,7 +186,7 @@ export default async function handler(
         .where('subject_code', '==', subject as string)
         .limit(5)
         .get();
-      
+
       const samples = sampleQuery.docs.map(doc => ({
         id: doc.id,
         subject_code: doc.data().subject_code,

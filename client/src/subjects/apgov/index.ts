@@ -27,6 +27,11 @@ const metadata = {
       title: 'Section I: Multiple Choice',
       details: '55 Questions | 80 Minutes | 50% of Exam Score',
       description: 'Questions assess understanding of government concepts, political processes, and the U.S. political system'
+    },
+    {
+      title: 'Section II: Free Response',
+      details: '4 Questions | 100 Minutes | 50% of Exam Score',
+      description: 'Includes concept application, SCOTUS comparison, quantitative analysis, and argument essay questions'
     }
   ],
   breakdown: [

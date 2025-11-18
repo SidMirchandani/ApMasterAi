@@ -28,8 +28,13 @@ const metadata = {
   examSections: [
     {
       title: 'Section I: Multiple Choice',
-      details: '100 Questions | 70 Minutes | 66.7% of Exam Score',
+      details: '75 Questions | 90 Minutes | 66.7% of Exam Score',
       description: 'Questions assess understanding of psychological concepts and research methods'
+    },
+    {
+      title: 'Section II: Free Response',
+      details: '2 Questions | 70 Minutes | 33.3% of Exam Score',
+      description: 'Question 1: Article Analysis Question (16.65%)\nQuestion 2: Evidence-Based Question (16.65%)'
     }
   ],
   breakdown: [
