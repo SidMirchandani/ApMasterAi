@@ -2,10 +2,12 @@ import { getAllSubjects, getLegacyIdForSubjectCode } from '@/subjects';
 
 // Generate apSubjects array from subject registry
 export const apSubjects = getAllSubjects().map(subject => {
+  // Use legacy ID format for backward compatibility with database
   const legacyId = getLegacyIdForSubjectCode(subject.subjectCode) || subject.subjectCode.toLowerCase();
 
   return {
     id: legacyId,
+    subjectCode: subject.subjectCode, // Include the actual subject code
     name: subject.displayName,
     description: subject.metadata.description,
     units: subject.metadata.units,

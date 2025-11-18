@@ -30,6 +30,9 @@ const legacyIdMap: Record<string, string> = {
   'computer-science-principles': 'APCSP',
   'biology': 'APBIO',
   'chemistry': 'APCHEM',
+  'calculus-ab': 'APCALCAB',
+  'government': 'APGOV',
+  'psychology': 'APPSYCH',
 };
 
 export function getSubjectByLegacyId(legacyId: string): APSubject | undefined {
