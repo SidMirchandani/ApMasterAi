@@ -54,37 +54,27 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const getExamDirections = () => {
     const subjectKey = subjectId?.toString().toLowerCase();
 
-    if (subjectKey === 'macroeconomics') {
+    import { getSubjectByLegacyId } from '@/subjects';
+  
+  const getExamInfo = (subjectKey: string) => {
+    const subject = getSubjectByLegacyId(subjectKey);
+    
+    if (!subject) {
       return {
-        title: 'AP® Macroeconomics Practice Exam',
-        sections: [
-          {
-            title: 'Section I: Multiple Choice',
-            details: '60 Questions | 1 Hour 10 Minutes | 66% of Exam Score',
-            description: 'Questions require the use of economics content knowledge and reasoning across the range of course topics and skills in skill categories 1, 2, and 3.'
-          }
-        ],
-        units: [
-          { name: 'Unit 1: Basic Economic Concepts', weight: '5-10%' },
-          { name: 'Unit 2: Economic Indicators and the Business Cycle', weight: '12-17%' },
-          { name: 'Unit 3: National Income and Price Determination', weight: '17-27%' },
-          { name: 'Unit 4: Financial Sector', weight: '18-23%' },
-          { name: 'Unit 5: Long-Run Consequences of Stabilization Policies', weight: '20-30%' },
-          { name: 'Unit 6: Open Economy—International Trade and Finance', weight: '10-13%' }
-        ]
+        title: 'AP® Practice Exam',
+        sections: [],
+        units: []
       };
-    } else if (subjectKey === 'computer-science-principles') {
-      return {
-        title: 'AP® Computer Science Principles Practice Exam',
-        sections: [
-          {
-            title: 'Section I: End-of-Course Multiple-Choice Exam',
-            details: '70 multiple-choice questions | 120 minutes | 70% of score | 4 answer options',
-            description: ''
-          }
-        ],
-        breakdown: [
-          '57 single-select multiple-choice',
+    }
+    
+    return {
+      title: subject.metadata.examTitle || `${subject.displayName} Practice Exam`,
+      sections: subject.metadata.examSections || [],
+      units: subject.metadata.breakdown || []
+    };
+  };
+  
+  if (falsece',
           '5 single-select with reading passage about a computing innovation',
           '8 multiple-select multiple-choice: select 2 answers'
         ],

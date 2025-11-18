@@ -12,6 +12,7 @@ import remarkGfm from "remark-gfm";
 import { BlockRenderer } from "@/components/quiz/BlockRenderer";
 import { QuizBottomBar } from "@/components/quiz/QuizBottomBar";
 import { ReviewQuestionPalette } from "@/components/quiz/ReviewQuestionPalette";
+import { getSectionInfo } from "@/subjects";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 

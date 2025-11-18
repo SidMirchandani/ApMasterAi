@@ -1,125 +1,18 @@
-export const apSubjects = [
-  {
-    id: "calculus-ab",
-    name: "AP Calculus AB",
-    description: "Limits, derivatives, integrals, and the Fundamental Theorem of Calculus",
-    units: 8,
-    difficulty: "Hard",
-    examDate: "May 5, 2025"
-  },
-  {
-    id: "calculus-bc",
-    name: "AP Calculus BC",
-    description: "Advanced calculus including series, parametric equations, and polar coordinates",
-    units: 8,
-    difficulty: "Hard",
-    examDate: "May 5, 2025"
-  },
-  {
-    id: "biology",
-    name: "AP Biology",
-    description: "Molecular biology, genetics, evolution, ecology, and organism structure/function",
-    units: 8,
-    difficulty: "Hard",
-    examDate: "May 12, 2025"
-  },
-  {
-    id: "chemistry",
-    name: "AP Chemistry",
-    description: "Atomic structure, chemical bonds, reactions, kinetics, thermodynamics, and equilibrium",
-    units: 8,
-    difficulty: "Hard",
-    examDate: "May 6, 2025"
-  },
-  {
-    id: "physics-1",
-    name: "AP Physics 1",
-    description: "Mechanics, waves, sound, and simple circuits with algebra-based approach",
-    units: 7,
-    difficulty: "Hard",
-    examDate: "May 13, 2025"
-  },
-  {
-    id: "physics-c-mechanics",
-    name: "AP Physics C: Mechanics",
-    description: "Calculus-based mechanics including kinematics, dynamics, energy, and momentum",
-    units: 6,
-    difficulty: "Hard",
-    examDate: "May 12, 2025"
-  },
-  {
-    id: "english-literature",
-    name: "AP English Literature",
-    description: "Literary analysis, critical reading, and analytical writing of prose and poetry",
-    units: 8,
-    difficulty: "Medium",
-    examDate: "May 7, 2025"
-  },
-  {
-    id: "us-history",
-    name: "AP U.S. History",
-    description: "American history from 1491 to present with document analysis and essay writing",
-    units: 8,
-    difficulty: "Medium",
-    examDate: "May 8, 2025"
-  },
-  {
-    id: "european-history",
-    name: "AP European History",
-    description: "European history from 1450 to present focusing on cultural, political, and social developments",
-    units: 8,
-    difficulty: "Hard",
-    examDate: "May 14, 2025"
-  },
-  {
-    id: "psychology",
-    name: "AP Psychology",
-    description: "Introduction to psychological concepts, theories, and research methods",
-    units: 7,
-    difficulty: "Medium",
-    examDate: "May 6, 2025"
-  },
-  {
-    id: "computer-science-a",
-    name: "AP Computer Science A",
-    description: "Java programming, object-oriented design, data structures, and algorithms",
-    units: 8,
-    difficulty: "Medium",
-    examDate: "May 8, 2025"
-  },
-  {
-    id: "statistics",
-    name: "AP Statistics",
-    description: "Data analysis, probability, statistical inference, and experimental design",
-    units: 8,
-    difficulty: "Medium",
-    examDate: "May 15, 2025"
-  },
-  {
-    id: "macroeconomics",
-    name: "AP Macroeconomics",
-    description: "National income, price determination, economic performance measures, and fiscal/monetary policy",
-    units: 6,
-    difficulty: "Medium",
-    examDate: "May 14, 2025"
-  },
-  {
-    id: "microeconomics",
-    name: "AP Microeconomics",
-    description: "Supply and demand, market structures, factor markets, and market failure",
-    units: 6,
-    difficulty: "Medium",
-    examDate: "May 15, 2025"
-  },
-  {
-    id: "computer-science-principles",
-    name: "AP Computer Science Principles",
-    description: "70 multiple-choice questions | 120 minutes | 70% of score | Computational thinking, programming, internet, data analysis, and impact of computing",
-    units: 5,
-    difficulty: "Medium",
-    examDate: "May 9, 2025"
-  }
-];
+import { getAllSubjects, getLegacyIdForSubjectCode } from '@/subjects';
+
+// Generate apSubjects array from subject registry
+export const apSubjects = getAllSubjects().map(subject => {
+  const legacyId = getLegacyIdForSubjectCode(subject.subjectCode) || subject.subjectCode.toLowerCase();
+
+  return {
+    id: legacyId,
+    name: subject.displayName,
+    description: subject.metadata.description,
+    units: subject.metadata.units,
+    difficulty: subject.metadata.difficulty,
+    examDate: subject.metadata.examDate,
+  };
+});
 
 export const difficultyColors = {
   "Easy": "bg-green-100 text-green-800 border-green-200",

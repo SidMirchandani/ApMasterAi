@@ -29,75 +29,7 @@ interface Question {
   };
 }
 
-const SUBJECT_API_CODES: Record<string, string> = {
-  macroeconomics: "APMACRO",
-  microeconomics: "APMICRO",
-  "computer-science-principles": "APCSP",
-  "calculus-ab": "APCALCAB",
-  "calculus-bc": "APCALCBC",
-  biology: "APBIO",
-};
-
-const SUBJECT_UNIT_MAPS: Record<string, Record<string, string>> = {
-  macroeconomics: {
-    unit1: "BEC",
-    unit2: "EIBC",
-    unit3: "NIPD",
-    unit4: "FS",
-    unit5: "LRCSP",
-    unit6: "OEITF",
-  },
-  microeconomics: {
-    unit1: "BEC",
-    unit2: "SD",
-    unit3: "PCCPM",
-    unit4: "IC",
-    unit5: "FM",
-    unit6: "MFROG",
-  },
-  "computer-science-principles": {
-    unit1: "CRD",
-    unit2: "DAT",
-    unit3: "AAP",
-    unit4: "CSN",
-    unit5: "IOC",
-    bigidea1: "CRD",
-    bigidea2: "DAT",
-    bigidea3: "AAP",
-    bigidea4: "CSN",
-    bigidea5: "IOC",
-  },
-  "calculus-ab": {
-    unit1: "LC",
-    unit2: "DDFP",
-    unit3: "DCIF",
-    unit4: "CAD",
-    unit5: "AAD",
-    unit6: "IAC",
-    unit7: "DE",
-    unit8: "AI",
-  },
-  "calculus-bc": {
-    unit1: "LC",
-    unit2: "DDFP",
-    unit3: "DCIF",
-    unit4: "CAD",
-    unit5: "AAD",
-    unit6: "IAC",
-    unit7: "DE",
-    unit8: "AI",
-  },
-  biology: {
-    unit1: "COL",
-    unit2: "CSF",
-    unit3: "CE",
-    unit4: "CCCC",
-    unit5: "HER",
-    unit6: "GER",
-    unit7: "NS",
-    unit8: "ECO",
-  },
-};
+import { getApiCodeForSubject, getSectionCodeForUnit } from "@/subjects";
 
 export default function Quiz() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -150,7 +82,7 @@ export default function Quiz() {
       }
 
       try {
-        const subjectApiCode = SUBJECT_API_CODES[subjectId as string];
+        const subjectApiCode = getApiCodeForSubject(subjectId as string);
         if (!subjectApiCode) {
           setError(`Quiz not yet available for ${subjectId}`);
           setIsLoading(false);
@@ -191,25 +123,11 @@ export default function Quiz() {
             setQuestions(data.data);
           } else setError("No questions found for this subject");
         } else {
-          const unitMap = SUBJECT_UNIT_MAPS[subjectId as string];
+          const sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
           console.log("🔍 [Quiz] Unit mapping lookup:", {
             subjectId,
             unit,
-            unitMap,
-            availableUnits: Object.keys(unitMap || {})
-          });
-
-          if (!unitMap) {
-            setError(`Quiz not yet available for ${subjectId}`);
-            setIsLoading(false);
-            return;
-          }
-
-          const sectionCode = unitMap[unit as string];
-          console.log("🎯 [Quiz] Section code mapping:", {
-            unit,
-            sectionCode,
-            subjectApiCode
+            sectionCode
           });
 
           if (!sectionCode) {
@@ -348,7 +266,9 @@ export default function Quiz() {
 
     // Fetch questions
     try {
-      const subjectApiCode = SUBJECT_API_CODES[subjectId as string];
+      const subjectApiCode = getApiCodeForSubject(subjectId as string);
+      if (!subjectApiCode) throw new Error("Invalid subject");
+      
       const response = await apiRequest(
         "GET",
         `/api/questions?subject=${subjectApiCode}&limit=50`,
@@ -386,7 +306,9 @@ export default function Quiz() {
 
     // Fetch questions
     try {
-      const subjectApiCode = SUBJECT_API_CODES[subjectId as string];
+      const subjectApiCode = getApiCodeForSubject(subjectId as string);
+      if (!subjectApiCode) throw new Error("Invalid subject");
+      
       const response = await apiRequest(
         "GET",
         `/api/questions?subject=${subjectApiCode}&limit=50`,
