@@ -118,6 +118,14 @@ export default function Study() {
     return "In Progress";
   };
 
+  const getUnitData = (unitId: string, unitIndex: number) => {
+    const unitProgress = currentSubject?.unitProgress || {};
+    // Try multiple ID formats for backwards compatibility
+    return unitProgress[unitId] || 
+           unitProgress[`bigidea${unitIndex + 1}`] || 
+           unitProgress[`unit${unitIndex + 1}`];
+  };
+
   const getProgressBadgeColor = (level: string): string => {
     switch (level) {
       case "Mastered":
@@ -312,7 +320,7 @@ export default function Study() {
 
         <div className="space-y-4">
           {units.map((unit, index) => {
-            const unitData = currentSubject.unitProgress?.[unit.id];
+            const unitData = getUnitData(unit.id, index);
             const score = unitData?.highestScore || unitData?.mcqScore || 0;
             const hasAttempted =
               unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0);

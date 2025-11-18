@@ -573,7 +573,12 @@ export default function Dashboard() {
                                 const unit = units[index];
                                 const unitId = unit?.id || `unit${index + 1}`;
 
-                                const unitData = (subject as any).unitProgress?.[unitId];
+                                // Try multiple ID formats for backwards compatibility
+                                const unitProgress = (subject as any).unitProgress || {};
+                                const unitData = unitProgress[unitId] || 
+                                                unitProgress[`bigidea${index + 1}`] || 
+                                                unitProgress[`unit${index + 1}`];
+                                
                                 const score = unitData?.highestScore || unitData?.mcqScore || 0;
                                 const hasAttempted = unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0);
 
