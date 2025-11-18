@@ -3,7 +3,7 @@ import { Unit } from '../common/types';
 
 export const macroeconomicsUnits: Unit[] = [
   {
-    id: "unit1",
+    id: "BEC",
     title: "Basic Economic Concepts",
     description:
       "Scarcity, opportunity cost, production possibilities, comparative advantage, and economic systems",
@@ -11,7 +11,7 @@ export const macroeconomicsUnits: Unit[] = [
     progress: 0,
   },
   {
-    id: "unit2",
+    id: "EIBC",
     title: "Economic Indicators and the Business Cycle",
     description:
       "Circular flow, GDP, unemployment, price indices, and business cycles",
@@ -19,14 +19,14 @@ export const macroeconomicsUnits: Unit[] = [
     progress: 0,
   },
   {
-    id: "unit3",
+    id: "NIPD",
     title: "National Income and Price Determination",
     description: "Aggregate demand and supply, multipliers, and fiscal policy",
     examWeight: "17-27%",
     progress: 0,
   },
   {
-    id: "unit4",
+    id: "FS",
     title: "Financial Sector",
     description:
       "Money, banking, monetary policy, and the loanable funds market",
@@ -34,7 +34,7 @@ export const macroeconomicsUnits: Unit[] = [
     progress: 0,
   },
   {
-    id: "unit5",
+    id: "LRCSP",
     title: "Long-Run Consequences of Stabilization Policies",
     description:
       "Phillips curve, money growth, inflation, and fiscal/monetary policy",
@@ -42,7 +42,7 @@ export const macroeconomicsUnits: Unit[] = [
     progress: 0,
   },
   {
-    id: "unit6",
+    id: "OEITF",
     title: "Open Economy - International Trade and Finance",
     description: "Balance of payments, exchange rates, and trade policies",
     examWeight: "10-13%",

@@ -3,14 +3,14 @@ import { Unit } from '../common/types';
 
 export const computerSciencePrinciplesUnits: Unit[] = [
   {
-    id: "bigidea1",
+    id: "CRD",
     title: "Creative Development",
     description: "Collaboration, program design, and development processes",
     examWeight: "10-13%",
     progress: 0,
   },
   {
-    id: "bigidea2",
+    id: "DAT",
     title: "Data",
     description:
       "Data representation, compression, and extraction of information",
@@ -18,7 +18,7 @@ export const computerSciencePrinciplesUnits: Unit[] = [
     progress: 0,
   },
   {
-    id: "bigidea3",
+    id: "AAP",
     title: "Algorithms and Programming",
     description:
       "Variables, control structures, procedures, and program development",
@@ -26,14 +26,14 @@ export const computerSciencePrinciplesUnits: Unit[] = [
     progress: 0,
   },
   {
-    id: "bigidea4",
+    id: "CSN",
     title: "Computer Systems and Networks",
     description: "Internet structure, protocols, and cybersecurity",
     examWeight: "11-15%",
     progress: 0,
   },
   {
-    id: "bigidea5",
+    id: "IOC",
     title: "Impact of Computing",
     description:
       "Beneficial and harmful effects, digital divide, and computing innovations",

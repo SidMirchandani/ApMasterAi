@@ -3,7 +3,7 @@ import { Unit } from '../common/types';
 
 export const microeconomicsUnits: Unit[] = [
   {
-    id: "unit1",
+    id: "BEC",
     title: "Basic Economic Concepts",
     description:
       "Scarcity, opportunity cost, production possibilities, and comparative advantage",
@@ -11,7 +11,7 @@ export const microeconomicsUnits: Unit[] = [
     progress: 0,
   },
   {
-    id: "unit2",
+    id: "SD",
     title: "Supply and Demand",
     description:
       "Market equilibrium, consumer and producer surplus, and price controls",
@@ -19,14 +19,14 @@ export const microeconomicsUnits: Unit[] = [
     progress: 0,
   },
   {
-    id: "unit3",
+    id: "PC",
     title: "Production, Cost, and the Perfect Competition Model",
     description: "Production functions, cost curves, and profit maximization",
     examWeight: "22-25%",
     progress: 0,
   },
   {
-    id: "unit4",
+    id: "IMP",
     title: "Imperfect Competition",
     description:
       "Monopoly, oligopoly, monopolistic competition, and game theory",
@@ -34,14 +34,14 @@ export const microeconomicsUnits: Unit[] = [
     progress: 0,
   },
   {
-    id: "unit5",
+    id: "FM",
     title: "Factor Markets",
     description: "Labor markets, capital markets, and income distribution",
     examWeight: "10-13%",
     progress: 0,
   },
   {
-    id: "unit6",
+    id: "MF",
     title: "Market Failure and the Role of Government",
     description: "Externalities, public goods, and government intervention",
     examWeight: "8-13%",
