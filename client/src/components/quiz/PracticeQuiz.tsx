@@ -118,6 +118,38 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
 
     const correctLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
     if (selectedAnswer === correctLabel) setScore((s) => s + 1);
+
+    // Calculate and save unit progress
+    const unit = currentQuestion.id.split('_')[0]; // Assuming unit ID is the prefix before the first underscore
+    const unitQuestionsCount = orderedQuestions.filter(q => q.id.startsWith(unit)).length;
+    const currentUnitQuestionsAnswered = Object.keys(finalUserAnswers).filter(index => orderedQuestions[parseInt(index)].id.startsWith(unit)).length;
+    const percentage = Math.round((currentUnitQuestionsAnswered / unitQuestionsCount) * 100);
+
+
+    // Save the unit progress
+      console.log(`📊 [PracticeQuiz] Saving unit progress for subject=${subjectId}, unit=${unit}, score=${percentage}%`);
+
+      const progressResponse = apiRequest(
+        "PUT",
+        `/api/user/subjects/${subjectId}/unit-progress`,
+        {
+          unitId: unit,
+          mcqScore: percentage,
+        }
+      );
+
+      progressResponse.then(response => {
+        if (response.ok) {
+          response.json().then(data => {
+            console.log(`✅ [PracticeQuiz] Unit progress saved successfully:`, data);
+          });
+        } else {
+          console.error(`❌ [PracticeQuiz] Failed to save unit progress. Status: ${response.status}`);
+        }
+      }).catch(error => {
+        console.error("❌ [PracticeQuiz] Error saving unit progress:", error);
+      });
+
   };
 
   const handleNextQuestion = () => {
