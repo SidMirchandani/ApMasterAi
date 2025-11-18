@@ -47,6 +47,7 @@ export default function Dashboard() {
   const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
   const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
   const [subjectToArchive, setSubjectToArchive] = useState<DashboardSubject | null>(null);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false); // State for the remove dialog
 
   // Fetch user profile with immediate data loading
   const { data: userProfile } = useQuery<{
@@ -274,6 +275,7 @@ export default function Dashboard() {
       });
 
       setSubjectToRemove(null);
+      setShowRemoveDialog(false); // Close the dialog on successful deletion
     },
     onSettled: () => {
       // Ensure the UI is updated
@@ -281,7 +283,31 @@ export default function Dashboard() {
     }
   });
 
-  // Error handling is now done in the mutation's onError callback
+  // Function to handle subject sync
+  const handleSyncExamDates = async () => {
+    try {
+      const response = await apiRequest('POST', '/api/user/subjects/update-exam-dates');
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Exam Dates Synced",
+          description: `Updated ${data.updates?.length || 0} subjects with latest exam dates`,
+        });
+        // Invalidate the 'subjects' query to refetch the updated data
+        queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to sync exam dates");
+      }
+    } catch (error: any) {
+      console.error('Failed to sync exam dates:', error);
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Could not update exam dates",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Simple auth redirect
   useEffect(() => {
@@ -292,6 +318,7 @@ export default function Dashboard() {
 
   const handleRemoveSubject = (subject: DashboardSubject) => {
     setSubjectToRemove(subject);
+    setShowRemoveDialog(true); // Open the dialog
   };
 
   const confirmRemoveSubject = () => {
@@ -303,7 +330,7 @@ export default function Dashboard() {
         subjectName: subjectToRemove.name
       });
       removeSubjectMutation.mutate(idToDelete);
-      setSubjectToRemove(null);
+      // The dialog will be closed in onSuccess or onError of the mutation
     }
   };
 
@@ -403,17 +430,27 @@ export default function Dashboard() {
 
       <main className="py-4 md:py-6 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto w-full">
-          <div className="mb-4">
-            <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark mb-1">
-              {userProfile?.data?.firstName ? (
-                <>Welcome back, {userProfile.data.firstName}!</>
-              ) : (
-                <>Welcome back!</>
-              )}
-            </h1>
-            <p className="text-lg text-khan-gray-medium">
-              Continue your AP preparation journey
-            </p>
+          <div className="mb-4 flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark mb-1">
+                {userProfile?.data?.firstName ? (
+                  <>Welcome back, {userProfile.data.firstName}!</>
+                ) : (
+                  <>Welcome back!</>
+                )}
+              </h1>
+              <p className="text-lg text-khan-gray-medium">
+                Continue your AP preparation journey
+              </p>
+            </div>
+            <Button
+              onClick={handleSyncExamDates}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              Sync Exam Dates
+            </Button>
           </div>
 
           {isInitialLoading ? (
@@ -563,7 +600,7 @@ export default function Dashboard() {
                                 // All other subjects use unit1, unit2, etc.
                                 unitId = `unit${index + 1}`;
                               }
-                              
+
                               const unitData = (subject as any).unitProgress?.[unitId];
                               const score = unitData?.highestScore || 0;
                               const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;
@@ -701,6 +738,27 @@ export default function Dashboard() {
             </>
           )}
         </div>
+
+        {/* AlertDialog for confirming subject removal */}
+        <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Subject?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete <strong>"{subjectToRemove?.name}"</strong>? This action cannot be undone and all your progress will be permanently lost.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setSubjectToRemove(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmRemoveSubject}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
