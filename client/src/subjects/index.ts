@@ -33,22 +33,31 @@ const legacyIdMap: Record<string, string> = {
   'psychology': 'APPSYCH',
 };
 
+// Create a reverse map from legacy ID to Subject object for quicker lookups
+const legacyIdRegistry: Record<string, APSubject> = Object.entries(legacyIdMap).reduce((acc, [legacyId, subjectCode]) => {
+  if (subjectRegistry[subjectCode]) {
+    acc[legacyId] = subjectRegistry[subjectCode];
+  }
+  return acc;
+}, {} as Record<string, APSubject>);
+
+
 export function getSubjectByLegacyId(legacyId: string): APSubject | undefined {
-  const subjectCode = legacyIdMap[legacyId];
-  return subjectCode ? subjectRegistry[subjectCode] : undefined;
+  return legacyIdRegistry[legacyId];
 }
 
-export function getSubjectByCode(subjectCode: string): APSubject | undefined {
-  const subject = subjectRegistry[subjectCode];
+export function getSubjectByCode(code: string): APSubject | undefined {
+  const bySubjectCode = subjectRegistry[code];
+  const byLegacyId = legacyIdRegistry[code];
+
   console.log('🔎 [getSubjectByCode] Lookup:', {
-    input: subjectCode,
-    found: !!subject,
-    subjectCode: subject?.subjectCode,
-    displayName: subject?.displayName,
-    unitCount: subject?.units?.length,
-    unitIds: subject?.units?.map(u => u.id)
+    input: code,
+    foundBySubjectCode: !!bySubjectCode,
+    foundByLegacyId: !!byLegacyId,
+    result: !!(bySubjectCode || byLegacyId)
   });
-  return subject;
+
+  return bySubjectCode || byLegacyId;
 }
 
 export function getUnitsForSubject(subjectIdOrCode: string): Unit[] {
