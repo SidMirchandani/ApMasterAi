@@ -100,10 +100,10 @@ export default async function handler(
           : Math.round((weight / totalWeight) * questionLimit);
 
         if (sectionQuestionCount > 0) {
+          // Fetch ALL questions for this section (no limit)
           const sectionSnapshot = await questionsRef
             .where('subject_code', '==', subject as string)
             .where('section_code', '==', sectionCode)
-            .limit(sectionQuestionCount * 3) // Fetch extra for randomization
             .get();
 
           const sectionQuestions = sectionSnapshot.docs.map(doc => ({
@@ -111,13 +111,13 @@ export default async function handler(
             ...doc.data()
           }));
 
-          // Shuffle and select the needed amount
+          // Shuffle all questions and select the needed amount
           const shuffled = sectionQuestions.sort(() => Math.random() - 0.5);
           const selected = shuffled.slice(0, sectionQuestionCount);
           selectedQuestions.push(...selected);
           remainingQuestions -= selected.length;
 
-          console.log(`  📊 ${sectionCode}: ${selected.length} questions (${weight}% weight)`);
+          console.log(`  📊 ${sectionCode}: ${selected.length} questions (${weight}% weight) from ${sectionQuestions.length} available`);
         }
       }
 

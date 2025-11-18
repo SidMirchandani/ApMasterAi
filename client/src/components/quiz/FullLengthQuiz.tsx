@@ -37,10 +37,11 @@ interface FullLengthQuizProps {
   onSubmit: (answers?: { [key: number]: string }) => void;
   onSaveAndExit: (state: any) => void;
   savedState?: any;
+  examConfig?: { questions: number; timeMinutes: number } | null;
 }
 
-export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit, savedState }: FullLengthQuizProps) {
-  const router = useRouter(); // Initialize router
+export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit, savedState, examConfig }: FullLengthQuizProps) {
+  const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(savedState?.currentQuestionIndex || 0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>(savedState?.userAnswers || {});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set(savedState?.flaggedQuestions || []));
@@ -50,6 +51,37 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [timerHidden, setTimerHidden] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(() => {
+    const totalSeconds = (examConfig?.timeMinutes || 90) * 60;
+    return savedState?.timeRemaining !== undefined ? savedState.timeRemaining : totalSeconds;
+  });
+  const [showTimeWarning, setShowTimeWarning] = useState(false);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (isReviewMode || isSubmitting) return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          // Time's up - auto submit
+          clearInterval(timer);
+          handleSubmitTest();
+          return 0;
+        }
+
+        // Show warning at 10 minutes (600 seconds)
+        if (prev === 600 && !showTimeWarning) {
+          setShowTimeWarning(true);
+          setTimeout(() => setShowTimeWarning(false), 5000); // Hide after 5 seconds
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isReviewMode, isSubmitting]);
 
   // Subject-specific directions
   const getExamDirections = () => {
@@ -95,6 +127,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       userAnswers,
       flaggedQuestions: Array.from(flaggedQuestions),
       timeElapsed,
+      timeRemaining,
     };
 
     try {
@@ -237,13 +270,21 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         <QuizHeader
           title={`${subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Practice Exam`}
           timeElapsed={timeElapsed}
+          timeRemaining={timeRemaining}
           onHideTimer={() => setTimerHidden(!timerHidden)}
           timerHidden={timerHidden}
           onExitExam={handleExitExam}
           examDirections={examDirections}
-          subjectId={subjectId} // Pass subjectId to QuizHeader
+          subjectId={subjectId}
         />
       </div>
+
+      {/* Time warning overlay */}
+      {showTimeWarning && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-orange-500 text-white px-6 py-3 rounded-lg shadow-lg animate-pulse">
+          <p className="font-semibold">⏰ 10 minutes remaining!</p>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-14">
         <div className="max-w-4xl mx-auto px-4 py-3">

@@ -13,6 +13,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import React, { useState, useEffect, useRef } from 'react';
+
 
 interface ExamDirections {
   title: string;
@@ -35,14 +37,102 @@ interface QuizHeaderProps {
   isLastQuestion?: boolean;
   onGoToReview?: () => void;
   examDirections?: ExamDirections;
+  totalTimeSeconds: number; // Total time for the exam
+  onTimerEnd?: () => void; // Callback when timer hits 0
+  onTimerTick?: (remainingSeconds: number) => void; // Callback on each tick
+  initialTimeRemaining?: number; // For restoring saved state
 }
 
-export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = false, onExitExam, isLastQuestion = false, onGoToReview, examDirections }: QuizHeaderProps) {
+// Define time limits for different exams (in minutes)
+const EXAM_TIME_LIMITS: { [key: string]: number } = {
+  "AP Macro": 70,
+  "AP Micro": 70,
+  "AP Psych": 70,
+  "AP Gov": 80,
+  "AP Chem": 90,
+  "APCSP": 120,
+};
+
+export function QuizHeader({
+  title,
+  timeElapsed,
+  onHideTimer,
+  timerHidden = false,
+  onExitExam,
+  isLastQuestion = false,
+  onGoToReview,
+  examDirections,
+  totalTimeSeconds,
+  onTimerEnd,
+  onTimerTick,
+  initialTimeRemaining,
+}: QuizHeaderProps) {
+  const [timeRemaining, setTimeRemaining] = useState<number | undefined>(initialTimeRemaining);
+  const [isLowTime, setIsLowTime] = useState<boolean>(false);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // If initialTimeRemaining is provided, use it. Otherwise, use totalTimeSeconds.
+    setTimeRemaining(initialTimeRemaining !== undefined ? initialTimeRemaining : totalTimeSeconds);
+  }, [totalTimeSeconds, initialTimeRemaining]);
+
+  useEffect(() => {
+    if (timeRemaining !== undefined && timeRemaining > 0 && !timerHidden) {
+      timerIntervalRef.current = setInterval(() => {
+        setTimeRemaining((prevTime) => {
+          if (prevTime !== undefined) {
+            const newTime = prevTime - 1;
+            // Check for 10-minute warning
+            if (newTime <= 600 && !isLowTime) { // 10 minutes = 600 seconds
+              setIsLowTime(true);
+              // Optionally, you can trigger a visual alert or sound here
+            } else if (newTime > 600 && isLowTime) {
+              setIsLowTime(false);
+            }
+
+            if (newTime === 0) {
+              if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+              }
+              if (onTimerEnd) {
+                onTimerEnd(); // Trigger auto-submit
+              }
+              return 0;
+            }
+            if (onTimerTick) {
+              onTimerTick(newTime); // Pass remaining time to parent
+            }
+            return newTime;
+          }
+          return prevTime;
+        });
+      }, 1000);
+    } else if (timeRemaining === 0) {
+      // Timer has already reached zero, ensure it's marked as low time if applicable
+      if (totalTimeSeconds <= 600) {
+        setIsLowTime(true);
+      }
+    }
+
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, [timeRemaining, timerHidden, onTimerEnd, onTimerTick, isLowTime, totalTimeSeconds]);
+
+
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
     return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const formatCountdown = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Extract short subject code from title (e.g., "AP® Computer Science Principles" -> "APCSP")
@@ -160,9 +250,11 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-gray-700">
+            <div className={`flex items-center gap-2 text-sm font-medium ${isLowTime ? 'text-orange-600' : ''}`}>
               <Clock className="h-5 w-5" />
-              {!timerHidden && <span className="font-mono text-lg">{formatTime(timeElapsed)}</span>}
+              <span className="hidden sm:inline">
+                {timeRemaining !== undefined ? formatCountdown(timeRemaining) : formatTime(timeElapsed)}
+              </span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -297,9 +389,11 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
 
           {/* Second row: Timer and tools */}
           <div className="flex justify-between items-center h-10 mt-1">
-            <div className="flex items-center gap-2 text-gray-700">
+            <div className={`flex items-center gap-2 text-sm font-medium ${isLowTime ? 'text-orange-600' : ''}`}>
               <Clock className="h-4 w-4" />
-              {!timerHidden && <span className="font-mono text-sm">{formatTime(timeElapsed)}</span>}
+              <span className="hidden sm:inline">
+                {timeRemaining !== undefined ? formatCountdown(timeRemaining) : formatTime(timeElapsed)}
+              </span>
             </div>
 
             <div className="flex items-center gap-1">

@@ -31,6 +31,16 @@ interface Question {
 
 import { getApiCodeForSubject, getSectionCodeForUnit } from "@/subjects";
 
+// Exam configurations: questions and time per test
+const EXAM_CONFIGS: { [key: string]: { questions: number; timeMinutes: number } } = {
+  APMACRO: { questions: 60, timeMinutes: 70 },
+  APMICRO: { questions: 60, timeMinutes: 70 },
+  APPSYCH: { questions: 100, timeMinutes: 70 },
+  APGOV: { questions: 55, timeMinutes: 80 },
+  APCHEM: { questions: 60, timeMinutes: 90 },
+  APCSP: { questions: 70, timeMinutes: 120 }
+};
+
 export default function Quiz() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -53,24 +63,33 @@ export default function Quiz() {
     if (!loading && !isAuthenticated) router.push("/login");
   }, [loading, isAuthenticated, router]);
 
-  // Timer
+  // Timer for full-length quizzes
   useEffect(() => {
-    if (quizCompleted || isReviewMode) return;
+    if (quizCompleted || isReviewMode || !isFullLength) return;
+
+    const totalSeconds = (EXAM_CONFIGS[subjectId as string]?.timeMinutes || 0) * 60;
+
+    if (timeElapsed >= totalSeconds) {
+      // Time's up, auto-submit
+      handleSubmitFullLength(userAnswers);
+      return;
+    }
+
     const timer = setInterval(() => setTimeElapsed((p) => p + 1), 1000);
     return () => clearInterval(timer);
-  }, [quizCompleted, isReviewMode]);
+  }, [quizCompleted, isReviewMode, timeElapsed, userAnswers, subjectId, isFullLength]);
 
   // Warn before leaving page
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!quizCompleted && questions.length > 0 && !isReviewMode) {
+      if (!quizCompleted && questions.length > 0 && !isReviewMode && isFullLength) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [quizCompleted, questions.length, isReviewMode]);
+  }, [quizCompleted, questions.length, isReviewMode, isFullLength]);
 
   // FETCH QUESTIONS
   useEffect(() => {
@@ -113,7 +132,8 @@ export default function Quiz() {
         }
 
         if (isFullLength) {
-          const questionLimit = subjectApiCode === 'APMICRO' || subjectApiCode === 'APCHEM' ? 60 : 50;
+          const examConfig = EXAM_CONFIGS[subjectApiCode];
+          const questionLimit = examConfig?.questions || 60;
           const response = await apiRequest(
             "GET",
             `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,
@@ -121,8 +141,12 @@ export default function Quiz() {
           if (!response.ok) throw new Error("Failed to fetch questions");
           const data = await response.json();
           if (data.success && data.data?.length > 0) {
-            setQuestions(data.data);
-          } else setError("No questions found for this subject");
+            // Shuffle all questions and select the required number
+            const shuffled = [...data.data].sort(() => Math.random() - 0.5);
+            setQuestions(shuffled.slice(0, questionLimit));
+          } else {
+            setError("No questions found for this subject");
+          }
         } else {
           console.log("🔍 [Quiz] Practice quiz - Starting lookup:", {
             subjectId,
@@ -176,7 +200,7 @@ export default function Quiz() {
             });
             throw new Error("Failed to fetch");
           }
-          
+
           const data = await response.json();
 
           console.log("📥 [Quiz] API response received:", {
@@ -206,6 +230,7 @@ export default function Quiz() {
         }
       } catch (err) {
         setError("Failed to load quiz questions");
+        console.error("Error fetching questions:", err);
       } finally {
         setIsLoading(false);
       }
@@ -226,11 +251,14 @@ export default function Quiz() {
     let correct = 0;
     questions.forEach((q, i) => {
       const userAns = answersToUse[i];
-      const correctAns = String.fromCharCode(65 + q.answerIndex);
+      // Ensure answerIndex is valid and convert to char code
+      const correctAns = (q.answerIndex !== undefined && q.answerIndex >= 0 && q.answerIndex < 5)
+        ? String.fromCharCode(65 + q.answerIndex)
+        : ''; // Handle cases where answerIndex might be missing or invalid
       if (userAns === correctAns) correct++;
     });
 
-    const percentage = Math.round((correct / questions.length) * 100);
+    const percentage = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
 
     // Save the test results
     try {
@@ -251,16 +279,30 @@ export default function Quiz() {
         const testId = data.data?.id;
 
         // Clear saved exam state after submission
-        await apiRequest(
-          "DELETE",
-          `/api/user/subjects/${subjectId}/delete-exam-state`,
-        );
-        setSavedExamState(null);
+        try {
+          await apiRequest(
+            "DELETE",
+            `/api/user/subjects/${subjectId}/delete-exam-state`,
+          );
+          setSavedExamState(null);
+        } catch (deleteError) {
+          console.error("Failed to clear saved exam state:", deleteError);
+        }
+
 
         // Redirect to the full-length results page
         if (testId) {
           router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
+        } else {
+          // Fallback if testId is not returned
+          setScore(correct);
+          setQuizCompleted(true);
         }
+      } else {
+        console.error("Failed to save test results, API returned not ok");
+        // Fall back to showing results on the same page if save fails
+        setScore(correct);
+        setQuizCompleted(true);
       }
     } catch (error) {
       console.error("Failed to save test results:", error);
@@ -281,7 +323,57 @@ export default function Quiz() {
     setIsReviewMode(false);
     setUserAnswers({});
     setTimeElapsed(0);
-    setQuestions((q) => [...q].sort(() => Math.random() - 0.5));
+    setFlaggedQuestions(new Set());
+    setCurrentQuestionIndex(0);
+    // Re-fetch questions to ensure a fresh set
+    setIsLoading(true); // Show loading indicator while fetching
+    const fetchFreshQuestions = async () => {
+      try {
+        const subjectApiCode = getApiCodeForSubject(subjectId as string);
+        if (!subjectApiCode) throw new Error("Invalid subject");
+
+        if (isFullLength) {
+          const examConfig = EXAM_CONFIGS[subjectApiCode];
+          const questionLimit = examConfig?.questions || 60;
+          const response = await apiRequest(
+            "GET",
+            `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,
+          );
+          if (!response.ok) throw new Error("Failed to fetch questions");
+          const data = await response.json();
+          if (data.success && data.data?.length > 0) {
+            const shuffled = [...data.data].sort(() => Math.random() - 0.5);
+            setQuestions(shuffled.slice(0, questionLimit));
+          } else {
+            setError("No questions found for this subject");
+          }
+        } else {
+          // For practice quizzes, re-fetch based on unit
+          const sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
+          if (!sectionCode) {
+            setError("Invalid unit");
+            setIsLoading(false);
+            return;
+          }
+          const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`;
+          const response = await apiRequest("GET", apiUrl);
+          if (!response.ok) throw new Error("Failed to fetch");
+          const data = await response.json();
+          if (data.success && data.data?.length > 0) {
+            const shuffled = [...data.data].sort(() => Math.random() - 0.5);
+            setQuestions(shuffled.slice(0, 25));
+          } else {
+            setError("No questions found");
+          }
+        }
+      } catch (err) {
+        setError("Failed to load quiz questions");
+        console.error("Error re-fetching questions:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchFreshQuestions();
   };
 
   const handleSaveAndExit = async (examState: any) => {
@@ -289,11 +381,12 @@ export default function Quiz() {
       await apiRequest(
         "POST",
         `/api/user/subjects/${subjectId}/save-exam-state`,
-        { examState }
+        { examState: { ...examState, timeElapsed } } // Include current time elapsed
       );
       router.push(`/study?subject=${subjectId}`);
     } catch (error) {
       console.error("Failed to save exam state:", error);
+      // Optionally show a user-facing error message
     }
   };
 
@@ -302,8 +395,8 @@ export default function Quiz() {
     setIsLoading(true);
 
     // Restore timer state
-    if (savedExamState) {
-      setTimeElapsed(savedExamState.timeElapsed || 0);
+    if (savedExamState && savedExamState.timeElapsed !== undefined) {
+      setTimeElapsed(savedExamState.timeElapsed);
     }
 
     // Fetch questions
@@ -311,7 +404,8 @@ export default function Quiz() {
       const subjectApiCode = getApiCodeForSubject(subjectId as string);
       if (!subjectApiCode) throw new Error("Invalid subject");
 
-      const questionLimit = subjectApiCode === 'APMICRO' || subjectApiCode === 'APCHEM' ? 60 : 50;
+      const examConfig = EXAM_CONFIGS[subjectApiCode];
+      const questionLimit = examConfig?.questions || 60;
       const response = await apiRequest(
         "GET",
         `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,
@@ -325,6 +419,7 @@ export default function Quiz() {
       }
     } catch (err) {
       setError("Failed to load quiz questions");
+      console.error("Error resuming exam:", err);
     } finally {
       setIsLoading(false);
     }
@@ -352,7 +447,8 @@ export default function Quiz() {
       const subjectApiCode = getApiCodeForSubject(subjectId as string);
       if (!subjectApiCode) throw new Error("Invalid subject");
 
-      const questionLimit = subjectApiCode === 'APMICRO' || subjectApiCode === 'APCHEM' ? 60 : 50;
+      const examConfig = EXAM_CONFIGS[subjectApiCode];
+      const questionLimit = examConfig?.questions || 60;
       const response = await apiRequest(
         "GET",
         `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,
@@ -366,6 +462,7 @@ export default function Quiz() {
       }
     } catch (err) {
       setError("Failed to load quiz questions");
+      console.error("Error starting new exam:", err);
     } finally {
       setIsLoading(false);
     }
@@ -375,14 +472,16 @@ export default function Quiz() {
   useEffect(() => {
     const saveScore = async () => {
       if (!quizCompleted || !subjectId || !unit || isFullLength) return;
-      const pct = Math.round((score / questions.length) * 100);
+      const pct = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
       try {
         await apiRequest(
           "PUT",
           `/api/user/subjects/${subjectId}/unit-progress`,
           { unitId: unit, mcqScore: pct },
         );
-      } catch (e) {}
+      } catch (e) {
+        console.error("Failed to save practice quiz score:", e);
+      }
     };
     saveScore();
   }, [
@@ -466,6 +565,7 @@ export default function Quiz() {
           onSubmit={handleSubmitFullLength}
           onSaveAndExit={handleSaveAndExit}
           savedState={savedExamState}
+          examConfig={EXAM_CONFIGS[subjectId as string]}
         />
       ) : (
         <PracticeQuiz
