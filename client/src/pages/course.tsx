@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/auth-context";
 import Navigation from "@/components/ui/navigation";
@@ -8,18 +8,71 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Clock, Target, Users } from "lucide-react";
+import { BookOpen, Clock, Target, Users, Plus } from "lucide-react";
+import { getSubjectByLegacyId, getLegacyIdForSubjectCode } from "@/subjects";
+import { apiRequest } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Course() {
   const router = useRouter();
   const { id } = router.query;
   const { isAuthenticated, loading } = useAuth();
+  const { toast } = useToast();
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, loading, router]);
+
+  const handleAddCourse = async () => {
+    if (!id || typeof id !== "string") return;
+
+    setIsAdding(true);
+    try {
+      const subject = getSubjectByLegacyId(id);
+      if (!subject) {
+        toast({
+          title: "Error",
+          description: "Subject not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await apiRequest("POST", "/api/user/subjects", {
+        subjectId: subject.subjectCode,
+        name: subject.displayName,
+        description: subject.metadata.description,
+        units: subject.units.length,
+        examDate: subject.metadata.examDate,
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: `${subject.displayName} added to your dashboard!`,
+        });
+        router.push("/dashboard");
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Error",
+          description: data.message || "Failed to add course",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add course",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAdding(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -114,13 +167,20 @@ export default function Course() {
 
             <div className="text-center">
               <h2 className="text-2xl font-bold text-khan-gray-dark mb-4">
-                Course Content Coming Soon
+                Ready to Start Studying?
               </h2>
               <p className="text-khan-gray-medium mb-6">
-                We're building comprehensive study materials and practice
-                questions for {courseName}. Check back soon for updates!
+                Add {courseName} to your dashboard and start practicing with real AP-style questions.
               </p>
-              <div className="flex items-center justify-center space-x-2 text-khan-green">
+              <Button
+                onClick={handleAddCourse}
+                disabled={isAdding}
+                className="bg-khan-green text-white hover:bg-khan-green/90 px-8 py-3 text-lg"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                {isAdding ? "Adding..." : "Add to Dashboard"}
+              </Button>
+              <div className="flex items-center justify-center space-x-2 text-khan-green mt-6">
                 <Users className="w-5 h-5" />
                 <span className="font-medium">
                   Join thousands of students preparing for success

@@ -547,11 +547,14 @@ const SubjectCard = ({
         <div className="flex flex-wrap items-center justify-between mb-3">
           <div className="flex flex-wrap items-center gap-6">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4" /> {subject.units} Units
+              <BookOpen className="w-4 h-4 text-gray-600" />
+              <span className="text-gray-700">{subject.units} Units</span>
             </div>
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />{" "}
-              {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
+              <Calendar className="w-4 h-4 text-gray-600" />
+              <span className="text-gray-700">
+                Exam: <span className="font-semibold">{formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}</span>
+              </span>
             </div>
           </div>
 
