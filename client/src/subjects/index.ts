@@ -7,6 +7,7 @@ import { apmicro } from './apmicro';
 import { apcsp } from './apcsp';
 import { apbio } from './apbio';
 import { apcalcab } from './apcalcab';
+import { apchem } from './apchem';
 
 // Auto-register all subjects
 const allSubjects: APSubject[] = [
@@ -15,6 +16,7 @@ const allSubjects: APSubject[] = [
   apcsp,
   apbio,
   apcalcab,
+  apchem,
 ];
 
 // Create subject registry by subject code
@@ -31,6 +33,7 @@ const legacyIdMap: Record<string, string> = {
   'biology': 'APBIO',
   'calculus-ab': 'APCALCAB',
   'calculus-bc': 'APCALCAB',
+  'chemistry': 'APCHEM',
 };
 
 export function getSubjectByLegacyId(legacyId: string): APSubject | undefined {

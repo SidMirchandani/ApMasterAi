@@ -113,7 +113,7 @@ export default function Quiz() {
         }
 
         if (isFullLength) {
-          const questionLimit = subjectApiCode === 'APMICRO' ? 60 : 50;
+          const questionLimit = subjectApiCode === 'APMICRO' || subjectApiCode === 'APCHEM' ? 60 : 50;
           const response = await apiRequest(
             "GET",
             `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,
@@ -269,8 +269,8 @@ export default function Quiz() {
     try {
       const subjectApiCode = getApiCodeForSubject(subjectId as string);
       if (!subjectApiCode) throw new Error("Invalid subject");
-      
-      const questionLimit = subjectApiCode === 'APMICRO' ? 60 : 50;
+
+      const questionLimit = subjectApiCode === 'APMICRO' || subjectApiCode === 'APCHEM' ? 60 : 50;
       const response = await apiRequest(
         "GET",
         `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,
@@ -310,8 +310,8 @@ export default function Quiz() {
     try {
       const subjectApiCode = getApiCodeForSubject(subjectId as string);
       if (!subjectApiCode) throw new Error("Invalid subject");
-      
-      const questionLimit = subjectApiCode === 'APMICRO' ? 60 : 50;
+
+      const questionLimit = subjectApiCode === 'APMICRO' || subjectApiCode === 'APCHEM' ? 60 : 50;
       const response = await apiRequest(
         "GET",
         `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,

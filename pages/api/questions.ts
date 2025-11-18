@@ -27,6 +27,17 @@ const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
     "CSN": 13,     // Computer Systems and Networks: 11-15%
     "IOC": 23.5,   // Impact of Computing: 21-26%
   },
+  "APCHEM": {
+    "ASP": 8,      // Atomic Structure & Properties: 7-9%
+    "MIS": 8,      // Molecular & Ionic Structure: 7-9%
+    "IMF": 20,     // Intermolecular Forces & Properties: 18-22%
+    "RXN": 8,      // Chemical Reactions: 7-9%
+    "KIN": 8,      // Kinetics: 7-9%
+    "THERMO": 8,   // Thermodynamics: 7-9%
+    "EQM": 8,      // Equilibrium: 7-9%
+    "ACB": 13,     // Acids & Bases: 11-15%
+    "ATD": 8,      // Applications of Thermodynamics: 7-9%
+  },
   // Add other subjects as needed
 };
 
