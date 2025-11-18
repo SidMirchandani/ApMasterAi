@@ -232,7 +232,7 @@ export default function Courses() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...apSubjects].sort((a, b) => a.name.localeCompare(b.name)).map((subject) => {
-              const isActive = ['computer-science-principles', 'macroeconomics', 'microeconomics'].includes(subject.id);
+              const isActive = ['computer-science-principles', 'macroeconomics', 'microeconomics', 'chemistry'].includes(subject.id);
               const isAdded = addedSubjectIds.has(subject.id);
               const isAdding = addSubjectMutation.isPending && addSubjectMutation.variables?.id === subject.id;
               const shouldShowAsAdded = isAdded || isAdding;
