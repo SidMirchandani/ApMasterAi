@@ -493,14 +493,22 @@ const SubjectCard = ({
   onDelete: () => void;
   onStudy: () => void;
 }) => {
+  console.log('🔍 [SubjectCard] RAW subject from database:', {
+    id: subject.id,
+    subjectId: subject.subjectId,
+    name: subject.name,
+    unitProgress: subject.unitProgress
+  });
+  
   const subjectMeta = getSubjectByCode(subject.subjectId);
   const units = subjectMeta?.units || [];
   const unitProgress = subject.unitProgress || {};
 
-  console.log('🎯 [SubjectCard] Subject:', {
+  console.log('🎯 [SubjectCard] After getSubjectByCode:', {
     subjectId: subject.subjectId,
     subjectName: subject.name,
     hasSubjectMeta: !!subjectMeta,
+    subjectMeta: subjectMeta,
     subjectCode: subjectMeta?.subjectCode,
     unitsCount: units.length,
     unitIds: units.map(u => u.id),
