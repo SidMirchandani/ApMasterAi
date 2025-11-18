@@ -566,14 +566,9 @@ export default function Dashboard() {
                                 const unit = units[index];
                                 const unitId = unit?.id;
 
-                                if (!unitId) {
-                                  console.warn(`[Dashboard] No unit ID found for unit ${index + 1}`);
-                                  return null;
-                                }
-
                                 // Use only the unit ID - no fallbacks
                                 const unitProgress = (subject as any).unitProgress || {};
-                                const unitData = unitProgress[unitId];
+                                const unitData = unitId ? unitProgress[unitId] : undefined;
                                 
                                 const score = unitData?.highestScore || 0;
                                 const hasAttempted = unitData && unitData.scores?.length > 0;
@@ -596,7 +591,7 @@ export default function Dashboard() {
 
                               return (
                                 <div
-                                  key={unitId}
+                                  key={unitId || `unit-${index}`}
                                   className={`w-8 h-8 rounded ${bgColor} border border-black transition-all flex items-center justify-center text-xs font-semibold text-white`}
                                   title={`Unit ${index + 1}: ${status}`}
                                 >
