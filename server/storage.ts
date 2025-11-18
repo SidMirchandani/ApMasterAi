@@ -557,6 +557,12 @@ export class Storage {
       "FS": { name: "Financial Sector", unitNumber: 4 },
       "LRCSP": { name: "Long-Run Consequences of Stabilization Policies", unitNumber: 5 },
       "OEITF": { name: "Open Economy - International Trade & Finance", unitNumber: 6 },
+      // AP Microeconomics
+      "SD": { name: "Supply and Demand", unitNumber: 2 },
+      "PC": { name: "Production, Cost, and Perfect Competition", unitNumber: 3 },
+      "IMP": { name: "Imperfect Competition", unitNumber: 4 },
+      "FM": { name: "Factor Markets", unitNumber: 5 },
+      "MF": { name: "Market Failure and the Role of Government", unitNumber: 6 },
       // AP Computer Science Principles
       "CRD": { name: "Creative Development", unitNumber: 1 },
       "DAT": { name: "Data", unitNumber: 2 },

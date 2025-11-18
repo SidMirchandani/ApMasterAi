@@ -12,6 +12,14 @@ const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
     "LRCSP": 20,   // Long-Run Consequences: 20-30%
     "OEITF": 10,   // Open Economy: 10-13%
   },
+  "APMICRO": {
+    "BEC": 13.5,   // Basic Economic Concepts: 12-15% (avg 13.5%)
+    "SD": 22.5,    // Supply and Demand: 20-25% (avg 22.5%)
+    "PC": 23.5,    // Production, Cost, Perfect Competition: 22-25% (avg 23.5%)
+    "IMP": 18.5,   // Imperfect Competition: 15-22% (avg 18.5%)
+    "FM": 11.5,    // Factor Markets: 10-13% (avg 11.5%)
+    "MF": 10.5,    // Market Failure & Government: 8-13% (avg 10.5%)
+  },
   "APCSP": {
     "CRD": 11.5,   // Creative Development: 10-13%
     "DAT": 19.5,   // Data: 17-22%

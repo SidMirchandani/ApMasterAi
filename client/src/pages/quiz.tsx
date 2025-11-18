@@ -113,9 +113,10 @@ export default function Quiz() {
         }
 
         if (isFullLength) {
+          const questionLimit = subjectApiCode === 'APMICRO' ? 60 : 50;
           const response = await apiRequest(
             "GET",
-            `/api/questions?subject=${subjectApiCode}&limit=50`,
+            `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,
           );
           if (!response.ok) throw new Error("Failed to fetch questions");
           const data = await response.json();
@@ -269,9 +270,10 @@ export default function Quiz() {
       const subjectApiCode = getApiCodeForSubject(subjectId as string);
       if (!subjectApiCode) throw new Error("Invalid subject");
       
+      const questionLimit = subjectApiCode === 'APMICRO' ? 60 : 50;
       const response = await apiRequest(
         "GET",
-        `/api/questions?subject=${subjectApiCode}&limit=50`,
+        `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,
       );
       if (!response.ok) throw new Error("Failed to fetch questions");
       const data = await response.json();
@@ -309,9 +311,10 @@ export default function Quiz() {
       const subjectApiCode = getApiCodeForSubject(subjectId as string);
       if (!subjectApiCode) throw new Error("Invalid subject");
       
+      const questionLimit = subjectApiCode === 'APMICRO' ? 60 : 50;
       const response = await apiRequest(
         "GET",
-        `/api/questions?subject=${subjectApiCode}&limit=50`,
+        `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,
       );
       if (!response.ok) throw new Error("Failed to fetch questions");
       const data = await response.json();
