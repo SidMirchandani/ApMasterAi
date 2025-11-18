@@ -1,29 +1,31 @@
-import { BookOpen } from "lucide-react";
-import { Clock } from "lucide-react";
-import { ArrowRight } from "lucide-react";
-import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import { BookOpen, Clock, ArrowRight, Check } from "lucide-react";
+
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from "@/components/ui/card";
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/router";
+import { Button } from "@/components/ui/button";
+
+import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import Navigation from "@/components/ui/navigation";
-import { apSubjects, difficultyColors } from "@/lib/ap-subjects";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+
+import { apSubjects } from "@/lib/ap-subjects";
 import { apiRequest } from "@/lib/api";
 import { formatDate, safeDateParse } from "@/lib/date";
 
-// Interface for a course, including optional isAdded status
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+
+// ---------------------------------------------------
+// TYPES
+// ---------------------------------------------------
+
 interface Course {
   id: string;
   name: string;
@@ -36,34 +38,45 @@ interface Course {
   lastStudied?: string | number | Date | { seconds: number } | null;
 }
 
+// ---------------------------------------------------
+// MAIN COMPONENT
+// ---------------------------------------------------
+
 export default function Courses() {
   const { isAuthenticated, loading } = useAuth();
-  const router = useRouter(); // Changed from useLocation()
+  const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch user's subjects to check which are already added
-  const { data: subjectsResponse } = useQuery<{success: boolean, data: any[]}>({
+  // ---------------------------------------------------
+  // FETCH ADDED SUBJECTS
+  // ---------------------------------------------------
+
+  const { data: subjectsResponse } = useQuery<{
+    success: boolean;
+    data: any[];
+  }>({
     queryKey: ["subjects"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/user/subjects");
-      if (!response.ok) {
-        throw new Error("Failed to fetch subjects");
-      }
+      if (!response.ok) throw new Error("Failed to fetch subjects");
       return response.json();
     },
     enabled: isAuthenticated,
-    refetchOnMount: false, // Trust the cache - optimistic updates will sync both pages
-    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const addedSubjectIds = new Set(
-    (subjectsResponse?.data || []).map((subject: any) => subject.subjectId)
+    (subjectsResponse?.data || []).map((s: any) => s.subjectId),
   );
 
-  // Add subject to dashboard mutation
+  // ---------------------------------------------------
+  // ADD SUBJECT MUTATION
+  // ---------------------------------------------------
+
   const addSubjectMutation = useMutation({
-    mutationFn: async (subject: typeof apSubjects[0]) => {
+    mutationFn: async (subject: (typeof apSubjects)[0]) => {
       const response = await apiRequest("POST", "/api/user/subjects", {
         subjectId: subject.id,
         name: subject.name,
@@ -72,30 +85,35 @@ export default function Courses() {
         difficulty: subject.difficulty,
         examDate: subject.examDate,
         progress: 0,
-        masteryLevel: 4, // Default mastery level
+        masteryLevel: 4,
       });
       return response.json();
     },
+
     onSuccess: (data, subject) => {
-      // Optimistically update the cache immediately
+      // Optimistic cache update
       queryClient.setQueryData(["subjects"], (oldData: any) => {
         if (!oldData?.data) return oldData;
         return {
           ...oldData,
-          data: [...oldData.data, {
-            subjectId: subject.id,
-            name: subject.name,
-            description: subject.description,
-            units: subject.units,
-            difficulty: subject.difficulty,
-            examDate: subject.examDate,
-            progress: 0,
-            masteryLevel: 4
-          }]
+          data: [
+            ...oldData.data,
+            {
+              subjectId: subject.id,
+              name: subject.name,
+              description: subject.description,
+              units: subject.units,
+              difficulty: subject.difficulty,
+              examDate: subject.examDate,
+              progress: 0,
+              masteryLevel: 4,
+            },
+          ],
         };
       });
 
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
+
       toast({
         title: "Subject added!",
         description: `${subject.name} has been added to your dashboard.`,
@@ -103,71 +121,47 @@ export default function Courses() {
     },
   });
 
-  // Handle mutation errors with useEffect since onError is deprecated in v5
+  // Better error messaging
   useEffect(() => {
     if (addSubjectMutation.error && !addSubjectMutation.isPending) {
-      const errorMessage = addSubjectMutation.error.message;
-      if (errorMessage.includes("Subject already added")) {
+      const msg = addSubjectMutation.error.message;
+
+      if (msg.includes("Subject already added")) {
         toast({
           title: "Already added",
           description: "This subject is already in your dashboard.",
-          variant: "default"
-        });
-      } else if (errorMessage.includes("Invalid difficulty")) {
-        toast({
-          title: "Invalid difficulty",
-          description: "The difficulty level provided is not valid. Please choose from Easy, Medium, or Hard.",
-          variant: "destructive"
-        });
-      } else if (errorMessage.includes("Units exceed maximum")) {
-        toast({
-          title: "Too many units",
-          description: "The number of units for this subject exceeds the allowed limit.",
-          variant: "destructive"
         });
       } else {
         toast({
           title: "Error",
           description: "Failed to add subject. Please try again.",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     }
   }, [addSubjectMutation.error, addSubjectMutation.isPending, toast]);
 
-  // Add subject to dashboard
-  const handleAddToDashboard = (subject: typeof apSubjects[0]) => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
+  // ---------------------------------------------------
+  // HANDLE ADD CLICK
+  // ---------------------------------------------------
 
-    // Map difficulty to accepted values
-    let adjustedDifficulty: string = subject.difficulty;
-    if (subject.difficulty === "Very Hard") {
-      adjustedDifficulty = "Hard";
-    }
+  const handleAddToDashboard = (subject: (typeof apSubjects)[0]) => {
+    if (!isAuthenticated) return router.push("/login");
 
-    // Format examDate to YYYY-MM-DD with safe date handling
+    // Normalize difficulty: "Very Hard" → "Hard"
+    const adjustedDifficulty =
+      subject.difficulty === "Very Hard" ? "Hard" : subject.difficulty;
+
+    // Parse exam date safely
     let formattedExamDate: string;
     try {
       const parsedDate = safeDateParse(subject.examDate);
-      if (parsedDate) {
-        formattedExamDate = parsedDate.toISOString().split('T')[0];
-      } else {
-        console.error("Invalid date format for examDate:", subject.examDate);
-        toast({
-          title: "Invalid Date",
-          description: `The exam date for ${subject.name} is invalid.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    } catch (e) {
-      console.error("Error parsing date:", e);
+      if (!parsedDate) throw new Error("Invalid exam date");
+      formattedExamDate = parsedDate.toISOString().split("T")[0];
+    } catch {
       toast({
-        title: "Date Parsing Error",
-        description: `Could not parse the exam date for ${subject.name}.`,
+        title: "Invalid Date",
+        description: `The exam date for ${subject.name} is invalid.`,
         variant: "destructive",
       });
       return;
@@ -176,16 +170,16 @@ export default function Courses() {
     addSubjectMutation.mutate({
       ...subject,
       difficulty: adjustedDifficulty,
-      units: subject.units, // Removed the 8-unit limit adjustment here
-      examDate: formattedExamDate
+      examDate: formattedExamDate,
     });
   };
 
+  // ---------------------------------------------------
+  // AUTH REDIRECT
+  // ---------------------------------------------------
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push("/login");
-    }
+    if (!loading && !isAuthenticated) router.push("/login");
   }, [loading, isAuthenticated, router]);
 
   if (loading) {
@@ -199,13 +193,15 @@ export default function Courses() {
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Will redirect to login
-  }
+  if (!isAuthenticated) return null;
+
+  // ---------------------------------------------------
+  // UI
+  // ---------------------------------------------------
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative overflow-hidden">
-      {/* Background decoration - matching hero style */}
+      {/* Decorative circles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
@@ -220,75 +216,74 @@ export default function Courses() {
               Choose Your <span className="text-khan-green">AP Subject</span>
             </h1>
             <p className="text-xl text-khan-gray-medium max-w-2xl mx-auto">
-              Select an AP course to begin your personalized learning journey with practice tests and study materials.
+              Select an AP course to begin your personalized learning journey.
             </p>
           </div>
 
+          {/* Subject Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...apSubjects].sort((a, b) => a.name.localeCompare(b.name)).map((subject) => {
-              const isActive = ['computer-science-principles', 'macroeconomics', 'microeconomics', 'chemistry'].includes(subject.id);
-              const isAdded = addedSubjectIds.has(subject.id);
-              const isAdding = addSubjectMutation.isPending && addSubjectMutation.variables?.id === subject.id;
-              const shouldShowAsAdded = isAdded || isAdding;
+            {[...apSubjects]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((subject) => {
+                const isAdded = addedSubjectIds.has(subject.id);
+                const isAdding =
+                  addSubjectMutation.isPending &&
+                  addSubjectMutation.variables?.id === subject.id;
 
-              return (
-                <Card key={subject.id} className={`bg-white transition-all border-2 ${isActive ? 'hover:shadow-md border-gray-100 hover:border-khan-green/30' : 'border-gray-200 opacity-75'}`}>
-                  <CardHeader className="pb-4">
-                    <div className="mb-2">
+                return (
+                  <Card
+                    key={subject.id}
+                    className="bg-white border-2 border-gray-100 hover:border-khan-green/30 hover:shadow-md transition-all"
+                  >
+                    <CardHeader className="pb-4">
                       <CardTitle className="text-lg font-bold text-khan-gray-dark">
                         {subject.name}
                       </CardTitle>
-                    </div>
-                    <CardDescription className="text-khan-gray-medium leading-relaxed text-sm">
-                      {subject.description}
-                    </CardDescription>
-                  </CardHeader>
+                      <CardDescription className="text-khan-gray-medium text-sm leading-relaxed">
+                        {subject.description}
+                      </CardDescription>
+                    </CardHeader>
 
-                  <CardContent>
-                    <div className="flex items-center justify-between text-sm text-khan-gray-medium mb-6">
-                      <div className="flex items-center space-x-1">
-                        <BookOpen className="w-4 h-4" />
-                        <span className="text-khan-gray-dark font-medium">{subject.units} Units</span>
+                    <CardContent>
+                      {/* Metadata */}
+                      <div className="flex items-center justify-between text-sm text-khan-gray-medium mb-6">
+                        <div className="flex items-center space-x-1">
+                          <BookOpen className="w-4 h-4" />
+                          <span className="text-khan-gray-dark font-medium">
+                            {subject.units} Units
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Clock className="w-4 h-4" />
+                          <span className="text-khan-gray-dark font-medium">
+                            {formatDate(subject.examDate)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <Clock className="w-4 h-4" />
-                        <span className="text-khan-gray-dark font-medium">{formatDate(subject.examDate)}</span>
-                      </div>
-                    </div>
 
-                    <div className="flex flex-col space-y-3">
-                      {!isActive ? (
-                        <Button 
+                      {/* ACTION BUTTON */}
+                      {isAdded ? (
+                        <Button
                           disabled
-                          className="w-full bg-gray-400 text-white cursor-not-allowed font-semibold"
-                        >
-                          Coming Soon
-                        </Button>
-                      ) : shouldShowAsAdded ? (
-                        <Button 
-                          disabled
-                          className="w-full bg-green-100 text-green-700 cursor-not-allowed font-semibold border-2 border-green-200"
+                          className="w-full bg-green-100 text-green-700 border-2 border-green-200 cursor-not-allowed font-semibold"
                         >
                           <Check className="mr-2 w-4 h-4" />
-                          {isAdding ? 'Adding...' : 'Added to Dashboard'}
+                          {isAdding ? "Adding..." : "Added to Dashboard"}
                         </Button>
                       ) : (
-                        <Button 
+                        <Button
                           onClick={() => handleAddToDashboard(subject)}
-                          className="w-full bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold"
+                          className="w-full bg-khan-green text-white hover:bg-khan-green-light font-semibold transition-colors"
                         >
                           Add to Dashboard
                           <ArrowRight className="ml-2 w-4 h-4" />
                         </Button>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    </CardContent>
+                  </Card>
+                );
+              })}
           </div>
-
-
         </div>
       </div>
     </div>
