@@ -5,6 +5,7 @@ import { apmacro } from './apmacro';
 import { apmicro } from './apmicro';
 import { apcsp } from './apcsp';
 import { apchem } from './apchem';
+import { apgov } from './apgov';
 
 // Import the subjects object which contains the unitToSectionMap
 import * as subjects from './';
@@ -15,6 +16,7 @@ const allSubjects: APSubject[] = [
   apmicro,
   apcsp,
   apchem,
+  apgov,
 ];
 
 // Create subject registry by subject code
@@ -111,7 +113,7 @@ export function getSectionCodeForUnit(subjectId: string, unitId: string): string
   });
 
   // Get the subject module
-  const subjectKey = subject.subjectCode.toLowerCase() as 'apmacro' | 'apmicro' | 'apchem' | 'apcsp';
+  const subjectKey = subject.subjectCode.toLowerCase() as 'apmacro' | 'apmicro' | 'apchem' | 'apcsp' | 'apgov';
   const subjectModule = subjects[subjectKey];
 
   if (!subjectModule) {
