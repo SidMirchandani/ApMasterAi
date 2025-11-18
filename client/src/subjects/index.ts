@@ -2,11 +2,11 @@
 import { APSubject } from './common/interfaces';
 
 // Auto-import all subjects
-import macroeconomics from './macroeconomics';
-import microeconomics from './microeconomics';
-import computerSciencePrinciples from './computer-science-principles';
-import calculus from './calculus';
-import biology from './biology';
+import macroeconomics from './APMACRO';
+import microeconomics from './APMICRO';
+import computerSciencePrinciples from './APCSP';
+import calculus from './APCALCAB';
+import biology from './APBIO';
 
 // Registry of all subjects
 const subjectRegistry: APSubject[] = [
