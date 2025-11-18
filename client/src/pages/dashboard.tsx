@@ -108,6 +108,19 @@ export default function Dashboard() {
         dateAddedType: typeof subject.dateAdded,
         lastStudiedType: typeof subject.lastStudied
       });
+      
+      // Debug unit progress
+      console.log(`[Dashboard] "${subject.name}" unit progress:`, {
+        unitProgressKeys: Object.keys(subject.unitProgress || {}),
+        unitProgress: subject.unitProgress
+      });
+      
+      // Debug what units we'll be displaying
+      const subjectData = getSubjectByCode(subject.subjectId);
+      console.log(`[Dashboard] "${subject.name}" units config:`, {
+        subjectId: subject.subjectId,
+        units: subjectData?.units?.map(u => ({ id: u.id, title: u.title }))
+      });
     });
     return data;
   }, [subjectsResponse?.data]);
@@ -575,9 +588,19 @@ export default function Dashboard() {
 
                                 // Try multiple ID formats for backwards compatibility
                                 const unitProgress = (subject as any).unitProgress || {};
+                                
+                                // Debug logging
+                                console.log(`[Dashboard] Checking unit ${index + 1}:`, {
+                                  unitId,
+                                  availableKeys: Object.keys(unitProgress),
+                                  trying: [unitId, `bigidea${index + 1}`, `unit${index + 1}`]
+                                });
+                                
                                 const unitData = unitProgress[unitId] || 
                                                 unitProgress[`bigidea${index + 1}`] || 
                                                 unitProgress[`unit${index + 1}`];
+                                
+                                console.log(`[Dashboard] Found unit data:`, { unitData, score: unitData?.highestScore || unitData?.mcqScore });
                                 
                                 const score = unitData?.highestScore || unitData?.mcqScore || 0;
                                 const hasAttempted = unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0);
