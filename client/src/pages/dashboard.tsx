@@ -52,11 +52,31 @@ interface DashboardSubject {
 // HELPERS
 // =====================
 const getUnitStatus = (unitData: any) => {
-  if (!unitData) return { bg: "bg-gray-200", status: "Not Started", score: 0 };
+  console.log('📊 [getUnitStatus] Called with:', {
+    hasData: !!unitData,
+    unitData: unitData,
+    highestScore: unitData?.highestScore,
+    mcqScore: unitData?.mcqScore,
+    scores: unitData?.scores
+  });
+
+  if (!unitData) {
+    console.log('⚪ [getUnitStatus] No data -> Not Started');
+    return { bg: "bg-gray-200", status: "Not Started", score: 0 };
+  }
 
   const score = unitData.highestScore ?? unitData.mcqScore ?? 0;
-  if (score >= 80) return { bg: "bg-green-600", status: "Mastered", score };
-  if (score >= 60) return { bg: "bg-green-400", status: "Proficient", score };
+  console.log('🎯 [getUnitStatus] Calculated score:', score);
+  
+  if (score >= 80) {
+    console.log('🟢 [getUnitStatus] Mastered (score >= 80)');
+    return { bg: "bg-green-600", status: "Mastered", score };
+  }
+  if (score >= 60) {
+    console.log('🟢 [getUnitStatus] Proficient (score >= 60)');
+    return { bg: "bg-green-400", status: "Proficient", score };
+  }
+  console.log('🟠 [getUnitStatus] In Progress (score < 60)');
   return { bg: "bg-orange-400", status: "In Progress", score };
 };
 
@@ -477,6 +497,17 @@ const SubjectCard = ({
   const units = subjectMeta?.units || [];
   const unitProgress = subject.unitProgress || {};
 
+  console.log('🎯 [SubjectCard] Subject:', {
+    subjectId: subject.subjectId,
+    subjectName: subject.name,
+    hasSubjectMeta: !!subjectMeta,
+    subjectCode: subjectMeta?.subjectCode,
+    unitsCount: units.length,
+    unitIds: units.map(u => u.id),
+    unitProgressKeys: Object.keys(unitProgress),
+    fullUnitProgress: unitProgress
+  });
+
   return (
     <Card className="bg-white hover:shadow-md transition-all border-2 border-gray-100 w-full">
       <CardHeader>
@@ -519,7 +550,19 @@ const SubjectCard = ({
           {/* Unit Grid */}
           <div className="flex items-center gap-2 group relative">
             {units.map((u: any, i: number) => {
-              const stat = getUnitStatus(unitProgress[u.id]);
+              const unitData = unitProgress[u.id];
+              const stat = getUnitStatus(unitData);
+              
+              console.log(`🔍 [SubjectCard] Unit ${i + 1} mapping:`, {
+                unitId: u.id,
+                unitTitle: u.title,
+                hasUnitData: !!unitData,
+                unitData: unitData,
+                status: stat.status,
+                score: stat.score,
+                background: stat.bg
+              });
+              
               return (
                 <div
                   key={u.id}

@@ -39,7 +39,16 @@ export function getSubjectByLegacyId(legacyId: string): APSubject | undefined {
 }
 
 export function getSubjectByCode(subjectCode: string): APSubject | undefined {
-  return subjectRegistry[subjectCode];
+  const subject = subjectRegistry[subjectCode];
+  console.log('🔎 [getSubjectByCode] Lookup:', {
+    input: subjectCode,
+    found: !!subject,
+    subjectCode: subject?.subjectCode,
+    displayName: subject?.displayName,
+    unitCount: subject?.units?.length,
+    unitIds: subject?.units?.map(u => u.id)
+  });
+  return subject;
 }
 
 export function getUnitsForSubject(subjectIdOrCode: string): Unit[] {
