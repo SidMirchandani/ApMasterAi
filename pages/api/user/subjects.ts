@@ -10,7 +10,7 @@ const insertUserSubjectSchema = z.object({
   subjectId: z.string(),
   name: z.string(),
   description: z.string().optional(),
-  units: z.number().min(1).max(8),
+  units: z.number().min(1).max(20),
   difficulty: z.enum(['Easy', 'Medium', 'Hard']),
   examDate: z.string(),
   progress: z.number().min(0).max(100).default(0),
