@@ -1,4 +1,3 @@
-
 import { SubjectMetadata } from '../common/interfaces';
 
 export const metadata: SubjectMetadata = {

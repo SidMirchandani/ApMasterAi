@@ -33,13 +33,22 @@ interface Question {
 // Helper function to get the API code for a subject from the modular subjects
 const getApiCodeForSubject = (subjectCode: string): string | undefined => {
   const subjects = getSubjects();
-  return subjects[subjectCode]?.apiCode; // Assuming each subject has an apiCode property
+  const subject = subjects[subjectCode];
+  return subject?.metadata?.apiCode || subject?.subjectCode;
 };
 
-// Helper function to get the unit map for a subject from the modular subjects
-const getUnitMapForSubject = (subjectCode: string): Record<string, string> | undefined => {
+// Helper function to get the section code for a unit
+const getSectionCodeForUnit = (subjectCode: string, unitId: string): string | undefined => {
   const subjects = getSubjects();
-  return subjects[subjectCode]?.unitMap; // Assuming each subject has a unitMap property
+  const subject = subjects[subjectCode];
+  if (!subject?.sections) return undefined;
+  
+  // Find the section that matches this unit ID
+  const sectionEntry = Object.entries(subject.sections).find(([_, section]: [string, any]) => {
+    return section.unitId === unitId;
+  });
+  
+  return sectionEntry?.[0];
 };
 
 export default function Quiz() {
@@ -134,22 +143,9 @@ export default function Quiz() {
             setQuestions(data.data);
           } else setError("No questions found for this subject");
         } else {
-          const unitMap = getUnitMapForSubject(subjectId as string);
-          console.log("🔍 [Quiz] Unit mapping lookup:", {
-            subjectId,
-            unit,
-            unitMap,
-            availableUnits: Object.keys(unitMap || {})
-          });
-
-          if (!unitMap) {
-            setError(`Quiz not yet available for ${subjectId}`);
-            setIsLoading(false);
-            return;
-          }
-
-          const sectionCode = unitMap[unit as string];
+          const sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
           console.log("🎯 [Quiz] Section code mapping:", {
+            subjectId,
             unit,
             sectionCode,
             subjectApiCode
