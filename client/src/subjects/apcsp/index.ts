@@ -1,4 +1,3 @@
-
 import { APSubject } from '../common/types';
 import { computerSciencePrinciplesUnits } from './units';
 
@@ -36,5 +35,13 @@ export const apcsp: APSubject = {
   displayName: metadata.displayName,
   units: computerSciencePrinciplesUnits,
   sections,
-  metadata
+  metadata,
+  // Map unit IDs to API section codes
+  unitToSectionMap: {
+    'CRD': 'CRD',
+    'DAT': 'DAT',
+    'AAP': 'AAP',
+    'CSN': 'CSN',
+    'IOC': 'IOC'
+  }
 };

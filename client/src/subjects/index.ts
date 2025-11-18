@@ -1,4 +1,3 @@
-
 import { APSubject, Unit } from './common/types';
 
 // Import all subject modules
@@ -6,6 +5,9 @@ import { apmacro } from './apmacro';
 import { apmicro } from './apmicro';
 import { apcsp } from './apcsp';
 import { apchem } from './apchem';
+
+// Import the subjects object which contains the unitToSectionMap
+import * as subjects from './';
 
 // Auto-register all subjects
 const allSubjects: APSubject[] = [
@@ -43,12 +45,12 @@ export function getSubjectByCode(subjectCode: string): APSubject | undefined {
 export function getUnitsForSubject(subjectIdOrCode: string): Unit[] {
   // Try legacy ID first
   let subject = getSubjectByLegacyId(subjectIdOrCode);
-  
+
   // If not found, try as subject code
   if (!subject) {
     subject = getSubjectByCode(subjectIdOrCode);
   }
-  
+
   if (!subject) {
     // Fallback for unknown subjects
     return [
@@ -61,19 +63,40 @@ export function getUnitsForSubject(subjectIdOrCode: string): Unit[] {
       },
     ];
   }
-  
+
   return subject.units;
 }
 
-export function getSectionCodeForUnit(subjectIdOrCode: string, unitId: string): string | undefined {
-  let subject = getSubjectByLegacyId(subjectIdOrCode) || getSubjectByCode(subjectIdOrCode);
-  return subject?.sections[unitId]?.code;
+export function getSectionCodeForUnit(subjectId: string, unitId: string): string | undefined {
+  console.log('🔍 [subjects/index] getSectionCodeForUnit called:', { subjectId, unitId });
+
+  const subject = getSubjectByLegacyId(subjectId);
+  if (!subject) {
+    console.error('❌ [subjects/index] Subject not found for ID:', subjectId);
+    return undefined;
+  }
+
+  console.log('📋 [subjects/index] Looking up unitToSectionMap for subject:', subjectId);
+
+  // Get the subject module
+  const subjectKey = subject.apiCode.toLowerCase() as 'apmacro' | 'apmicro' | 'apchem' | 'apcsp';
+  const subjectModule = subjects[subjectKey];
+
+  if (!subjectModule) {
+    console.error('❌ [subjects/index] Subject module not found for key:', subjectKey);
+    return undefined;
+  }
+
+  const sectionCode = subjectModule.unitToSectionMap?.[unitId];
+  console.log('🔍 [subjects/index] Section code lookup result:', { unitId, sectionCode });
+
+  return sectionCode;
 }
 
 export function getSectionInfo(subjectIdOrCode: string, sectionCode: string): { name: string; unitNumber: number } | undefined {
   let subject = getSubjectByLegacyId(subjectIdOrCode) || getSubjectByCode(subjectIdOrCode);
   if (!subject) return undefined;
-  
+
   const section = Object.values(subject.sections).find(s => s.code === sectionCode);
   return section ? { name: section.name, unitNumber: section.unitNumber } : undefined;
 }
