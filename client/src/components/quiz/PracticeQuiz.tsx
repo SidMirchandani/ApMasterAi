@@ -110,6 +110,14 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
     if (!selectedAnswer || !currentQuestion) return;
     setIsAnswerSubmitted(true);
 
+    console.log(`🔍 [PracticeQuiz] handleSubmitAnswer called:`, {
+      questionId: currentQuestion.id,
+      questionIndex: currentQuestionIndex,
+      selectedAnswer,
+      isFullLength,
+      subjectId
+    });
+
     // Save the answer
     setFinalUserAnswers(prev => ({
       ...prev,
@@ -120,21 +128,48 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
     const isCorrect = selectedAnswer === correctLabel;
     if (isCorrect) setScore((s) => s + 1);
 
+    console.log(`✓ [PracticeQuiz] Answer checked:`, {
+      selectedAnswer,
+      correctLabel,
+      isCorrect
+    });
+
     // Only track progress for unit-wise practice (not full-length tests)
     if (!isFullLength) {
+      console.log(`🎯 [PracticeQuiz] Not full-length, tracking unit progress...`);
+      
       // Calculate unit progress
       // Extract unit from question ID (e.g., "APMACRO_BEC_Q1" -> "BEC")
       const unit = currentQuestion.id.split('_')[1];
+      
+      console.log(`📝 [PracticeQuiz] Extracted unit from question ID:`, {
+        questionId: currentQuestion.id,
+        extractedUnit: unit,
+        idParts: currentQuestion.id.split('_')
+      });
 
       // Count total questions and correct answers for this unit
       const unitQuestions = orderedQuestions.filter(q => q.id.split('_')[1] === unit);
       const unitQuestionsCount = unitQuestions.length;
+
+      console.log(`📚 [PracticeQuiz] Unit questions:`, {
+        unit,
+        totalUnitQuestions: unitQuestionsCount,
+        unitQuestionIds: unitQuestions.map(q => q.id)
+      });
 
       // Count how many of this unit's questions have been answered
       const answeredUnitQuestions = Object.keys(finalUserAnswers).filter(index => {
         const question = orderedQuestions[parseInt(index)];
         return question && question.id.split('_')[1] === unit;
       }).length + 1; // +1 for the current question being submitted
+
+      console.log(`📊 [PracticeQuiz] Answered unit questions count:`, {
+        answeredSoFar: answeredUnitQuestions - 1,
+        currentAnswer: 1,
+        total: answeredUnitQuestions,
+        finalUserAnswers: Object.keys(finalUserAnswers).length
+      });
 
       // Count correct answers for this unit
       let correctCount = 0;
@@ -148,8 +183,21 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       // Add current answer if correct
       if (isCorrect) correctCount++;
 
+      console.log(`✅ [PracticeQuiz] Correct answers count:`, {
+        correctFromPrevious: correctCount - (isCorrect ? 1 : 0),
+        currentCorrect: isCorrect ? 1 : 0,
+        totalCorrect: correctCount
+      });
+
       // Calculate percentage based on answered questions so far
       const percentage = Math.round((correctCount / answeredUnitQuestions) * 100);
+
+      console.log(`🎯 [PracticeQuiz] Calculated percentage:`, {
+        correctCount,
+        answeredUnitQuestions,
+        percentage,
+        calculation: `${correctCount}/${answeredUnitQuestions} = ${percentage}%`
+      });
 
       console.log(`📊 [PracticeQuiz] Saving unit progress for subject=${subjectId}, unit=${unit}, score=${percentage}% (${correctCount}/${answeredUnitQuestions})`);
 
@@ -162,16 +210,25 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
           mcqScore: percentage,
         }
       ).then(response => {
+        console.log(`📡 [PracticeQuiz] API response received:`, {
+          status: response.status,
+          ok: response.ok
+        });
+        
         if (response.ok) {
           response.json().then(data => {
             console.log(`✅ [PracticeQuiz] Unit progress saved successfully:`, data);
           });
         } else {
-          console.error(`❌ [PracticeQuiz] Failed to save unit progress. Status: ${response.status}`);
+          response.text().then(text => {
+            console.error(`❌ [PracticeQuiz] Failed to save unit progress. Status: ${response.status}, Response:`, text);
+          });
         }
       }).catch(error => {
         console.error("❌ [PracticeQuiz] Error saving unit progress:", error);
       });
+    } else {
+      console.log(`⏭️ [PracticeQuiz] Skipping unit progress tracking (isFullLength=${isFullLength})`);
     }
   };
 

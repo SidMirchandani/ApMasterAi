@@ -456,6 +456,12 @@ export class Storage {
       currentHighestScore: currentUnit.highestScore || 0
     });
 
+    console.log("📥 [updateUnitProgress] Current unit data before update:", {
+      currentUnit,
+      existingScores: currentUnit.scores?.length || 0,
+      existingHighestScore: currentUnit.highestScore
+    });
+
     // Add new score to history - use regular Date instead of serverTimestamp in arrays
     const newScore = {
       score: mcqScore,
@@ -464,6 +470,12 @@ export class Storage {
 
     const scores = currentUnit.scores || [];
     scores.push(newScore);
+
+    console.log("📊 [updateUnitProgress] Score history updated:", {
+      newScore,
+      totalScores: scores.length,
+      allScores: scores.map(s => s.score)
+    });
 
     // Calculate highest score
     const highestScore = Math.max(mcqScore, currentUnit.highestScore || 0);
@@ -475,10 +487,11 @@ export class Storage {
       mcqScore,
       highestScore,
       status: status,
-      totalScores: scores.length
+      totalScores: scores.length,
+      statusCalculation: `highestScore=${highestScore} -> status=${status}`
     });
 
-    unitProgress[unitId] = {
+    const unitProgressUpdate = {
       status: status,
       mcqScore: highestScore, // Store highest score as current mcqScore for simplicity, or could keep separate
       highestScore,
@@ -486,22 +499,36 @@ export class Storage {
       lastPracticed: admin.firestore.FieldValue.serverTimestamp(),
     };
 
+    unitProgress[unitId] = unitProgressUpdate;
+
     console.log("💾 [updateUnitProgress] Updating Firestore with:", {
       unitId,
-      status: status,
-      mcqScore: highestScore,
-      highestScore
+      unitProgressUpdate,
+      allUnitIds: Object.keys(unitProgress)
     });
 
-    await doc.ref.update({
-      unitProgress,
-      lastStudied: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    try {
+      await doc.ref.update({
+        unitProgress,
+        lastStudied: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
-    const updated = await doc.ref.get();
-    console.log("✅ [updateUnitProgress] Update successful");
+      console.log("✅ [updateUnitProgress] Firestore update successful");
 
-    return { id: updated.id, ...updated.data() };
+      const updated = await doc.ref.get();
+      const updatedData = { id: updated.id, ...updated.data() };
+      
+      console.log("✅ [updateUnitProgress] Update successful, returning:", {
+        id: updatedData.id,
+        subjectId: updatedData.subjectId,
+        unitProgressKeys: Object.keys(updatedData.unitProgress || {})
+      });
+
+      return updatedData;
+    } catch (firestoreError) {
+      console.error("❌ [updateUnitProgress] Firestore update failed:", firestoreError);
+      throw firestoreError;
+    }ted.data() };
   }
 
   async getUnitProgress(
