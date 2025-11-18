@@ -284,32 +284,6 @@ export default function Dashboard() {
     }
   });
 
-  // Function to handle subject sync
-  const handleSyncExamDates = async () => {
-    try {
-      const response = await apiRequest('POST', '/api/user/subjects/update-exam-dates');
-      if (response.ok) {
-        const data = await response.json();
-        toast({
-          title: "Exam Dates Synced",
-          description: `Updated ${data.updates?.length || 0} subjects with latest exam dates`,
-        });
-        // Invalidate the 'subjects' query to refetch the updated data
-        queryClient.invalidateQueries({ queryKey: ['subjects'] });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to sync exam dates");
-      }
-    } catch (error: any) {
-      console.error('Failed to sync exam dates:', error);
-      toast({
-        title: "Sync Failed",
-        description: error.message || "Could not update exam dates",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Simple auth redirect
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -431,27 +405,17 @@ export default function Dashboard() {
 
       <main className="py-4 md:py-6 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto w-full">
-          <div className="mb-4 flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark mb-1">
-                {userProfile?.data?.firstName ? (
-                  <>Welcome back, {userProfile.data.firstName}!</>
-                ) : (
-                  <>Welcome back!</>
-                )}
-              </h1>
-              <p className="text-lg text-khan-gray-medium">
-                Continue your AP preparation journey
-              </p>
-            </div>
-            <Button
-              onClick={handleSyncExamDates}
-              variant="outline"
-              size="sm"
-              className="text-xs"
-            >
-              Sync Exam Dates
-            </Button>
+          <div className="mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark mb-1">
+              {userProfile?.data?.firstName ? (
+                <>Welcome back, {userProfile.data.firstName}!</>
+              ) : (
+                <>Welcome back!</>
+              )}
+            </h1>
+            <p className="text-lg text-khan-gray-medium">
+              Continue your AP preparation journey
+            </p>
           </div>
 
           {isInitialLoading ? (
