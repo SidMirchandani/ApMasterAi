@@ -204,9 +204,9 @@ export default function Study() {
 
   const topicsMastered = units.filter((unit) => {
     const unitData = currentSubject.unitProgress?.[unit.id];
-    const score = unitData?.highestScore || 0;
+    const score = unitData?.highestScore || unitData?.mcqScore || 0;
     const hasAttempted =
-      unitData && unitData.scores && unitData.scores.length > 0;
+      unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0);
     return getProgressLevel(score, hasAttempted) === "Mastered";
   }).length;
   const totalTopics = units.length;
@@ -313,9 +313,9 @@ export default function Study() {
         <div className="space-y-4">
           {units.map((unit, index) => {
             const unitData = currentSubject.unitProgress?.[unit.id];
-            const score = unitData?.highestScore || 0;
+            const score = unitData?.highestScore || unitData?.mcqScore || 0;
             const hasAttempted =
-              unitData && unitData.scores && unitData.scores.length > 0;
+              unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0);
             const level = getProgressLevel(score, hasAttempted);
             const badgeColor = getProgressBadgeColor(level);
 

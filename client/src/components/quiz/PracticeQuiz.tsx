@@ -117,28 +117,51 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
     }));
 
     const correctLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
-    if (selectedAnswer === correctLabel) setScore((s) => s + 1);
+    const isCorrect = selectedAnswer === correctLabel;
+    if (isCorrect) setScore((s) => s + 1);
 
-    // Calculate and save unit progress
-    const unit = currentQuestion.id.split('_')[0]; // Assuming unit ID is the prefix before the first underscore
-    const unitQuestionsCount = orderedQuestions.filter(q => q.id.startsWith(unit)).length;
-    const currentUnitQuestionsAnswered = Object.keys(finalUserAnswers).filter(index => orderedQuestions[parseInt(index)].id.startsWith(unit)).length;
-    const percentage = Math.round((currentUnitQuestionsAnswered / unitQuestionsCount) * 100);
+    // Only track progress for unit-wise practice (not full-length tests)
+    if (!isFullLength) {
+      // Calculate unit progress
+      // Extract unit from question ID (e.g., "APMACRO_BEC_Q1" -> "BEC")
+      const unit = currentQuestion.id.split('_')[1];
 
+      // Count total questions and correct answers for this unit
+      const unitQuestions = orderedQuestions.filter(q => q.id.split('_')[1] === unit);
+      const unitQuestionsCount = unitQuestions.length;
 
-    // Save the unit progress
-      console.log(`📊 [PracticeQuiz] Saving unit progress for subject=${subjectId}, unit=${unit}, score=${percentage}%`);
+      // Count how many of this unit's questions have been answered
+      const answeredUnitQuestions = Object.keys(finalUserAnswers).filter(index => {
+        const question = orderedQuestions[parseInt(index)];
+        return question && question.id.split('_')[1] === unit;
+      }).length + 1; // +1 for the current question being submitted
 
-      const progressResponse = apiRequest(
+      // Count correct answers for this unit
+      let correctCount = 0;
+      Object.entries(finalUserAnswers).forEach(([index, answer]) => {
+        const question = orderedQuestions[parseInt(index)];
+        if (question && question.id.split('_')[1] === unit) {
+          const correctLabel = String.fromCharCode(65 + question.answerIndex);
+          if (answer === correctLabel) correctCount++;
+        }
+      });
+      // Add current answer if correct
+      if (isCorrect) correctCount++;
+
+      // Calculate percentage based on answered questions so far
+      const percentage = Math.round((correctCount / answeredUnitQuestions) * 100);
+
+      console.log(`📊 [PracticeQuiz] Saving unit progress for subject=${subjectId}, unit=${unit}, score=${percentage}% (${correctCount}/${answeredUnitQuestions})`);
+
+      // Save the unit progress
+      apiRequest(
         "PUT",
         `/api/user/subjects/${subjectId}/unit-progress`,
         {
           unitId: unit,
           mcqScore: percentage,
         }
-      );
-
-      progressResponse.then(response => {
+      ).then(response => {
         if (response.ok) {
           response.json().then(data => {
             console.log(`✅ [PracticeQuiz] Unit progress saved successfully:`, data);
@@ -149,7 +172,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       }).catch(error => {
         console.error("❌ [PracticeQuiz] Error saving unit progress:", error);
       });
-
+    }
   };
 
   const handleNextQuestion = () => {

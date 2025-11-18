@@ -567,18 +567,15 @@ export default function Dashboard() {
                               const actualUnitCount = subjectData?.metadata?.units || subject.units;
                               
                               return Array.from({ length: actualUnitCount }).map((_, index) => {
-                                // Handle different subject naming conventions
-                                let unitId;
-                                if (subject.subjectId === "computer-science-principles") {
-                                  unitId = `bigidea${index + 1}`;
-                                } else {
-                                  // All other subjects use unit1, unit2, etc.
-                                  unitId = `unit${index + 1}`;
-                                }
+                                // Get the actual unit codes from the subject metadata
+                                const subjectData = getSubjectByCode(subject.subjectId);
+                                const units = subjectData?.units || [];
+                                const unit = units[index];
+                                const unitId = unit?.id || `unit${index + 1}`;
 
                                 const unitData = (subject as any).unitProgress?.[unitId];
-                                const score = unitData?.highestScore || 0;
-                                const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;
+                                const score = unitData?.highestScore || unitData?.mcqScore || 0;
+                                const hasAttempted = unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0);
 
                               let bgColor = "bg-gray-200"; // not-started
                               let status = "Not Started";
