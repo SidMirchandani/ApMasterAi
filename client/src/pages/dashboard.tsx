@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/api";
 import { formatDate, formatDateTime } from "@/lib/date";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { getSubjectByCode } from "@/subjects";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 
@@ -587,23 +588,33 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center space-x-2 text-khan-gray-medium">
                               <Clock className="w-4 h-4" />
-                              <span className="text-khan-gray-dark font-medium">{formatDate(subject.examDate)}</span>
+                              <span className="text-khan-gray-dark font-medium">
+                                {(() => {
+                                  const subjectData = getSubjectByCode(subject.subjectId);
+                                  return formatDate(subjectData?.metadata?.examDate || subject.examDate);
+                                })()}
+                              </span>
                             </div>
                           </div>
                           <div className="flex items-center space-x-2 group relative">
-                            {Array.from({ length: subject.units }).map((_, index) => {
-                              // Handle different subject naming conventions
-                              let unitId;
-                              if (subject.subjectId === "computer-science-principles") {
-                                unitId = `bigidea${index + 1}`;
-                              } else {
-                                // All other subjects use unit1, unit2, etc.
-                                unitId = `unit${index + 1}`;
-                              }
+                            {(() => {
+                              // Get the actual number of units from subject metadata
+                              const subjectData = getSubjectByCode(subject.subjectId);
+                              const actualUnitCount = subjectData?.metadata?.units || subject.units;
+                              
+                              return Array.from({ length: actualUnitCount }).map((_, index) => {
+                                // Handle different subject naming conventions
+                                let unitId;
+                                if (subject.subjectId === "computer-science-principles") {
+                                  unitId = `bigidea${index + 1}`;
+                                } else {
+                                  // All other subjects use unit1, unit2, etc.
+                                  unitId = `unit${index + 1}`;
+                                }
 
-                              const unitData = (subject as any).unitProgress?.[unitId];
-                              const score = unitData?.highestScore || 0;
-                              const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;
+                                const unitData = (subject as any).unitProgress?.[unitId];
+                                const score = unitData?.highestScore || 0;
+                                const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;
 
                               let bgColor = "bg-gray-200"; // not-started
                               let status = "Not Started";
@@ -630,7 +641,8 @@ export default function Dashboard() {
                                   {status === "Mastered" && "👑"}
                                 </div>
                               );
-                            })}
+                            });
+                            })()}
 
                             {/* Legend on hover */}
                             <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white shadow-lg rounded-lg p-3 border border-gray-200 z-10 whitespace-nowrap">
