@@ -555,51 +555,57 @@ export default function Dashboard() {
                           </div>
                           <div className="flex items-center space-x-2 group relative">
                             {(() => {
-                              // Get the actual number of units from subject metadata
+                              // Get the actual unit codes from the subject metadata
                               const subjectData = getSubjectByCode(subject.subjectId);
-                              const actualUnitCount = subjectData?.metadata?.units || subject.units;
+                              const units = subjectData?.units || [];
+                              const unitProgress = (subject as any).unitProgress || {};
 
-                              return Array.from({ length: actualUnitCount }).map((_, index) => {
-                                // Get the actual unit codes from the subject metadata
-                                const subjectData = getSubjectByCode(subject.subjectId);
-                                const units = subjectData?.units || [];
-                                const unit = units[index];
+                              return units.map((unit, index) => {
                                 const unitId = unit?.id;
-
-                                // Use only the unit ID - no fallbacks
-                                const unitProgress = (subject as any).unitProgress || {};
-                                const unitData = unitId ? unitProgress[unitId] : undefined;
+                                const unitData = unitProgress[unitId];
                                 
+                                console.log(`[Dashboard] Unit ${index + 1} (${unitId}):`, {
+                                  unitData,
+                                  hasData: !!unitData,
+                                  highestScore: unitData?.highestScore,
+                                  mcqScore: unitData?.mcqScore,
+                                  scores: unitData?.scores
+                                });
+
                                 // Check both highestScore and mcqScore for backwards compatibility
                                 const score = unitData?.highestScore || unitData?.mcqScore || 0;
-                                const hasAttempted = unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0 || unitData.highestScore > 0);
+                                const hasAttempted = unitData && (
+                                  (unitData.scores && unitData.scores.length > 0) || 
+                                  unitData.mcqScore > 0 || 
+                                  unitData.highestScore > 0
+                                );
 
-                              let bgColor = "bg-gray-200"; // not-started
-                              let status = "Not Started";
+                                let bgColor = "bg-gray-200"; // not-started
+                                let status = "Not Started";
 
-                              if (hasAttempted) {
-                                if (score >= 80) {
-                                  bgColor = "bg-green-600";
-                                  status = "Mastered";
-                                } else if (score >= 60) {
-                                  bgColor = "bg-green-400";
-                                  status = "Proficient";
-                                } else {
-                                  bgColor = "bg-orange-400";
-                                  status = "In Progress";
+                                if (hasAttempted) {
+                                  if (score >= 80) {
+                                    bgColor = "bg-green-600";
+                                    status = "Mastered";
+                                  } else if (score >= 60) {
+                                    bgColor = "bg-green-400";
+                                    status = "Proficient";
+                                  } else {
+                                    bgColor = "bg-orange-400";
+                                    status = "In Progress";
+                                  }
                                 }
-                              }
 
-                              return (
-                                <div
-                                  key={unitId || `unit-${index}`}
-                                  className={`w-8 h-8 rounded ${bgColor} border border-black transition-all flex items-center justify-center text-xs font-semibold text-white`}
-                                  title={`Unit ${index + 1}: ${status}`}
-                                >
-                                  {status === "Mastered" && "👑"}
-                                </div>
-                              );
-                            });
+                                return (
+                                  <div
+                                    key={unitId || `unit-${index}`}
+                                    className={`w-8 h-8 rounded ${bgColor} border border-black transition-all flex items-center justify-center text-xs font-semibold text-white`}
+                                    title={`Unit ${index + 1} (${unitId}): ${status} - ${score}%`}
+                                  >
+                                    {status === "Mastered" && "👑"}
+                                  </div>
+                                );
+                              });
                             })()}
 
                             {/* Legend on hover */}
