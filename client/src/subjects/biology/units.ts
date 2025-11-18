@@ -1,7 +1,7 @@
 
-import { BiologyUnit } from './types';
+import { SubjectUnit } from '../common/interfaces';
 
-export const biologyUnits: BiologyUnit[] = [
+export const units: SubjectUnit[] = [
   {
     id: "unit1",
     title: "Chemistry of Life",

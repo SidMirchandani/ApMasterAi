@@ -1,57 +1,43 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
-import { ExplanationChat } from "@/components/ui/explanation-chat";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { BlockRenderer } from "@/components/quiz/BlockRenderer";
-import { QuizBottomBar } from "@/components/quiz/QuizBottomBar";
+import { QuestionCard } from "@/components/quiz/QuestionCard";
 import { ReviewQuestionPalette } from "@/components/quiz/ReviewQuestionPalette";
-
-type Block = { type: "text"; value: string } | { type: "image"; url: string };
+import { useIsMobile } from "@/hooks/use-mobile";
+import { getSectionByCode } from "@/subjects";
 
 interface Question {
   id: string;
-  question_id?: number;
+  prompt: string;
+  prompt_blocks?: any[];
+  choices: { [key: string]: any[] };
+  answerIndex: number;
+  explanation: string;
   subject_code?: string;
   section_code?: string;
-  prompt_blocks: Block[];
-  choices: Record<"A" | "B" | "C" | "D" | "E", Block[]>;
-  answerIndex: number;
-  correct_answer?: string;
-  explanation?: string;
-  prompt?: string;
-  image_urls?: {
-    question?: string[];
-    A?: string[];
-    B?: string[];
-    C?: string[];
-    D?: string[];
-    E?: string[];
-  };
-  originalTestIndex?: number;
+}
+
+interface SectionData {
+  questions: Question[];
+  userAnswers: { [key: number]: string };
+  sectionName: string;
+  unitNumber: number;
 }
 
 export default function SectionReview() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const isMobile = useIsMobile();
   const { subject: subjectId, testId, section: sectionCode } = router.query;
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [sectionData, setSectionData] = useState<any>(null);
-  const [showQuestionPalette, setShowQuestionPalette] = useState(false);
 
-  // Reset palette state when changing questions
-  useEffect(() => {
-    setShowQuestionPalette(false);
-  }, [currentQuestionIndex]);
+  const [sectionData, setSectionData] = useState<SectionData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -63,55 +49,54 @@ export default function SectionReview() {
     const fetchSectionData = async () => {
       if (!subjectId || !testId || !sectionCode || !isAuthenticated) return;
 
-      if (testId === "current" && router.query.data) {
-        try {
-          const data = JSON.parse(router.query.data as string);
-          setSectionData(data);
-          setQuestions(data.questions);
-          setUserAnswers(data.userAnswers);
-          setIsLoading(false);
-          return;
-        } catch (error) {
-          console.error("Error parsing current test data:", error);
-        }
-      }
-
       try {
+        const endpoint =
+          sectionCode === "all"
+            ? `/api/user/subjects/${subjectId}/test-results/${testId}`
+            : `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`;
+
+        const response = await apiRequest("GET", endpoint);
+        if (!response.ok) throw new Error("Failed to fetch section data");
+
+        const data = await response.json();
+
         if (sectionCode === "all") {
-          const response = await apiRequest(
-            "GET",
-            `/api/user/subjects/${subjectId}/test-results/${testId}`,
-          );
-          if (!response.ok) throw new Error("Failed to fetch test results");
-
-          const data = await response.json();
-          setSectionData(data.data);
-          setQuestions(data.data.questions);
-          setUserAnswers(data.data.userAnswers);
+          setSectionData({
+            questions: data.data.questions || [],
+            userAnswers: data.data.userAnswers || {},
+            sectionName: "All Questions",
+            unitNumber: 0,
+          });
         } else {
-          const response = await apiRequest(
-            "GET",
-            `/api/user/subjects/${subjectId}/test-results/${testId}/section/${sectionCode}`,
-          );
-
-          if (!response.ok) {
-            throw new Error("Failed to fetch section questions");
-          }
-
-          const data = await response.json();
-          setSectionData(data.data);
-          setQuestions(data.data.questions);
-          setUserAnswers(data.data.userAnswers);
+          const sectionInfo = getSectionByCode(subjectId as string, sectionCode as string);
+          setSectionData({
+            questions: data.data.questions || [],
+            userAnswers: data.data.userAnswers || {},
+            sectionName: sectionInfo?.name || data.data.sectionName || "Unknown Section",
+            unitNumber: sectionInfo?.unitNumber || data.data.unitNumber || 0,
+          });
         }
       } catch (error) {
-        console.error("Error fetching section questions:", error);
+        console.error("Error fetching section data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchSectionData();
-  }, [subjectId, testId, sectionCode, isAuthenticated, router.query.data]);
+  }, [subjectId, testId, sectionCode, isAuthenticated]);
+
+  const handleNext = () => {
+    if (sectionData && currentQuestionIndex < sectionData.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
 
   if (loading || isLoading) {
     return (
@@ -124,206 +109,112 @@ export default function SectionReview() {
     );
   }
 
-  const handleBackNavigation = () => {
-    router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
-  };
-
-  const currentQuestion = questions[currentQuestionIndex];
-  if (!currentQuestion) return null;
-
-  const correctAnswerLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
-  const userAnswer = userAnswers[
-    currentQuestion.originalTestIndex !== undefined
-      ? currentQuestion.originalTestIndex
-      : currentQuestionIndex
-  ];
-  const isCorrect = userAnswer === correctAnswerLabel;
-
-  const allChoices = Object.keys(currentQuestion.choices) as Array<"A" | "B" | "C" | "D" | "E">;
-  const choices = allChoices.filter((label) => {
-    if (label !== "E") return true;
-    const choiceBlocks = currentQuestion.choices[label];
-    if (!choiceBlocks || choiceBlocks.length === 0) return false;
-    if (choiceBlocks.length === 1 && 
-        choiceBlocks[0].type === "text" && 
-        (!choiceBlocks[0].value || choiceBlocks[0].value.trim() === "")) {
-      return false;
-    }
-    return true;
-  });
-
-  const displayNumber = currentQuestion.originalTestIndex !== undefined
-    ? currentQuestion.originalTestIndex + 1
-    : currentQuestionIndex + 1;
-
-  // Create a map for palette to show only relevant questions
-  const userAnswersForPalette = questions.reduce((acc, q, idx) => {
-    const originalIdx = q.originalTestIndex !== undefined ? q.originalTestIndex : idx;
-    acc[idx] = userAnswers[originalIdx];
-    return acc;
-  }, {} as { [key: number]: string });
-
-  // Create correct answers map
-  const correctAnswers = questions.reduce((acc, q, idx) => {
-    const correctLabel = String.fromCharCode(65 + q.answerIndex);
-    acc[idx] = correctLabel;
-    return acc;
-  }, {} as { [key: number]: string });
-
-  // Create original indices array for unit reviews
-  const originalIndices = questions.map((q) => 
-    q.originalTestIndex !== undefined ? q.originalTestIndex : 0
-  );
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Main Navigation with Breadcrumbs */}
-      <Navigation />
-
-      <div className="flex-1 overflow-y-auto mb-14 pt-2">
-        <div className="max-w-4xl mx-auto px-4 py-2">
-          <Card className="mb-3">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between border-b pb-2 -mx-4 px-4 -mt-4 pt-2 bg-gray-50">
-                <div className="flex items-center gap-3">
-                  <div className="bg-black text-white px-3 py-1 font-bold text-sm rounded">
-                    {displayNumber}
-                  </div>
-                  {sectionCode === "all" && currentQuestion.section_code && sectionData?.sectionBreakdown && (
-                    <span className="text-sm font-bold text-khan-green">
-                      UNIT {sectionData.sectionBreakdown[currentQuestion.section_code]?.unitNumber || ""}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-2 pt-2">
-              {/* Question Prompt */}
-              <div className="mb-3 text-sm leading-snug">
-                <BlockRenderer blocks={currentQuestion.prompt_blocks} />
-              </div>
-
-              {/* Choices */}
-              <div className="space-y-2">
-                {choices.map((label) => {
-                  const isUserAnswer = userAnswer === label;
-                  const isCorrectAnswer = label === correctAnswerLabel;
-
-                  let bgColor = "bg-white";
-                  let borderColor = "border-gray-200";
-                  let textColor = "text-gray-800";
-
-                  if (isCorrectAnswer) {
-                    bgColor = "bg-green-50";
-                    borderColor = "border-green-500";
-                    textColor = "text-green-900";
-                  } else if (isUserAnswer && !isCorrect) {
-                    bgColor = "bg-red-50";
-                    borderColor = "border-red-500";
-                    textColor = "text-red-900";
-                  }
-
-                  return (
-                    <div
-                      key={label}
-                      className={`flex items-start gap-2 p-2 rounded-lg border-2 ${bgColor} ${borderColor}`}
-                    >
-                      <div className={`flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center font-semibold text-sm ${
-                        isCorrectAnswer 
-                          ? 'border-green-600 bg-green-100 text-green-700'
-                          : isUserAnswer && !isCorrect
-                            ? 'border-red-600 bg-red-100 text-red-700'
-                            : 'border-gray-400 bg-white'
-                      }`}>
-                        {label}
-                      </div>
-                      <div className={`flex-1 pt-0.5 text-sm ${textColor}`}>
-                        <BlockRenderer blocks={currentQuestion.choices[label]} />
-                        {isCorrectAnswer && (
-                          <div className="mt-1.5 text-xs font-semibold text-green-600 flex items-center gap-1">
-                            <CheckCircle className="h-3.5 w-3.5" />
-                            Correct Answer
-                          </div>
-                        )}
-                        {isUserAnswer && !isCorrect && (
-                          <div className="mt-1.5 text-xs font-semibold text-red-600 flex items-center gap-1">
-                            <XCircle className="h-3.5 w-3.5" />
-                            Your Answer
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className={`p-1.5 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
-                <p className="font-semibold">
-                  Your answer: {userAnswer || "Not answered"}
-                  {isCorrect
-                    ? " ✓ Correct"
-                    : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
-                </p>
-              </div>
-
-              {currentQuestion.explanation && (
-                <Card className="border-khan-blue bg-blue-50">
-                  <CardHeader className="pb-2 pt-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <CheckCircle className="text-khan-blue h-4 w-4" />
-                      Explanation
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 pb-3">
-                    <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {currentQuestion.explanation}
-                      </ReactMarkdown>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              {currentQuestion.explanation && (
-                <ExplanationChat
-                  questionPrompt={currentQuestion.prompt_blocks}
-                  explanation={currentQuestion.explanation}
-                  correctAnswer={currentQuestion.choices[String.fromCharCode(65 + currentQuestion.answerIndex) as "A" | "B" | "C" | "D" | "E"]}
-                  choices={currentQuestion.choices}
-                />
-              )}
-            </CardContent>
-          </Card>
+  if (!sectionData || sectionData.questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-khan-background">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <p className="text-khan-gray-medium">No questions found for this section</p>
+            <Button
+              onClick={() =>
+                router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`)
+              }
+              className="mt-4"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Results
+            </Button>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      <div className="fixed bottom-0 left-0 right-0 z-50">
-        <QuizBottomBar
-          currentQuestion={currentQuestionIndex + 1}
-          totalQuestions={questions.length}
-          onOpenPalette={() => setShowQuestionPalette(true)}
-          onPrevious={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
-          onNext={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))}
-          canGoPrevious={currentQuestionIndex > 0}
-          canGoNext={currentQuestionIndex < questions.length - 1}
-          isLastQuestion={currentQuestionIndex === questions.length - 1}
-        />
-      </div>
+  const currentQuestion = sectionData.questions[currentQuestionIndex];
+  const userAnswer = sectionData.userAnswers[currentQuestionIndex];
+  const correctAnswer = String.fromCharCode(65 + currentQuestion.answerIndex);
+  const isCorrect = userAnswer === correctAnswer;
 
-      <ReviewQuestionPalette
-        isOpen={showQuestionPalette}
-        onClose={() => setShowQuestionPalette(false)}
-        questions={questions}
-        currentQuestion={currentQuestionIndex}
-        userAnswers={userAnswersForPalette}
-        correctAnswers={correctAnswers}
-        onQuestionSelect={(index) => {
-          setCurrentQuestionIndex(index);
-          setShowQuestionPalette(false);
-        }}
-        showOriginalNumbers={sectionCode !== "all"}
-        originalIndices={originalIndices}
-      />
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white">
+      <Navigation />
+      <main className="py-4 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-4">
+            <Button
+              onClick={() =>
+                router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`)
+              }
+              variant="outline"
+              className="mb-4"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Results
+            </Button>
+
+            <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark mb-2">
+              {sectionData.sectionName}
+              {sectionData.unitNumber > 0 && (
+                <span className="text-khan-green ml-2">Unit {sectionData.unitNumber}</span>
+              )}
+            </h1>
+            <p className="text-khan-gray-medium">
+              Question {currentQuestionIndex + 1} of {sectionData.questions.length}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-3">
+              <QuestionCard
+                question={currentQuestion}
+                questionNumber={currentQuestionIndex + 1}
+                selectedAnswer={userAnswer}
+                onAnswerSelect={() => {}}
+                showCorrectAnswer={true}
+                showExplanation={true}
+                isReviewMode={true}
+              />
+
+              <div className="flex gap-4 mt-6">
+                <Button
+                  onClick={handlePrevious}
+                  disabled={currentQuestionIndex === 0}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  onClick={handleNext}
+                  disabled={currentQuestionIndex === sectionData.questions.length - 1}
+                  className="flex-1 bg-khan-green hover:bg-khan-green-light"
+                >
+                  Next
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="lg:col-span-1">
+              <Card className="sticky top-4">
+                <CardContent className="p-4">
+                  <ReviewQuestionPalette
+                    totalQuestions={sectionData.questions.length}
+                    currentQuestion={currentQuestionIndex}
+                    userAnswers={sectionData.userAnswers}
+                    correctAnswers={sectionData.questions.map((q) =>
+                      String.fromCharCode(65 + q.answerIndex)
+                    )}
+                    onQuestionSelect={setCurrentQuestionIndex}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

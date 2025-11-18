@@ -1,28 +1,19 @@
+import { getAllSubjects } from '@/subjects';
+
+// Generate subjects from the auto-loader
+const registeredSubjects = getAllSubjects();
+
 export const apSubjects = [
-  {
-    id: "calculus-ab",
-    name: "AP Calculus AB",
-    description: "Limits, derivatives, integrals, and the Fundamental Theorem of Calculus",
-    units: 8,
-    difficulty: "Hard",
-    examDate: "May 5, 2025"
-  },
-  {
-    id: "calculus-bc",
-    name: "AP Calculus BC",
-    description: "Advanced calculus including series, parametric equations, and polar coordinates",
-    units: 8,
-    difficulty: "Hard",
-    examDate: "May 5, 2025"
-  },
-  {
-    id: "biology",
-    name: "AP Biology",
-    description: "Molecular biology, genetics, evolution, ecology, and organism structure/function",
-    units: 8,
-    difficulty: "Hard",
-    examDate: "May 12, 2025"
-  },
+  // Active subjects from registry
+  ...registeredSubjects.map(subject => ({
+    id: subject.subjectCode,
+    name: subject.displayName,
+    description: subject.metadata.description,
+    units: subject.units.length,
+    difficulty: subject.metadata.difficulty,
+    examDate: subject.metadata.examDate,
+  })),
+  // Placeholder subjects (coming soon)
   {
     id: "chemistry",
     name: "AP Chemistry",

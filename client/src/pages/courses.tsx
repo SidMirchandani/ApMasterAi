@@ -2,6 +2,7 @@ import { BookOpen } from "lucide-react";
 import { Clock } from "lucide-react";
 import { ArrowRight } from "lucide-react";
 import { Check } from "lucide-react";
+import { getAllSubjects } from '@/subjects';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -231,8 +232,10 @@ export default function Courses() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...apSubjects].sort((a, b) => a.name.localeCompare(b.name)).map((subject) => {
-              const isActive = ['computer-science-principles', 'macroeconomics', 'microeconomics'].includes(subject.id);
+            {(() => {
+              const registeredSubjects = getAllSubjects();
+              return [...apSubjects].sort((a, b) => a.name.localeCompare(b.name)).map((subject) => {
+              const isActive = registeredSubjects.some(s => s.subjectCode === subject.id);
               const isAdded = addedSubjectIds.has(subject.id);
               const isAdding = addSubjectMutation.isPending && addSubjectMutation.variables?.id === subject.id;
               const shouldShowAsAdded = isAdded || isAdding;
@@ -291,7 +294,8 @@ export default function Courses() {
                   </CardContent>
                 </Card>
               );
-            })}
+              });
+            })()}
           </div>
 
 

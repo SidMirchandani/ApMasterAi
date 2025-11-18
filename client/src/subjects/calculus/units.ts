@@ -1,7 +1,7 @@
 
-import { CalculusUnit } from './types';
+import { SubjectUnit } from '../common/interfaces';
 
-export const calculusUnits: CalculusUnit[] = [
+export const units: SubjectUnit[] = [
   {
     id: "unit1",
     title: "Limits and Continuity",

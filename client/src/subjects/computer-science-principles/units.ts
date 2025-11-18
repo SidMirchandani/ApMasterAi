@@ -1,7 +1,7 @@
 
-import { ComputerSciencePrinciplesUnit } from './types';
+import { SubjectUnit } from '../common/interfaces';
 
-export const computerSciencePrinciplesUnits: ComputerSciencePrinciplesUnit[] = [
+export const units: SubjectUnit[] = [
   {
     id: "bigidea1",
     title: "Creative Development",

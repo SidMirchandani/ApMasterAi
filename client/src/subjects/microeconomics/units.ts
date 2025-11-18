@@ -1,7 +1,7 @@
 
-import { MicroeconomicsUnit } from './types';
+import { SubjectUnit } from '../common/interfaces';
 
-export const microeconomicsUnits: MicroeconomicsUnit[] = [
+export const units: SubjectUnit[] = [
   {
     id: "unit1",
     title: "Basic Economic Concepts",
