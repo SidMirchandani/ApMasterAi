@@ -148,7 +148,24 @@ export default function Quiz() {
             subjectId,
             unit,
             sectionCode,
-            subjectApiCode
+            subjectApiCode,
+            fullMapping: {
+              APCSP: {
+                bigidea1: 'CRD',
+                bigidea2: 'DAT',
+                bigidea3: 'AAP',
+                bigidea4: 'CSN',
+                bigidea5: 'IOC'
+              },
+              APMACRO: {
+                unit1: 'BEC',
+                unit2: 'EIBC',
+                unit3: 'NIPD',
+                unit4: 'FS',
+                unit5: 'LRCSP',
+                unit6: 'OEITF'
+              }
+            }
           });
 
           if (!sectionCode) {
