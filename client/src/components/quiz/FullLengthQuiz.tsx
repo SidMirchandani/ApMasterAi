@@ -54,26 +54,31 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   // Subject-specific directions
   const getExamDirections = () => {
     const subjectKey = subjectId?.toString().toLowerCase();
-    const subject = getSubjectByLegacyId(subjectKey);
-    
-    if (!subject) {
+
+    const getExamInfo = (subjectKey: string) => {
+      const subject = getSubjectByLegacyId(subjectKey);
+
+      if (!subject) {
+        return {
+          title: 'AP® Practice Exam',
+          sections: [
+            {
+              title: 'General Instructions',
+              details: `This practice exam has ${questions.length} multiple-choice questions`,
+              description: 'Each question has four suggested answers. Select the best answer for each question.'
+            }
+          ]
+        };
+      }
+
       return {
-        title: 'AP® Practice Exam',
-        sections: [
-          {
-            title: 'General Instructions',
-            details: `This practice exam has ${questions.length} multiple-choice questions`,
-            description: 'Each question has four suggested answers. Select the best answer for each question.'
-          }
-        ]
+        title: subject.metadata.examTitle || `${subject.displayName} Practice Exam`,
+        sections: subject.metadata.examSections || [],
+        breakdown: subject.metadata.breakdown || []
       };
-    }
-    
-    return {
-      title: subject.metadata.examTitle || `${subject.displayName} Practice Exam`,
-      sections: subject.metadata.examSections || [],
-      breakdown: subject.metadata.breakdown || []
     };
+
+    return getExamInfo(subjectKey); // Call getExamInfo here
   };
 
   const examDirections = getExamDirections();
