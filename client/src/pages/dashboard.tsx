@@ -221,7 +221,7 @@ export default function Dashboard() {
   // =====================
   // NAVIGATION
   // =====================
-  if (loading) return <LoadingScreen />;
+  if (loading) return <CenteredLoader text="Loading..." />;
 
   if (!isAuthenticated) return null;
 
