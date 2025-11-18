@@ -393,11 +393,11 @@ export default function Study() {
                     {/* Right: Action Buttons */}
                     <div className="flex flex-col gap-3 lg:min-w-[280px]">
                       <Button
-                        onClick={() =>
+                        onClick={() => {
                           router.push(
                             `/quiz?subject=${subjectId}&unit=${unit.id}`,
-                          )
-                        }
+                          );
+                        }}
                         className="bg-khan-green hover:bg-khan-green-light h-11 font-medium"
                       >
                         <BookOpen className="mr-2 h-4 w-4" />

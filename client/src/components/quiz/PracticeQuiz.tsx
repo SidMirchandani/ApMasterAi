@@ -218,6 +218,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
         if (response.ok) {
           response.json().then(data => {
             console.log(`✅ [PracticeQuiz] Unit progress saved successfully:`, data);
+            
+            // Trigger a refetch of subjects data by dispatching a custom event
+            window.dispatchEvent(new CustomEvent('subjectsUpdated'));
           });
         } else {
           response.text().then(text => {

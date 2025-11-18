@@ -565,7 +565,7 @@ export default function Dashboard() {
                               // Get the actual number of units from subject metadata
                               const subjectData = getSubjectByCode(subject.subjectId);
                               const actualUnitCount = subjectData?.metadata?.units || subject.units;
-                              
+
                               return Array.from({ length: actualUnitCount }).map((_, index) => {
                                 // Get the actual unit codes from the subject metadata
                                 const subjectData = getSubjectByCode(subject.subjectId);
