@@ -423,6 +423,9 @@ export class Storage {
     unitId: string,
     mcqScore: number,
   ): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
 
     const subjectsRef = db.collection("user_subjects");
 
