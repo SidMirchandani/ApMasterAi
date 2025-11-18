@@ -555,10 +555,15 @@ export default function Dashboard() {
                           </div>
                           <div className="flex items-center space-x-2 group relative">
                             {Array.from({ length: subject.units }).map((_, index) => {
-                              // Handle AP CSP's bigidea naming convention
-                              const unitId = subject.subjectId === "computer-science-principles"
-                                ? `bigidea${index + 1}`
-                                : `unit${index + 1}`;
+                              // Handle different subject naming conventions
+                              let unitId;
+                              if (subject.subjectId === "computer-science-principles") {
+                                unitId = `bigidea${index + 1}`;
+                              } else {
+                                // All other subjects use unit1, unit2, etc.
+                                unitId = `unit${index + 1}`;
+                              }
+                              
                               const unitData = (subject as any).unitProgress?.[unitId];
                               const score = unitData?.highestScore || 0;
                               const hasAttempted = unitData && unitData.scores && unitData.scores.length > 0;

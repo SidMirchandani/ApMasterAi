@@ -57,11 +57,12 @@ export default async function handler(
           userId,
           subjectId,
           unitId,
-          mcqScore
+          mcqScore,
+          requestBody: req.body
         });
 
         if (!unitId || typeof unitId !== "string") {
-          console.log("❌ [unit-progress API] Invalid unitId");
+          console.log("❌ [unit-progress API] Invalid unitId:", unitId);
           return res.status(400).json({
             success: false,
             message: "Valid unit ID is required",
@@ -76,6 +77,13 @@ export default async function handler(
           });
         }
 
+        console.log("📝 [unit-progress API] Calling storage.updateUnitProgress with:", {
+          userId,
+          subjectId,
+          unitId,
+          mcqScore
+        });
+
         const updated = await storage.updateUnitProgress(
           userId,
           subjectId,
@@ -83,7 +91,7 @@ export default async function handler(
           mcqScore,
         );
 
-        console.log("✅ [unit-progress API] Progress updated successfully");
+        console.log("✅ [unit-progress API] Progress updated successfully:", updated);
 
         return res.status(200).json({
           success: true,
