@@ -131,18 +131,25 @@ export default async function handler(
     // Regular query logic for unit quizzes or subjects without weight config
     const fetchLimit = questionLimit * 4;
 
-    console.log("🔍 Querying questions with:", {
+    console.log("🔍 [API/questions] Querying questions with:", {
       subject,
       section: section || "ALL",
       requestedLimit: questionLimit,
-      fetchLimit
+      fetchLimit,
+      queryFields: {
+        subject_code: subject,
+        section_code: section || 'not filtering'
+      }
     });
 
     const questionsRef = db.collection('questions');
     let query = questionsRef.where('subject_code', '==', subject as string);
     
     if (section) {
-      console.log("📍 Adding section filter:", section);
+      console.log("📍 [API/questions] Adding section filter:", {
+        field: 'section_code',
+        value: section
+      });
       query = query.where('section_code', '==', section as string);
     }
     
@@ -150,15 +157,19 @@ export default async function handler(
       .limit(fetchLimit)
       .get();
 
-    console.log("📊 Firestore query result:", {
+    console.log("📊 [API/questions] Firestore query result:", {
       isEmpty: snapshot.empty,
       size: snapshot.size,
-      queriedFor: { subject, section: section || "ALL" }
+      queriedFor: { 
+        subject_code: subject, 
+        section_code: section || "ALL" 
+      },
+      actualResults: snapshot.docs.length
     });
 
     // If no results and section was specified, log sample documents for debugging
     if (snapshot.empty && section) {
-      console.log("❌ No questions found with filters - fetching sample docs for debugging");
+      console.log("❌ [API/questions] No questions found with filters - fetching sample docs for debugging");
       const sampleQuery = await questionsRef
         .where('subject_code', '==', subject as string)
         .limit(5)
@@ -169,7 +180,26 @@ export default async function handler(
         subject_code: doc.data().subject_code,
         section_code: doc.data().section_code
       }));
-      console.log("📋 Sample questions for subject:", samples);
+      console.log("📋 [API/questions] Sample questions for subject (showing actual DB field values):", {
+        requestedSubject: subject,
+        requestedSection: section,
+        sampleCount: samples.length,
+        samples
+      });
+      console.log("📋 [API/questions] Available section codes in DB for this subject:", 
+        [...new Set(samples.map(s => s.section_code))]
+      );
+    }
+
+    // Also log if we found results but fewer than expected
+    if (!snapshot.empty && snapshot.size < questionLimit) {
+      console.log("⚠️ [API/questions] Found fewer questions than requested:", {
+        requested: questionLimit,
+        found: snapshot.size,
+        subject_code: subject,
+        section_code: section || 'ALL'
+      });
+    }ect:", samples);
     }
 
     if (snapshot.empty) {

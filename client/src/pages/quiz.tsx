@@ -124,42 +124,74 @@ export default function Quiz() {
             setQuestions(data.data);
           } else setError("No questions found for this subject");
         } else {
-          const sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
-          console.log("🔍 [Quiz] Unit mapping lookup:", {
+          console.log("🔍 [Quiz] Practice quiz - Starting lookup:", {
             subjectId,
             unit,
-            sectionCode
+            subjectApiCode
+          });
+
+          const sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
+          console.log("🔍 [Quiz] Unit mapping lookup result:", {
+            subjectId,
+            unit,
+            sectionCode,
+            foundMapping: !!sectionCode
           });
 
           if (!sectionCode) {
-            console.error("❌ [Quiz] No section code found for unit:", unit);
+            console.error("❌ [Quiz] No section code found for unit:", {
+              subjectId,
+              unit,
+              message: "Check unitToSectionMap in subject index.ts file"
+            });
             setError("Invalid unit");
             setIsLoading(false);
             return;
           }
 
           const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`;
-          console.log("📡 [Quiz] Fetching questions:", apiUrl);
+          console.log("📡 [Quiz] Fetching questions with:", {
+            url: apiUrl,
+            params: {
+              subject_code: subjectApiCode,
+              section_code: sectionCode,
+              limit: 25
+            }
+          });
 
           const response = await apiRequest("GET", apiUrl);
-          if (!response.ok) throw new Error("Failed to fetch");
+          if (!response.ok) {
+            console.error("❌ [Quiz] API request failed:", {
+              status: response.status,
+              statusText: response.statusText
+            });
+            throw new Error("Failed to fetch");
+          }
+          
           const data = await response.json();
 
-          console.log("📥 [Quiz] API response:", {
+          console.log("📥 [Quiz] API response received:", {
             success: data.success,
             questionCount: data.data?.length || 0,
+            hasData: !!data.data,
             firstQuestion: data.data?.[0] ? {
               id: data.data[0].id,
               subject_code: data.data[0].subject_code,
               section_code: data.data[0].section_code
-            } : null
+            } : null,
+            allSectionCodes: data.data?.map((q: any) => q.section_code).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i)
           });
 
           if (data.success && data.data?.length > 0) {
             const shuffled = [...data.data].sort(() => Math.random() - 0.5);
             setQuestions(shuffled.slice(0, 25));
+            console.log("✅ [Quiz] Questions loaded successfully:", shuffled.length);
           } else {
-            console.error("❌ [Quiz] No questions found in response");
+            console.error("❌ [Quiz] No questions found in response:", {
+              requestedSubject: subjectApiCode,
+              requestedSection: sectionCode,
+              responseData: data
+            });
             setError("No questions found");
           }
         }

@@ -68,27 +68,55 @@ export function getUnitsForSubject(subjectIdOrCode: string): Unit[] {
 }
 
 export function getSectionCodeForUnit(subjectId: string, unitId: string): string | undefined {
-  console.log('🔍 [subjects/index] getSectionCodeForUnit called:', { subjectId, unitId });
+  console.log('🔍 [subjects/index] getSectionCodeForUnit called:', { 
+    subjectId, 
+    unitId,
+    inputTypes: {
+      subjectId: typeof subjectId,
+      unitId: typeof unitId
+    }
+  });
 
   const subject = getSubjectByLegacyId(subjectId);
   if (!subject) {
-    console.error('❌ [subjects/index] Subject not found for ID:', subjectId);
+    console.error('❌ [subjects/index] Subject not found for legacy ID:', {
+      subjectId,
+      availableLegacyIds: Object.keys(legacyIdMap)
+    });
     return undefined;
   }
 
-  console.log('📋 [subjects/index] Looking up unitToSectionMap for subject:', subjectId);
+  console.log('📋 [subjects/index] Subject found:', {
+    subjectId,
+    subjectCode: subject.subjectCode,
+    displayName: subject.displayName
+  });
 
   // Get the subject module
-  const subjectKey = subject.apiCode.toLowerCase() as 'apmacro' | 'apmicro' | 'apchem' | 'apcsp';
+  const subjectKey = subject.subjectCode.toLowerCase() as 'apmacro' | 'apmicro' | 'apchem' | 'apcsp';
   const subjectModule = subjects[subjectKey];
 
   if (!subjectModule) {
-    console.error('❌ [subjects/index] Subject module not found for key:', subjectKey);
+    console.error('❌ [subjects/index] Subject module not found:', {
+      subjectKey,
+      availableModules: Object.keys(subjects)
+    });
     return undefined;
   }
 
+  console.log('📋 [subjects/index] Checking unitToSectionMap:', {
+    subjectKey,
+    unitId,
+    hasMap: !!subjectModule.unitToSectionMap,
+    mapKeys: subjectModule.unitToSectionMap ? Object.keys(subjectModule.unitToSectionMap) : []
+  });
+
   const sectionCode = subjectModule.unitToSectionMap?.[unitId];
-  console.log('🔍 [subjects/index] Section code lookup result:', { unitId, sectionCode });
+  console.log('🔍 [subjects/index] Section code lookup result:', { 
+    unitId, 
+    sectionCode,
+    found: !!sectionCode
+  });
 
   return sectionCode;
 }
