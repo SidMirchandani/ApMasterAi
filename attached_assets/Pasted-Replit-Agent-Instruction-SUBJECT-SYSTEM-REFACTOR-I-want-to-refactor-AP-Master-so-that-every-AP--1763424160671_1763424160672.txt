@@ -1,0 +1,116 @@
+Replit Agent Instruction — SUBJECT SYSTEM REFACTOR
+
+I want to refactor AP Master so that every AP subject lives in its own independent folder and automatically registers itself with no manual editing.
+Follow these instructions exactly:
+
+1. Create a new folder structure:
+scripts/
+  subjects/
+    <SUBJECT_CODE>/
+      keywords.ts
+      sections.ts
+      transform.ts
+      script.ts
+  subjects/index.ts
+
+2. Each subject folder must export the same interface:
+
+Create this interface at the top of scripts/subjects/index.ts:
+
+export interface APSubjectModule {
+  subjectCode: string;
+  getKeywords(): any;
+  getSections(): any;
+  transformCrackAP(html: string): any;
+}
+
+3. Make an auto-loader in scripts/subjects/index.ts:
+
+Replace file contents with:
+
+import fs from "fs";
+import path from "path";
+import { APSubjectModule } from "./index";
+
+export function loadAllSubjects(): Record<string, APSubjectModule> {
+  const baseDir = __dirname;
+  const modules: Record<string, APSubjectModule> = {};
+
+  for (const folder of fs.readdirSync(baseDir)) {
+    const fullPath = path.join(baseDir, folder);
+
+    if (fs.statSync(fullPath).isDirectory()) {
+      const modPath = path.join(fullPath, "script.ts");
+      if (fs.existsSync(modPath)) {
+        const mod = require(modPath) as APSubjectModule;
+        modules[mod.subjectCode] = mod;
+      }
+    }
+  }
+
+  return modules;
+}
+
+4. Generate template files inside any new subject folder:
+
+Inside scripts/subjects/<SUBJECT_CODE>/script.ts:
+
+import { getKeywords } from "./keywords";
+import { getSections } from "./sections";
+import { transformCrackAP } from "./transform";
+
+export const subjectCode = "<SUBJECT_CODE>";
+
+export function getKeywordsWrapper() {
+  return getKeywords();
+}
+
+export function getSectionsWrapper() {
+  return getSections();
+}
+
+export function transformCrackAPWrapper(html: string) {
+  return transformCrackAP(html);
+}
+
+export default {
+  subjectCode,
+  getKeywords: getKeywordsWrapper,
+  getSections: getSectionsWrapper,
+  transformCrackAP: transformCrackAPWrapper,
+};
+
+
+Inside keywords.ts:
+
+export function getKeywords() {
+  return {};
+}
+
+
+Inside sections.ts:
+
+export function getSections() {
+  return [];
+}
+
+
+Inside transform.ts:
+
+export function transformCrackAP(html: string) {
+  return [];
+}
+
+5. IMPORTANT RULES
+
+No hardcoded subject lists anywhere
+
+No if (subject === "APMACRO") anywhere
+
+The loader must automatically pick up any new folder under /subjects/
+
+When I add APMICRO, the system MUST work immediately with no extra changes
+
+Do NOT rewrite current subjects.
+Just create this structure + auto-loader.
+I will move subjects into this format myself.
