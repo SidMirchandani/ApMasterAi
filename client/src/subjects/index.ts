@@ -6,6 +6,7 @@ import { apmicro } from './apmicro';
 import { apcsp } from './apcsp';
 import { apchem } from './apchem';
 import { apgov } from './apgov';
+import { appsych } from './appsych';
 
 // Import the subjects object which contains the unitToSectionMap
 import * as subjects from './';
@@ -17,6 +18,7 @@ const allSubjects: APSubject[] = [
   apcsp,
   apchem,
   apgov,
+  appsych,
 ];
 
 // Create subject registry by subject code
