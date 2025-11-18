@@ -21,7 +21,7 @@ interface ExamDirections {
     details: string;
     description?: string;
   }>;
-  breakdown?: string[];
+  breakdown?: Array<{ name: string; weight: string }>; // Changed to handle objects
   units?: Array<{ name: string; weight: string }>;
   bigIdeas?: Array<{ name: string; weight: string }>;
 }
@@ -91,7 +91,9 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
                         {examDirections.breakdown && (
                           <ul className="list-disc pl-5 space-y-1">
                             {examDirections.breakdown.map((item, idx) => (
-                              <li key={idx}>{item}</li>
+                              <li key={idx}>
+                                {typeof item === 'string' ? item : `${item.name}: ${item.weight}`}
+                              </li>
                             ))}
                           </ul>
                         )}
@@ -146,7 +148,7 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
                         <p>Each of the questions is followed by four suggested answers. Select the one that best answers each question.</p>
                       </>
                     )}
-                    
+
                     <p>A calculator is allowed in this section. You may use a handheld calculator or the calculator available in their application.</p>
                     <p>Reference information is available in this application and can be accessed throughout the exam.</p>
                     <p>You can go back and forth between questions in this section until time expires. The clock will turn red when 5 minutes remain—<strong>the proctor will not give you any time updates or warnings.</strong></p>
@@ -226,7 +228,9 @@ export function QuizHeader({ title, timeElapsed, onHideTimer, timerHidden = fals
                       {examDirections.breakdown && (
                         <ul className="list-disc pl-5 space-y-1">
                           {examDirections.breakdown.map((item, idx) => (
-                            <li key={idx}>{item}</li>
+                            <li key={idx}>
+                              {typeof item === 'string' ? item : `${item.name}: ${item.weight}`}
+                            </li>
                           ))}
                         </ul>
                       )}
