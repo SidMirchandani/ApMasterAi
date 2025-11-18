@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { QuizReviewPage } from "./QuizReviewPage";
 import { useRouter } from "next/router";
 import { apiRequest } from "@/lib/api";
+import { getSubjectByLegacyId } from '@/subjects';
 
 interface Question {
   id: string;
@@ -53,51 +54,25 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   // Subject-specific directions
   const getExamDirections = () => {
     const subjectKey = subjectId?.toString().toLowerCase();
-
-    import { getSubjectByLegacyId } from '@/subjects';
-  
-  const getExamInfo = (subjectKey: string) => {
     const subject = getSubjectByLegacyId(subjectKey);
     
     if (!subject) {
       return {
         title: 'AP® Practice Exam',
-        sections: [],
-        units: []
+        sections: [
+          {
+            title: 'General Instructions',
+            details: `This practice exam has ${questions.length} multiple-choice questions`,
+            description: 'Each question has four suggested answers. Select the best answer for each question.'
+          }
+        ]
       };
     }
     
     return {
       title: subject.metadata.examTitle || `${subject.displayName} Practice Exam`,
       sections: subject.metadata.examSections || [],
-      units: subject.metadata.breakdown || []
-    };
-  };
-  
-  if (falsece',
-          '5 single-select with reading passage about a computing innovation',
-          '8 multiple-select multiple-choice: select 2 answers'
-        ],
-        bigIdeas: [
-          { name: 'Big Idea 1: Creative Development', weight: '10-13%' },
-          { name: 'Big Idea 2: Data', weight: '17-22%' },
-          { name: 'Big Idea 3: Algorithms and Programming', weight: '30-35%' },
-          { name: 'Big Idea 4: Computer Systems and Networks', weight: '11-15%' },
-          { name: 'Big Idea 5: Impact of Computing', weight: '21-26%' }
-        ]
-      };
-    }
-
-    // Default generic directions
-    return {
-      title: 'Practice Exam Directions',
-      sections: [
-        {
-          title: 'General Instructions',
-          details: `This practice exam has ${questions.length} multiple-choice questions`,
-          description: 'Each question has four suggested answers. Select the best answer for each question.'
-        }
-      ]
+      breakdown: subject.metadata.breakdown || []
     };
   };
 

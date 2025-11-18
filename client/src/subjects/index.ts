@@ -2,19 +2,19 @@
 import { APSubject, Unit } from './common/types';
 
 // Import all subject modules
-import { macroeconomics } from './macroeconomics';
-import { microeconomics } from './microeconomics';
-import { computerSciencePrinciples } from './computer-science-principles';
-import { biology } from './biology';
-import { calculus } from './calculus';
+import { apmacro } from './apmacro';
+import { apmicro } from './apmicro';
+import { apcsp } from './apcsp';
+import { apbio } from './apbio';
+import { apcalcab } from './apcalcab';
 
 // Auto-register all subjects
 const allSubjects: APSubject[] = [
-  macroeconomics,
-  microeconomics,
-  computerSciencePrinciples,
-  biology,
-  calculus,
+  apmacro,
+  apmicro,
+  apcsp,
+  apbio,
+  apcalcab,
 ];
 
 // Create subject registry by subject code
