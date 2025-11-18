@@ -130,13 +130,22 @@ export default function Quiz() {
             subjectApiCode
           });
 
-          const sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
-          console.log("🔍 [Quiz] Unit mapping lookup result:", {
-            subjectId,
-            unit,
-            sectionCode,
-            foundMapping: !!sectionCode
-          });
+          // Check if unit is already a section code (3-letter uppercase) or needs to be mapped
+          let sectionCode: string | undefined;
+          if (unit && /^[A-Z]{2,}$/.test(unit as string)) {
+            // Already a section code (like CRD, DAT, AAP, etc.)
+            sectionCode = unit as string;
+            console.log("🔍 [Quiz] Unit is already a section code:", { sectionCode });
+          } else {
+            // Need to map unit ID to section code
+            sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
+            console.log("🔍 [Quiz] Unit mapping lookup result:", {
+              subjectId,
+              unit,
+              sectionCode,
+              foundMapping: !!sectionCode
+            });
+          }
 
           if (!sectionCode) {
             console.error("❌ [Quiz] No section code found for unit:", {
