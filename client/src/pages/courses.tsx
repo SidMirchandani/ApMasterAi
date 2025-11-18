@@ -94,7 +94,7 @@ export default function Courses() {
           }]
         };
       });
-      
+
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
       toast({
         title: "Subject added!",
@@ -148,12 +148,6 @@ export default function Courses() {
       adjustedDifficulty = "Hard";
     }
 
-    // Adjust units if it exceeds the limit
-    let adjustedUnits = subject.units;
-    if (subject.units > 8) {
-      adjustedUnits = 8;
-    }
-
     // Format examDate to YYYY-MM-DD with safe date handling
     let formattedExamDate: string;
     try {
@@ -182,7 +176,7 @@ export default function Courses() {
     addSubjectMutation.mutate({
       ...subject,
       difficulty: adjustedDifficulty,
-      units: adjustedUnits,
+      units: subject.units, // Removed the 8-unit limit adjustment here
       examDate: formattedExamDate
     });
   };
@@ -236,7 +230,7 @@ export default function Courses() {
               const isAdded = addedSubjectIds.has(subject.id);
               const isAdding = addSubjectMutation.isPending && addSubjectMutation.variables?.id === subject.id;
               const shouldShowAsAdded = isAdded || isAdding;
-              
+
               return (
                 <Card key={subject.id} className={`bg-white transition-all border-2 ${isActive ? 'hover:shadow-md border-gray-100 hover:border-khan-green/30' : 'border-gray-200 opacity-75'}`}>
                   <CardHeader className="pb-4">
