@@ -53,23 +53,7 @@ export default async function handler(
       case "PUT": {
         const { unitId, mcqScore } = req.body;
 
-        console.log("🔄 [unit-progress API] PUT request received:", {
-          userId,
-          subjectId,
-          unitId,
-          mcqScore,
-          requestBody: req.body,
-          headers: {
-            authorization: authHeader ? 'Bearer [REDACTED]' : 'none',
-            contentType: req.headers['content-type']
-          }
-        });
-
         if (!unitId || typeof unitId !== "string") {
-          console.log("❌ [unit-progress API] Invalid unitId:", {
-            unitId,
-            type: typeof unitId
-          });
           return res.status(400).json({
             success: false,
             message: "Valid unit ID is required",
@@ -77,47 +61,24 @@ export default async function handler(
         }
 
         if (typeof mcqScore !== "number" || mcqScore < 0 || mcqScore > 100) {
-          console.log("❌ [unit-progress API] Invalid mcqScore:", {
-            mcqScore,
-            type: typeof mcqScore,
-            isNumber: typeof mcqScore === "number",
-            inRange: mcqScore >= 0 && mcqScore <= 100
-          });
           return res.status(400).json({
             success: false,
             message: "MCQ score must be a number between 0 and 100",
           });
         }
 
-        console.log("📝 [unit-progress API] Calling storage.updateUnitProgress with:", {
+        const updated = await storage.updateUnitProgress(
           userId,
           subjectId,
           unitId,
-          mcqScore
+          mcqScore,
+        );
+
+        return res.status(200).json({
+          success: true,
+          message: "Unit progress updated successfully",
+          data: updated,
         });
-
-        try {
-          const updated = await storage.updateUnitProgress(
-            userId,
-            subjectId,
-            unitId,
-            mcqScore,
-          );
-
-          console.log("✅ [unit-progress API] Progress updated successfully:", {
-            updated,
-            unitProgressKeys: Object.keys(updated.unitProgress || {})
-          });
-
-          return res.status(200).json({
-            success: true,
-            message: "Unit progress updated successfully",
-            data: updated,
-          });
-        } catch (storageError) {
-          console.error("❌ [unit-progress API] Storage error:", storageError);
-          throw storageError;
-        }
       }
 
       case "GET": {

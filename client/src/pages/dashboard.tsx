@@ -101,27 +101,7 @@ export default function Dashboard() {
   const subjects = useMemo(() => {
     const data = subjectsResponse?.data || [];
     console.log('[Dashboard] Raw subjects data:', data);
-    data.forEach(subject => {
-      console.log(`[Dashboard] Subject "${subject.name}" dates:`, {
-        dateAdded: subject.dateAdded,
-        lastStudied: subject.lastStudied,
-        dateAddedType: typeof subject.dateAdded,
-        lastStudiedType: typeof subject.lastStudied
-      });
-      
-      // Debug unit progress
-      console.log(`[Dashboard] "${subject.name}" unit progress:`, {
-        unitProgressKeys: Object.keys(subject.unitProgress || {}),
-        unitProgress: subject.unitProgress
-      });
-      
-      // Debug what units we'll be displaying
-      const subjectData = getSubjectByCode(subject.subjectId);
-      console.log(`[Dashboard] "${subject.name}" units config:`, {
-        subjectId: subject.subjectId,
-        units: subjectData?.units?.map(u => ({ id: u.id, title: u.title }))
-      });
-    });
+    // Data is ready to use
     return data;
   }, [subjectsResponse?.data]);
 
@@ -584,26 +564,19 @@ export default function Dashboard() {
                                 const subjectData = getSubjectByCode(subject.subjectId);
                                 const units = subjectData?.units || [];
                                 const unit = units[index];
-                                const unitId = unit?.id || `unit${index + 1}`;
+                                const unitId = unit?.id;
 
-                                // Try multiple ID formats for backwards compatibility
+                                if (!unitId) {
+                                  console.warn(`[Dashboard] No unit ID found for unit ${index + 1}`);
+                                  return null;
+                                }
+
+                                // Use only the unit ID - no fallbacks
                                 const unitProgress = (subject as any).unitProgress || {};
+                                const unitData = unitProgress[unitId];
                                 
-                                // Debug logging
-                                console.log(`[Dashboard] Checking unit ${index + 1}:`, {
-                                  unitId,
-                                  availableKeys: Object.keys(unitProgress),
-                                  trying: [unitId, `bigidea${index + 1}`, `unit${index + 1}`]
-                                });
-                                
-                                const unitData = unitProgress[unitId] || 
-                                                unitProgress[`bigidea${index + 1}`] || 
-                                                unitProgress[`unit${index + 1}`];
-                                
-                                console.log(`[Dashboard] Found unit data:`, { unitData, score: unitData?.highestScore || unitData?.mcqScore });
-                                
-                                const score = unitData?.highestScore || unitData?.mcqScore || 0;
-                                const hasAttempted = unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0);
+                                const score = unitData?.highestScore || 0;
+                                const hasAttempted = unitData && unitData.scores?.length > 0;
 
                               let bgColor = "bg-gray-200"; // not-started
                               let status = "Not Started";

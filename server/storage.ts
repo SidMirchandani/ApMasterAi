@@ -423,11 +423,6 @@ export class Storage {
     unitId: string,
     mcqScore: number,
   ): Promise<any> {
-    console.log("📝 [updateUnitProgress] Starting with:", { userId, subjectId, unitId, mcqScore });
-
-    await this.ensureConnection();
-    const db = this.getDbInstance();
-    if (!db) throw new Error("Firestore not available");
 
     const subjectsRef = db.collection("user_subjects");
 
@@ -436,31 +431,17 @@ export class Storage {
       .where("subjectId", "==", subjectId)
       .get();
 
-    console.log("📊 [updateUnitProgress] Query result:", {
-      empty: snapshot.empty,
-      size: snapshot.size
-    });
-
     if (snapshot.empty) {
       throw new Error("Subject not found");
     }
 
     const doc = snapshot.docs[0];
-    const data = doc.data();
-    const unitProgress = data.unitProgress || {};
-    const currentUnit = unitProgress[unitId] || { scores: [], highestScore: 0 };
-
-    console.log("📖 [updateUnitProgress] Current unit data:", {
-      unitId,
-      currentScores: currentUnit.scores?.length || 0,
-      currentHighestScore: currentUnit.highestScore || 0
-    });
-
-    console.log("📥 [updateUnitProgress] Current unit data before update:", {
-      currentUnit,
-      existingScores: currentUnit.scores?.length || 0,
-      existingHighestScore: currentUnit.highestScore
-    });
+    const unitProgress = doc.data().unitProgress || {};
+    const currentUnit = unitProgress[unitId] || {
+      status: "not-started",
+      highestScore: 0,
+      scores: [],
+    };
 
     // Add new score to history - use regular Date instead of serverTimestamp in arrays
     const newScore = {
@@ -471,25 +452,11 @@ export class Storage {
     const scores = currentUnit.scores || [];
     scores.push(newScore);
 
-    console.log("📊 [updateUnitProgress] Score history updated:", {
-      newScore,
-      totalScores: scores.length,
-      allScores: scores.map(s => s.score)
-    });
-
     // Calculate highest score
     const highestScore = Math.max(mcqScore, currentUnit.highestScore || 0);
 
     // Determine status based on highest score using the updated calculateUnitStatus logic
     const status = calculateUnitStatus(highestScore);
-
-    console.log("🎯 [updateUnitProgress] Calculated status:", {
-      mcqScore,
-      highestScore,
-      status: status,
-      totalScores: scores.length,
-      statusCalculation: `highestScore=${highestScore} -> status=${status}`
-    });
 
     const unitProgressUpdate = {
       status: status,
@@ -501,28 +468,14 @@ export class Storage {
 
     unitProgress[unitId] = unitProgressUpdate;
 
-    console.log("💾 [updateUnitProgress] Updating Firestore with:", {
-      unitId,
-      unitProgressUpdate,
-      allUnitIds: Object.keys(unitProgress)
-    });
-
     try {
       await doc.ref.update({
         unitProgress,
         lastStudied: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      console.log("✅ [updateUnitProgress] Firestore update successful");
-
       const updated = await doc.ref.get();
       const updatedData = { id: updated.id, ...updated.data() };
-      
-      console.log("✅ [updateUnitProgress] Update successful, returning:", {
-        id: updatedData.id,
-        subjectId: updatedData.subjectId,
-        unitProgressKeys: Object.keys(updatedData.unitProgress || {})
-      });
 
       return updatedData;
     } catch (firestoreError) {
