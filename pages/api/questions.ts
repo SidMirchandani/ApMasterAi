@@ -199,17 +199,6 @@ export default async function handler(
         subject_code: subject,
         section_code: section || 'ALL'
       });
-    }ect:", samples);
-    }
-
-    if (snapshot.empty) {
-      const sampleSnapshot = await questionsRef.limit(3).get();
-      const sampleDocs = sampleSnapshot.docs.map(doc => ({
-        id: doc.id,
-        subject_code: doc.data().subject_code,
-        section_code: doc.data().section_code
-      }));
-      console.log("📋 Sample documents in questions collection:", sampleDocs);
     }
 
     if (snapshot.empty) {
