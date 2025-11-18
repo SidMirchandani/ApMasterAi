@@ -5,7 +5,6 @@ import { APSubject, Unit } from './common/types';
 import { apmacro } from './apmacro';
 import { apmicro } from './apmicro';
 import { apcsp } from './apcsp';
-import { apbio } from './apbio';
 import { apchem } from './apchem';
 
 // Auto-register all subjects
@@ -13,7 +12,6 @@ const allSubjects: APSubject[] = [
   apmacro,
   apmicro,
   apcsp,
-  apbio,
   apchem,
 ];
 
@@ -28,9 +26,7 @@ const legacyIdMap: Record<string, string> = {
   'macroeconomics': 'APMACRO',
   'microeconomics': 'APMICRO',
   'computer-science-principles': 'APCSP',
-  'biology': 'APBIO',
   'chemistry': 'APCHEM',
-  'calculus-ab': 'APCALCAB',
   'government': 'APGOV',
   'psychology': 'APPSYCH',
 };
