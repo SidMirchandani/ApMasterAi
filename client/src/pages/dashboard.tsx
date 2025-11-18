@@ -570,8 +570,9 @@ export default function Dashboard() {
                                 const unitProgress = (subject as any).unitProgress || {};
                                 const unitData = unitId ? unitProgress[unitId] : undefined;
                                 
-                                const score = unitData?.highestScore || 0;
-                                const hasAttempted = unitData && unitData.scores?.length > 0;
+                                // Check both highestScore and mcqScore for backwards compatibility
+                                const score = unitData?.highestScore || unitData?.mcqScore || 0;
+                                const hasAttempted = unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0 || unitData.highestScore > 0);
 
                               let bgColor = "bg-gray-200"; // not-started
                               let status = "Not Started";
