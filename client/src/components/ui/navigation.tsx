@@ -89,79 +89,85 @@ export default function Navigation() {
 
   // Helper function to abbreviate course names
   const getAbbreviatedCourseName = (subjectId: string) => {
-    const abbreviations: Record<string, string> = {
-      "computer-science-principles": "APCSP",
-      "computer-science-a": "APCSA",
-      "macroeconomics": "AP Macro",
-      "microeconomics": "AP Micro",
-      "calculus-ab": "AP Calc AB",
-      "calculus-bc": "AP Calc BC",
-      "biology": "AP Bio",
-      "chemistry": "AP Chem",
-      "physics-1": "AP Physics 1",
-      "physics-c-mechanics": "AP Physics C",
-      "english-literature": "AP Lit",
-      "us-history": "APUSH",
-      "european-history": "AP Euro",
-      "psychology": "AP Psych",
-      "statistics": "AP Stats"
-    };
-    return abbreviations[subjectId] || "AP Course";
+    if (!subjectId) return "Course";
+
+    const lowerSubjectId = subjectId.toLowerCase();
+
+    if (lowerSubjectId.includes("macro")) return "AP MACRO";
+    if (lowerSubjectId.includes("micro")) return "AP MICRO";
+    if (lowerSubjectId.includes("csp") || lowerSubjectId.includes("computer")) return "AP CSP";
+    if (lowerSubjectId.includes("chem")) return "AP CHEM";
+    if (lowerSubjectId.includes("gov")) return "AP GOV";
+    if (lowerSubjectId.includes("psych")) return "AP PSYCH";
+
+    return "AP Course";
   };
 
   // Generate breadcrumb based on current route (only show when NOT on dashboard)
   const getBreadcrumbs = () => {
     const breadcrumbs = [];
-    
-    // Don't show breadcrumbs on dashboard itself
+    const currentPathSegments = location.split('/').filter(segment => segment !== '');
+
+    // Always start with "APMaster" and link to dashboard
+    breadcrumbs.push({ label: "APMaster", href: "/dashboard" });
+
     if (location === "/dashboard") {
+      // If on dashboard, only "APMaster" is shown, no further breadcrumbs
       return breadcrumbs;
     }
-    
-    if (location === "/learn" || location === "/courses") {
+
+    // Add "Dashboard" breadcrumb if not already the first element (which it is)
+    // This is handled by the initial push of "APMaster"
+
+    if (location.startsWith("/learn") || location.startsWith("/courses")) {
       breadcrumbs.push({ label: "Courses", href: "/learn" });
-    } else if (location === "/study") {
+    } else if (location.startsWith("/study")) {
       const subjectId = router.query.subject as string;
-      const abbreviatedName = getAbbreviatedCourseName(subjectId);
-      
-      breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
-    } else if (location === "/quiz") {
+      if (subjectId) {
+        const abbreviatedName = getAbbreviatedCourseName(subjectId);
+        breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
+      }
+    } else if (location.startsWith("/quiz")) {
       const subjectId = router.query.subject as string;
       const unitId = router.query.unit as string;
-      const abbreviatedName = getAbbreviatedCourseName(subjectId);
-      
-      breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
+      if (subjectId) {
+        const abbreviatedName = getAbbreviatedCourseName(subjectId);
+        breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
+      }
       if (unitId) {
         breadcrumbs.push({ label: `${unitId.replace("unit", "Unit ").replace("bigidea", "Unit ")}`, href: "#" });
       }
-    } else if (location === "/section-review") {
+    } else if (location.startsWith("/section-review")) {
       const subjectId = router.query.subject as string;
       const testId = router.query.testId as string;
       const sectionCode = router.query.section as string;
-      const abbreviatedName = getAbbreviatedCourseName(subjectId);
-      
-      breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
+      if (subjectId) {
+        const abbreviatedName = getAbbreviatedCourseName(subjectId);
+        breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
+      }
       breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test Results", href: `/full-length-results?subject=${subjectId}&testId=${testId}` });
       breadcrumbs.push({ label: sectionCode === "all" ? "Full Test Review" : "Unit Review", href: "#" });
-    } else if (location === "/full-length-history") {
+    } else if (location.startsWith("/full-length-history")) {
       const subjectId = router.query.subject as string;
-      const abbreviatedName = getAbbreviatedCourseName(subjectId);
-      
-      breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
+      if (subjectId) {
+        const abbreviatedName = getAbbreviatedCourseName(subjectId);
+        breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
+      }
       breadcrumbs.push({ label: "Test History", href: "#" });
-    } else if (location === "/full-length-results") {
+    } else if (location.startsWith("/full-length-results")) {
       const subjectId = router.query.subject as string;
       const testId = router.query.testId as string;
-      const abbreviatedName = getAbbreviatedCourseName(subjectId);
-      
-      breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
+      if (subjectId) {
+        const abbreviatedName = getAbbreviatedCourseName(subjectId);
+        breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
+      }
       breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
       breadcrumbs.push({ label: "Test Results", href: "#" });
     } else if (location === "/profile") {
       breadcrumbs.push({ label: "Profile", href: "/profile" });
     }
-    
+
     return breadcrumbs;
   };
 
@@ -285,8 +291,8 @@ export default function Navigation() {
             )}
           </div>
         </div>
-        
-        
+
+
       </div>
     </nav>
   );

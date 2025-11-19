@@ -80,14 +80,17 @@ export function QuizHeader({
     return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Extract short subject code from title (e.g., "AP® Computer Science Principles" -> "APCSP")
+  // Extract short subject code from title (e.g., "AP® Computer Science Principles" -> "AP CSP")
   const getShortTitle = (fullTitle: string) => {
-    if (fullTitle.includes("Computer Science Principles")) return "APCSP";
-    if (fullTitle.includes("Macroeconomics")) return "AP Macro";
-    if (fullTitle.includes("Microeconomics")) return "AP Micro";
+    if (fullTitle.includes("Computer Science Principles")) return "AP CSP";
+    if (fullTitle.includes("Macroeconomics")) return "AP MACRO";
+    if (fullTitle.includes("Microeconomics")) return "AP MICRO";
+    if (fullTitle.includes("Chemistry")) return "AP CHEM";
+    if (fullTitle.includes("Psychology")) return "AP PSYCH";
+    if (fullTitle.includes("Government")) return "AP GOV";
     if (fullTitle.includes("Review")) return "Review";
     // Default fallback
-    return fullTitle.replace("AP® ", "AP ").substring(0, 20);
+    return fullTitle.replace("AP® ", "AP ").toUpperCase().substring(0, 20);
   };
 
   return (
