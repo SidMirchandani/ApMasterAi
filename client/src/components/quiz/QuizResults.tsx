@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, XCircle, BookOpen } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
-import { getSectionInfo } from "@/subjects"; // Import getSectionInfo
+import { getSectionInfo, getSubjectByCode, getSubjectByLegacyId } from "@/subjects";
 
 // Import the QuizReviewPage component
 import { QuizReviewPage } from "./QuizReviewPage";
@@ -59,8 +59,13 @@ export function QuizResults({
 
   // Calculate section breakdown for full-length tests
   const sectionPerformance = isFullLength ? (() => {
+    // Resolve API code from legacy ID
+    const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
+    const apiCode = subject?.subjectCode || subjectId;
+    
     console.log('🔍 [QuizResults] Starting section performance calculation:', {
       subjectId,
+      apiCode,
       totalQuestions: questions.length,
       isFullLength
     });
@@ -73,17 +78,17 @@ export function QuizResults({
       console.log(`📊 [QuizResults] Processing question ${i + 1}:`, {
         questionId: q.id,
         sectionCode: code,
-        subjectId
+        apiCode
       });
 
-      // Use getSectionInfo to resolve section code to full name
-      const info = getSectionInfo(subjectId, code) || { name: code, unitNumber: 0 };
+      // Use getSectionInfo with API code to resolve section code to full name
+      const info = getSectionInfo(apiCode, code) || { name: code, unitNumber: 0 };
 
       console.log(`🔎 [QuizResults] Section lookup result for "${code}":`, {
         found: !!info,
         name: info?.name,
         unitNumber: info?.unitNumber,
-        subjectId
+        apiCode
       });
 
       if (!map[code]) map[code] = { name: info.name, unitNumber: info.unitNumber, correct: 0, total: 0, percentage: 0 };

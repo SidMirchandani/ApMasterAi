@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,29 +46,7 @@ interface TestData {
   timestamp: string | number | Date; // Assuming timestamp exists for formatting
 }
 
-// Mock implementation of getSectionInfo for demonstration purposes.
-// In a real application, this would likely fetch data from an API or a predefined structure.
-const getSectionInfo = (subjectId: string, sectionCode: string) => {
-  console.log('🔎 [getSectionInfo] Mock lookup:', { subjectId, sectionCode });
-  // This is a placeholder. Replace with actual logic to retrieve section details.
-  // For testing, let's assume some data structure.
-  const mockSections = {
-    "csp": { // Example for CSP
-      "section1": { name: "Introduction to CSP", unitNumber: 1 },
-      "section2": { name: "CSP Fundamentals", unitNumber: 2 },
-    },
-    "gov": { // Example for Government
-      "sectionA": { name: "Government Basics", unitNumber: 1 },
-      "sectionB": { name: "Legislative Branch", unitNumber: 2 },
-    }
-  };
-
-  const subjectSections = mockSections[subjectId as keyof typeof mockSections];
-  if (subjectSections) {
-    return subjectSections[sectionCode as keyof typeof subjectSections];
-  }
-  return null; // Return null if section not found
-};
+import { getSectionInfo } from "@/subjects";
 
 
 export default function FullLengthResults() {
@@ -92,6 +70,24 @@ export default function FullLengthResults() {
       router.push("/login");
     }
   }, [loading, isAuthenticated, router]);
+
+  // Convert legacy subject ID to API code for lookups
+  const [apiCode, setApiCode] = React.useState<string>('');
+
+  useEffect(() => {
+    if (!subjectId) return;
+    
+    // Import and use the subject registry to get API code
+    import('@/subjects').then(({ getSubjectByCode, getSubjectByLegacyId }) => {
+      const subject = getSubjectByLegacyId(subjectId as string) || getSubjectByCode(subjectId as string);
+      const code = subject?.subjectCode || subjectId as string;
+      console.log('🔑 [FullLengthResults] Resolved API code:', {
+        input: subjectId,
+        apiCode: code
+      });
+      setApiCode(code);
+    });
+  }, [subjectId]);
 
   useEffect(() => {
     const fetchTestData = async () => {
@@ -305,12 +301,12 @@ export default function FullLengthResults() {
                   .map(([sectionCode, section], index) => {
                     // Debug logging for section lookup
                     console.log('🔎 [full-length-results] getSectionInfo lookup:', {
-                      subjectId: subjectId, // Use subjectId from router.query
-                      sectionCode: sectionCode, // Use sectionCode from Object.entries
-                      sectionNumber: index + 1 // Use index for sequence
+                      apiCode: apiCode,
+                      sectionCode: sectionCode,
+                      sectionNumber: index + 1
                     });
 
-                    const sectionInfo = getSectionInfo(subjectId as string, sectionCode);
+                    const sectionInfo = getSectionInfo(apiCode || subjectId as string, sectionCode);
 
                     console.log('🔎 [full-length-results] getSectionInfo result:', {
                       sectionCode: sectionCode,
