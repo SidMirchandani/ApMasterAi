@@ -40,45 +40,69 @@ interface PracticeQuizProps {
   lastSavedTestId?: string;
 }
 
-export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComplete, isFullLength = false, lastSavedTestId }: PracticeQuizProps) {
+export function PracticeQuiz({
+  questions,
+  subjectId,
+  timeElapsed,
+  onExit,
+  onComplete,
+  isFullLength = false,
+  lastSavedTestId,
+}: PracticeQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [score, setScore] = useState(0);
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(
+    new Set(),
+  );
   const [timerHidden, setTimerHidden] = useState(false);
-  const [generatedExplanations, setGeneratedExplanations] = useState<Map<number, string>>(new Map());
+  const [generatedExplanations, setGeneratedExplanations] = useState<
+    Map<number, string>
+  >(new Map());
   const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
-  const [finalUserAnswers, setFinalUserAnswers] = useState<{ [key: number]: string }>({});
+  const [finalUserAnswers, setFinalUserAnswers] = useState<{
+    [key: number]: string;
+  }>({});
 
   const router = useRouter();
 
   // Reverse the questions array to show the newest test first if it's a full-length test
   const orderedQuestions = isFullLength ? [...questions].reverse() : questions;
   const currentQuestion = orderedQuestions[currentQuestionIndex];
-  const currentExplanation = generatedExplanations.get(currentQuestionIndex) || currentQuestion?.explanation;
+  const currentExplanation =
+    generatedExplanations.get(currentQuestionIndex) ||
+    currentQuestion?.explanation;
 
   useEffect(() => {
     const generateExplanationIfNeeded = async () => {
       if (!currentQuestion || !isAnswerSubmitted) return;
 
-      const hasExplanation = currentQuestion.explanation && currentQuestion.explanation.trim() !== '';
+      const hasExplanation =
+        currentQuestion.explanation &&
+        currentQuestion.explanation.trim() !== "";
       const alreadyGenerated = generatedExplanations.has(currentQuestionIndex);
 
       if (!hasExplanation && !alreadyGenerated && !isGeneratingExplanation) {
         setIsGeneratingExplanation(true);
         try {
-          const response = await apiRequest("POST", "/api/generate-explanation", {
-            questionPrompt: currentQuestion.prompt,
-            choices: currentQuestion.choices,
-            correctAnswerIndex: currentQuestion.answerIndex,
-          });
+          const response = await apiRequest(
+            "POST",
+            "/api/generate-explanation",
+            {
+              questionPrompt: currentQuestion.prompt,
+              choices: currentQuestion.choices,
+              correctAnswerIndex: currentQuestion.answerIndex,
+            },
+          );
 
           if (response.ok) {
             const data = await response.json();
-            setGeneratedExplanations(prev => new Map(prev).set(currentQuestionIndex, data.explanation));
+            setGeneratedExplanations((prev) =>
+              new Map(prev).set(currentQuestionIndex, data.explanation),
+            );
           }
         } catch (error) {
           console.error("Error generating explanation:", error);
@@ -89,7 +113,13 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
     };
 
     generateExplanationIfNeeded();
-  }, [currentQuestion, currentQuestionIndex, isAnswerSubmitted, generatedExplanations, isGeneratingExplanation]);
+  }, [
+    currentQuestion,
+    currentQuestionIndex,
+    isAnswerSubmitted,
+    generatedExplanations,
+    isGeneratingExplanation,
+  ]);
 
   const handleAnswerSelect = (answer: string) => {
     if (!isAnswerSubmitted) {
@@ -115,13 +145,13 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       questionIndex: currentQuestionIndex,
       selectedAnswer,
       isFullLength,
-      subjectId
+      subjectId,
     });
 
     // Save the answer
-    setFinalUserAnswers(prev => ({
+    setFinalUserAnswers((prev) => ({
       ...prev,
-      [currentQuestionIndex]: selectedAnswer
+      [currentQuestionIndex]: selectedAnswer,
     }));
 
     const correctLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
@@ -131,36 +161,39 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
     console.log(`✓ [PracticeQuiz] Answer checked:`, {
       selectedAnswer,
       correctLabel,
-      isCorrect
+      isCorrect,
     });
 
     // Only track progress for unit-wise practice (not full-length tests)
     if (!isFullLength) {
       // Extract unit from question ID (e.g., "APMACRO_BEC_Q1" -> "BEC")
-      const unit = currentQuestion.id.split('_')[1];
+      const unit = currentQuestion.id.split("_")[1];
 
       // Count total questions and correct answers for this unit
-      const unitQuestions = orderedQuestions.filter(q => q.id.split('_')[1] === unit);
+      const unitQuestions = orderedQuestions.filter(
+        (q) => q.id.split("_")[1] === unit,
+      );
       const unitQuestionsCount = unitQuestions.length;
 
       // Count how many of this unit's questions have been answered
-      const answeredUnitQuestions = Object.keys(finalUserAnswers).filter(index => {
-        const question = orderedQuestions[parseInt(index)];
-        return question && question.id.split('_')[1] === unit;
-      }).length + 1; // +1 for the current questioneing submitted
+      const answeredUnitQuestions =
+        Object.keys(finalUserAnswers).filter((index) => {
+          const question = orderedQuestions[parseInt(index)];
+          return question && question.id.split("_")[1] === unit;
+        }).length + 1; // +1 for the current questioneing submitted
 
       console.log(`📊 [PracticeQuiz] Answered unit questions count:`, {
         answeredSoFar: answeredUnitQuestions - 1,
         currentAnswer: 1,
         total: answeredUnitQuestions,
-        finalUserAnswers: Object.keys(finalUserAnswers).length
+        finalUserAnswers: Object.keys(finalUserAnswers).length,
       });
 
       // Count correct answers for this unit
       let correctCount = 0;
       Object.entries(finalUserAnswers).forEach(([index, answer]) => {
         const question = orderedQuestions[parseInt(index)];
-        if (question && question.id.split('_')[1] === unit) {
+        if (question && question.id.split("_")[1] === unit) {
           const correctLabel = String.fromCharCode(65 + question.answerIndex);
           if (answer === correctLabel) correctCount++;
         }
@@ -171,43 +204,48 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       console.log(`✅ [PracticeQuiz] Correct answers count:`, {
         correctFromPrevious: correctCount - (isCorrect ? 1 : 0),
         currentCorrect: isCorrect ? 1 : 0,
-        totalCorrect: correctCount
+        totalCorrect: correctCount,
       });
 
       // Calculate percentage based on answered questions so far
-      const percentage = Math.round((correctCount / answeredUnitQuestions) * 100);
+      const percentage = Math.round(
+        (correctCount / answeredUnitQuestions) * 100,
+      );
 
       console.log(`🎯 [PracticeQuiz] Calculated percentage:`, {
         correctCount,
         answeredUnitQuestions,
         percentage,
-        calculation: `${correctCount}/${answeredUnitQuestions} = ${percentage}%`
+        calculation: `${correctCount}/${answeredUnitQuestions} = ${percentage}%`,
       });
 
-      console.log(`📊 [PracticeQuiz] Saving unit progress for subject=${subjectId}, unit=${unit}, score=${percentage}% (${correctCount}/${answeredUnitQuestions})`);
+      console.log(
+        `📊 [PracticeQuiz] Saving unit progress for subject=${subjectId}, unit=${unit}, score=${percentage}% (${correctCount}/${answeredUnitQuestions})`,
+      );
 
       // Save the unit progress
-      apiRequest(
-        "PUT",
-        `/api/user/subjects/${subjectId}/unit-progress`,
-        {
-          unitId: unit,
-          mcqScore: percentage,
-        }
-      ).then(response => {
-        if (response.ok) {
-          response.json().then(() => {
-            // Trigger a refetch of subjects data by dispatching a custom event
-            window.dispatchEvent(new CustomEvent('subjectsUpdated'));
-          });
-        } else {
-          response.text().then(text => {
-            console.error(`Failed to save unit progress. Status: ${response.status}, Response:`, text);
-          });
-        }
-      }).catch(error => {
-        console.error("Error saving unit progress:", error);
-      });
+      apiRequest("PUT", `/api/user/subjects/${subjectId}/unit-progress`, {
+        unitId: unit,
+        mcqScore: percentage,
+      })
+        .then((response) => {
+          if (response.ok) {
+            response.json().then(() => {
+              // Trigger a refetch of subjects data by dispatching a custom event
+              window.dispatchEvent(new CustomEvent("subjectsUpdated"));
+            });
+          } else {
+            response.text().then((text) => {
+              console.error(
+                `Failed to save unit progress. Status: ${response.status}, Response:`,
+                text,
+              );
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Error saving unit progress:", error);
+        });
     } else {
       // Full-length test - don't track unit progresslLength=${isFullLength})`);
     }
@@ -221,7 +259,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
     } else {
       // For full-length tests, navigate directly to results page
       if (isFullLength && lastSavedTestId) {
-        router.push(`/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`);
+        router.push(
+          `/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`,
+        );
       } else {
         setShowResults(true); // Show results modal for practice quizzes only
       }
@@ -231,7 +271,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   const handleReview = () => {
     if (isFullLength && lastSavedTestId) {
       // Navigate to the full-length-results page
-      router.push(`/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`);
+      router.push(
+        `/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`,
+      );
     } else {
       // For practice quizzes, open review mode
       setShowResults(false);
@@ -248,9 +290,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   // Helper function to capitalize subject name
   const formatSubjectName = (subjectId: string) => {
     return subjectId
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   // Render review mode if active
@@ -286,7 +328,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
                 {isGeneratingExplanation ? (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-5 w-5 animate-spin text-khan-blue mr-2" />
-                    <span className="text-sm text-gray-600">Generating explanation...</span>
+                    <span className="text-sm text-gray-600">
+                      Generating explanation...
+                    </span>
                   </div>
                 ) : currentExplanation ? (
                   <>
@@ -298,7 +342,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
                     <ExplanationChat
                       questionPrompt={currentQuestion.prompt}
                       explanation={currentExplanation}
-                      correctAnswer={currentQuestion.choices[currentQuestion.answerIndex]}
+                      correctAnswer={
+                        currentQuestion.choices[currentQuestion.answerIndex]
+                      }
                       choices={currentQuestion.choices}
                     />
                   </>
@@ -328,7 +374,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
                   onClick={handleNextQuestion}
                   className="bg-blue-600 hover:bg-blue-700 px-8"
                 >
-                  {currentQuestionIndex === orderedQuestions.length - 1 ? "Finish Quiz" : "Next Question"}
+                  {currentQuestionIndex === orderedQuestions.length - 1
+                    ? "Finish Quiz"
+                    : "Next Question"}
                 </Button>
               )}
             </div>
@@ -338,7 +386,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
                 variant="outline"
                 className="border-red-600 text-red-600 hover:bg-red-50"
               >
-                Exit Test
+                Exit Quiz
               </Button>
             </div>
           </div>
@@ -357,7 +405,9 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
                 <div className="text-4xl font-bold text-blue-600 mb-2">
                   {score}/{orderedQuestions.length}
                 </div>
-                <p className="text-gray-600">You got {score} question{score !== 1 ? 's' : ''} correct.</p>
+                <p className="text-gray-600">
+                  You got {score} question{score !== 1 ? "s" : ""} correct.
+                </p>
               </div>
               <Button
                 onClick={handleReview}
