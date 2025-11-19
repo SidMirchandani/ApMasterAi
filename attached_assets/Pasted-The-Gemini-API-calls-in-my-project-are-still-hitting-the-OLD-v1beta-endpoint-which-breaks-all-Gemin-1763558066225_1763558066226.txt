@@ -1,0 +1,152 @@
+The Gemini API calls in my project are still hitting the OLD v1beta endpoint, which breaks all Gemini 1.5 / 2.0 / 2.5 Flash models.
+
+I need you to perform ALL of the following steps EXACTLY.  
+Do NOT change any Firestore logic, UI, or unrelated routes.  
+ONLY fix the Gemini SDK and API version problems.
+
+========================================================
+                STEP 1 — REMOVE OLD SDK
+========================================================
+
+Search the ENTIRE project for ANY occurrence of:
+
+    "@google/genai"
+    GoogleAI
+    genAI.models
+    generativeLanguageClient
+    v1beta
+    generativelanguage.googleapis.com/v1beta
+
+For every file where these appear:
+- Remove the import
+- Remove the old code
+- Replace it using the official v1 SDK only
+
+The ONLY allowed import MUST be:
+
+    import { GoogleGenerativeAI } from "@google/generative-ai";
+
+Delete ALL other Gemini-related imports.
+
+========================================================
+            STEP 2 — FIX package.json DEPENDENCIES
+========================================================
+
+Update package.json so it contains ONLY:
+
+    "@google/generative-ai": "latest"
+
+Remove the following if they exist:
+
+    "@google/genai"
+    "@google-ai/generativelanguage"
+    "@google-cloud/..."
+    "googleapis"
+
+Then run a full reinstall:
+
+    rm -rf node_modules
+    npm install
+
+========================================================
+         STEP 3 — FIX ENVIRONMENT / BASE URL OVERRIDES
+========================================================
+
+Search `.env`, `.env.local`, `.env.production`, `.env.development`  
+for ANY of these variables:
+
+    GOOGLE_API_BASE_URL
+    GENAI_BASE_URL
+    GEMINI_BASE_URL
+
+If ANY exist, DELETE them entirely.
+
+The v1 SDK automatically uses the correct v1 endpoint:
+    https://generativelanguage.googleapis.com/v1
+
+========================================================
+         STEP 4 — ENSURE CORRECT SDK INITIALIZATION
+========================================================
+
+All Gemini API calls MUST follow this exact structure:
+
+    import { GoogleGenerativeAI } from "@google/generative-ai";
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+    const model = genAI.getGenerativeModel({
+        model: selectedModel,   // see model mapping below
+    });
+
+    const result = await model.generateContent(promptParts);
+
+Replace ANY other method names.
+
+========================================================
+      STEP 5 — FIX MODEL SELECTION (Flash Only)
+========================================================
+
+Use these exact 3 models:
+
+    gemini-1.5-flash-latest   (default)
+    gemini-2.0-flash
+    gemini-2.5-flash
+
+Fix getModelName() so:
+
+Input:
+    "1.5" => "gemini-1.5-flash-latest"
+    "2.0" => "gemini-2.0-flash"
+    "2.5" => "gemini-2.5-flash"
+
+If invalid, return:
+    "gemini-1.5-flash-latest"
+
+========================================================
+           STEP 6 — CLEAR NEXT.JS BUILD CACHE
+========================================================
+
+Delete these folders to remove stale v1beta code:
+
+    rm -rf .next
+    rm -rf node_modules/.cache
+    rm -rf dist
+
+Then rebuild the project fully.
+
+========================================================
+       STEP 7 — VERIFY ALL API CALLS USE v1
+========================================================
+
+After the fixes, ensure model calls hit URLs like:
+
+    https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent
+
+and NOT:
+
+    .../v1beta/models/...
+
+If ANY call still shows v1beta, search again for leftover imports or env vars.
+
+========================================================
+         STEP 8 — DO NOT MODIFY ANY OTHER LOGIC
+========================================================
+
+DO NOT touch:
+- Firestore admin code
+- User auth logic
+- UI components
+- Prompt construction
+- Explanation parsing/formatting
+- Any API routes EXCEPT Gemini SDK usage
+
+ONLY fix the Gemini SDK + imports + version routing.
+
+========================================================
+                 FINISHING CONFIRMATION
+========================================================
+
+When complete, output:
+
+"Gemini SDK fully upgraded to v1. All v1beta references removed. All models now use gemini-1.5-flash-latest, gemini-2.0-flash, and gemini-2.5-flash."
+
