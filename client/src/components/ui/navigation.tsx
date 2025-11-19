@@ -1,11 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import {
-  BookOpen,
-  LogOut,
-  User,
-  ChevronRight,
-} from "lucide-react";
+import { BookOpen, LogOut, User, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -98,9 +93,7 @@ export default function Navigation() {
 
       if (unit)
         bc.push({
-          label: unit
-            .replace("unit", "Unit ")
-            .replace("bigidea", "Unit "),
+          label: unit.replace("unit", "Unit ").replace("bigidea", "Unit "),
           href: "#",
         });
     }
@@ -174,10 +167,8 @@ export default function Navigation() {
     <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
       <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-12">
-
           {/* LEFT: APMaster + Breadcrumb */}
           <div className="flex items-center space-x-3">
-
             {/* APMaster root */}
             <Link
               href={isAuthenticated ? "/dashboard" : "/"}
@@ -197,7 +188,7 @@ export default function Navigation() {
 
             {/* Breadcrumb (Dashboard → AP…) */}
             {isAuthenticated && breadcrumbs.length > 0 && (
-                <div className="flex items-center space-x-1.5 text-sm sm:text-base text-khan-gray-medium">
+              <div className="flex items-center space-x-1.5 text-sm sm:text-base text-khan-gray-medium">
                 {breadcrumbs.map((crumb, i) => (
                   <div key={i} className="flex items-center">
                     <ChevronRight className="w-3.5 h-3.5 mx-1" />
@@ -208,7 +199,7 @@ export default function Navigation() {
                     ) : (
                       <Link
                         href={crumb.href}
-                        className="hover:text-khan-green transition-colors whitespace-nowrap"
+                        className="hover:text-khan-green transition-colors whitespace-nowrap text-sm sm:text-base"
                         onClick={handleDisabledClick}
                       >
                         {crumb.label}
@@ -222,7 +213,6 @@ export default function Navigation() {
 
           {/* RIGHT: ACCOUNT ONLY */}
           <div className="flex items-center space-x-3">
-
             {loading ? (
               <div className="w-16 h-8 bg-gray-200 animate-pulse rounded" />
             ) : isAuthenticated && user ? (
