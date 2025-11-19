@@ -49,11 +49,4 @@ export const appsych: APSubject = {
   units: psychologyUnits,
   sections,
   metadata,
-  unitToSectionMap: {
-    unit1: 'BIO',
-    unit2: 'COG',
-    unit3: 'DEV',
-    unit4: 'SOC',
-    unit5: 'MPH',
-  }
 };

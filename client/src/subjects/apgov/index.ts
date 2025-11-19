@@ -49,11 +49,4 @@ export const apgov: APSubject = {
   units: governmentUnits,
   sections,
   metadata,
-  unitToSectionMap: {
-    'unit1': 'FAD',
-    'unit2': 'IAB',
-    'unit3': 'CLCR',
-    'unit4': 'APIB',
-    'unit5': 'PP',
-  }
 };

@@ -43,14 +43,4 @@ export const apbio: APSubject = {
   units: biologyUnits,
   sections,
   metadata,
-  unitToSectionMap: {
-    'unit1': 'CL',
-    'unit2': 'CSF',
-    'unit3': 'CE',
-    'unit4': 'CCC',
-    'unit5': 'HER',
-    'unit6': 'GER',
-    'unit7': 'NS',
-    'unit8': 'ECO',
-  }
 };

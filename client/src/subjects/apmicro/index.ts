@@ -41,12 +41,4 @@ export const apmicro: APSubject = {
   units: microeconomicsUnits,
   sections,
   metadata,
-  unitToSectionMap: {
-    'unit1': 'BEC',
-    'unit2': 'SD',
-    'unit3': 'PC',
-    'unit4': 'IMP',
-    'unit5': 'FM',
-    'unit6': 'MF',
-  }
 };

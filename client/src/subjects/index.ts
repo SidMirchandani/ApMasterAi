@@ -114,26 +114,10 @@ export function getSectionCodeForUnit(subjectId: string, unitId: string): string
     displayName: subject.displayName
   });
 
-  // Get the subject module
-  const subjectKey = subject.subjectCode.toLowerCase() as 'apmacro' | 'apmicro' | 'apchem' | 'apcsp' | 'apgov';
-  const subjectModule = subjects[subjectKey];
-
-  if (!subjectModule) {
-    console.error('❌ [subjects/index] Subject module not found:', {
-      subjectKey,
-      availableModules: Object.keys(subjects)
-    });
-    return undefined;
-  }
-
-  console.log('📋 [subjects/index] Checking unitToSectionMap:', {
-    subjectKey,
-    unitId,
-    hasMap: !!subjectModule.unitToSectionMap,
-    mapKeys: subjectModule.unitToSectionMap ? Object.keys(subjectModule.unitToSectionMap) : []
-  });
-
-  const sectionCode = subjectModule.unitToSectionMap?.[unitId];
+  // Look up section directly from sections object
+  const section = subject.sections[unitId];
+  const sectionCode = section?.code;
+  
   console.log('🔍 [subjects/index] Section code lookup result:', { 
     unitId, 
     sectionCode,
@@ -143,11 +127,23 @@ export function getSectionCodeForUnit(subjectId: string, unitId: string): string
   return sectionCode;
 }
 
-export function getSectionInfo(subjectIdOrCode: string, sectionCode: string): { name: string; unitNumber: number } | undefined {
+// Centralized section lookup functions
+export function getSectionByCode(subjectIdOrCode: string, sectionCode: string): { code: string; name: string; unitNumber: number } | undefined {
   let subject = getSubjectByLegacyId(subjectIdOrCode) || getSubjectByCode(subjectIdOrCode);
   if (!subject) return undefined;
 
-  const section = Object.values(subject.sections).find(s => s.code === sectionCode);
+  // Check both by section code key and by code field
+  const section = subject.sections[sectionCode] || Object.values(subject.sections).find(s => s.code === sectionCode);
+  return section;
+}
+
+export function getUnitNumberForSection(subjectIdOrCode: string, sectionCode: string): number | undefined {
+  const section = getSectionByCode(subjectIdOrCode, sectionCode);
+  return section?.unitNumber;
+}
+
+export function getSectionInfo(subjectIdOrCode: string, sectionCode: string): { name: string; unitNumber: number } | undefined {
+  const section = getSectionByCode(subjectIdOrCode, sectionCode);
   return section ? { name: section.name, unitNumber: section.unitNumber } : undefined;
 }
 

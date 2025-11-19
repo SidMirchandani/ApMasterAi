@@ -43,14 +43,4 @@ export const apcalcab: APSubject = {
   units: calculusUnits,
   sections,
   metadata,
-  unitToSectionMap: {
-    'unit1': 'LIM',
-    'unit2': 'DDF',
-    'unit3': 'DCI',
-    'unit4': 'CAD',
-    'unit5': 'AAD',
-    'unit6': 'IAC',
-    'unit7': 'DE',
-    'unit8': 'AI',
-  }
 };

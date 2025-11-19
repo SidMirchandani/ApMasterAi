@@ -47,12 +47,4 @@ export const apmacro: APSubject = {
   units: macroeconomicsUnits,
   sections,
   metadata,
-  unitToSectionMap: {
-    'unit1': 'BEC',
-    'unit2': 'EIBC',
-    'unit3': 'NIPD',
-    'unit4': 'FS',
-    'unit5': 'LRCSP',
-    'unit6': 'OEITF',
-  }
 };

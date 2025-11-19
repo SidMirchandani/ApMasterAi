@@ -36,17 +36,4 @@ export const apcsp: APSubject = {
   units: computerSciencePrinciplesUnits,
   sections,
   metadata,
-  // Map unit IDs to API section codes
-  unitToSectionMap: {
-    'unit1': 'CRD',
-    'unit2': 'DAT',
-    'unit3': 'AAP',
-    'unit4': 'CSN',
-    'unit5': 'IOC',
-    'bigidea1': 'CRD',
-    'bigidea2': 'DAT',
-    'bigidea3': 'AAP',
-    'bigidea4': 'CSN',
-    'bigidea5': 'IOC'
-  }
 };
