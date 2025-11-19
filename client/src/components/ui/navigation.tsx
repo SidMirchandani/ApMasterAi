@@ -182,17 +182,21 @@ export default function Navigation() {
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-khan-green rounded-lg flex items-center justify-center">
               <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <span className="text-xl sm:text-2xl font-bold text-khan-gray-dark">APMaster</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-xl sm:text-2xl font-bold text-khan-gray-dark">APMaster</span>
+              {isAuthenticated && (
+                <>
+                  <ChevronRight className="w-4 h-4 text-khan-gray-medium" />
+                  <span className="text-base sm:text-lg text-khan-gray-medium">Dashboard</span>
+                </>
+              )}
+            </div>
           </Link>
 
           {/* Breadcrumb Navigation - Center */}
-          {isAuthenticated && (
+          {isAuthenticated && breadcrumbs.length > 0 && (
             <div className="flex items-center space-x-1.5 text-xs text-khan-gray-medium flex-shrink-0">
-              {/* APMaster prefix */}
-              <span className="font-semibold text-khan-gray-dark whitespace-nowrap">APMaster</span>
-              <ChevronRight className="w-3.5 h-3.5 mx-0.5" />
-              
-              {/* Breadcrumb items */}
+              {/* Breadcrumb items - first item is always Dashboard */}
               {breadcrumbs.map((crumb, index) => (
                 <div key={index} className="flex items-center">
                   {index > 0 && <ChevronRight className="w-3.5 h-3.5 mx-0.5" />}
