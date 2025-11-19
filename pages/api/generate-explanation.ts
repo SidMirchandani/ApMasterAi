@@ -1,6 +1,6 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(
   req: NextApiRequest,
@@ -26,7 +26,7 @@ export default async function handler(
       throw new Error("Missing GEMINI_API_KEY in environment");
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     const choicesText = choices.map((choice: string, i: number) => 
       `${String.fromCharCode(65 + i)}. ${choice}`
@@ -54,12 +54,10 @@ Format your explanation with clear sections for the correct answer and wrong ans
 
 Your explanation:`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent(prompt);
 
-    const explanation = response.text?.trim() || "Unable to generate explanation at this time.";
+    const explanation = result.response?.text()?.trim() || "Unable to generate explanation at this time.";
 
     return res.status(200).json({ explanation });
   } catch (error: any) {

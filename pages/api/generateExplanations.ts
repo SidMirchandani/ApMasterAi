@@ -1,6 +1,6 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 import { getModelName } from "../../lib/gemini-models";
 
@@ -42,13 +42,13 @@ export default async function handler(
     
     console.log(`Using model: ${selectedModel} (from selection: ${model})`);
 
-    // Initialize Gemini with v1 API
+    // Initialize Gemini with correct SDK
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error("Missing GEMINI_API_KEY in environment");
     }
 
-    const genAI = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     // Initialize Firebase Admin
     const firebaseAdmin = getFirebaseAdmin();
@@ -168,11 +168,9 @@ Keep your explanation clear, concise, and student-friendly. Use complete sentenc
 Your explanation:`
         });
 
-        const prompt = promptParts;
-
-        // Use v1 API syntax
+        // Use correct v1 SDK pattern
         const modelInstance = genAI.getGenerativeModel({ model: selectedModel });
-        const result = await modelInstance.generateContent(prompt);
+        const result = await modelInstance.generateContent(promptParts);
 
         let explanation = result.response?.text()?.trim() || "";
         explanation = explanation.replace(/^Explanation:\s*/i, "").trim();
