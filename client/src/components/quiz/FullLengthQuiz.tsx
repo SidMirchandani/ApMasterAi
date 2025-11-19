@@ -52,8 +52,13 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(() => {
+    // If we have saved state with time remaining, use that
+    if (savedState?.timeRemaining !== undefined) {
+      return savedState.timeRemaining;
+    }
+    // Otherwise, calculate total time from exam config
     const totalSeconds = (examConfig?.timeMinutes || 90) * 60;
-    return savedState?.timeRemaining !== undefined ? savedState.timeRemaining : totalSeconds;
+    return totalSeconds;
   });
   const [showTimeWarning, setShowTimeWarning] = useState(false);
 

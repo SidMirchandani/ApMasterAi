@@ -31,16 +31,14 @@ interface ExamDirections {
 interface QuizHeaderProps {
   title: string;
   timeElapsed: number;
+  timeRemaining?: number; // Time remaining in seconds for countdown
   onHideTimer?: () => void;
   timerHidden?: boolean;
   onExitExam?: () => void;
   isLastQuestion?: boolean;
   onGoToReview?: () => void;
   examDirections?: ExamDirections;
-  totalTimeSeconds: number; // Total time for the exam
-  onTimerEnd?: () => void; // Callback when timer hits 0
-  onTimerTick?: (remainingSeconds: number) => void; // Callback on each tick
-  initialTimeRemaining?: number; // For restoring saved state
+  subjectId?: string;
 }
 
 // Define time limits for different exams (in minutes)
@@ -56,70 +54,17 @@ const EXAM_TIME_LIMITS: { [key: string]: number } = {
 export function QuizHeader({
   title,
   timeElapsed,
+  timeRemaining,
   onHideTimer,
   timerHidden = false,
   onExitExam,
   isLastQuestion = false,
   onGoToReview,
   examDirections,
-  totalTimeSeconds,
-  onTimerEnd,
-  onTimerTick,
-  initialTimeRemaining,
+  subjectId,
 }: QuizHeaderProps) {
-  const [timeRemaining, setTimeRemaining] = useState<number | undefined>(initialTimeRemaining);
-  const [isLowTime, setIsLowTime] = useState<boolean>(false);
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    // If initialTimeRemaining is provided, use it. Otherwise, use totalTimeSeconds.
-    setTimeRemaining(initialTimeRemaining !== undefined ? initialTimeRemaining : totalTimeSeconds);
-  }, [totalTimeSeconds, initialTimeRemaining]);
-
-  useEffect(() => {
-    if (timeRemaining !== undefined && timeRemaining > 0 && !timerHidden) {
-      timerIntervalRef.current = setInterval(() => {
-        setTimeRemaining((prevTime) => {
-          if (prevTime !== undefined) {
-            const newTime = prevTime - 1;
-            // Check for 10-minute warning
-            if (newTime <= 600 && !isLowTime) { // 10 minutes = 600 seconds
-              setIsLowTime(true);
-              // Optionally, you can trigger a visual alert or sound here
-            } else if (newTime > 600 && isLowTime) {
-              setIsLowTime(false);
-            }
-
-            if (newTime === 0) {
-              if (timerIntervalRef.current) {
-                clearInterval(timerIntervalRef.current);
-              }
-              if (onTimerEnd) {
-                onTimerEnd(); // Trigger auto-submit
-              }
-              return 0;
-            }
-            if (onTimerTick) {
-              onTimerTick(newTime); // Pass remaining time to parent
-            }
-            return newTime;
-          }
-          return prevTime;
-        });
-      }, 1000);
-    } else if (timeRemaining === 0) {
-      // Timer has already reached zero, ensure it's marked as low time if applicable
-      if (totalTimeSeconds <= 600) {
-        setIsLowTime(true);
-      }
-    }
-
-    return () => {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-      }
-    };
-  }, [timeRemaining, timerHidden, onTimerEnd, onTimerTick, isLowTime, totalTimeSeconds]);
+  // Check if time is low (10 minutes or less)
+  const isLowTime = timeRemaining !== undefined && timeRemaining <= 600 && timeRemaining > 0;
 
 
   const formatTime = (seconds: number) => {

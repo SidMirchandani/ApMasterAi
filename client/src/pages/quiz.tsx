@@ -66,21 +66,7 @@ export default function Quiz() {
     if (!loading && !isAuthenticated) router.push("/login");
   }, [loading, isAuthenticated, router]);
 
-  // Timer for full-length quizzes
-  useEffect(() => {
-    if (quizCompleted || isReviewMode || !isFullLength) return;
-
-    const totalSeconds = (EXAM_CONFIGS[subjectId as string]?.timeMinutes || 0) * 60;
-
-    if (timeElapsed >= totalSeconds) {
-      // Time's up, auto-submit
-      handleSubmitFullLength(userAnswers);
-      return;
-    }
-
-    const timer = setInterval(() => setTimeElapsed((p) => p + 1), 1000);
-    return () => clearInterval(timer);
-  }, [quizCompleted, isReviewMode, timeElapsed, userAnswers, subjectId, isFullLength]);
+  // Timer removed - FullLengthQuiz component handles its own countdown timer
 
   // Warn before leaving page
   useEffect(() => {
