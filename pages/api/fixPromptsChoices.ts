@@ -11,6 +11,29 @@ function flattenChoiceText(blocks: any[]) {
     .join(" ");
 }
 
+function formatTextContent(text: string): string {
+  if (!text || typeof text !== 'string') return text;
+  
+  let formatted = text;
+  
+  // Fix spacing issues
+  formatted = formatted.replace(/\s+/g, ' '); // Multiple spaces to single space
+  formatted = formatted.replace(/\s([.,!?;:])/g, '$1'); // Remove space before punctuation
+  formatted = formatted.replace(/([.,!?;:])([^\s])/g, '$1 $2'); // Add space after punctuation if missing
+  
+  // Fix missing periods at end of sentences (but not for fragments or lists)
+  if (formatted.length > 0 && !formatted.match(/[.!?]$/) && formatted.length > 20) {
+    formatted += '.';
+  }
+  
+  // Preserve mathematical notation - don't add spaces around operators in equations
+  // This regex protects common patterns like "x + y", "2^3", "H2O", etc.
+  formatted = formatted.replace(/(\d+)\s*([+\-*/^=])\s*(\d+)/g, '$1 $2 $3');
+  
+  // Trim and return
+  return formatted.trim();
+}
+
 function deduplicateTextContent(text: string): string {
   if (!text || typeof text !== 'string') return text;
   
@@ -41,11 +64,13 @@ function removeDuplicateBlocks(blocks: any[]): any[] {
     if (block.type === "text") {
       // Deduplicate text content within the block
       const deduplicatedText = deduplicateTextContent(block.value);
-      key = `text:${deduplicatedText}`;
+      // Format the text (fix spacing, punctuation)
+      const formattedText = formatTextContent(deduplicatedText);
+      key = `text:${formattedText}`;
       
       if (!seen.has(key)) {
         seen.add(key);
-        uniqueBlocks.push({ ...block, value: deduplicatedText });
+        uniqueBlocks.push({ ...block, value: formattedText });
       }
     } else if (block.type === "image") {
       key = `image:${block.url}`;
@@ -137,13 +162,16 @@ Only fix:
 - Math notation (exponents, subscripts, superscripts)
 - Chemical formulas and symbols
 - Special characters and symbols
-- Spacing around operators and punctuation
+- Spacing between words (remove extra spaces, add missing spaces)
+- Punctuation spacing (space after commas, periods, etc.)
+- Missing periods at end of sentences
 
 DO NOT:
 - Change any words
 - Add explanatory text
 - Rephrase anything
 - Fix "typos" or "grammar"
+- Change sentence structure
 - Add context
 
 Question:
