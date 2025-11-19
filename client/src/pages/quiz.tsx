@@ -59,6 +59,9 @@ export default function Quiz() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
 
+  // Determine quiz type early
+  const isFullLength = unit === "full-length";
+
   useEffect(() => {
     if (!loading && !isAuthenticated) router.push("/login");
   }, [loading, isAuthenticated, router]);
@@ -238,8 +241,6 @@ export default function Quiz() {
 
     if (isAuthenticated && unit && subjectId) fetchQuestions();
   }, [isAuthenticated, unit, subjectId]);
-
-  const isFullLength = unit === "full-length";
 
   const handleExitQuiz = () => {
     // Force navigation to study page
