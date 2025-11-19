@@ -35,8 +35,8 @@ export default async function handler(
       return res.status(400).json({ error: "questionIds array is required" });
     }
 
-    // Validate model selection
-    const validModels = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+    // Validate model selection - using working model names from API
+    const validModels = ["gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest"];
     const selectedModel = validModels.includes(model) ? model : "gemini-2.5-flash";
     
     console.log(`Using model: ${selectedModel}`);
