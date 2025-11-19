@@ -11,6 +11,31 @@ function flattenChoiceText(blocks: any[]) {
     .join(" ");
 }
 
+function removeDuplicateBlocks(blocks: any[]): any[] {
+  if (!blocks || blocks.length === 0) return blocks;
+  
+  const seen = new Set<string>();
+  const uniqueBlocks: any[] = [];
+  
+  for (const block of blocks) {
+    let key: string;
+    if (block.type === "text") {
+      key = `text:${block.value}`;
+    } else if (block.type === "image") {
+      key = `image:${block.url}`;
+    } else {
+      key = JSON.stringify(block);
+    }
+    
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueBlocks.push(block);
+    }
+  }
+  
+  return uniqueBlocks;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -65,6 +90,12 @@ export default async function handler(
         }
 
         const question = doc.data();
+
+        // Skip if already fixed
+        if (question.tags && question.tags.includes("prompt_fixed")) {
+          console.log(`Question ${questionId} already fixed, skipping...`);
+          continue;
+        }
 
         console.log(
           `Fixing prompts/choices for Question ${i + 1}/${total} (ID: ${questionId})`,
@@ -132,20 +163,32 @@ Remember: Only fix formatting (math notation, symbols, spacing). Keep all words 
           return block;
         }) || [{ type: "text", value: corrected.question }];
 
+        // Remove duplicates from prompt blocks
+        const deduplicatedPromptBlocks = removeDuplicateBlocks(updatedPromptBlocks);
+
         // Update choice blocks with corrected text
         const updatedChoices: any = {};
         for (const [letter, blocks] of Object.entries(question.choices ?? {})) {
-          updatedChoices[letter] = (blocks as any[]).map((block: any) => {
+          const correctedBlocks = (blocks as any[]).map((block: any) => {
             if (block.type === "text") {
               return { ...block, value: corrected.choices[letter] || block.value };
             }
             return block;
           });
+          // Remove duplicates from choice blocks
+          updatedChoices[letter] = removeDuplicateBlocks(correctedBlocks);
         }
 
+        // Add "prompt_fixed" tag
+        const existingTags = question.tags || [];
+        const updatedTags = existingTags.includes("prompt_fixed") 
+          ? existingTags 
+          : [...existingTags, "prompt_fixed"];
+
         await doc.ref.update({
-          prompt_blocks: updatedPromptBlocks,
+          prompt_blocks: deduplicatedPromptBlocks,
           choices: updatedChoices,
+          tags: updatedTags,
           updatedAt: new Date(),
         });
 
