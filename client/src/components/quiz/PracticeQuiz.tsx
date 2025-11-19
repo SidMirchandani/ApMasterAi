@@ -90,7 +90,7 @@ export function PracticeQuiz({
         try {
           const response = await apiRequest(
             "POST",
-            "/api/generate-explanation",
+            "/api/generateExplanationOnTheGo",
             {
               questionPrompt: currentQuestion.prompt,
               choices: currentQuestion.choices,
