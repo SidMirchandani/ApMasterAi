@@ -25,7 +25,7 @@ export default async function handler(
   }
 
   try {
-    const { questionIds } = req.body;
+    const { questionIds, model = "gemini-2.5-flash" } = req.body;
 
     if (
       !questionIds ||
@@ -34,6 +34,12 @@ export default async function handler(
     ) {
       return res.status(400).json({ error: "questionIds array is required" });
     }
+
+    // Validate model selection
+    const validModels = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+    const selectedModel = validModels.includes(model) ? model : "gemini-2.5-flash";
+    
+    console.log(`Using model: ${selectedModel}`);
 
     // ✅ 1. Initialize Gemini
     const apiKey = process.env.GEMINI_API_KEY;
@@ -155,9 +161,9 @@ export default async function handler(
 
         const prompt = promptParts;
 
-        // ✅ Correct Gemini 2.5 Flash call
+        // ✅ Use selected model
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: selectedModel,
           contents: prompt,
         });
 

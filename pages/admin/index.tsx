@@ -17,6 +17,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Input } from "../../client/src/components/ui/input";
 import { Alert, AlertDescription } from "../../client/src/components/ui/alert";
 import { Checkbox } from "../../client/src/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -68,9 +75,10 @@ export default function AdminPage() {
 
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
-
-  // Checkbox selection state
-  const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
+  const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(
+    new Set(),
+  );
+  const [selectedModel, setSelectedModel] = useState<string>("gemini-2.5-flash");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -193,11 +201,11 @@ export default function AdminPage() {
 
     const generatePromise = fetch("/api/generateExplanations", {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}` 
+        Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ questionIds }),
+      body: JSON.stringify({ questionIds, model: selectedModel }),
     })
       .then((res) => {
         if (!res.ok) throw new Error("Generation failed");
@@ -442,7 +450,17 @@ export default function AdminPage() {
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger className="w-[180px] bg-white">
+                    <SelectValue placeholder="Select Model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                    <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
+                    <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   onClick={generateExplanations}
                   disabled={generatingExplanations || selectedQuestions.size === 0}
