@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { PracticeQuizHeader } from "./PracticeQuizHeader";
-import { QuestionCard } from "./QuestionCard";
+import { PracticeQuizQuestionCard } from "./PracticeQuizQuestionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
 import { Button } from "@/components/ui/button";
@@ -275,18 +275,13 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
 
       <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-16 pb-2">
         <div className="max-w-4xl mx-auto px-4 py-3 space-y-2">
-          <QuestionCard
+          <PracticeQuizQuestionCard
             question={currentQuestion}
             questionNumber={currentQuestionIndex + 1}
             totalQuestions={orderedQuestions.length}
             selectedAnswer={selectedAnswer}
-            isFlagged={flaggedQuestions.has(currentQuestionIndex)}
             onAnswerSelect={handleAnswerSelect}
-            onToggleFlag={toggleFlag}
-            isFullLength={false}
             isAnswerSubmitted={isAnswerSubmitted}
-            isReviewMode={isAnswerSubmitted}
-            hidePracticeQuizElements={false}
           />
 
           {isAnswerSubmitted && (
