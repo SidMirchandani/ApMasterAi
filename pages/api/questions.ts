@@ -45,11 +45,11 @@ const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
     "PP": 23.5,    // Political Participation: 20-27% (avg 23.5%)
   },
   "APPSYCH": {
-    "BBB": 20,     // Biological Bases of Behavior: 15-25% (avg 20%)
+    "BIO": 20,     // Biological Bases of Behavior: 15-25% (avg 20%)
     "COG": 20,     // Cognition: 15-25% (avg 20%)
     "DEV": 20,     // Development and Learning: 15-25% (avg 20%)
     "SOC": 20,     // Social Psychology and Personality: 15-25% (avg 20%)
-    "MNT": 20,     // Mental and Physical Health: 15-25% (avg 20%)
+    "MPH": 20,     // Mental and Physical Health: 15-25% (avg 20%)
   }
 };
 
