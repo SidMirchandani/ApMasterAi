@@ -79,6 +79,7 @@ export default function AdminPage() {
     new Set(),
   );
   const [selectedModel, setSelectedModel] = useState<string>("2.0");
+  const [selectedAction, setSelectedAction] = useState<string>("explanations");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -190,7 +191,7 @@ export default function AdminPage() {
     }
   };
 
-  async function generateExplanations() {
+  async function executeAIAction() {
     if (!token || selectedQuestions.size === 0) {
       toast.error("Please select at least one question");
       return;
@@ -199,7 +200,29 @@ export default function AdminPage() {
     setGeneratingExplanations(true);
     const questionIds = Array.from(selectedQuestions);
 
-    const generatePromise = fetch("/api/generateExplanations", {
+    let endpoint = "/api/generateExplanations";
+    let loadingMessage = "";
+    let successMessage = "";
+
+    switch (selectedAction) {
+      case "explanations":
+        endpoint = "/api/generateExplanations";
+        loadingMessage = `Generating explanations for ${questionIds.length} questions...`;
+        successMessage = (data: any) => `Generated ${data.updated} explanations!`;
+        break;
+      case "fix-prompts":
+        endpoint = "/api/fixPromptsChoices";
+        loadingMessage = `Fixing prompts and choices for ${questionIds.length} questions...`;
+        successMessage = (data: any) => `Fixed ${data.updated} questions!`;
+        break;
+      case "generate-context":
+        endpoint = "/api/generateContext";
+        loadingMessage = `Generating context for ${questionIds.length} questions...`;
+        successMessage = (data: any) => `Generated context for ${data.updated} questions!`;
+        break;
+    }
+
+    const generatePromise = fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -208,7 +231,7 @@ export default function AdminPage() {
       body: JSON.stringify({ questionIds, model: selectedModel }),
     })
       .then((res) => {
-        if (!res.ok) throw new Error("Generation failed");
+        if (!res.ok) throw new Error("Action failed");
         return res.json();
       })
       .then((data) => {
@@ -220,9 +243,9 @@ export default function AdminPage() {
       });
 
     toast.promise(generatePromise, {
-      loading: `Generating explanations for ${questionIds.length} questions...`,
-      success: (data) => `Generated ${data.updated} explanations!`,
-      error: "Failed to generate explanations",
+      loading: loadingMessage,
+      success: successMessage,
+      error: "Failed to execute action",
     });
   }
 
@@ -451,6 +474,16 @@ export default function AdminPage() {
                 </CardDescription>
               </div>
               <div className="flex gap-2 items-center">
+                <Select value={selectedAction} onValueChange={setSelectedAction}>
+                  <SelectTrigger className="w-[220px] bg-white">
+                    <SelectValue placeholder="Select Action" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="explanations">Generate Explanations</SelectItem>
+                    <SelectItem value="fix-prompts">Fix Prompts & Choices</SelectItem>
+                    <SelectItem value="generate-context">Generate Context</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
                   <SelectTrigger className="w-[200px] bg-white">
                     <SelectValue placeholder="Select Model" />
@@ -461,11 +494,11 @@ export default function AdminPage() {
                   </SelectContent>
                 </Select>
                 <Button
-                  onClick={generateExplanations}
+                  onClick={executeAIAction}
                   disabled={generatingExplanations || selectedQuestions.size === 0}
                   className="bg-khan-green hover:bg-khan-green-light text-white"
                 >
-                  {generatingExplanations ? "Generating..." : `Generate Explanations (${selectedQuestions.size})`}
+                  {generatingExplanations ? "Processing..." : `Execute (${selectedQuestions.size})`}
                 </Button>
               </div>
             </div>
