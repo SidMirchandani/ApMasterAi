@@ -45,6 +45,7 @@ interface QuestionCardProps {
   isAnswerSubmitted?: boolean;
   isReviewMode?: boolean;
   hidePracticeQuizElements?: boolean;
+  cheatMode?: boolean;
 }
 
 export function QuestionCard({
@@ -58,6 +59,7 @@ export function QuestionCard({
   isAnswerSubmitted = false,
   isReviewMode = false,
   hidePracticeQuizElements = false,
+  cheatMode = false,
 }: QuestionCardProps) {
   if (!question) {
     return null;
@@ -124,7 +126,7 @@ export function QuestionCard({
             Question {questionNumber} of {totalQuestions}
           </div>
         )}
-        
+
         {/* Question Prompt */}
         <div className="space-y-2 min-h-0 leading-snug">
           <BlockRenderer blocks={question.prompt_blocks || []} />
@@ -137,27 +139,42 @@ export function QuestionCard({
               const isUserAnswer = selectedAnswer === label;
               const isCorrectAnswer = label === correctAnswerLabel;
 
-              // Determine background and border colors
+              // Determine the background and border color for this choice
               let bgColor = "bg-white";
               let borderColor = "border-gray-200";
 
-              // Only show correct/incorrect highlights after test is submitted
-              if (isAnswerSubmitted && isReviewMode) {
+              // Show correct answer in cheat mode (before submission/review)
+              if (cheatMode && isCorrectAnswer && !isAnswerSubmitted && !isReviewMode) {
+                bgColor = "bg-green-50";
+                borderColor = "border-green-300";
+              }
+
+              if (isReviewMode) {
+                // Review mode: always show correct/incorrect
                 if (isUserAnswer && isCorrect) {
-                  // User's answer is correct - light green
                   bgColor = "bg-green-50";
                   borderColor = "border-green-500";
                 } else if (isUserAnswer && !isCorrect) {
-                  // User's answer is wrong - light red
                   bgColor = "bg-red-50";
                   borderColor = "border-red-500";
                 } else if (isCorrectAnswer && !isCorrect) {
-                  // Show correct answer in green when user was wrong
+                  bgColor = "bg-green-50";
+                  borderColor = "border-green-500";
+                }
+              } else if (isAnswerSubmitted) {
+                // Answer submitted (practice quiz)
+                if (isUserAnswer && isCorrect) {
+                  bgColor = "bg-green-50";
+                  borderColor = "border-green-500";
+                } else if (isUserAnswer && !isCorrect) {
+                  bgColor = "bg-red-50";
+                  borderColor = "border-red-500";
+                } else if (isCorrectAnswer && !isCorrect) {
                   bgColor = "bg-green-50";
                   borderColor = "border-green-500";
                 }
               } else if (isUserAnswer) {
-                // During quiz or review (before submit), just highlight selected answer with darker border
+                // Selected but not submitted yet
                 borderColor = "border-blue-600";
               }
 

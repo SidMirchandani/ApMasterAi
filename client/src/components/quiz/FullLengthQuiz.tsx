@@ -66,6 +66,14 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     return totalSeconds;
   });
   const [showTimeWarning, setShowTimeWarning] = useState(false);
+  const [cheatMode, setCheatMode] = useState(false);
+
+  useEffect(() => {
+    const savedCheatMode = localStorage.getItem('adminCheatMode');
+    if (savedCheatMode) {
+      setCheatMode(savedCheatMode === 'true');
+    }
+  }, []);
 
   // Countdown timer effect
   useEffect(() => {
@@ -307,6 +315,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
             onToggleFlag={toggleFlag}
             isFullLength={true}
             renderImage={renderImage}
+            cheatMode={cheatMode}
           />
         </div>
       </div>

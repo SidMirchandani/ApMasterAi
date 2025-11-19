@@ -24,6 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "../../client/src/components/ui/switch";
+import { Label } from "../../client/src/components/ui/label";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -84,6 +86,7 @@ export default function AdminPage() {
   );
   const [selectedModel, setSelectedModel] = useState<string>("2.0");
   const [selectedAction, setSelectedAction] = useState<string>("explanations");
+  const [cheatMode, setCheatMode] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -92,6 +95,13 @@ export default function AdminPage() {
       setLoading(false);
     });
     return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const savedCheatMode = localStorage.getItem('adminCheatMode');
+    if (savedCheatMode) {
+      setCheatMode(savedCheatMode === 'true');
+    }
   }, []);
 
   // Update sections when subject changes
@@ -296,6 +306,12 @@ export default function AdminPage() {
     }
   }
 
+  const handleCheatModeToggle = (checked: boolean) => {
+    setCheatMode(checked);
+    localStorage.setItem('adminCheatMode', checked.toString());
+    toast.success(checked ? 'Cheat mode enabled' : 'Cheat mode disabled');
+  };
+
 
   if (loading) {
     return (
@@ -397,6 +413,16 @@ export default function AdminPage() {
               </div>
             </Link>
             <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="cheat-mode"
+                  checked={cheatMode}
+                  onCheckedChange={handleCheatModeToggle}
+                />
+                <Label htmlFor="cheat-mode" className="text-sm font-medium cursor-pointer">
+                  Cheat Mode
+                </Label>
+              </div>
               <span className="text-sm text-khan-gray-medium">{user.email}</span>
               <Button
                 onClick={() => signOut(auth)}

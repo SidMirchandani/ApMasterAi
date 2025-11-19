@@ -35,6 +35,7 @@ interface PracticeQuizQuestionCardProps {
   selectedAnswer: string | null;
   onAnswerSelect: (answer: string) => void;
   isAnswerSubmitted?: boolean;
+  cheatMode?: boolean;
 }
 
 export function PracticeQuizQuestionCard({
@@ -44,6 +45,7 @@ export function PracticeQuizQuestionCard({
   selectedAnswer,
   onAnswerSelect,
   isAnswerSubmitted = false,
+  cheatMode = false,
 }: PracticeQuizQuestionCardProps) {
   if (!question) {
     return null;
@@ -100,6 +102,12 @@ export function PracticeQuizQuestionCard({
               // Determine background and border colors
               let bgColor = "bg-white";
               let borderColor = "border-gray-200";
+
+              // Show correct answer in cheat mode (even before submission)
+              if (cheatMode && isCorrectAnswer && !isAnswerSubmitted) {
+                bgColor = "bg-green-50";
+                borderColor = "border-green-300";
+              }
 
               // Only show correct/incorrect highlights after answer is submitted
               if (isAnswerSubmitted) {

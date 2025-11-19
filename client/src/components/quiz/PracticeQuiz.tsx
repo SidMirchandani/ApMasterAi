@@ -66,8 +66,16 @@ export function PracticeQuiz({
   const [finalUserAnswers, setFinalUserAnswers] = useState<{
     [key: number]: string;
   }>({});
+  const [cheatMode, setCheatMode] = useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const savedCheatMode = localStorage.getItem('adminCheatMode');
+    if (savedCheatMode) {
+      setCheatMode(savedCheatMode === 'true');
+    }
+  }, []);
 
   // Reverse the questions array to show the newest test first if it's a full-length test
   const orderedQuestions = isFullLength ? [...questions].reverse() : questions;
@@ -317,6 +325,7 @@ export function PracticeQuiz({
             selectedAnswer={selectedAnswer}
             onAnswerSelect={handleAnswerSelect}
             isAnswerSubmitted={isAnswerSubmitted}
+            cheatMode={cheatMode}
           />
 
           {isAnswerSubmitted && (
