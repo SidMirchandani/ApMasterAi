@@ -103,22 +103,19 @@ export default function Navigation() {
     return "AP Course";
   };
 
-  // Generate breadcrumb based on current route (only show when NOT on dashboard)
+  // Generate breadcrumb based on current route
   const getBreadcrumbs = () => {
     const breadcrumbs = [];
-    const currentPathSegments = location.split('/').filter(segment => segment !== '');
 
-    // Always start with "APMaster" and link to dashboard
-    breadcrumbs.push({ label: "APMaster", href: "/dashboard" });
+    // Always start with "Dashboard"
+    breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
 
+    // If on dashboard, only show Dashboard
     if (location === "/dashboard") {
-      // If on dashboard, only "APMaster" is shown, no further breadcrumbs
       return breadcrumbs;
     }
 
-    // Add "Dashboard" breadcrumb if not already the first element (which it is)
-    // This is handled by the initial push of "APMaster"
-
+    // Add subsequent breadcrumb items based on route
     if (location.startsWith("/learn") || location.startsWith("/courses")) {
       breadcrumbs.push({ label: "Courses", href: "/learn" });
     } else if (location.startsWith("/study")) {
