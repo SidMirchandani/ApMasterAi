@@ -15,14 +15,6 @@ const sections: Record<string, { code: string; name: string; unitNumber: number 
   MPH: { code: 'MPH', name: 'Mental and Physical Health', unitNumber: 5 },
 };
 
-export const unitToSectionMap: Record<string, string> = {
-  unit1: 'BIO',
-  unit2: 'COG',
-  unit3: 'DEV',
-  unit4: 'SOC',
-  unit5: 'MPH',
-};
-
 const metadata = {
   displayName: 'AP Psychology',
   description: 'Biological bases, cognition, development, social psychology, and mental and physical health',
@@ -56,5 +48,12 @@ export const appsych: APSubject = {
   displayName: metadata.displayName,
   units: psychologyUnits,
   sections,
-  metadata
+  metadata,
+  unitToSectionMap: {
+    unit1: 'BIO',
+    unit2: 'COG',
+    unit3: 'DEV',
+    unit4: 'SOC',
+    unit5: 'MPH',
+  }
 };

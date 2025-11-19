@@ -55,5 +55,16 @@ export const apchem: APSubject = {
   displayName: metadata.displayName,
   units: chemistryUnits,
   sections,
-  metadata
+  metadata,
+  unitToSectionMap: {
+    'unit1': 'ASP',
+    'unit2': 'MIS',
+    'unit3': 'IMF',
+    'unit4': 'RXN',
+    'unit5': 'KIN',
+    'unit6': 'THERMO',
+    'unit7': 'EQM',
+    'unit8': 'ACB',
+    'unit9': 'ATD',
+  }
 };

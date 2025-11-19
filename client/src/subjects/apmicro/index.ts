@@ -40,5 +40,13 @@ export const apmicro: APSubject = {
   displayName: metadata.displayName,
   units: microeconomicsUnits,
   sections,
-  metadata
+  metadata,
+  unitToSectionMap: {
+    'unit1': 'BEC',
+    'unit2': 'SD',
+    'unit3': 'PC',
+    'unit4': 'IMP',
+    'unit5': 'FM',
+    'unit6': 'MF',
+  }
 };

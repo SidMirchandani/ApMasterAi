@@ -48,13 +48,12 @@ export const apgov: APSubject = {
   displayName: metadata.displayName,
   units: governmentUnits,
   sections,
-  metadata
-};
-
-export const unitToSectionMap: Record<string, string> = {
-  'unit1': 'FAD',
-  'unit2': 'IAB',
-  'unit3': 'CLCR',
-  'unit4': 'APIB',
-  'unit5': 'PP',
+  metadata,
+  unitToSectionMap: {
+    'unit1': 'FAD',
+    'unit2': 'IAB',
+    'unit3': 'CLCR',
+    'unit4': 'APIB',
+    'unit5': 'PP',
+  }
 };
