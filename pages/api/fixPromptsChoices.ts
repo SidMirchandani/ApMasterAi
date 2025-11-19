@@ -11,6 +11,25 @@ function flattenChoiceText(blocks: any[]) {
     .join(" ");
 }
 
+function deduplicateTextContent(text: string): string {
+  if (!text || typeof text !== 'string') return text;
+  
+  // Split by sentences (periods, question marks, exclamation marks)
+  const sentences = text.split(/([.!?]+\s+)/).filter(s => s.trim());
+  const seen = new Set<string>();
+  const uniqueSentences: string[] = [];
+  
+  for (const sentence of sentences) {
+    const normalized = sentence.trim().toLowerCase();
+    if (normalized && !seen.has(normalized)) {
+      seen.add(normalized);
+      uniqueSentences.push(sentence);
+    }
+  }
+  
+  return uniqueSentences.join('');
+}
+
 function removeDuplicateBlocks(blocks: any[]): any[] {
   if (!blocks || blocks.length === 0) return blocks;
   
@@ -20,16 +39,26 @@ function removeDuplicateBlocks(blocks: any[]): any[] {
   for (const block of blocks) {
     let key: string;
     if (block.type === "text") {
-      key = `text:${block.value}`;
+      // Deduplicate text content within the block
+      const deduplicatedText = deduplicateTextContent(block.value);
+      key = `text:${deduplicatedText}`;
+      
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueBlocks.push({ ...block, value: deduplicatedText });
+      }
     } else if (block.type === "image") {
       key = `image:${block.url}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueBlocks.push(block);
+      }
     } else {
       key = JSON.stringify(block);
-    }
-    
-    if (!seen.has(key)) {
-      seen.add(key);
-      uniqueBlocks.push(block);
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueBlocks.push(block);
+      }
     }
   }
   
