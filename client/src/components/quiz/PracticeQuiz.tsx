@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { QuizHeader } from "./QuizHeader";
+import { PracticeQuizHeader } from "./PracticeQuizHeader";
 import { QuestionCard } from "./QuestionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
@@ -267,9 +267,8 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <div className="fixed top-0 left-0 right-0 z-50">
-        <QuizHeader
+        <PracticeQuizHeader
           title={`AP® ${formatSubjectName(subjectId)} Practice Quiz`}
-          timeElapsed={0}
           onExitExam={onExit}
         />
       </div>
