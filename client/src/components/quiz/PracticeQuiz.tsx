@@ -269,19 +269,13 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       <div className="fixed top-0 left-0 right-0 z-50">
         <QuizHeader
           title={`AP® ${formatSubjectName(subjectId)} Practice Quiz`}
-          timeElapsed={timeElapsed}
-          onHideTimer={() => setTimerHidden(!timerHidden)}
-          timerHidden={timerHidden}
+          timeElapsed={0}
           onExitExam={onExit}
         />
       </div>
 
       <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-16 pb-2">
         <div className="max-w-4xl mx-auto px-4 py-3 space-y-2">
-          <div className="text-sm text-gray-600 mb-2">
-            Question {currentQuestionIndex + 1} of {orderedQuestions.length}
-          </div>
-
           <QuestionCard
             question={currentQuestion}
             questionNumber={currentQuestionIndex + 1}
@@ -292,6 +286,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
             isFullLength={false}
             isAnswerSubmitted={isAnswerSubmitted}
             isReviewMode={isAnswerSubmitted}
+            hidePracticeQuizElements={true}
           />
 
           {isAnswerSubmitted && (

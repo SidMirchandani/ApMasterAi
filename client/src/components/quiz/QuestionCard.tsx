@@ -43,6 +43,7 @@ interface QuestionCardProps {
   isFullLength: boolean;
   isAnswerSubmitted?: boolean;
   isReviewMode?: boolean;
+  hidePracticeQuizElements?: boolean;
 }
 
 export function QuestionCard({
@@ -55,6 +56,7 @@ export function QuestionCard({
   isFullLength,
   isAnswerSubmitted = false,
   isReviewMode = false,
+  hidePracticeQuizElements = false,
 }: QuestionCardProps) {
   if (!question) {
     return null;
@@ -89,9 +91,11 @@ export function QuestionCard({
       <CardHeader className="pb-1 pt-2">
         <div className="flex items-center justify-between border-b pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-gray-50 min-h-[48px]">
           <div className="flex items-center gap-2">
-            <div className="bg-black text-white px-2 py-0.5 font-bold text-xs rounded">
-              {questionNumber}
-            </div>
+            {!hidePracticeQuizElements && (
+              <div className="bg-black text-white px-2 py-0.5 font-bold text-xs rounded">
+                {questionNumber}
+              </div>
+            )}
             {isFullLength && (
               <button
                 onClick={onToggleFlag}
@@ -104,9 +108,11 @@ export function QuestionCard({
               </button>
             )}
           </div>
-          <button className="px-2 py-0.5 text-xs font-semibold border border-gray-300 rounded hover:bg-gray-100">
-            ABC
-          </button>
+          {!hidePracticeQuizElements && (
+            <button className="px-2 py-0.5 text-xs font-semibold border border-gray-300 rounded hover:bg-gray-100">
+              ABC
+            </button>
+          )}
         </div>
       </CardHeader>
 
