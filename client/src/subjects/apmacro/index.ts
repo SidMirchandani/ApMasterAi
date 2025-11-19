@@ -9,6 +9,12 @@ const sections: Record<string, { code: string; name: string; unitNumber: number 
   unit4: { code: 'FS', name: 'Financial Sector', unitNumber: 4 },
   unit5: { code: 'LRCSP', name: 'Long-Run Consequences of Stabilization Policies', unitNumber: 5 },
   unit6: { code: 'OEITF', name: 'Open Economy - International Trade & Finance', unitNumber: 6 },
+  BEC: { code: 'BEC', name: 'Basic Economic Concepts', unitNumber: 1 },
+  EIBC: { code: 'EIBC', name: 'Economic Indicators & Business Cycle', unitNumber: 2 },
+  NIPD: { code: 'NIPD', name: 'National Income & Price Determination', unitNumber: 3 },
+  FS: { code: 'FS', name: 'Financial Sector', unitNumber: 4 },
+  LRCSP: { code: 'LRCSP', name: 'Long-Run Consequences of Stabilization Policies', unitNumber: 5 },
+  OEITF: { code: 'OEITF', name: 'Open Economy - International Trade & Finance', unitNumber: 6 },
 };
 
 const metadata = {

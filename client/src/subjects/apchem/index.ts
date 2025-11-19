@@ -12,6 +12,15 @@ const sections: Record<string, { code: string; name: string; unitNumber: number 
   unit7: { code: 'EQM', name: 'Equilibrium', unitNumber: 7 },
   unit8: { code: 'ACB', name: 'Acids & Bases', unitNumber: 8 },
   unit9: { code: 'ATD', name: 'Applications of Thermodynamics', unitNumber: 9 },
+  ASP: { code: 'ASP', name: 'Atomic Structure & Properties', unitNumber: 1 },
+  MIS: { code: 'MIS', name: 'Molecular & Ionic Structure', unitNumber: 2 },
+  IMF: { code: 'IMF', name: 'Intermolecular Forces & Properties', unitNumber: 3 },
+  RXN: { code: 'RXN', name: 'Chemical Reactions', unitNumber: 4 },
+  KIN: { code: 'KIN', name: 'Kinetics', unitNumber: 5 },
+  THERMO: { code: 'THERMO', name: 'Thermodynamics', unitNumber: 6 },
+  EQM: { code: 'EQM', name: 'Equilibrium', unitNumber: 7 },
+  ACB: { code: 'ACB', name: 'Acids & Bases', unitNumber: 8 },
+  ATD: { code: 'ATD', name: 'Applications of Thermodynamics', unitNumber: 9 },
 };
 
 const metadata = {

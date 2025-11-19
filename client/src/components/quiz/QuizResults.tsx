@@ -57,25 +57,13 @@ export function QuizResults({
   // Calculate section breakdown for full-length tests
   const sectionPerformance = isFullLength ? (() => {
     const map: Record<string, { name: string; unitNumber: number; correct: number; total: number; percentage: number }> = {};
-    const sectionInfo: Record<string, { name: string; unitNumber: number }> = {
-      // AP Macroeconomics
-      BEC: { name: "Basic Economic Concepts", unitNumber: 1 },
-      EIBC: { name: "Economic Indicators & Business Cycle", unitNumber: 2 },
-      NIPD: { name: "National Income & Price Determination", unitNumber: 3 },
-      FS: { name: "Financial Sector", unitNumber: 4 },
-      LRCSP: { name: "Long-Run Consequences of Stabilization Policies", unitNumber: 5 },
-      OEITF: { name: "Open Economy - International Trade & Finance", unitNumber: 6 },
-      // AP Computer Science Principles
-      CRD: { name: "Creative Development", unitNumber: 1 },
-      DAT: { name: "Data", unitNumber: 2 },
-      AAP: { name: "Algorithms and Programming", unitNumber: 3 },
-      CSN: { name: "Computer Systems and Networks", unitNumber: 4 },
-      IOC: { name: "Impact of Computing", unitNumber: 5 },
-    };
 
     questions.forEach((q, i) => {
       const code = q.section_code || "Unknown";
-      const info = sectionInfo[code] || { name: code, unitNumber: 0 };
+      
+      // Use getSectionInfo to resolve section code to full name
+      const info = getSectionInfo(subjectId, code) || { name: code, unitNumber: 0 };
+      
       if (!map[code]) map[code] = { name: info.name, unitNumber: info.unitNumber, correct: 0, total: 0, percentage: 0 };
       map[code].total++;
       const userAns = userAnswers[i];

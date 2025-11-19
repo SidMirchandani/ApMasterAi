@@ -8,6 +8,11 @@ const sections: Record<string, { code: string; name: string; unitNumber: number 
   unit3: { code: 'DEV', name: 'Development and Learning', unitNumber: 3 },
   unit4: { code: 'SOC', name: 'Social Psychology and Personality', unitNumber: 4 },
   unit5: { code: 'MPH', name: 'Mental and Physical Health', unitNumber: 5 },
+  BIO: { code: 'BIO', name: 'Biological Bases of Behavior', unitNumber: 1 },
+  COG: { code: 'COG', name: 'Cognition', unitNumber: 2 },
+  DEV: { code: 'DEV', name: 'Development and Learning', unitNumber: 3 },
+  SOC: { code: 'SOC', name: 'Social Psychology and Personality', unitNumber: 4 },
+  MPH: { code: 'MPH', name: 'Mental and Physical Health', unitNumber: 5 },
 };
 
 export const unitToSectionMap: Record<string, string> = {
