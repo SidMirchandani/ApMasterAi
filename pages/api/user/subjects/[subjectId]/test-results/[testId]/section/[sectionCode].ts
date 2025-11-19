@@ -161,15 +161,14 @@ export default async function handler(
       questions: questionsWithOriginalIndex, // Use questionsWithOriginalIndex here
       userAnswers: sectionUserAnswers,
       sectionName: info.title,
-      sectionDescription: info.description,
+      sectionDescription: info.description
     };
 
-    console.log("✅ Sending section response:", {
+    console.log('📤 [Section API] Sending response:', {
       questionCount: responseData.questions.length,
-      answerCount: Object.keys(responseData.userAnswers).length,
+      userAnswerCount: Object.keys(responseData.userAnswers).length,
       sectionName: responseData.sectionName,
       sectionDescription: responseData.sectionDescription
-    });ta.sectionName,
     });
 
     return res.status(200).json({
