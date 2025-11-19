@@ -10,7 +10,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, LogOut } from "lucide-react";
 
 interface Question {
   id: string;
@@ -265,15 +265,8 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
-      <div className="fixed top-0 left-0 right-0 z-50">
-        <PracticeQuizHeader
-          title={`AP® ${formatSubjectName(subjectId)} Practice Quiz`}
-          onExitExam={onExit}
-        />
-      </div>
-
-      <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-16 pb-2">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex-1 overflow-y-auto mb-16 pb-2">
         <div className="max-w-4xl mx-auto px-4 py-3 space-y-2">
           <PracticeQuizQuestionCard
             question={currentQuestion}
@@ -319,23 +312,35 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
       {/* Fixed Bottom Bar */}
       <div className="border-t border-gray-200 bg-white fixed bottom-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-center items-center gap-4">
-            {!isAnswerSubmitted ? (
+          <div className="flex justify-between items-center gap-4">
+            <div className="flex-1"></div>
+            <div className="flex justify-center items-center gap-4">
+              {!isAnswerSubmitted ? (
+                <Button
+                  onClick={handleSubmitAnswer}
+                  disabled={!selectedAnswer}
+                  className="bg-blue-600 hover:bg-blue-700 px-8"
+                >
+                  Submit Answer
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNextQuestion}
+                  className="bg-blue-600 hover:bg-blue-700 px-8"
+                >
+                  {currentQuestionIndex === orderedQuestions.length - 1 ? "Finish Quiz" : "Next Question"}
+                </Button>
+              )}
+            </div>
+            <div className="flex-1 flex justify-end">
               <Button
-                onClick={handleSubmitAnswer}
-                disabled={!selectedAnswer}
-                className="bg-blue-600 hover:bg-blue-700 px-8"
+                onClick={onExit}
+                variant="outline"
+                className="border-red-600 text-red-600 hover:bg-red-50"
               >
-                Submit Answer
+                Exit Test
               </Button>
-            ) : (
-              <Button
-                onClick={handleNextQuestion}
-                className="bg-blue-600 hover:bg-blue-700 px-8"
-              >
-                {currentQuestionIndex === orderedQuestions.length - 1 ? "Finish Quiz" : "Next Question"}
-              </Button>
-            )}
+            </div>
           </div>
         </div>
       </div>
