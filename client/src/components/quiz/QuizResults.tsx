@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, XCircle, BookOpen } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { getSectionInfo } from "@/subjects"; // Import getSectionInfo
 
 // Import the QuizReviewPage component
 import { QuizReviewPage } from "./QuizReviewPage";
