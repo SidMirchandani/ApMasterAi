@@ -276,13 +276,14 @@ export default function FullLengthResults() {
             <CardContent className="pt-6">
               <div className="space-y-2">
                 {Object.entries(sectionBreakdown)
-                  .sort(([, a], [, b]) => {
-                    const aNum = a.unitNumber || 0;
-                    const bNum = b.unitNumber || 0;
-                    return aNum - bNum;
-                  })
-                  .map(([sectionCode, section], index) => {
+                  .map(([sectionCode, section]) => {
                     const sectionInfo = getSectionInfo(apiCode || subjectId as string, sectionCode);
+                    // Use the unit number from sectionInfo if available, otherwise fall back to section.unitNumber
+                    const unitNumber = sectionInfo?.unitNumber ?? section.unitNumber ?? 0;
+                    return { sectionCode, section, sectionInfo, unitNumber };
+                  })
+                  .sort((a, b) => a.unitNumber - b.unitNumber)
+                  .map(({ sectionCode, section, sectionInfo, unitNumber }, index) => {
                     const sectionPerf = getPerformanceLevel(section.percentage);
                     return (
                       <div
@@ -294,7 +295,7 @@ export default function FullLengthResults() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs font-semibold text-khan-green bg-khan-green/10 px-2 py-0.5 rounded">
-                                Unit {sectionInfo?.unitNumber || section.unitNumber || 0}
+                                Unit {unitNumber}
                               </span>
                               <h3 className="font-semibold text-sm text-gray-900">
                                 {sectionInfo?.name || section.name}
