@@ -1,6 +1,8 @@
+
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
+import { getModelName } from "../../lib/gemini-models";
 
 function flattenChoiceText(blocks: any[]) {
   return blocks
@@ -25,7 +27,7 @@ export default async function handler(
   }
 
   try {
-    const { questionIds, model = "gemini-2.5-flash" } = req.body;
+    const { questionIds, model = "1.5" } = req.body;
 
     if (
       !questionIds ||
@@ -35,22 +37,20 @@ export default async function handler(
       return res.status(400).json({ error: "questionIds array is required" });
     }
 
-    // Validate model selection - using working model names from API
-    const validModels = ["gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest"];
-    const selectedModel = validModels.includes(model) ? model : "gemini-2.5-flash";
+    // Get the full model name using the helper function
+    const selectedModel = getModelName(model);
     
-    console.log(`Using model: ${selectedModel}`);
+    console.log(`Using model: ${selectedModel} (from selection: ${model})`);
 
-    // ✅ 1. Initialize Gemini
+    // Initialize Gemini with v1 API
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error("Missing GEMINI_API_KEY in environment");
     }
 
-    // Use the verified working SDK
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenAI({ apiKey });
 
-    // ✅ 2. Initialize Firebase Admin
+    // Initialize Firebase Admin
     const firebaseAdmin = getFirebaseAdmin();
     if (!firebaseAdmin) {
       throw new Error("Firebase Admin not initialized");
@@ -64,7 +64,7 @@ export default async function handler(
 
     let updated = 0;
 
-    // ✅ 3. Generate explanations for selected questions (throttled)
+    // Generate explanations for selected questions (throttled)
     for (let i = 0; i < questionIds.length; i++) {
       const questionId = questionIds[i];
 
@@ -93,7 +93,7 @@ export default async function handler(
         // Build comprehensive prompt with images
         const promptParts: any[] = [];
         
-        let promptText = `You are an expert AP tutor. Generate a SHORT, focused explanation for this AP question.\n\n`;
+        let promptText = `You are an expert AP tutor. Generate a clear, structured explanation for this AP question.\n\n`;
         
         // Add question text
         if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
@@ -155,22 +155,29 @@ export default async function handler(
           }
         }
         
+        // Add structured explanation requirements
         promptParts.push({
-          text: `\nProvide a CONCISE explanation that:\n1. Explains the concept being tested (1-2 sentences)\n2. Explains why ${correctLabel} is correct (1-2 sentences)\n3. Briefly explains why the other choices are wrong (1 sentence each)\n\nKeep it short and student-friendly.\n\nYour explanation:`
+          text: `\nYour explanation MUST follow this exact structure:
+
+1. **Briefly explain the underlying concept being tested (2-4 sentences).**
+2. **Explain clearly why ${correctLabel} is the correct answer.**
+3. **Explain why each incorrect answer choice is wrong (A, B, C, D, E - except ${correctLabel}).**
+
+Keep your explanation clear, concise, and student-friendly. Use complete sentences.
+
+Your explanation:`
         });
 
         const prompt = promptParts;
 
-        // ✅ Use selected model
-        const response = await ai.models.generateContent({
-          model: selectedModel,
-          contents: prompt,
-        });
+        // Use v1 API syntax
+        const modelInstance = genAI.getGenerativeModel({ model: selectedModel });
+        const result = await modelInstance.generateContent(prompt);
 
-        let explanation = response.text?.trim() || "";
+        let explanation = result.response?.text()?.trim() || "";
         explanation = explanation.replace(/^Explanation:\s*/i, "").trim();
 
-        // ✅ Always overwrite explanation
+        // Always overwrite explanation
         await doc.ref.update({
           explanation,
           updatedAt: new Date(),
@@ -185,7 +192,7 @@ export default async function handler(
         );
       }
 
-      // ⏱️ Delay 1 second between requests
+      // Delay 1 second between requests
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 

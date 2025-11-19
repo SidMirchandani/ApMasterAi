@@ -78,7 +78,7 @@ export default function AdminPage() {
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(
     new Set(),
   );
-  const [selectedModel, setSelectedModel] = useState<string>("gemini-2.5-flash");
+  const [selectedModel, setSelectedModel] = useState<string>("1.5");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -452,13 +452,13 @@ export default function AdminPage() {
               </div>
               <div className="flex gap-2 items-center">
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="w-[180px] bg-white">
+                  <SelectTrigger className="w-[200px] bg-white">
                     <SelectValue placeholder="Select Model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended)</SelectItem>
-                    <SelectItem value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</SelectItem>
-                    <SelectItem value="gemini-1.5-pro-latest">Gemini 1.5 Pro (Latest)</SelectItem>
+                    <SelectItem value="1.5">Gemini 1.5 Flash (Default - Lowest Cost)</SelectItem>
+                    <SelectItem value="2.0">Gemini 2.0 Flash (Mid-Tier)</SelectItem>
+                    <SelectItem value="2.5">Gemini 2.5 Flash (Newest)</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
