@@ -54,6 +54,14 @@ export default function FullLengthResults() {
   const [testData, setTestData] = useState<TestData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Placeholder states that were present in the original changes but not in the provided original code
+  // These would need to be defined if they are indeed used elsewhere in the component logic.
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
+  const [score, setScore] = useState<number>(0);
+  const [totalQuestions, setTotalQuestions] = useState<number>(0);
+
+
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push("/login");
@@ -65,17 +73,38 @@ export default function FullLengthResults() {
       if (!subjectId || !testId || !isAuthenticated) return;
 
       try {
+        console.log('🚀 [FullLengthResults] Fetching test results:', {
+          subjectId,
+          testId,
+          url: `/api/user/subjects/${subjectId}/test-results/${testId}`
+        });
+
         const response = await apiRequest(
           "GET",
           `/api/user/subjects/${subjectId}/test-results/${testId}`,
         );
-        if (!response.ok) throw new Error("Failed to fetch test results");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch test results");
+        }
 
         const data = await response.json();
-        // Assuming the actual test data is nested under a 'data' key in the response
+
+        console.log('📦 [FullLengthResults] Received test data:', {
+          hasData: !!data.data,
+          questionCount: data.data?.questions?.length,
+          score: data.data?.score,
+          totalQuestions: data.data?.totalQuestions,
+          sectionCodes: data.data?.questions?.map((q: any) => q.section_code).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i)
+        });
+
         setTestData(data.data);
+        setQuestions(data.data.questions);
+        setUserAnswers(data.data.userAnswers);
+        setScore(data.data.score);
+        setTotalQuestions(data.data.totalQuestions);
       } catch (error) {
-        console.error("Error fetching test results:", error);
+        console.error("❌ [FullLengthResults] Error fetching test results:", error);
       } finally {
         setIsLoading(false);
       }

@@ -56,13 +56,32 @@ export function QuizResults({
 
   // Calculate section breakdown for full-length tests
   const sectionPerformance = isFullLength ? (() => {
+    console.log('🔍 [QuizResults] Starting section performance calculation:', {
+      subjectId,
+      totalQuestions: questions.length,
+      isFullLength
+    });
+
     const map: Record<string, { name: string; unitNumber: number; correct: number; total: number; percentage: number }> = {};
 
     questions.forEach((q, i) => {
       const code = q.section_code || "Unknown";
       
+      console.log(`📊 [QuizResults] Processing question ${i + 1}:`, {
+        questionId: q.id,
+        sectionCode: code,
+        subjectId
+      });
+      
       // Use getSectionInfo to resolve section code to full name
       const info = getSectionInfo(subjectId, code) || { name: code, unitNumber: 0 };
+      
+      console.log(`🔎 [QuizResults] Section lookup result for "${code}":`, {
+        found: !!info,
+        name: info?.name,
+        unitNumber: info?.unitNumber,
+        subjectId
+      });
       
       if (!map[code]) map[code] = { name: info.name, unitNumber: info.unitNumber, correct: 0, total: 0, percentage: 0 };
       map[code].total++;
@@ -73,6 +92,11 @@ export function QuizResults({
 
     Object.values(map).forEach((s) => {
       s.percentage = Math.round((s.correct / s.total) * 100);
+    });
+
+    console.log('✅ [QuizResults] Final section performance map:', {
+      sections: Object.keys(map),
+      details: map
     });
 
     return map;

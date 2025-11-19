@@ -129,11 +129,34 @@ export function getSectionCodeForUnit(subjectId: string, unitId: string): string
 
 // Centralized section lookup functions
 export function getSectionByCode(subjectIdOrCode: string, sectionCode: string): { code: string; name: string; unitNumber: number } | undefined {
+  console.log('🔍 [getSectionByCode] Looking up section:', {
+    subjectIdOrCode,
+    sectionCode
+  });
+
   let subject = getSubjectByLegacyId(subjectIdOrCode) || getSubjectByCode(subjectIdOrCode);
-  if (!subject) return undefined;
+  
+  console.log('📚 [getSectionByCode] Subject lookup result:', {
+    found: !!subject,
+    subjectCode: subject?.subjectCode,
+    displayName: subject?.displayName,
+    hasSection: subject?.sections ? Object.keys(subject.sections) : []
+  });
+
+  if (!subject) {
+    console.warn('⚠️ [getSectionByCode] Subject not found:', subjectIdOrCode);
+    return undefined;
+  }
 
   // Check both by section code key and by code field
   const section = subject.sections[sectionCode] || Object.values(subject.sections).find(s => s.code === sectionCode);
+  
+  console.log('🎯 [getSectionByCode] Section lookup result:', {
+    sectionCode,
+    found: !!section,
+    section
+  });
+
   return section;
 }
 
@@ -143,8 +166,17 @@ export function getUnitNumberForSection(subjectIdOrCode: string, sectionCode: st
 }
 
 export function getSectionInfo(subjectIdOrCode: string, sectionCode: string): { name: string; unitNumber: number } | undefined {
+  console.log('📖 [getSectionInfo] Called with:', {
+    subjectIdOrCode,
+    sectionCode
+  });
+
   const section = getSectionByCode(subjectIdOrCode, sectionCode);
-  return section ? { name: section.name, unitNumber: section.unitNumber } : undefined;
+  const result = section ? { name: section.name, unitNumber: section.unitNumber } : undefined;
+
+  console.log('📖 [getSectionInfo] Returning:', result);
+
+  return result;
 }
 
 // Export all subjects for course listing
