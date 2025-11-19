@@ -572,7 +572,8 @@ export default function Quiz() {
             timeElapsed={timeElapsed}
             onExit={handleExitQuiz}
             onComplete={handleCompletePractice}
-        />
+          />
+        </>
       )}
 
       <AlertDialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
