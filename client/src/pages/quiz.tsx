@@ -566,7 +566,7 @@ export default function Quiz() {
           subjectId={subjectId as string}
           timeElapsed={timeElapsed}
           onExit={handleExitQuiz}
-          onComplete={handleCompletePracticece}
+          onComplete={handleCompletePractice}
         />
       )}
 
