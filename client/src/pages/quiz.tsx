@@ -35,7 +35,7 @@ import { getApiCodeForSubject, getSectionCodeForUnit } from "@/subjects";
 const EXAM_CONFIGS: { [key: string]: { questions: number; timeMinutes: number } } = {
   APMACRO: { questions: 60, timeMinutes: 70 },
   APMICRO: { questions: 60, timeMinutes: 70 },
-  APPSYCH: { questions: 100, timeMinutes: 70 },
+  APPSYCH: { questions: 75, timeMinutes: 90 },
   APGOV: { questions: 55, timeMinutes: 80 },
   APCHEM: { questions: 60, timeMinutes: 90 },
   APCSP: { questions: 70, timeMinutes: 120 }
