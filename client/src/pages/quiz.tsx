@@ -41,6 +41,12 @@ const EXAM_CONFIGS: { [key: string]: { questions: number; timeMinutes: number } 
   APCSP: { questions: 70, timeMinutes: 120 }
 };
 
+// Helper to get exam config by legacy subject ID
+function getExamConfig(subjectId: string): { questions: number; timeMinutes: number } | null {
+  const apiCode = getApiCodeForSubject(subjectId);
+  return apiCode ? EXAM_CONFIGS[apiCode] || null : null;
+}
+
 export default function Quiz() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -552,7 +558,7 @@ export default function Quiz() {
           onSubmit={handleSubmitFullLength}
           onSaveAndExit={handleSaveAndExit}
           savedState={savedExamState}
-          examConfig={EXAM_CONFIGS[subjectId as string]}
+          examConfig={getExamConfig(subjectId as string)}
         />
       ) : (
         <PracticeQuiz
@@ -560,7 +566,7 @@ export default function Quiz() {
           subjectId={subjectId as string}
           timeElapsed={timeElapsed}
           onExit={handleExitQuiz}
-          onComplete={handleCompletePractice}
+          onComplete={handleCompletePracticece}
         />
       )}
 
