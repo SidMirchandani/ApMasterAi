@@ -276,9 +276,11 @@ export default function FullLengthResults() {
             <CardContent className="pt-6">
               <div className="space-y-2">
                 {Object.entries(sectionBreakdown)
-                  .sort(
-                    ([, a], [, b]) => (a.unitNumber || 0) - (b.unitNumber || 0),
-                  )
+                  .sort(([, a], [, b]) => {
+                    const aNum = a.unitNumber || 0;
+                    const bNum = b.unitNumber || 0;
+                    return aNum - bNum;
+                  })
                   .map(([sectionCode, section], index) => {
                     const sectionInfo = getSectionInfo(apiCode || subjectId as string, sectionCode);
                     const sectionPerf = getPerformanceLevel(section.percentage);
