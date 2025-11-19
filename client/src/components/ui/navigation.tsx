@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { BookOpen, LogOut, User, Home, GraduationCap, ChevronRight, LayoutDashboard } from "lucide-react";
+import {
+  BookOpen,
+  LogOut,
+  User,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,16 +21,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useIsMobile } from "@/lib/hooks/useMobile";
-import { apSubjects } from "@/lib/ap-subjects";
 
 export default function Navigation() {
   const router = useRouter();
-  const location = router.pathname;
-  const { user, isAuthenticated, loading } = useAuth();
   const { toast } = useToast();
+  const { user, isAuthenticated, loading } = useAuth();
+  const location = router.pathname;
   const isMobile = useIsMobile();
 
-  // Detect if user is in quiz/test mode
+  // Prevent navigating away during a quiz
   const isInQuizMode = location === "/quiz" && router.query.unit;
 
   const handleDisabledClick = (e: React.MouseEvent) => {
@@ -33,225 +37,216 @@ export default function Navigation() {
       e.preventDefault();
       toast({
         title: "Test in Progress",
-        description: "You cannot navigate away during a test. Use the 'Exit Test' button to leave.",
+        description:
+          "You cannot navigate away during a test. Use ‘Exit Test’ to leave.",
         duration: 3000,
       });
     }
   };
 
-  const { data: userProfile } = useQuery<{
-    success: boolean;
-    data: {
-      firstName: string;
-      lastName: string;
-      displayName: string;
-      email: string;
-    };
-  }>({
+  // User profile
+  const { data: userProfile } = useQuery({
     queryKey: ["userProfile"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/user/me");
-      if (!response.ok) {
-        throw new Error("Failed to fetch user profile");
-      }
-      return response.json();
+      const res = await apiRequest("GET", "/api/user/me");
+      if (!res.ok) throw new Error("Failed to fetch user profile");
+      return res.json();
     },
     enabled: isAuthenticated && !!user,
   });
 
-  const { data: subjectsResponse } = useQuery<{success: boolean, data: any[]}>({
-    queryKey: ["subjects"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/user/subjects");
-      if (!response.ok) {
-        throw new Error("Failed to fetch subjects");
-      }
-      return response.json();
-    },
-    enabled: isAuthenticated,
-  });
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to logout",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Helper function to abbreviate course names
-  const getAbbreviatedCourseName = (subjectId: string) => {
-    if (!subjectId) return "Course";
-
-    const lowerSubjectId = subjectId.toLowerCase();
-
-    if (lowerSubjectId.includes("macro")) return "AP MACRO";
-    if (lowerSubjectId.includes("micro")) return "AP MICRO";
-    if (lowerSubjectId.includes("csp") || lowerSubjectId.includes("computer")) return "AP CSP";
-    if (lowerSubjectId.includes("chem")) return "AP CHEM";
-    if (lowerSubjectId.includes("gov")) return "AP GOV";
-    if (lowerSubjectId.includes("psych")) return "AP PSYCH";
-
+  // Abbreviate course names
+  const shortName = (id: string) => {
+    if (!id) return "Course";
+    const s = id.toLowerCase();
+    if (s.includes("macro")) return "AP MACRO";
+    if (s.includes("micro")) return "AP MICRO";
+    if (s.includes("csp") || s.includes("computer")) return "AP CSP";
+    if (s.includes("chem")) return "AP CHEM";
+    if (s.includes("gov")) return "AP GOV";
+    if (s.includes("psych")) return "AP PSYCH";
     return "AP Course";
   };
 
-  // Generate breadcrumb based on current route
+  // Breadcrumb builder (unchanged logic)
   const getBreadcrumbs = () => {
-    const breadcrumbs = [];
+    const bc: { label: string; href: string }[] = [];
 
-    // Always start with "Dashboard"
-    breadcrumbs.push({ label: "Dashboard", href: "/dashboard" });
+    // Always Level-1
+    bc.push({ label: "Dashboard", href: "/dashboard" });
 
-    // If on dashboard, only show Dashboard
-    if (location === "/dashboard") {
-      return breadcrumbs;
+    if (location === "/dashboard") return bc;
+
+    if (location.startsWith("/study")) {
+      const subject = router.query.subject as string;
+      if (subject)
+        bc.push({
+          label: shortName(subject),
+          href: `/study?subject=${subject}`,
+        });
     }
 
-    // Add subsequent breadcrumb items based on route
-    if (location.startsWith("/learn") || location.startsWith("/courses")) {
-      breadcrumbs.push({ label: "Courses", href: "/learn" });
-    } else if (location.startsWith("/study")) {
-      const subjectId = router.query.subject as string;
-      if (subjectId) {
-        const abbreviatedName = getAbbreviatedCourseName(subjectId);
-        breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
-      }
-    } else if (location.startsWith("/quiz")) {
-      const subjectId = router.query.subject as string;
-      const unitId = router.query.unit as string;
-      if (subjectId) {
-        const abbreviatedName = getAbbreviatedCourseName(subjectId);
-        breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
-      }
-      if (unitId) {
-        breadcrumbs.push({ label: `${unitId.replace("unit", "Unit ").replace("bigidea", "Unit ")}`, href: "#" });
-      }
-    } else if (location.startsWith("/section-review")) {
-      const subjectId = router.query.subject as string;
-      const testId = router.query.testId as string;
-      const sectionCode = router.query.section as string;
-      if (subjectId) {
-        const abbreviatedName = getAbbreviatedCourseName(subjectId);
-        breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
-      }
-      breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
-      breadcrumbs.push({ label: "Test Results", href: `/full-length-results?subject=${subjectId}&testId=${testId}` });
-      breadcrumbs.push({ label: sectionCode === "all" ? "Full Test Review" : "Unit Review", href: "#" });
-    } else if (location.startsWith("/full-length-history")) {
-      const subjectId = router.query.subject as string;
-      if (subjectId) {
-        const abbreviatedName = getAbbreviatedCourseName(subjectId);
-        breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
-      }
-      breadcrumbs.push({ label: "Test History", href: "#" });
-    } else if (location.startsWith("/full-length-results")) {
-      const subjectId = router.query.subject as string;
-      const testId = router.query.testId as string;
-      if (subjectId) {
-        const abbreviatedName = getAbbreviatedCourseName(subjectId);
-        breadcrumbs.push({ label: abbreviatedName, href: `/study?subject=${subjectId}` });
-      }
-      breadcrumbs.push({ label: "Test History", href: `/full-length-history?subject=${subjectId}` });
-      breadcrumbs.push({ label: "Test Results", href: "#" });
-    } else if (location === "/profile") {
-      breadcrumbs.push({ label: "Profile", href: "/profile" });
+    if (location.startsWith("/quiz")) {
+      const subject = router.query.subject as string;
+      const unit = router.query.unit as string;
+
+      if (subject)
+        bc.push({
+          label: shortName(subject),
+          href: `/study?subject=${subject}`,
+        });
+
+      if (unit)
+        bc.push({
+          label: unit
+            .replace("unit", "Unit ")
+            .replace("bigidea", "Unit "),
+          href: "#",
+        });
     }
 
-    return breadcrumbs;
+    if (location.startsWith("/full-length-history")) {
+      const subject = router.query.subject as string;
+      if (subject)
+        bc.push({
+          label: shortName(subject),
+          href: `/study?subject=${subject}`,
+        });
+
+      bc.push({ label: "Test History", href: "#" });
+    }
+
+    if (location.startsWith("/full-length-results")) {
+      const subject = router.query.subject as string;
+      const testId = router.query.testId as string;
+
+      if (subject)
+        bc.push({
+          label: shortName(subject),
+          href: `/study?subject=${subject}`,
+        });
+
+      bc.push({
+        label: "Test History",
+        href: `/full-length-history?subject=${subject}`,
+      });
+
+      bc.push({ label: "Test Results", href: "#" });
+    }
+
+    if (location.startsWith("/section-review")) {
+      const subject = router.query.subject as string;
+      const testId = router.query.testId as string;
+      const section = router.query.section as string;
+
+      if (subject)
+        bc.push({
+          label: shortName(subject),
+          href: `/study?subject=${subject}`,
+        });
+
+      bc.push({
+        label: "Test History",
+        href: `/full-length-history?subject=${subject}`,
+      });
+
+      bc.push({
+        label: "Test Results",
+        href: `/full-length-results?subject=${subject}&testId=${testId}`,
+      });
+
+      bc.push({
+        label: section === "all" ? "Full Test Review" : "Unit Review",
+        href: "#",
+      });
+    }
+
+    if (location === "/profile") {
+      bc.push({ label: "Profile", href: "/profile" });
+    }
+
+    return bc;
   };
 
   const breadcrumbs = getBreadcrumbs();
 
   return (
     <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-12 min-h-[3rem]">
-          <Link
-            href={isAuthenticated ? "/dashboard" : "/"}
-            className={`flex items-center space-x-2 sm:space-x-3 flex-shrink-0 ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
-            onClick={handleDisabledClick}
-          >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-khan-green rounded-lg flex items-center justify-center">
-              <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xl sm:text-2xl font-bold text-khan-gray-dark">APMaster</span>
-              {isAuthenticated && (
-                <>
-                  <ChevronRight className="w-4 h-4 text-khan-gray-medium" />
-                  <span className="text-base sm:text-lg text-khan-gray-medium">Dashboard</span>
-                </>
-              )}
-            </div>
-          </Link>
+      <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-12">
 
-          {/* Breadcrumb Navigation - Center */}
-          {isAuthenticated && breadcrumbs.length > 1 && (
-            <div className="flex items-center space-x-1.5 text-xs text-khan-gray-medium flex-shrink-0">
-              {/* Breadcrumb items - first item is always Dashboard */}
-              {breadcrumbs.map((crumb, index) => (
-                <div key={index} className="flex items-center">
-                  {index > 0 && <ChevronRight className="w-3.5 h-3.5 mx-0.5" />}
-                  {crumb.href === "#" ? (
-                    <span className="font-medium text-khan-gray-dark whitespace-nowrap">{crumb.label}</span>
-                  ) : (
-                    <Link href={crumb.href} className="hover:text-khan-green transition-colors whitespace-nowrap">
-                      {crumb.label}
-                    </Link>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          {/* LEFT: APMaster + Breadcrumb */}
+          <div className="flex items-center space-x-3">
 
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            {isAuthenticated && (
-              <Link
-                href="/dashboard"
-                className={`text-sm sm:text-base text-khan-gray-medium hover:text-khan-gray-dark font-medium transition-colors ${
-                  location === "/dashboard"
-                    ? "text-khan-green"
-                    : ""
-                } ${isInQuizMode ? 'pointer-events-none opacity-60' : ''}`}
-                data-testid="link-dashboard"
-                onClick={handleDisabledClick}
-                title="Dashboard"
-              >
-                <span className="hidden sm:inline">Dashboard</span>
-                <LayoutDashboard className="sm:hidden w-5 h-5" />
-              </Link>
+            {/* APMaster root */}
+            <Link
+              href={isAuthenticated ? "/dashboard" : "/"}
+              className={`flex items-center space-x-2 flex-shrink-0 ${
+                isInQuizMode ? "pointer-events-none opacity-60" : ""
+              }`}
+              onClick={handleDisabledClick}
+            >
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-khan-green rounded-lg flex items-center justify-center">
+                <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+
+              <span className="text-xl sm:text-2xl font-bold text-khan-gray-dark">
+                APMaster
+              </span>
+            </Link>
+
+            {/* Breadcrumb (Dashboard → AP…) */}
+            {isAuthenticated && breadcrumbs.length > 0 && (
+                <div className="flex items-center space-x-1.5 text-sm sm:text-base text-khan-gray-medium">
+                {breadcrumbs.map((crumb, i) => (
+                  <div key={i} className="flex items-center">
+                    <ChevronRight className="w-3.5 h-3.5 mx-1" />
+                    {crumb.href === "#" ? (
+                      <span className="font-medium text-khan-gray-dark whitespace-nowrap">
+                        {crumb.label}
+                      </span>
+                    ) : (
+                      <Link
+                        href={crumb.href}
+                        className="hover:text-khan-green transition-colors whitespace-nowrap"
+                        onClick={handleDisabledClick}
+                      >
+                        {crumb.label}
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
+          </div>
+
+          {/* RIGHT: ACCOUNT ONLY */}
+          <div className="flex items-center space-x-3">
 
             {loading ? (
-              <div className="w-16 sm:w-20 h-8 sm:h-9 bg-gray-200 animate-pulse rounded" />
+              <div className="w-16 h-8 bg-gray-200 animate-pulse rounded" />
             ) : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className={`border-2 border-khan-gray-light text-khan-gray-dark hover:bg-khan-background font-medium text-sm sm:text-base px-2 sm:px-4 ${isInQuizMode ? 'opacity-60' : ''}`}
-                    data-testid="button-user-menu"
-                    disabled={isInQuizMode}
-                    onClick={handleDisabledClick}
-                    title="Account"
+                    className={`border-2 border-khan-gray-light text-khan-gray-dark hover:bg-khan-background font-medium text-sm sm:text-base px-3 ${
+                      isInQuizMode ? "opacity-60 pointer-events-none" : ""
+                    }`}
                   >
                     <User className="w-4 h-4 sm:mr-2" />
                     <span className="hidden sm:inline">Account</span>
                   </Button>
                 </DropdownMenuTrigger>
+
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        Welcome back{userProfile?.data?.firstName ? `, ${userProfile.data.firstName}` : ''}
+                        Welcome back
+                        {userProfile?.data?.firstName
+                          ? `, ${userProfile.data.firstName}`
+                          : ""}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user?.email}
@@ -259,18 +254,18 @@ export default function Navigation() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+
                   <DropdownMenuItem
                     onClick={() => router.push("/profile")}
                     className="cursor-pointer"
-                    data-testid="button-profile"
                   >
                     <User className="w-4 h-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
+
                   <DropdownMenuItem
-                    onClick={handleLogout}
+                    onClick={logout}
                     className="cursor-pointer text-khan-red focus:text-khan-red"
-                    data-testid="button-logout"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
@@ -282,14 +277,14 @@ export default function Navigation() {
                 <Link href="/login">
                   <Button
                     variant="outline"
-                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors font-semibold text-sm sm:text-base px-3 sm:px-4"
-                    data-testid="button-login"
+                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white font-semibold px-4"
                   >
                     Login
                   </Button>
                 </Link>
+
                 <Link href="/signup">
-                  <Button className="bg-khan-green text-white hover:bg-khan-green-light transition-colors font-semibold text-sm sm:text-base px-3 sm:px-4" data-testid="button-sign-up">
+                  <Button className="bg-khan-green text-white hover:bg-khan-green-light font-semibold px-4">
                     Sign Up
                   </Button>
                 </Link>
@@ -297,8 +292,6 @@ export default function Navigation() {
             )}
           </div>
         </div>
-
-
       </div>
     </nav>
   );
