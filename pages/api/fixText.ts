@@ -1,6 +1,5 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 
 export default async function handler(
@@ -22,13 +21,13 @@ export default async function handler(
       return res.status(400).json({ error: "questionIds array is required" });
     }
 
-    // Initialize Gemini
+    // Initialize Gemini with correct v1 SDK
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error("Missing GEMINI_API_KEY in environment");
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     // Initialize Firebase Admin
     const firebaseAdmin = getFirebaseAdmin();
@@ -57,42 +56,28 @@ export default async function handler(
         }
 
         const question = doc.data();
+
         console.log(
           `Fixing text for Question ${i + 1}/${total} (ID: ${questionId})`,
         );
 
-        // Prompt to fix text formatting issues (question prompt only)
-        const promptText = `
-Fix any text formatting issues in the following AP-style multiple-choice question text.
-Ensure proper capitalization, punctuation, and remove any extraneous characters or formatting artifacts.
-Keep the meaning exactly the same, only fix formatting.
+        // Build prompt for text cleanup
+        const promptText = `Fix any formatting or OCR errors in this text. Return ONLY the corrected text, nothing else:\n\n${question.prompt || ""}`;
 
-Question: ${question.prompt}
+        // Use correct v1 SDK pattern
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+        const result = await model.generateContent(promptText);
 
-Return only the fixed question text, without any labels or extra formatting.
-`;
+        const fixedText = result.response?.text()?.trim() || "";
 
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: promptText,
+        // Update question
+        await doc.ref.update({
+          prompt: fixedText,
+          updatedAt: new Date(),
         });
 
-        let fixedText = response.text?.trim() || "";
-
-        const updates: any = {};
-
-        if (fixedText && fixedText !== question.prompt) {
-          updates.prompt = fixedText;
-        }
-
-        if (Object.keys(updates).length > 0) {
-          updates.updatedAt = new Date();
-          await doc.ref.update(updates);
-          updated++;
-          console.log(`✓ Fixed text for question ${doc.id}`);
-        } else {
-          console.log(`No fixes needed for question ${doc.id}`);
-        }
+        updated++;
+        console.log(`✓ Fixed text for question ${doc.id}`);
       } catch (error) {
         console.error(
           `✗ Failed to fix text for ${questionId}:`,

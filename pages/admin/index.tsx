@@ -456,9 +456,9 @@ export default function AdminPage() {
                     <SelectValue placeholder="Select Model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1.5">Gemini 1.5 Flash (Default - Lowest Cost)</SelectItem>
-                    <SelectItem value="2.0">Gemini 2.0 Flash (Mid-Tier)</SelectItem>
-                    <SelectItem value="2.5">Gemini 2.5 Flash (Newest)</SelectItem>
+                    <SelectItem value="1.5">Gemini 1.5 Flash Latest (Default)</SelectItem>
+                    <SelectItem value="2.0">Gemini 2.0 Flash</SelectItem>
+                    <SelectItem value="2.5">Gemini 2.5 Flash</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button

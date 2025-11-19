@@ -2,7 +2,7 @@
 /**
  * Helper function to get the correct Gemini model name based on user selection
  * @param userModelSelection - User's model selection ("1.5", "2.0", "2.5")
- * @returns Full model name for the Gemini API
+ * @returns Full model name for the Gemini API (v1 only - Flash models)
  */
 export function getModelName(userModelSelection: string): string {
   const modelMap: Record<string, string> = {
@@ -11,6 +11,7 @@ export function getModelName(userModelSelection: string): string {
     "2.5": "gemini-2.5-flash",
   };
 
+  // Default to 1.5 Flash if invalid selection
   return modelMap[userModelSelection] || "gemini-1.5-flash-latest";
 }
 
