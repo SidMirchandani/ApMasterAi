@@ -115,20 +115,20 @@ export default async function handler(
 
     // Use centralized section lookup
     const { getSectionByCode, getApiCodeForSubject } = await import('../../../../../../../../server/subjects-helper');
-    
+
     console.log('🔍 [Section API] Section lookup START:', {
       subjectId,
       sectionCode,
       testId
     });
-    
+
     const apiCode = getApiCodeForSubject(subjectId as string);
     console.log('🔍 [Section API] API code lookup:', {
       input: subjectId,
       apiCode,
       found: !!apiCode
     });
-    
+
     const sectionInfo = getSectionByCode(apiCode || subjectId as string, sectionCode as string);
     console.log('🔍 [Section API] Section info lookup:', {
       lookupKey: apiCode || subjectId,
@@ -136,12 +136,12 @@ export default async function handler(
       sectionInfo,
       found: !!sectionInfo
     });
-    
+
     const info = sectionInfo || {
       title: sectionCode as string,
       description: 'Unknown section'
     };
-    
+
     console.log('🔍 [Section API] Final info object:', info);
 
     // For "all" section, return entire test

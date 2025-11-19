@@ -1,4 +1,3 @@
-
 // Server-side subject metadata helper
 // This mirrors the client-side subject registry but works in API routes
 
@@ -139,56 +138,23 @@ export function getApiCodeForSubject(subjectId: string): string | null {
 }
 
 export function getSectionByCode(subjectCode: string, sectionCode: string): { title: string; description: string } | null {
-  console.log('🔍 [subjects-helper] getSectionByCode called:', {
-    subjectCode,
-    sectionCode
-  });
-  
   const subject = SUBJECT_REGISTRY[subjectCode.toUpperCase()];
-  console.log('🔍 [subjects-helper] Subject lookup:', {
-    subjectCode: subjectCode.toUpperCase(),
-    found: !!subject,
-    subjectName: subject?.displayName,
-    unitCount: subject?.units.length
-  });
-  
+
   if (!subject) {
-    console.warn('⚠️ [subjects-helper] Subject not found in registry');
     return null;
   }
 
   const unit = subject.units.find(u => u.id === sectionCode);
-  console.log('🔍 [subjects-helper] Unit search:', {
-    sectionCode,
-    foundUnit: !!unit,
-    unitTitle: unit?.title,
-    availableUnitIds: subject.units.map(u => u.id)
-  });
-  
+
   if (unit) {
-    console.log('✅ [subjects-helper] Returning unit info:', {
-      title: unit.title,
-      description: unit.description
-    });
     return { title: unit.title, description: unit.description };
   }
 
   const section = subject.sections?.find(s => s.code === sectionCode);
-  console.log('🔍 [subjects-helper] Section search:', {
-    sectionCode,
-    foundSection: !!section,
-    sectionTitle: section?.title,
-    availableSections: subject.sections?.map(s => s.code) || []
-  });
-  
+
   if (section) {
-    console.log('✅ [subjects-helper] Returning section info:', {
-      title: section.title,
-      description: section.description
-    });
     return { title: section.title, description: section.description };
   }
 
-  console.warn('⚠️ [subjects-helper] No unit or section found for code:', sectionCode);
   return null;
 }

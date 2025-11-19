@@ -81,10 +81,6 @@ export default function FullLengthResults() {
     import('@/subjects').then(({ getSubjectByCode, getSubjectByLegacyId }) => {
       const subject = getSubjectByLegacyId(subjectId as string) || getSubjectByCode(subjectId as string);
       const code = subject?.subjectCode || subjectId as string;
-      console.log('🔑 [FullLengthResults] Resolved API code:', {
-        input: subjectId,
-        apiCode: code
-      });
       setApiCode(code);
     });
   }, [subjectId]);
@@ -94,12 +90,6 @@ export default function FullLengthResults() {
       if (!subjectId || !testId || !isAuthenticated) return;
 
       try {
-        console.log('🚀 [FullLengthResults] Fetching test results:', {
-          subjectId,
-          testId,
-          url: `/api/user/subjects/${subjectId}/test-results/${testId}`
-        });
-
         const response = await apiRequest(
           "GET",
           `/api/user/subjects/${subjectId}/test-results/${testId}`,
@@ -111,21 +101,13 @@ export default function FullLengthResults() {
 
         const data = await response.json();
 
-        console.log('📦 [FullLengthResults] Received test data:', {
-          hasData: !!data.data,
-          questionCount: data.data?.questions?.length,
-          score: data.data?.score,
-          totalQuestions: data.data?.totalQuestions,
-          sectionCodes: data.data?.questions?.map((q: any) => q.section_code).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i)
-        });
-
         setTestData(data.data);
         setQuestions(data.data.questions);
         setUserAnswers(data.data.userAnswers);
         setScore(data.data.score);
         setTotalQuestions(data.data.totalQuestions);
       } catch (error) {
-        console.error("❌ [FullLengthResults] Error fetching test results:", error);
+        console.error("Error fetching test results:", error);
       } finally {
         setIsLoading(false);
       }
@@ -135,7 +117,6 @@ export default function FullLengthResults() {
   }, [subjectId, testId, isAuthenticated]);
 
   const handleReviewUnit = (sectionCode: string) => {
-    console.log("📤 Navigating to section review with code:", sectionCode);
     router.push({
       pathname: "/section-review",
       query: {
@@ -299,23 +280,7 @@ export default function FullLengthResults() {
                     ([, a], [, b]) => (a.unitNumber || 0) - (b.unitNumber || 0),
                   )
                   .map(([sectionCode, section], index) => {
-                    // Debug logging for section lookup
-                    console.log('🔎 [full-length-results] getSectionInfo lookup:', {
-                      apiCode: apiCode,
-                      sectionCode: sectionCode,
-                      sectionNumber: index + 1
-                    });
-
                     const sectionInfo = getSectionInfo(apiCode || subjectId as string, sectionCode);
-
-                    console.log('🔎 [full-length-results] getSectionInfo result:', {
-                      sectionCode: sectionCode,
-                      found: !!sectionInfo,
-                      name: sectionInfo?.name,
-                      unitNumber: sectionInfo?.unitNumber
-                    });
-
-
                     const sectionPerf = getPerformanceLevel(section.percentage);
                     return (
                       <div

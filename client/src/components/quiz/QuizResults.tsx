@@ -63,33 +63,13 @@ export function QuizResults({
     const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
     const apiCode = subject?.subjectCode || subjectId;
     
-    console.log('🔍 [QuizResults] Starting section performance calculation:', {
-      subjectId,
-      apiCode,
-      totalQuestions: questions.length,
-      isFullLength
-    });
-
     const map: Record<string, { name: string; unitNumber: number; correct: number; total: number; percentage: number }> = {};
 
     questions.forEach((q, i) => {
       const code = q.section_code || "Unknown";
 
-      console.log(`📊 [QuizResults] Processing question ${i + 1}:`, {
-        questionId: q.id,
-        sectionCode: code,
-        apiCode
-      });
-
       // Use getSectionInfo with API code to resolve section code to full name
       const info = getSectionInfo(apiCode, code) || { name: code, unitNumber: 0 };
-
-      console.log(`🔎 [QuizResults] Section lookup result for "${code}":`, {
-        found: !!info,
-        name: info?.name,
-        unitNumber: info?.unitNumber,
-        apiCode
-      });
 
       if (!map[code]) map[code] = { name: info.name, unitNumber: info.unitNumber, correct: 0, total: 0, percentage: 0 };
       map[code].total++;
@@ -100,11 +80,6 @@ export function QuizResults({
 
     Object.values(map).forEach((s) => {
       s.percentage = Math.round((s.correct / s.total) * 100);
-    });
-
-    console.log('✅ [QuizResults] Final section performance map:', {
-      sections: Object.keys(map),
-      details: map
     });
 
     return map;
@@ -137,13 +112,6 @@ export function QuizResults({
 
   // Function to handle viewing a specific section
   const handleViewSection = (sectionCode: string) => {
-    console.log('🔍 [QuizResults] handleViewSection called:', {
-      sectionCode,
-      subjectId,
-      testId,
-      url: `/section-review?subject=${subjectId}&test=${testId}&section=${sectionCode}`
-    });
-
     router.push(
       `/section-review?subject=${subjectId}&test=${testId}&section=${sectionCode}`
     );
