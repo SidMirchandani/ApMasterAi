@@ -548,25 +548,30 @@ export default function Quiz() {
 
   return (
     <div className="min-h-screen bg-khan-background">
-      {/* No navigation bar in quiz mode */}
       {isFullLength ? (
-        <FullLengthQuiz
-          questions={questions}
-          subjectId={subjectId as string}
-          timeElapsed={timeElapsed}
-          onExit={handleExitQuiz}
-          onSubmit={handleSubmitFullLength}
-          onSaveAndExit={handleSaveAndExit}
-          savedState={savedExamState}
-          examConfig={getExamConfig(subjectId as string)}
-        />
+        <>
+          {/* No navigation bar for full-length tests */}
+          <FullLengthQuiz
+            questions={questions}
+            subjectId={subjectId as string}
+            timeElapsed={timeElapsed}
+            onExit={handleExitQuiz}
+            onSubmit={handleSubmitFullLength}
+            onSaveAndExit={handleSaveAndExit}
+            savedState={savedExamState}
+            examConfig={getExamConfig(subjectId as string)}
+          />
+        </>
       ) : (
-        <PracticeQuiz
-          questions={questions}
-          subjectId={subjectId as string}
-          timeElapsed={timeElapsed}
-          onExit={handleExitQuiz}
-          onComplete={handleCompletePractice}
+        <>
+          {/* Show navigation bar for practice quizzes */}
+          <Navigation />
+          <PracticeQuiz
+            questions={questions}
+            subjectId={subjectId as string}
+            timeElapsed={timeElapsed}
+            onExit={handleExitQuiz}
+            onComplete={handleCompletePractice}
         />
       )}
 
