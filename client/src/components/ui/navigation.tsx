@@ -194,7 +194,7 @@ export default function Navigation() {
           </Link>
 
           {/* Breadcrumb Navigation - Center */}
-          {isAuthenticated && breadcrumbs.length > 0 && (
+          {isAuthenticated && breadcrumbs.length > 1 && (
             <div className="flex items-center space-x-1.5 text-xs text-khan-gray-medium flex-shrink-0">
               {/* Breadcrumb items - first item is always Dashboard */}
               {breadcrumbs.map((crumb, index) => (
