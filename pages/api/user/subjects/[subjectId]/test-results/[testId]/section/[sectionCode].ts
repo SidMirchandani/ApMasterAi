@@ -114,7 +114,7 @@ export default async function handler(
     });
 
     // Use centralized section lookup
-    const { getSectionByCode, getApiCodeForSubject } = await import('../../../../../../../client/src/subjects/index');
+    const { getSectionByCode, getApiCodeForSubject } = await import('../../../../../../../../server/subjects-helper');
     const apiCode = getApiCodeForSubject(subjectId as string);
     const sectionInfo = getSectionByCode(apiCode || subjectId as string, sectionCode as string);
     
