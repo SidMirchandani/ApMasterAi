@@ -279,6 +279,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
           <QuestionCard
             question={currentQuestion}
             questionNumber={currentQuestionIndex + 1}
+            totalQuestions={orderedQuestions.length}
             selectedAnswer={selectedAnswer}
             isFlagged={flaggedQuestions.has(currentQuestionIndex)}
             onAnswerSelect={handleAnswerSelect}

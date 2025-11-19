@@ -36,6 +36,7 @@ interface Question {
 interface QuestionCardProps {
   question: Question;
   questionNumber: number;
+  totalQuestions?: number;
   selectedAnswer: string | null;
   isFlagged: boolean;
   onAnswerSelect: (answer: string) => void;
@@ -117,6 +118,13 @@ export function QuestionCard({
       </CardHeader>
 
       <CardContent className="space-y-2 p-0 pt-2 pb-2 px-3">
+        {/* Question Counter for Practice Quizzes */}
+        {hidePracticeQuizElements && totalQuestions && (
+          <div className="text-sm font-semibold text-gray-700 mb-2">
+            Question {questionNumber} of {totalQuestions}
+          </div>
+        )}
+        
         {/* Question Prompt */}
         <div className="space-y-2 min-h-0 leading-snug">
           <BlockRenderer blocks={question.prompt_blocks || []} />
