@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -35,22 +34,15 @@ export default async function handler(
     const correctAnswer = choices[correctAnswerIndex];
     const correctLabel = String.fromCharCode(65 + correctAnswerIndex);
 
-    const prompt = `You are an expert AP tutor. Generate a clear, educational explanation for this AP question.
+    const prompt = `You are an expert AP tutor. Provide a concise explanation (100-150 words max) without numbered sections:
 
-Question: ${questionPrompt}
+**Concept**: Briefly explain what this question tests (1-2 sentences).
 
-Answer Choices:
-${choicesText}
+**Why ${String.fromCharCode(65 + correctAnswerIndex)} is correct**: Explain why this answer is right.
 
-Correct Answer: ${correctLabel}. ${correctAnswer}
+**Why other choices are wrong**: Briefly explain why each incorrect answer is wrong.
 
-Provide a comprehensive explanation that:
-1. Explains why the correct answer (${correctLabel}) is right
-2. Explains why each of the other answer choices is wrong
-3. Uses clear, student-friendly language
-4. Includes relevant AP exam concepts and reasoning
-
-Format your explanation with clear sections for the correct answer and wrong answers.
+Be clear, concise, and student-friendly.
 
 Your explanation:`;
 

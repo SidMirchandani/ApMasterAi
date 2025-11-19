@@ -78,7 +78,7 @@ export default function AdminPage() {
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(
     new Set(),
   );
-  const [selectedModel, setSelectedModel] = useState<string>("1.5");
+  const [selectedModel, setSelectedModel] = useState<string>("2.0");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -456,8 +456,7 @@ export default function AdminPage() {
                     <SelectValue placeholder="Select Model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1.5">Gemini 1.5 Flash Latest (Default)</SelectItem>
-                    <SelectItem value="2.0">Gemini 2.0 Flash</SelectItem>
+                    <SelectItem value="2.0">Gemini 2.0 Flash (Default)</SelectItem>
                     <SelectItem value="2.5">Gemini 2.5 Flash</SelectItem>
                   </SelectContent>
                 </Select>

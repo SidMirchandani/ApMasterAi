@@ -27,7 +27,7 @@ export default async function handler(
   }
 
   try {
-    const { questionIds, model = "1.5" } = req.body;
+    const { questionIds, model = "2.0" } = req.body;
 
     if (
       !questionIds ||
@@ -157,13 +157,15 @@ export default async function handler(
         
         // Add structured explanation requirements
         promptParts.push({
-          text: `\nYour explanation MUST follow this exact structure:
+          text: `\nProvide a concise explanation following this structure (do NOT number the sections):
 
-1. **Briefly explain the underlying concept being tested (2-4 sentences).**
-2. **Explain clearly why ${correctLabel} is the correct answer.**
-3. **Explain why each incorrect answer choice is wrong (A, B, C, D, E - except ${correctLabel}).**
+**Concept**: In 1-2 sentences, briefly explain what concept this question tests.
 
-Keep your explanation clear, concise, and student-friendly. Use complete sentences.
+**Why ${correctLabel} is correct**: Clearly explain why this answer is right.
+
+**Why other choices are wrong**: Briefly explain why each incorrect choice (A, B, C, D, E - except ${correctLabel}) is wrong.
+
+Keep the ENTIRE explanation to about 100-150 words maximum. Be clear, concise, and student-friendly.
 
 Your explanation:`
         });
