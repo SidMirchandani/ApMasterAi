@@ -57,7 +57,12 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       return savedState.timeRemaining;
     }
     // Otherwise, calculate total time from exam config
-    const totalSeconds = (examConfig?.timeMinutes || 90) * 60;
+    if (!examConfig) {
+      console.error('No exam config found for subject:', subjectId);
+      return 90 * 60; // Fallback to 90 minutes only if config is missing
+    }
+    const totalSeconds = examConfig.timeMinutes * 60;
+    console.log('Timer initialized:', { subject: subjectId, minutes: examConfig.timeMinutes, seconds: totalSeconds });
     return totalSeconds;
   });
   const [showTimeWarning, setShowTimeWarning] = useState(false);
