@@ -115,13 +115,34 @@ export default async function handler(
 
     // Use centralized section lookup
     const { getSectionByCode, getApiCodeForSubject } = await import('../../../../../../../../server/subjects-helper');
+    
+    console.log('🔍 [Section API] Section lookup START:', {
+      subjectId,
+      sectionCode,
+      testId
+    });
+    
     const apiCode = getApiCodeForSubject(subjectId as string);
+    console.log('🔍 [Section API] API code lookup:', {
+      input: subjectId,
+      apiCode,
+      found: !!apiCode
+    });
+    
     const sectionInfo = getSectionByCode(apiCode || subjectId as string, sectionCode as string);
+    console.log('🔍 [Section API] Section info lookup:', {
+      lookupKey: apiCode || subjectId,
+      sectionCode,
+      sectionInfo,
+      found: !!sectionInfo
+    });
     
     const info = sectionInfo || {
-      name: sectionCode as string,
-      unitNumber: 0,
+      title: sectionCode as string,
+      description: 'Unknown section'
     };
+    
+    console.log('🔍 [Section API] Final info object:', info);
 
     // For "all" section, return entire test
       if (sectionCode === "all") {
@@ -139,15 +160,16 @@ export default async function handler(
     const responseData = {
       questions: questionsWithOriginalIndex, // Use questionsWithOriginalIndex here
       userAnswers: sectionUserAnswers,
-      unitNumber: info.unitNumber,
-      sectionName: info.name,
+      sectionName: info.title,
+      sectionDescription: info.description,
     };
 
     console.log("✅ Sending section response:", {
       questionCount: responseData.questions.length,
       answerCount: Object.keys(responseData.userAnswers).length,
-      unitNumber: responseData.unitNumber,
       sectionName: responseData.sectionName,
+      sectionDescription: responseData.sectionDescription
+    });ta.sectionName,
     });
 
     return res.status(200).json({

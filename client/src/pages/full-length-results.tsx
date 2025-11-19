@@ -46,6 +46,31 @@ interface TestData {
   timestamp: string | number | Date; // Assuming timestamp exists for formatting
 }
 
+// Mock implementation of getSectionInfo for demonstration purposes.
+// In a real application, this would likely fetch data from an API or a predefined structure.
+const getSectionInfo = (subjectId: string, sectionCode: string) => {
+  console.log('🔎 [getSectionInfo] Mock lookup:', { subjectId, sectionCode });
+  // This is a placeholder. Replace with actual logic to retrieve section details.
+  // For testing, let's assume some data structure.
+  const mockSections = {
+    "csp": { // Example for CSP
+      "section1": { name: "Introduction to CSP", unitNumber: 1 },
+      "section2": { name: "CSP Fundamentals", unitNumber: 2 },
+    },
+    "gov": { // Example for Government
+      "sectionA": { name: "Government Basics", unitNumber: 1 },
+      "sectionB": { name: "Legislative Branch", unitNumber: 2 },
+    }
+  };
+
+  const subjectSections = mockSections[subjectId as keyof typeof mockSections];
+  if (subjectSections) {
+    return subjectSections[sectionCode as keyof typeof subjectSections];
+  }
+  return null; // Return null if section not found
+};
+
+
 export default function FullLengthResults() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -277,7 +302,24 @@ export default function FullLengthResults() {
                   .sort(
                     ([, a], [, b]) => (a.unitNumber || 0) - (b.unitNumber || 0),
                   )
-                  .map(([sectionCode, section]) => {
+                  .map(([sectionCode, section], index) => {
+                    // Debug logging for section lookup
+                    console.log('🔎 [full-length-results] getSectionInfo lookup:', {
+                      subjectId: subjectId, // Use subjectId from router.query
+                      sectionCode: sectionCode, // Use sectionCode from Object.entries
+                      sectionNumber: index + 1 // Use index for sequence
+                    });
+
+                    const sectionInfo = getSectionInfo(subjectId as string, sectionCode);
+
+                    console.log('🔎 [full-length-results] getSectionInfo result:', {
+                      sectionCode: sectionCode,
+                      found: !!sectionInfo,
+                      name: sectionInfo?.name,
+                      unitNumber: sectionInfo?.unitNumber
+                    });
+
+
                     const sectionPerf = getPerformanceLevel(section.percentage);
                     return (
                       <div
@@ -289,10 +331,10 @@ export default function FullLengthResults() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs font-semibold text-khan-green bg-khan-green/10 px-2 py-0.5 rounded">
-                                Unit {section.unitNumber || 0}
+                                Unit {sectionInfo?.unitNumber || section.unitNumber || 0}
                               </span>
                               <h3 className="font-semibold text-sm text-gray-900">
-                                {section.name}
+                                {sectionInfo?.name || section.name}
                               </h3>
                             </div>
                             <div className="text-xs text-gray-600 mt-1">

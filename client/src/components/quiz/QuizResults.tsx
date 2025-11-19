@@ -45,6 +45,9 @@ export function QuizResults({
   const router = useRouter();
   const percentage = Math.round((score / totalQuestions) * 100);
 
+  // Destructure testId from router query, providing a default if not present
+  const testId = router.query.test as string | undefined;
+
   const getPerformanceLevel = (pct: number) => {
     if (pct >= 90) return { label: "Excellent", color: "text-green-600", bg: "bg-green-100" };
     if (pct >= 75) return { label: "Good", color: "text-blue-600", bg: "bg-blue-100" };
@@ -66,23 +69,23 @@ export function QuizResults({
 
     questions.forEach((q, i) => {
       const code = q.section_code || "Unknown";
-      
+
       console.log(`📊 [QuizResults] Processing question ${i + 1}:`, {
         questionId: q.id,
         sectionCode: code,
         subjectId
       });
-      
+
       // Use getSectionInfo to resolve section code to full name
       const info = getSectionInfo(subjectId, code) || { name: code, unitNumber: 0 };
-      
+
       console.log(`🔎 [QuizResults] Section lookup result for "${code}":`, {
         found: !!info,
         name: info?.name,
         unitNumber: info?.unitNumber,
         subjectId
       });
-      
+
       if (!map[code]) map[code] = { name: info.name, unitNumber: info.unitNumber, correct: 0, total: 0, percentage: 0 };
       map[code].total++;
       const userAns = userAnswers[i];
@@ -126,6 +129,21 @@ export function QuizResults({
       />
     );
   }
+
+  // Function to handle viewing a specific section
+  const handleViewSection = (sectionCode: string) => {
+    console.log('🔍 [QuizResults] handleViewSection called:', {
+      sectionCode,
+      subjectId,
+      testId,
+      url: `/section-review?subject=${subjectId}&test=${testId}&section=${sectionCode}`
+    });
+
+    router.push(
+      `/section-review?subject=${subjectId}&test=${testId}&section=${sectionCode}`
+    );
+  };
+
 
   return (
     <div className="max-w-6xl mx-auto space-y-3">
