@@ -286,7 +286,7 @@ export function PracticeQuiz({ questions, subjectId, timeElapsed, onExit, onComp
             isFullLength={false}
             isAnswerSubmitted={isAnswerSubmitted}
             isReviewMode={isAnswerSubmitted}
-            hidePracticeQuizElements={true}
+            hidePracticeQuizElements={false}
           />
 
           {isAnswerSubmitted && (
