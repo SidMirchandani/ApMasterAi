@@ -71,7 +71,20 @@ export default async function handler(
         );
 
         // Build prompt for fixing
-        let promptText = `Fix any typos, formatting errors, or OCR mistakes in this AP question text. Properly format math formulas, exponents, subscripts, and any special notation. DO NOT change the wording, structure, or meaning - only fix errors.
+        let promptText = `Fix ONLY formatting issues in this AP question text. DO NOT change any words or add new content.
+
+Only fix:
+- Math notation (exponents, subscripts, superscripts)
+- Chemical formulas and symbols
+- Special characters and symbols
+- Spacing around operators and punctuation
+
+DO NOT:
+- Change any words
+- Add explanatory text
+- Rephrase anything
+- Fix "typos" or "grammar"
+- Add context
 
 Question:
 `;
@@ -87,17 +100,19 @@ Question:
           promptText += `${letter}. ${choiceText}\n`;
         });
 
-        promptText += "\n\nReturn the corrected text in this exact JSON format:\n";
+        promptText += "\n\nReturn the text with ONLY formatting fixes in this exact JSON format:\n";
         promptText += `{
-  "question": "corrected question text",
+  "question": "formatting-fixed question text",
   "choices": {
-    "A": "corrected choice A",
-    "B": "corrected choice B",
-    "C": "corrected choice C",
-    "D": "corrected choice D",
-    "E": "corrected choice E"
+    "A": "formatting-fixed choice A",
+    "B": "formatting-fixed choice B",
+    "C": "formatting-fixed choice C",
+    "D": "formatting-fixed choice D",
+    "E": "formatting-fixed choice E"
   }
-}`;
+}
+
+Remember: Only fix formatting (math notation, symbols, spacing). Keep all words exactly the same.`;
 
         const modelInstance = genAI.getGenerativeModel({ model: selectedModel });
         const result = await modelInstance.generateContent(promptText);
