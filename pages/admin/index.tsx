@@ -68,6 +68,10 @@ export default function AdminPage() {
   // Filters
   const [subject, setSubject] = useState("");
   const [section, setSection] = useState("");
+  
+  // Get available subjects and sections
+  const availableSubjects = ["APMACRO", "APMICRO", "APCSP", "APCHEM", "APGOV", "APPSYCH"];
+  const [availableSections, setAvailableSections] = useState<string[]>([]);
 
   // ZIP import state
   const [importing, setImporting] = useState(false);
@@ -89,6 +93,28 @@ export default function AdminPage() {
     });
     return () => unsub();
   }, []);
+
+  // Update sections when subject changes
+  useEffect(() => {
+    if (!subject) {
+      setAvailableSections([]);
+      setSection("");
+      return;
+    }
+
+    // Define sections for each subject
+    const subjectSections: Record<string, string[]> = {
+      APMACRO: ["BEC", "EI", "NI", "FS", "LR", "OT"],
+      APMICRO: ["BEC", "SD", "PC", "IMP", "FM", "MF"],
+      APCSP: ["CRD", "DAT", "AAP", "CSN", "IOC"],
+      APCHEM: ["ASP", "MIS", "IMF", "RXN", "KIN", "THERMO", "EQM", "ACB", "ATD"],
+      APGOV: ["FCP", "IAB", "CLR", "APP", "PIP"],
+      APPSYCH: ["SRM", "BB", "SC", "LM", "CD", "MP", "ATC", "SP", "CPD"]
+    };
+
+    setAvailableSections(subjectSections[subject] || []);
+    setSection(""); // Reset section when subject changes
+  }, [subject]);
 
   const allowedEmails = useMemo(
     () =>
@@ -440,21 +466,41 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                placeholder="Subject code (e.g., APMACRO)"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="flex-1"
-              />
-              <Input
-                placeholder="Section code (e.g., NIPD)"
-                value={section}
-                onChange={(e) => setSection(e.target.value)}
-                className="flex-1"
-              />
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger className="flex-1 bg-white">
+                  <SelectValue placeholder="Select Subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSubjects.map((subj) => (
+                    <SelectItem key={subj} value={subj}>
+                      {subj}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select 
+                value={section} 
+                onValueChange={setSection}
+                disabled={!subject}
+              >
+                <SelectTrigger className="flex-1 bg-white">
+                  <SelectValue placeholder={subject ? "All Sections" : "Select subject first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Sections</SelectItem>
+                  {availableSections.map((sect) => (
+                    <SelectItem key={sect} value={sect}>
+                      {sect}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Button
                 onClick={fetchFiltered}
-                className="bg-khan-blue hover:bg-khan-purple text-white"
+                disabled={!subject}
+                className="bg-khan-blue hover:bg-khan-purple text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Search className="w-4 h-4 mr-2" />
                 Search
