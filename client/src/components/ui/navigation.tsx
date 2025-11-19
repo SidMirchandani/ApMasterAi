@@ -202,7 +202,7 @@ export default function Navigation() {
                   <div key={i} className="flex items-center">
                     <ChevronRight className="w-3.5 h-3.5 mx-1" />
                     {crumb.href === "#" ? (
-                      <span className="font-medium text-khan-gray-dark whitespace-nowrap">
+                      <span className="font-medium text-khan-gray-dark whitespace-nowrap text-sm sm:text-base">
                         {crumb.label}
                       </span>
                     ) : (
