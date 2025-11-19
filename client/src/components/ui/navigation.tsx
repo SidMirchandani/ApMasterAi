@@ -186,8 +186,13 @@ export default function Navigation() {
           </Link>
 
           {/* Breadcrumb Navigation - Center */}
-          {isAuthenticated && breadcrumbs.length > 0 && (
+          {isAuthenticated && (
             <div className="flex items-center space-x-1.5 text-xs text-khan-gray-medium flex-shrink-0">
+              {/* APMaster prefix */}
+              <span className="font-semibold text-khan-gray-dark whitespace-nowrap">APMaster</span>
+              <ChevronRight className="w-3.5 h-3.5 mx-0.5" />
+              
+              {/* Breadcrumb items */}
               {breadcrumbs.map((crumb, index) => (
                 <div key={index} className="flex items-center">
                   {index > 0 && <ChevronRight className="w-3.5 h-3.5 mx-0.5" />}
