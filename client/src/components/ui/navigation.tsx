@@ -31,9 +31,8 @@ export default function Navigation() {
     if (isInQuizMode) {
       e.preventDefault();
       toast({
-        title: "Test in Progress",
-        description:
-          "You cannot navigate away during a test. Use ‘Exit Test’ to leave.",
+        title: "Practice Quiz in Progress",
+        description: "You cannot navigate away. Use ‘Exit Quiz’ to leave.",
         duration: 3000,
       });
     }
