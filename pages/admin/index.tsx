@@ -113,7 +113,7 @@ export default function AdminPage() {
     };
 
     setAvailableSections(subjectSections[subject] || []);
-    setSection(""); // Reset section when subject changes
+    setSection("all"); // Reset section when subject changes
   }, [subject]);
 
   const allowedEmails = useMemo(
@@ -131,8 +131,9 @@ export default function AdminPage() {
 
   async function fetchFiltered() {
     if (!token) return;
+    const sectionParam = section === "all" ? "" : section;
     const res = await fetch(
-      `/api/admin/questions/query?subject=${subject}&section=${section}`,
+      `/api/admin/questions/query?subject=${subject}&section=${sectionParam}`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
     const data = await res.json();
@@ -488,7 +489,7 @@ export default function AdminPage() {
                   <SelectValue placeholder={subject ? "All Sections" : "Select subject first"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sections</SelectItem>
+                  <SelectItem value="all">All Sections</SelectItem>
                   {availableSections.map((sect) => (
                     <SelectItem key={sect} value={sect}>
                       {sect}
