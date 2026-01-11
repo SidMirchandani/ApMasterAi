@@ -250,7 +250,7 @@ export default function Dashboard() {
               <Button
                 onClick={() => router.push("/learn")}
                 variant="outline"
-                className="border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors"
+                className="border-[#36b37e] text-[#36b37e] hover:bg-[#36b37e] hover:text-white transition-colors"
               >
                 <Plus className="mr-2 w-4 h-4" /> Add Courses
               </Button>
@@ -469,6 +469,7 @@ const ArchivedSection = ({
                   size="sm"
                   className="border-khan-green text-khan-green"
                   onClick={() => onRestore(s)}
+                  className="border-[#36b37e] text-[#36b37e] hover:bg-[#36b37e] hover:text-white transition-colors"
                 >
                   Restore
                 </Button>

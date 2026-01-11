@@ -124,7 +124,7 @@ export function Hero() {
             <Link href="/signup">
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-khan-green hover:bg-khan-green/90 text-white shadow-xl shadow-khan-green/20 px-10 py-7 text-xl font-bold group rounded-2xl transition-all hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto bg-[#36b37e] hover:bg-[#2fa371] text-white shadow-xl shadow-[#36b37e]/20 px-10 py-7 text-xl font-bold group rounded-2xl transition-all hover:scale-105 active:scale-95"
               >
                 Get Started Free
                 <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />

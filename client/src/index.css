@@ -37,8 +37,9 @@ html, body {
   --radius: 0.375rem;
 
   /* Refined APMaster color palette - albert.io inspired */
-  --khan-green: hsl(142, 72%, 29%);
-  --khan-green-light: hsl(142, 69%, 45%);
+  --khan-green: hsl(155, 54%, 46%); /* #36b37e equivalent */
+  --khan-green-dark: hsl(155, 54%, 41%);
+  --khan-green-light: hsl(155, 54%, 56%);
   --khan-blue: hsl(221, 83%, 53%);
   --khan-purple: hsl(262, 83%, 58%);
   --khan-orange: hsl(24, 94%, 50%);
@@ -204,11 +205,11 @@ html, body {
 
   /* Button enhancements */
   .btn-primary {
-    @apply bg-khan-green text-white font-semibold rounded-lg px-6 py-3 hover:bg-khan-green-light hover:shadow-lg active:scale-95 transition-all duration-200;
+    @apply bg-[#36b37e] text-white font-semibold rounded-lg px-6 py-3 hover:bg-[#2fa371] hover:shadow-lg active:scale-95 transition-all duration-200;
   }
 
   .btn-secondary {
-    @apply bg-white text-khan-green border-2 border-khan-green font-semibold rounded-lg px-6 py-3 hover:bg-gray-50 active:scale-95 transition-all duration-200;
+    @apply bg-white text-[#36b37e] border-2 border-[#36b37e] font-semibold rounded-lg px-6 py-3 hover:bg-gray-50 active:scale-95 transition-all duration-200;
   }
 
   /* Input enhancements */
