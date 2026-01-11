@@ -1,6 +1,7 @@
 import Navigation from "@/components/ui/navigation";
 import { Hero, HeroStats } from "@/components/sections/hero";
 import { Features } from "@/components/sections/features";
+import { FAQ } from "@/components/sections/faq";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/auth-context";
 import { useEffect } from "react";
@@ -36,6 +37,7 @@ export default function Home() {
       <Hero />
       <HeroStats />
       <Features />
+      <FAQ />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import Navigation from "@/components/ui/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Linkedin, Mail } from "lucide-react";
 
 export default function About() {
   return (
@@ -20,7 +20,7 @@ export default function About() {
           </p>
         </div>
 
-        <Card className="border-none shadow-xl bg-gradient-to-br from-gray-50 to-white overflow-hidden">
+        <Card className="border-none shadow-xl bg-gradient-to-br from-gray-50 to-white overflow-hidden mb-16">
           <CardContent className="p-8 sm:p-12">
             <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
               <p className="text-2xl font-bold text-[#2d3b45] mb-8 border-l-4 border-[#36b37e] pl-6 italic">
@@ -63,20 +63,46 @@ export default function About() {
                   APMaster.ai exists to prove that excellence in education should be available to everyone, not just a few.
                 </p>
               </div>
-
-              <div className="mt-16 pt-8 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                <div>
-                  <p className="font-bold text-xl text-[#2d3b45] mb-1">Vivana Satiani and Siddharth Mirchandani</p>
-                  <p className="text-[#36b37e] font-medium">Founders, APMaster.ai</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-100"></div>
-                  <div className="w-12 h-12 rounded-full bg-gray-100"></div>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
+
+        <div className="mt-24">
+          <h2 className="text-3xl font-bold text-[#2d3b45] text-center mb-12">Our Team</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="text-center group">
+              <div className="w-40 h-40 bg-[#36b37e]/10 rounded-full mx-auto mb-6 flex items-center justify-center border-4 border-[#36b37e]/20 transition-all duration-300 group-hover:border-[#36b37e]">
+                <span className="text-4xl font-bold text-[#36b37e]">SM</span>
+              </div>
+              <h3 className="text-2xl font-bold text-[#2d3b45] mb-2">Siddharth Mirchandani</h3>
+              <p className="text-[#36b37e] font-semibold mb-4">Co-founder</p>
+              <div className="flex justify-center gap-4">
+                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                  <Linkedin className="w-5 h-5" />
+                </a>
+                <a href="mailto:siddharth@apmaster.ai" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                  <Mail className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
+
+            <div className="text-center group">
+              <div className="w-40 h-40 bg-[#36b37e]/10 rounded-full mx-auto mb-6 flex items-center justify-center border-4 border-[#36b37e]/20 transition-all duration-300 group-hover:border-[#36b37e]">
+                <span className="text-4xl font-bold text-[#36b37e]">VS</span>
+              </div>
+              <h3 className="text-2xl font-bold text-[#2d3b45] mb-2">Vivana Satiani</h3>
+              <p className="text-[#36b37e] font-semibold mb-4">Co-founder</p>
+              <div className="flex justify-center gap-4">
+                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                  <Linkedin className="w-5 h-5" />
+                </a>
+                <a href="mailto:vivana@apmaster.ai" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                  <Mail className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
 
       <footer className="bg-gray-50 border-t border-gray-200 py-12 mt-20">
