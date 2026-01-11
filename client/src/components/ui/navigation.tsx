@@ -163,42 +163,42 @@ export default function Navigation() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <nav className="border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-      <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-12">
+    <nav className="border-b border-border bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
           {/* LEFT: APMaster + Breadcrumb */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-8">
             {/* APMaster root */}
             <Link
               href={isAuthenticated ? "/dashboard" : "/"}
-              className={`flex items-center space-x-2 flex-shrink-0 ${
+              className={`flex items-center gap-3 transition-opacity hover:opacity-90 ${
                 isInQuizMode ? "pointer-events-none opacity-60" : ""
               }`}
               onClick={handleDisabledClick}
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-khan-green rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              <div className="w-9 h-9 bg-khan-green rounded-xl flex items-center justify-center shadow-sm shadow-khan-green/20">
+                <BookOpen className="w-5 h-5 text-white" />
               </div>
 
-              <span className="text-xl sm:text-2xl font-bold text-khan-gray-dark">
+              <span className="text-xl font-bold text-foreground tracking-tight">
                 APMaster
               </span>
             </Link>
 
             {/* Breadcrumb (Dashboard → AP…) */}
             {isAuthenticated && breadcrumbs.length > 0 && (
-              <div className="flex items-center space-x-1.5 text-sm sm:text-base text-khan-gray-medium">
+              <div className="hidden md:flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 {breadcrumbs.map((crumb, i) => (
-                  <div key={i} className="flex items-center">
-                    <ChevronRight className="w-3.5 h-3.5 mx-1" />
+                  <div key={i} className="flex items-center gap-2">
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
                     {crumb.href === "#" ? (
-                      <span className="font-semibold text-khan-gray-dark whitespace-nowrap text-sm sm:text-base">
+                      <span className="text-foreground whitespace-nowrap">
                         {crumb.label}
                       </span>
                     ) : (
                       <Link
                         href={crumb.href}
-                        className="font-semibold hover:text-khan-green transition-colors whitespace-nowrap text-sm sm:text-base"
+                        className="hover:text-khan-green transition-colors whitespace-nowrap"
                         onClick={handleDisabledClick}
                       >
                         {crumb.label}
@@ -211,20 +211,22 @@ export default function Navigation() {
           </div>
 
           {/* RIGHT: ACCOUNT ONLY */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-4">
             {loading ? (
-              <div className="w-16 h-8 bg-gray-200 animate-pulse rounded" />
+              <div className="w-10 h-10 bg-muted animate-pulse rounded-full" />
             ) : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="outline"
-                    className={`border-2 border-khan-gray-light text-khan-gray-dark hover:bg-khan-background font-medium text-sm sm:text-base px-3 ${
+                    variant="ghost"
+                    size="sm"
+                    className={`h-10 w-10 p-0 rounded-full border border-border overflow-hidden hover:bg-accent transition-all ${
                       isInQuizMode ? "opacity-60 pointer-events-none" : ""
                     }`}
                   >
-                    <User className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Account</span>
+                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <User className="w-5 h-5 text-muted-foreground" />
+                    </div>
                   </Button>
                 </DropdownMenuTrigger>
 
@@ -265,15 +267,15 @@ export default function Navigation() {
               <>
                 <Link href="/login">
                   <Button
-                    variant="outline"
-                    className="border-2 border-khan-green text-khan-green hover:bg-khan-green hover:text-white font-semibold px-4"
+                    variant="ghost"
+                    className="text-foreground hover:text-khan-green font-medium"
                   >
                     Login
                   </Button>
                 </Link>
 
                 <Link href="/signup">
-                  <Button className="bg-khan-green text-white hover:bg-khan-green-light font-semibold px-4">
+                  <Button className="bg-khan-green text-white hover:bg-khan-green/90 font-bold px-6 shadow-sm shadow-khan-green/10">
                     Sign Up
                   </Button>
                 </Link>

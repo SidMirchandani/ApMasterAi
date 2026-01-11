@@ -232,11 +232,11 @@ export default function Dashboard() {
   // MAIN UI
   // =====================
   return (
-    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative">
+    <div className="min-h-screen bg-background relative">
       <BackgroundDecor />
       <Navigation />
 
-      <main className="py-6 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
+      <main className="py-10 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
         <Header name={userProfile?.data?.firstName} />
 
         {subjectsLoading || !subjectsResponse ? (
@@ -244,22 +244,22 @@ export default function Dashboard() {
         ) : subjects.length === 0 ? (
           <EmptyState router={router} />
         ) : (
-          <>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">My Subjects</h2>
+          <div className="space-y-10">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold tracking-tight">My Subjects</h2>
               <Button
                 onClick={() => router.push("/learn")}
                 variant="outline"
-                className="border-khan-green text-khan-green hover:bg-khan-green hover:text-white"
+                className="border-khan-green text-khan-green hover:bg-khan-green hover:text-white transition-colors"
               >
-                <Plus className="mr-2 w-4 h-4" /> Courses
+                <Plus className="mr-2 w-4 h-4" /> Add Courses
               </Button>
             </div>
 
             {subjectsFetching && <RefreshingState />}
 
             {/* Active subjects */}
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-6">
               {activeSubjects.map((subject) => (
                 <SubjectCard
                   key={subject.id}
@@ -358,11 +358,11 @@ const BackgroundDecor = () => (
 );
 
 const Header = ({ name }: { name?: string }) => (
-  <div className="mb-4">
-    <h1 className="text-3xl font-bold">
+  <div className="mb-10">
+    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
       Welcome back{name ? `, ${name}` : ""}!
     </h1>
-    <p className="text-lg text-khan-gray-medium">Continue your AP prep</p>
+    <p className="text-lg text-muted-foreground">Continue your personalized AP preparation journey.</p>
   </div>
 );
 
@@ -493,91 +493,66 @@ const SubjectCard = ({
   onDelete: () => void;
   onStudy: () => void;
 }) => {
-  console.log('🔍 [SubjectCard] RAW subject from database:', {
-    id: subject.id,
-    subjectId: subject.subjectId,
-    name: subject.name,
-    unitProgress: subject.unitProgress
-  });
-  
   const subjectMeta = getSubjectByCode(subject.subjectId);
   const units = subjectMeta?.units || [];
   const unitProgress = subject.unitProgress || {};
 
-  console.log('🎯 [SubjectCard] After getSubjectByCode:', {
-    subjectId: subject.subjectId,
-    subjectName: subject.name,
-    hasSubjectMeta: !!subjectMeta,
-    subjectMeta: subjectMeta,
-    subjectCode: subjectMeta?.subjectCode,
-    unitsCount: units.length,
-    unitIds: units.map(u => u.id),
-    unitProgressKeys: Object.keys(unitProgress),
-    fullUnitProgress: unitProgress
-  });
-
   return (
-    <Card className="bg-white hover:shadow-md transition-all border-2 border-gray-100 w-full">
-      <CardHeader>
+    <Card className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white">
+      <div className="h-2 bg-gradient-to-r from-khan-green to-khan-green-light" />
+      <CardHeader className="pb-4">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-xl font-bold">{subject.name}</CardTitle>
-          <div className="flex gap-2">
+          <div className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-foreground tracking-tight">{subject.name}</CardTitle>
+            <p className="text-muted-foreground leading-relaxed max-w-2xl">{subject.description}</p>
+          </div>
+          <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="border-khan-blue text-khan-blue"
+              className="text-muted-foreground hover:text-khan-blue hover:bg-khan-blue/5 px-2"
               onClick={onArchive}
             >
               Archive
             </Button>
-            <button
-              className="text-gray-400 hover:text-red-600"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 px-2"
               onClick={onDelete}
             >
               <Trash2 className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
-
-        <p className="text-gray-600">{subject.description}</p>
       </CardHeader>
 
-      <CardContent>
-        {/* Meta */}
-        <div className="flex flex-wrap items-center justify-between mb-3">
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-gray-600" />
-              <span className="text-gray-700">{subject.units} Units</span>
+      <CardContent className="space-y-6">
+        {/* Meta Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full">
+              <BookOpen className="w-4 h-4 text-khan-green" />
+              <span className="font-medium text-foreground">{subject.units} Units</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-600" />
-              <span className="text-gray-700">
-                Exam: <span className="font-semibold">{formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}</span>
+            <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full">
+              <Calendar className="w-4 h-4 text-khan-blue" />
+              <span className="font-medium text-foreground">
+                Exam: {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
               </span>
             </div>
           </div>
 
           {/* Unit Grid */}
-          <div className="flex items-center gap-2 group relative">
+          <div className="flex items-center justify-start sm:justify-end gap-1.5">
             {units.map((u: any, i: number) => {
               const unitData = unitProgress[u.id];
               const stat = getUnitStatus(unitData);
               
-              console.log(`🔍 [SubjectCard] Unit ${i + 1} mapping:`, {
-                unitId: u.id,
-                unitTitle: u.title,
-                hasUnitData: !!unitData,
-                unitData: unitData,
-                status: stat.status,
-                score: stat.score,
-                background: stat.bg
-              });
-              
               return (
                 <div
                   key={u.id}
-                  className={`w-8 h-8 rounded ${stat.bg} border border-black flex items-center justify-center text-xs text-white`}
+                  className={`w-7 h-7 rounded-md ${stat.bg} border border-black/5 flex items-center justify-center text-[10px] text-white shadow-sm transition-transform hover:scale-110 cursor-help`}
                   title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
                 >
                   {stat.status === "Mastered" && "👑"}
@@ -587,20 +562,23 @@ const SubjectCard = ({
           </div>
         </div>
 
-        {/* Dates + Button */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex flex-col sm:flex-row gap-4 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" /> Added:{" "}
-              {formatDate(subject.dateAdded)}
+        {/* Footer info + Button */}
+        <div className="pt-6 border-t flex flex-col sm:flex-row justify-between items-center gap-6">
+          <div className="flex flex-wrap justify-center sm:justify-start gap-x-6 gap-y-2 text-xs text-muted-foreground font-medium uppercase tracking-wider">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" /> 
+              Added {formatDate(subject.dateAdded)}
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Last Practice:{" "}
-              {subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> 
+              Last Studied {subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}
             </div>
           </div>
 
-          <Button onClick={onStudy} className="bg-khan-green text-white">
+          <Button 
+            onClick={onStudy} 
+            className="w-full sm:w-auto bg-khan-green hover:bg-khan-green/90 text-white px-8 h-11 font-semibold shadow-lg shadow-khan-green/10 transition-all active:scale-95"
+          >
             Continue Practice
           </Button>
         </div>
