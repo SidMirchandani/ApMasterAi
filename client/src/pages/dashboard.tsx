@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import {
   BookOpen,
   Clock,
@@ -10,17 +9,6 @@ import {
   Plus,
   Calendar,
   AlertTriangle,
-  Target,
-  TrendingUp,
-  Award,
-  Zap,
-  ChevronRight,
-  Play,
-  BarChart3,
-  Flame,
-  Star,
-  ArrowRight,
-  Archive,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -39,8 +27,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+// =====================
+// TYPES
+// =====================
 interface DashboardSubject {
   id: string | number;
   subjectId: string;
@@ -56,34 +48,57 @@ interface DashboardSubject {
   unitProgress?: any;
 }
 
+// =====================
+// HELPERS
+// =====================
 const getUnitStatus = (unitData: any) => {
+  console.log('📊 [getUnitStatus] Called with:', {
+    hasData: !!unitData,
+    unitData: unitData,
+    highestScore: unitData?.highestScore,
+    mcqScore: unitData?.mcqScore,
+    scores: unitData?.scores
+  });
+
   if (!unitData) {
+    console.log('⚪ [getUnitStatus] No data -> Not Started');
     return { bg: "bg-gray-200", status: "Not Started", score: 0 };
   }
+
   const score = unitData.highestScore ?? unitData.mcqScore ?? 0;
-  if (score >= 80) return { bg: "bg-[#36b37e]", status: "Mastered", score };
-  if (score >= 60) return { bg: "bg-[#57d9a3]", status: "Proficient", score };
-  return { bg: "bg-amber-400", status: "In Progress", score };
+  console.log('🎯 [getUnitStatus] Calculated score:', score);
+  
+  if (score >= 80) {
+    console.log('🟢 [getUnitStatus] Mastered (score >= 80)');
+    return { bg: "bg-green-600", status: "Mastered", score };
+  }
+  if (score >= 60) {
+    console.log('🟢 [getUnitStatus] Proficient (score >= 60)');
+    return { bg: "bg-green-400", status: "Proficient", score };
+  }
+  console.log('🟠 [getUnitStatus] In Progress (score < 60)');
+  return { bg: "bg-orange-400", status: "In Progress", score };
 };
 
-const motivationalTips = [
-  { title: "Consistency is Key", desc: "Just 30 minutes of daily practice can dramatically improve your scores.", icon: Flame },
-  { title: "Active Recall", desc: "Testing yourself is more effective than passive review. Keep practicing!", icon: Zap },
-  { title: "Take Breaks", desc: "The Pomodoro technique can help: 25 min study, 5 min break.", icon: Clock },
-  { title: "Stay Positive", desc: "Every mistake is a learning opportunity. You're making progress!", icon: Star },
-];
-
+// =====================
+// MAIN DASHBOARD COMPONENT
+// =====================
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
-  const [subjectToArchive, setSubjectToArchive] = useState<DashboardSubject | null>(null);
+  const [subjectToRemove, setSubjectToRemove] =
+    useState<DashboardSubject | null>(null);
+  const [subjectToArchive, setSubjectToArchive] =
+    useState<DashboardSubject | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
-  const [dailyTip] = useState(() => motivationalTips[Math.floor(Math.random() * motivationalTips.length)]);
+  const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
 
+  // =====================
+  // FETCH USER PROFILE
+  // =====================
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile"],
     queryFn: async () => {
@@ -96,11 +111,15 @@ export default function Dashboard() {
     gcTime: Infinity,
   });
 
+  // =====================
+  // FETCH SUBJECTS
+  // =====================
   const {
     data: subjectsResponse,
     isLoading: subjectsLoading,
     error: subjectsError,
     refetch: refetchSubjects,
+    isFetching: subjectsFetching,
   } = useQuery({
     queryKey: ["subjects"],
     queryFn: async () => {
@@ -120,43 +139,40 @@ export default function Dashboard() {
   );
 
   const activeSubjects = subjects.filter((s) => !s.archived);
-
-  const totalUnits = activeSubjects.reduce((acc, s) => acc + (s.units || 0), 0);
-  const masteredUnits = activeSubjects.reduce((acc, s) => {
-    const meta = getSubjectByCode(s.subjectId);
-    const units = meta?.units || [];
-    const progress = s.unitProgress || {};
-    return acc + units.filter((u: any) => {
-      const data = progress[u.id];
-      return data && (data.highestScore ?? data.mcqScore ?? 0) >= 80;
-    }).length;
-  }, 0);
-
-  const overallProgress = totalUnits > 0 ? Math.round((masteredUnits / totalUnits) * 100) : 0;
+  const archivedSubjects = subjects.filter((s) => s.archived);
 
   useEffect(() => {
     if (subjectsError && !subjectsLoading) {
       toast({
         title: "Error loading subjects",
-        description: (subjectsError as Error).message,
+        description: subjectsError.message,
         variant: "destructive",
       });
     }
-  }, [subjectsError, subjectsLoading, toast]);
+  }, [subjectsError, subjectsLoading]);
 
+  // =====================
+  // ARCHIVE MUTATION
+  // =====================
   const archiveMutation = useMutation({
     mutationFn: async ({ id, archive }: any) => {
-      const res = await apiRequest("PUT", `/api/user/subjects/${id}`, { archived: archive });
+      const res = await apiRequest("PUT", `/api/user/subjects/${id}`, {
+        archived: archive,
+      });
       if (!res.ok) throw new Error("Failed archive");
       return res.json();
     },
     onMutate: async ({ id, archive }) => {
-      await queryClient.cancelQueries({ queryKey: ["subjects"] });
+      await queryClient.cancelQueries(["subjects"]);
       const prev = queryClient.getQueryData(["subjects"]);
+
       queryClient.setQueryData(["subjects"], (old: any) => ({
         ...old,
-        data: old.data.map((s: any) => String(s.id) === String(id) ? { ...s, archived: archive } : s),
+        data: old.data.map((s: any) =>
+          String(s.id) === String(id) ? { ...s, archived: archive } : s,
+        ),
       }));
+
       return { prev };
     },
     onError: (_, __, ctx) => {
@@ -164,10 +180,16 @@ export default function Dashboard() {
       toast({ title: "Error archiving", variant: "destructive" });
     },
     onSuccess: (_, { archive }) => {
-      toast({ title: archive ? "Archived" : "Restored", description: archive ? "Moved to archive" : "Restored" });
+      toast({
+        title: archive ? "Archived" : "Restored",
+        description: archive ? "Moved to archive" : "Restored",
+      });
     },
   });
 
+  // =====================
+  // DELETE MUTATION
+  // =====================
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest("DELETE", `/api/user/subjects/${id}`);
@@ -175,12 +197,14 @@ export default function Dashboard() {
       return res.json();
     },
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["subjects"] });
+      await queryClient.cancelQueries(["subjects"]);
       const prev = queryClient.getQueryData(["subjects"]);
+
       queryClient.setQueryData(["subjects"], (old: any) => ({
         ...old,
         data: old.data.filter((s: any) => String(s.id) !== String(id)),
       }));
+
       return { prev };
     },
     onError: (_, __, ctx) => {
@@ -194,178 +218,87 @@ export default function Dashboard() {
     },
   });
 
-  if (loading) return <LoadingScreen />;
+  // =====================
+  // NAVIGATION
+  // =====================
+  if (loading) return <CenteredLoader text="Loading..." />;
+
   if (!isAuthenticated) return null;
-  if (subjectsError && !subjectsLoading) return <ErrorScreen refetch={refetchSubjects} />;
 
-  const firstName = userProfile?.data?.firstName;
-  const greeting = getGreeting();
+  if (subjectsError && !subjectsLoading)
+    return <ErrorScreen refetch={refetchSubjects} />;
 
+  // =====================
+  // MAIN UI
+  // =====================
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
+    <div className="min-h-screen bg-background relative">
+      <BackgroundDecor />
       <Navigation />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#2d3b45] mb-1">
-            {greeting}{firstName ? `, ${firstName}` : ""}!
-          </h1>
-          <p className="text-gray-500 font-medium">
-            {activeSubjects.length > 0 
-              ? "Here's your personalized study dashboard."
-              : "Get started by adding your first AP course below."}
-          </p>
-        </div>
+      <main className="py-10 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
+        <Header name={userProfile?.data?.firstName} />
 
-        {subjectsLoading ? (
-          <LoadingState />
-        ) : activeSubjects.length === 0 ? (
-          <EmptyDashboard router={router} />
+        {subjectsLoading || !subjectsResponse ? (
+          <CenteredLoader text="Loading your subjects..." />
+        ) : subjects.length === 0 ? (
+          <EmptyState router={router} />
         ) : (
-          <div className="space-y-8">
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard
-                icon={BookOpen}
-                label="Active Courses"
-                value={activeSubjects.length}
-                color="blue"
-              />
-              <StatCard
-                icon={Target}
-                label="Total Units"
-                value={totalUnits}
-                color="purple"
-              />
-              <StatCard
-                icon={Award}
-                label="Units Mastered"
-                value={masteredUnits}
-                color="green"
-              />
-              <StatCard
-                icon={TrendingUp}
-                label="Overall Progress"
-                value={`${overallProgress}%`}
-                color="orange"
-                showProgress
-                progress={overallProgress}
-              />
+          <div className="space-y-10">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold tracking-tight">My Subjects</h2>
+              <Button
+                onClick={() => router.push("/learn")}
+                variant="outline"
+                className="border-[#36b37e] text-[#36b37e] hover:bg-[#36b37e] hover:text-white transition-colors"
+              >
+                <Plus className="mr-2 w-4 h-4" /> Add Courses
+              </Button>
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column - Courses */}
-              <div className="lg:col-span-2 space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-[#2d3b45]">My Courses</h2>
-                  <Button
-                    onClick={() => router.push("/learn")}
-                    size="sm"
-                    className="bg-[#36b37e] hover:bg-[#2fa371] text-white font-bold"
-                  >
-                    <Plus className="w-4 h-4 mr-1" /> Add Course
-                  </Button>
-                </div>
+            {subjectsFetching && <RefreshingState />}
 
-                <div className="space-y-4">
-                  {activeSubjects.map((subject) => (
-                    <CourseCard
-                      key={subject.id}
-                      subject={subject}
-                      onStudy={() => router.push(`/study?subject=${subject.subjectId}`)}
-                      onArchive={() => setSubjectToArchive(subject)}
-                      onDelete={() => {
-                        setSubjectToRemove(subject);
-                        setShowRemoveDialog(true);
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Right Column - Sidebar */}
-              <div className="space-y-6">
-                {/* Daily Tip Card */}
-                <Card className="border border-gray-200 bg-gradient-to-br from-[#36b37e]/5 to-[#36b37e]/10 overflow-hidden">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-[#36b37e]/20 flex items-center justify-center">
-                        <dailyTip.icon className="w-5 h-5 text-[#36b37e]" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-[#36b37e] uppercase tracking-wider">Daily Tip</p>
-                        <CardTitle className="text-base font-bold text-[#2d3b45]">{dailyTip.title}</CardTitle>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-gray-600 leading-relaxed">{dailyTip.desc}</p>
-                  </CardContent>
-                </Card>
-
-                {/* Quick Actions */}
-                <Card className="border border-gray-200">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-bold text-[#2d3b45] flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-amber-500" />
-                      Quick Actions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <QuickActionButton
-                      icon={Play}
-                      label="Continue Last Session"
-                      onClick={() => activeSubjects[0] && router.push(`/study?subject=${activeSubjects[0].subjectId}`)}
-                    />
-                    <QuickActionButton
-                      icon={BarChart3}
-                      label="View Full-Length Tests"
-                      onClick={() => activeSubjects[0] && router.push(`/full-length-history?subject=${activeSubjects[0].subjectId}`)}
-                    />
-                    <QuickActionButton
-                      icon={BookOpen}
-                      label="Browse All Courses"
-                      onClick={() => router.push("/learn")}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Upcoming Exams */}
-                <Card className="border border-gray-200">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-bold text-[#2d3b45] flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-blue-500" />
-                      Upcoming Exams
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {activeSubjects.slice(0, 3).map((subject) => {
-                      const meta = getSubjectByCode(subject.subjectId);
-                      const examDate = meta?.metadata?.examDate || subject.examDate;
-                      return (
-                        <div key={subject.id} className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-[#2d3b45] truncate max-w-[140px]">{subject.name}</span>
-                          <span className="text-gray-500 text-xs font-bold">{formatDate(examDate)}</span>
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
-              </div>
+            {/* Active subjects */}
+            <div className="grid grid-cols-1 gap-6">
+              {activeSubjects.map((subject) => (
+                <SubjectCard
+                  key={subject.id}
+                  subject={subject}
+                  onArchive={() => setSubjectToArchive(subject)}
+                  onDelete={() => {
+                    setSubjectToRemove(subject);
+                    setShowRemoveDialog(true);
+                  }}
+                  onStudy={() =>
+                    router.push(`/study?subject=${subject.subjectId}`)
+                  }
+                />
+              ))}
             </div>
+
+            {/* Archived Section */}
+            {archivedSubjects.length > 0 && (
+              <ArchivedSection
+                subjects={archivedSubjects}
+                isOpen={isArchiveExpanded}
+                toggle={() => setIsArchiveExpanded((v) => !v)}
+                onRestore={(s) =>
+                  archiveMutation.mutate({ id: s.id, archive: false })
+                }
+              />
+            )}
           </div>
         )}
       </main>
 
-      {/* Delete Dialog */}
+      {/* Delete dialog */}
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Subject?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <b>{subjectToRemove?.name}</b>? This cannot be undone.
+              Are you sure you want to delete <b>{subjectToRemove?.name}</b>?
+              This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -380,8 +313,11 @@ export default function Dashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Archive Dialog */}
-      <AlertDialog open={!!subjectToArchive} onOpenChange={(v) => !v && setSubjectToArchive(null)}>
+      {/* Archive dialog */}
+      <AlertDialog
+        open={!!subjectToArchive}
+        onOpenChange={(v) => !v && setSubjectToArchive(null)}
+      >
         <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle>Archive Subject?</AlertDialogTitle>
@@ -393,10 +329,13 @@ export default function Dashboard() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                archiveMutation.mutate({ id: subjectToArchive?.id, archive: true });
+                archiveMutation.mutate({
+                  id: subjectToArchive?.id,
+                  archive: true,
+                });
                 setSubjectToArchive(null);
               }}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-khan-blue hover:bg-khan-blue/90"
             >
               Archive
             </AlertDialogAction>
@@ -407,260 +346,244 @@ export default function Dashboard() {
   );
 }
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
+// ======================================================================================
+// SUBCOMPONENTS — compact, readable, no logic duplication
+// ======================================================================================
 
-function StatCard({ 
-  icon: Icon, 
-  label, 
-  value, 
-  color, 
-  showProgress, 
-  progress 
-}: { 
-  icon: any; 
-  label: string; 
-  value: string | number; 
-  color: string;
-  showProgress?: boolean;
-  progress?: number;
-}) {
-  const colors: Record<string, { bg: string; text: string; iconBg: string }> = {
-    blue: { bg: "bg-blue-50", text: "text-blue-600", iconBg: "bg-blue-100" },
-    purple: { bg: "bg-purple-50", text: "text-purple-600", iconBg: "bg-purple-100" },
-    green: { bg: "bg-[#36b37e]/5", text: "text-[#36b37e]", iconBg: "bg-[#36b37e]/10" },
-    orange: { bg: "bg-amber-50", text: "text-amber-600", iconBg: "bg-amber-100" },
-  };
+const BackgroundDecor = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl" />
+    <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl" />
+  </div>
+);
 
-  const c = colors[color] || colors.blue;
+const Header = ({ name }: { name?: string }) => (
+  <div className="mb-8">
+    <h1 className="text-2xl sm:text-3xl font-bold text-[#2d3b45] mb-1">
+      Welcome back{name ? `, ${name}` : ""}!
+    </h1>
+    <p className="text-base text-gray-500 font-medium">Continue your personalized AP preparation journey.</p>
+  </div>
+);
 
-  return (
-    <Card className={`border border-gray-200 ${c.bg}`}>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className={`w-10 h-10 rounded-lg ${c.iconBg} flex items-center justify-center`}>
-            <Icon className={`w-5 h-5 ${c.text}`} />
-          </div>
-          <span className={`text-2xl font-black ${c.text}`}>{value}</span>
-        </div>
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</p>
-        {showProgress && progress !== undefined && (
-          <div className="mt-3">
-            <Progress value={progress} className="h-2 bg-gray-200" />
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+const CenteredLoader = ({ text }: { text: string }) => (
+  <div className="flex items-center justify-center py-16">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4" />
+      <p>{text}</p>
+    </div>
+  </div>
+);
 
-function CourseCard({ 
-  subject, 
-  onStudy, 
-  onArchive, 
-  onDelete 
-}: { 
-  subject: DashboardSubject; 
-  onStudy: () => void;
+const EmptyState = ({ router }: { router: any }) => (
+  <div className="text-center py-16">
+    <BookOpen className="mx-auto h-24 w-24 text-gray-300 mb-6" />
+    <h2 className="text-2xl font-bold mb-4">No subjects added yet</h2>
+    <p className="text-gray-500 mb-8">Add AP subjects to start</p>
+    <Button
+      onClick={() => router.push("/learn")}
+      className="bg-khan-green text-white px-6"
+    >
+      <Plus className="mr-2 w-5 h-5" /> Courses
+    </Button>
+  </div>
+);
+
+const RefreshingState = () => (
+  <div className="mb-4 text-center">
+    <div className="inline-flex items-center text-sm text-gray-500">
+      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-khan-green mr-2" />
+      Refreshing...
+    </div>
+  </div>
+);
+
+const ErrorScreen = ({ refetch }: { refetch: () => void }) => (
+  <div className="min-h-screen bg-khan-background">
+    <Navigation />
+    <div className="py-12 px-4">
+      <Alert className="mb-8 border-red-300 bg-red-50">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription className="text-red-600 flex justify-between items-center">
+          Failed to load your subjects.
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refetch}
+            className="border-red-600 text-red-600"
+          >
+            Try Again
+          </Button>
+        </AlertDescription>
+      </Alert>
+    </div>
+  </div>
+);
+
+const ArchivedSection = ({
+  subjects,
+  isOpen,
+  toggle,
+  onRestore,
+}: {
+  subjects: DashboardSubject[];
+  isOpen: boolean;
+  toggle: () => void;
+  onRestore: (s: DashboardSubject) => void;
+}) => (
+  <div className="mt-8">
+    <button
+      onClick={toggle}
+      className="flex justify-between w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100"
+    >
+      <h3 className="text-lg font-semibold">
+        Archived Subjects ({subjects.length})
+      </h3>
+      <svg
+        className={`w-5 h-5 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 9l-7 7-7-7"
+        />
+      </svg>
+    </button>
+
+    {isOpen && (
+      <div className="mt-4 space-y-4">
+        {subjects.map((s) => (
+          <Card
+            key={s.id}
+            className="bg-gray-50 border-2 border-gray-200 w-full opacity-75"
+          >
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>{s.name}</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onRestore(s)}
+                  className="border-[#36b37e] text-[#36b37e] hover:bg-[#36b37e] hover:text-white transition-colors"
+                >
+                  Restore
+                </Button>
+              </div>
+              <p className="text-gray-600">{s.description}</p>
+            </CardHeader>
+          </Card>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+const SubjectCard = ({
+  subject,
+  onArchive,
+  onDelete,
+  onStudy,
+}: {
+  subject: DashboardSubject;
   onArchive: () => void;
   onDelete: () => void;
-}) {
+  onStudy: () => void;
+}) => {
   const subjectMeta = getSubjectByCode(subject.subjectId);
   const units = subjectMeta?.units || [];
   const unitProgress = subject.unitProgress || {};
 
-  const masteredCount = units.filter((u: any) => {
-    const data = unitProgress[u.id];
-    return data && (data.highestScore ?? data.mcqScore ?? 0) >= 80;
-  }).length;
-
-  const progressPercent = units.length > 0 ? Math.round((masteredCount / units.length) * 100) : 0;
-
   return (
-    <Card className="border border-gray-200 bg-white hover:shadow-lg hover:border-gray-300 transition-all duration-200 overflow-hidden group">
-      <div className="flex flex-col sm:flex-row">
-        {/* Left colored bar */}
-        <div className="w-full sm:w-2 h-2 sm:h-auto bg-gradient-to-b from-[#36b37e] to-[#2fa371]" />
-        
-        <div className="flex-1 p-5">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-[#2d3b45] mb-1 truncate">{subject.name}</h3>
-              <p className="text-sm text-gray-500 line-clamp-1">{subject.description}</p>
-            </div>
-            <div className="flex items-center gap-1 ml-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
-                onClick={onArchive}
-                title="Archive"
-              >
-                <Archive className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
-                onClick={onDelete}
-                title="Delete"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
+    <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white rounded-lg">
+      <CardHeader className="pb-4 border-b border-gray-100 bg-gray-50/50">
+        <div className="flex justify-between items-start">
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-bold text-[#2d3b45] tracking-tight">{subject.name}</CardTitle>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-2xl font-medium">{subject.description}</p>
           </div>
-
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500 font-medium">{masteredCount} of {units.length} units mastered</span>
-                <span className="font-bold text-[#36b37e]">{progressPercent}%</span>
-              </div>
-              <Progress value={progressPercent} className="h-2 bg-gray-100" />
-            </div>
-
+          <div className="flex items-center gap-1">
             <Button
-              onClick={onStudy}
-              className="bg-[#36b37e] hover:bg-[#2fa371] text-white font-bold px-5 shadow-sm group-hover:shadow-md transition-all"
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-khan-blue hover:bg-gray-100 h-8 w-8 p-0"
+              onClick={onArchive}
+              title="Archive"
             >
-              Study <ArrowRight className="w-4 h-4 ml-1" />
+              <BookOpen className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-destructive hover:bg-destructive/5 h-8 w-8 p-0"
+              onClick={onDelete}
+              title="Delete"
+            >
+              <Trash2 className="w-4 h-4" />
             </Button>
           </div>
+        </div>
+      </CardHeader>
 
-          <div className="flex items-center gap-4 mt-4 text-xs text-gray-400 font-medium">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              Exam: {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
+      <CardContent className="py-6 space-y-6">
+        {/* Meta Grid */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
+            <div className="flex items-center gap-2 text-gray-600">
+              <BookOpen className="w-4 h-4 text-gray-400" />
+              <span>{subject.units} Units</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              Last studied: {subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}
+            <div className="flex items-center gap-2 text-gray-600">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              <span>
+                Exam: {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
+              </span>
             </div>
           </div>
+
+          {/* Unit Grid */}
+          <div className="flex items-center gap-1">
+            {units.map((u: any, i: number) => {
+              const unitData = unitProgress[u.id];
+              const stat = getUnitStatus(unitData);
+              
+              return (
+                <div
+                  key={u.id}
+                  className={`w-6 h-6 rounded-sm ${stat.bg} border border-black/5 flex items-center justify-center text-[9px] text-white shadow-sm transition-transform hover:scale-110 cursor-help`}
+                  title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
+                >
+                  {stat.status === "Mastered" && "👑"}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    </Card>
-  );
-}
 
-function QuickActionButton({ 
-  icon: Icon, 
-  label, 
-  onClick 
-}: { 
-  icon: any; 
-  label: string; 
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors text-left group"
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-md bg-white border border-gray-200 flex items-center justify-center shadow-sm">
-          <Icon className="w-4 h-4 text-gray-600" />
-        </div>
-        <span className="text-sm font-medium text-[#2d3b45]">{label}</span>
-      </div>
-      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
-    </button>
-  );
-}
+        {/* Footer info + Button */}
+        <div className="pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex flex-wrap justify-center sm:justify-start gap-x-4 text-[11px] text-gray-400 font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> 
+              Added {formatDate(subject.dateAdded)}
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3" /> 
+              Last Studied {subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}
+            </div>
+          </div>
 
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen bg-[#f8f9fa] flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-10 h-10 border-4 border-[#36b37e] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-gray-500 font-medium">Loading your dashboard...</p>
-      </div>
-    </div>
-  );
-}
-
-function LoadingState() {
-  return (
-    <div className="flex items-center justify-center py-20">
-      <div className="text-center">
-        <div className="w-10 h-10 border-4 border-[#36b37e] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-gray-500 font-medium">Loading your courses...</p>
-      </div>
-    </div>
-  );
-}
-
-function EmptyDashboard({ router }: { router: any }) {
-  return (
-    <div className="max-w-2xl mx-auto">
-      <Card className="border border-gray-200 bg-white text-center py-16 px-8">
-        <div className="w-20 h-20 rounded-full bg-[#36b37e]/10 flex items-center justify-center mx-auto mb-6">
-          <BookOpen className="w-10 h-10 text-[#36b37e]" />
-        </div>
-        <h2 className="text-2xl font-bold text-[#2d3b45] mb-3">Start Your AP Journey</h2>
-        <p className="text-gray-500 mb-8 max-w-md mx-auto leading-relaxed">
-          Add your first AP course to get personalized study plans, practice tests, and progress tracking.
-        </p>
-        <Button
-          onClick={() => router.push("/learn")}
-          size="lg"
-          className="bg-[#36b37e] hover:bg-[#2fa371] text-white font-bold px-8 shadow-lg shadow-[#36b37e]/20"
-        >
-          <Plus className="w-5 h-5 mr-2" /> Browse Courses
-        </Button>
-      </Card>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
-        <FeaturePreview
-          icon={Target}
-          title="Adaptive Practice"
-          desc="Questions adjust to your skill level"
-        />
-        <FeaturePreview
-          icon={TrendingUp}
-          title="Track Progress"
-          desc="See your improvement over time"
-        />
-        <FeaturePreview
-          icon={Award}
-          title="Master Units"
-          desc="Unlock achievements as you learn"
-        />
-      </div>
-    </div>
-  );
-}
-
-function FeaturePreview({ icon: Icon, title, desc }: { icon: any; title: string; desc: string }) {
-  return (
-    <Card className="border border-gray-200 p-5 text-center">
-      <div className="w-10 h-10 rounded-lg bg-[#36b37e]/10 flex items-center justify-center mx-auto mb-3">
-        <Icon className="w-5 h-5 text-[#36b37e]" />
-      </div>
-      <h3 className="font-bold text-[#2d3b45] text-sm mb-1">{title}</h3>
-      <p className="text-xs text-gray-500">{desc}</p>
-    </Card>
-  );
-}
-
-function ErrorScreen({ refetch }: { refetch: () => void }) {
-  return (
-    <div className="min-h-screen bg-[#f8f9fa]">
-      <Navigation />
-      <div className="max-w-2xl mx-auto py-20 px-4">
-        <Card className="border border-red-200 bg-red-50 p-8 text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-red-700 mb-2">Something went wrong</h2>
-          <p className="text-red-600 mb-6">We couldn't load your dashboard. Please try again.</p>
-          <Button onClick={refetch} variant="outline" className="border-red-500 text-red-600 hover:bg-red-100">
-            Try Again
+          <Button 
+            onClick={onStudy} 
+            className="w-full sm:w-auto bg-[#36b37e] hover:bg-[#2fa371] text-white px-6 h-10 font-bold rounded-md shadow-sm transition-all active:scale-95"
+          >
+            Continue Practice
           </Button>
-        </Card>
-      </div>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
-}
+};
