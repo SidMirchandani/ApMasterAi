@@ -293,7 +293,7 @@ export default function Dashboard() {
 
       {/* Delete dialog */}
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Subject?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -318,7 +318,7 @@ export default function Dashboard() {
         open={!!subjectToArchive}
         onOpenChange={(v) => !v && setSubjectToArchive(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle>Archive Subject?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -467,7 +467,6 @@ const ArchivedSection = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-khan-green text-khan-green"
                   onClick={() => onRestore(s)}
                   className="border-[#36b37e] text-[#36b37e] hover:bg-[#36b37e] hover:text-white transition-colors"
                 >

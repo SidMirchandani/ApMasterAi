@@ -70,23 +70,23 @@ export function Hero() {
             return (
               <linearGradient key={index} id={`line-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
                 {/* Create stops for localized glow effect */}
-                <stop offset="0%" stopColor="hsl(116, 30%, 40%)" stopOpacity="0.08" />
+                <stop offset="0%" stopColor="hsl(155, 54%, 46%)" stopOpacity="0.08" />
                 <stop 
                   offset={`${Math.max(0, mouseXPercent - 15)}%`} 
-                  stopColor="hsl(116, 30%, 40%)" 
+                  stopColor="hsl(155, 54%, 46%)" 
                   stopOpacity="0.08" 
                 />
                 <stop 
                   offset={`${mouseXPercent}%`} 
-                  stopColor={`hsl(116, ${30 + proximityY * 70}%, 40%)`} 
+                  stopColor={`hsl(155, 54%, ${46 + proximityY * 20}%)`} 
                   stopOpacity={0.08 + proximityY * 0.5}
                 />
                 <stop 
                   offset={`${Math.min(100, mouseXPercent + 15)}%`} 
-                  stopColor="hsl(116, 30%, 40%)" 
+                  stopColor="hsl(155, 54%, 46%)" 
                   stopOpacity="0.08" 
                 />
-                <stop offset="100%" stopColor="hsl(116, 30%, 40%)" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="hsl(155, 54%, 46%)" stopOpacity="0.08" />
               </linearGradient>
             );
           })}
