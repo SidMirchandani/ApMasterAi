@@ -50,10 +50,10 @@ export function Hero() {
   ];
 
   return (
-    <section ref={heroRef} className="relative overflow-hidden py-24 md:py-32 lg:py-48 bg-background">
+    <section ref={heroRef} className="relative overflow-hidden pt-12 pb-24 md:pt-16 md:pb-32 lg:pt-24 lg:pb-48 bg-background">
       {/* Interactive wavy lines */}
       <svg
-        className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-60"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
       >
@@ -70,23 +70,23 @@ export function Hero() {
             return (
               <linearGradient key={index} id={`line-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
                 {/* Create stops for localized glow effect */}
-                <stop offset="0%" stopColor="hsl(155, 54%, 46%)" stopOpacity="0.08" />
+                <stop offset="0%" stopColor="hsl(155, 54%, 46%)" stopOpacity="0.15" />
                 <stop 
                   offset={`${Math.max(0, mouseXPercent - 15)}%`} 
                   stopColor="hsl(155, 54%, 46%)" 
-                  stopOpacity="0.08" 
+                  stopOpacity="0.15" 
                 />
                 <stop 
                   offset={`${mouseXPercent}%`} 
                   stopColor={`hsl(155, 54%, ${46 + proximityY * 20}%)`} 
-                  stopOpacity={0.08 + proximityY * 0.5}
+                  stopOpacity={0.15 + proximityY * 0.6}
                 />
                 <stop 
                   offset={`${Math.min(100, mouseXPercent + 15)}%`} 
                   stopColor="hsl(155, 54%, 46%)" 
-                  stopOpacity="0.08" 
+                  stopOpacity="0.15" 
                 />
-                <stop offset="100%" stopColor="hsl(155, 54%, 46%)" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="hsl(155, 54%, 46%)" stopOpacity="0.15" />
               </linearGradient>
             );
           })}
@@ -111,9 +111,9 @@ export function Hero() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center animate-fade-in max-w-4xl mx-auto">
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-foreground mb-8 tracking-tight leading-[1.1]">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-[#2d3b45] mb-8 tracking-tighter leading-[1.05]">
             Master AP Exams with
-            <span className="text-khan-green block mt-2">AI-Powered Learning</span>
+            <span className="text-[#36b37e] block mt-1">AI-Powered Learning</span>
           </h1>
 
           <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed px-4 font-medium">
