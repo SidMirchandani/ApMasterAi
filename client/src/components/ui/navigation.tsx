@@ -163,42 +163,42 @@ export default function Navigation() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <nav className="border-b border-border bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+    <nav className="border-b border-gray-200 bg-white sticky top-0 z-50 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-14">
           {/* LEFT: APMaster + Breadcrumb */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6">
             {/* APMaster root */}
             <Link
               href={isAuthenticated ? "/dashboard" : "/"}
-              className={`flex items-center gap-3 transition-opacity hover:opacity-90 ${
+              className={`flex items-center gap-2.5 transition-opacity hover:opacity-90 ${
                 isInQuizMode ? "pointer-events-none opacity-60" : ""
               }`}
               onClick={handleDisabledClick}
             >
-              <div className="w-9 h-9 bg-khan-green rounded-xl flex items-center justify-center shadow-sm shadow-khan-green/20">
+              <div className="w-8 h-8 bg-[#36b37e] rounded flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
 
-              <span className="text-xl font-bold text-foreground tracking-tight">
+              <span className="text-lg font-bold text-[#2d3b45] tracking-tight">
                 APMaster
               </span>
             </Link>
 
             {/* Breadcrumb (Dashboard → AP…) */}
             {isAuthenticated && breadcrumbs.length > 0 && (
-              <div className="hidden md:flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <div className="hidden md:flex items-center gap-2 text-[13px] font-bold text-gray-400 uppercase tracking-wider">
                 {breadcrumbs.map((crumb, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
                     {crumb.href === "#" ? (
-                      <span className="text-foreground whitespace-nowrap">
+                      <span className="text-gray-500 whitespace-nowrap">
                         {crumb.label}
                       </span>
                     ) : (
                       <Link
                         href={crumb.href}
-                        className="hover:text-khan-green transition-colors whitespace-nowrap"
+                        className="hover:text-[#36b37e] transition-colors whitespace-nowrap"
                         onClick={handleDisabledClick}
                       >
                         {crumb.label}
@@ -213,19 +213,19 @@ export default function Navigation() {
           {/* RIGHT: ACCOUNT ONLY */}
           <div className="flex items-center gap-4">
             {loading ? (
-              <div className="w-10 h-10 bg-muted animate-pulse rounded-full" />
+              <div className="w-8 h-8 bg-gray-100 animate-pulse rounded-full" />
             ) : isAuthenticated && user ? (
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`h-10 w-10 p-0 rounded-full border border-border overflow-hidden hover:bg-accent transition-all ${
+                    className={`h-8 w-8 p-0 rounded-full border border-gray-200 overflow-hidden hover:bg-gray-50 transition-all ${
                       isInQuizMode ? "opacity-60 pointer-events-none" : ""
                     }`}
                   >
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <User className="w-5 h-5 text-muted-foreground" />
+                    <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                      <User className="w-4 h-4 text-gray-400" />
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
@@ -268,14 +268,14 @@ export default function Navigation() {
                 <Link href="/login">
                   <Button
                     variant="ghost"
-                    className="text-foreground hover:text-khan-green font-medium"
+                    className="text-gray-600 hover:text-[#36b37e] font-bold text-sm"
                   >
                     Login
                   </Button>
                 </Link>
 
                 <Link href="/signup">
-                  <Button className="bg-khan-green text-white hover:bg-khan-green/90 font-bold px-6 shadow-sm shadow-khan-green/10">
+                  <Button className="bg-[#36b37e] hover:bg-[#2fa371] text-white font-bold px-5 h-9 rounded shadow-sm text-sm">
                     Sign Up
                   </Button>
                 </Link>

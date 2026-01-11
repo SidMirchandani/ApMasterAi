@@ -358,11 +358,11 @@ const BackgroundDecor = () => (
 );
 
 const Header = ({ name }: { name?: string }) => (
-  <div className="mb-10">
-    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
+  <div className="mb-8">
+    <h1 className="text-2xl sm:text-3xl font-bold text-[#2d3b45] mb-1">
       Welcome back{name ? `, ${name}` : ""}!
     </h1>
-    <p className="text-lg text-muted-foreground">Continue your personalized AP preparation journey.</p>
+    <p className="text-base text-gray-500 font-medium">Continue your personalized AP preparation journey.</p>
   </div>
 );
 
@@ -498,28 +498,29 @@ const SubjectCard = ({
   const unitProgress = subject.unitProgress || {};
 
   return (
-    <Card className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white">
-      <div className="h-2 bg-gradient-to-r from-khan-green to-khan-green-light" />
-      <CardHeader className="pb-4">
+    <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white rounded-lg">
+      <CardHeader className="pb-4 border-b border-gray-100 bg-gray-50/50">
         <div className="flex justify-between items-start">
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-foreground tracking-tight">{subject.name}</CardTitle>
-            <p className="text-muted-foreground leading-relaxed max-w-2xl">{subject.description}</p>
+            <CardTitle className="text-xl font-bold text-[#2d3b45] tracking-tight">{subject.name}</CardTitle>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-2xl font-medium">{subject.description}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-khan-blue hover:bg-khan-blue/5 px-2"
+              className="text-gray-400 hover:text-khan-blue hover:bg-gray-100 h-8 w-8 p-0"
               onClick={onArchive}
+              title="Archive"
             >
-              Archive
+              <BookOpen className="w-4 h-4" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 px-2"
+              className="text-gray-400 hover:text-destructive hover:bg-destructive/5 h-8 w-8 p-0"
               onClick={onDelete}
+              title="Delete"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -527,24 +528,24 @@ const SubjectCard = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="py-6 space-y-6">
         {/* Meta Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full">
-              <BookOpen className="w-4 h-4 text-khan-green" />
-              <span className="font-medium text-foreground">{subject.units} Units</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
+            <div className="flex items-center gap-2 text-gray-600">
+              <BookOpen className="w-4 h-4 text-gray-400" />
+              <span>{subject.units} Units</span>
             </div>
-            <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full">
-              <Calendar className="w-4 h-4 text-khan-blue" />
-              <span className="font-medium text-foreground">
+            <div className="flex items-center gap-2 text-gray-600">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              <span>
                 Exam: {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
               </span>
             </div>
           </div>
 
           {/* Unit Grid */}
-          <div className="flex items-center justify-start sm:justify-end gap-1.5">
+          <div className="flex items-center gap-1">
             {units.map((u: any, i: number) => {
               const unitData = unitProgress[u.id];
               const stat = getUnitStatus(unitData);
@@ -552,7 +553,7 @@ const SubjectCard = ({
               return (
                 <div
                   key={u.id}
-                  className={`w-7 h-7 rounded-md ${stat.bg} border border-black/5 flex items-center justify-center text-[10px] text-white shadow-sm transition-transform hover:scale-110 cursor-help`}
+                  className={`w-6 h-6 rounded-sm ${stat.bg} border border-black/5 flex items-center justify-center text-[9px] text-white shadow-sm transition-transform hover:scale-110 cursor-help`}
                   title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
                 >
                   {stat.status === "Mastered" && "👑"}
@@ -563,21 +564,21 @@ const SubjectCard = ({
         </div>
 
         {/* Footer info + Button */}
-        <div className="pt-6 border-t flex flex-col sm:flex-row justify-between items-center gap-6">
-          <div className="flex flex-wrap justify-center sm:justify-start gap-x-6 gap-y-2 text-xs text-muted-foreground font-medium uppercase tracking-wider">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5" /> 
+        <div className="pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex flex-wrap justify-center sm:justify-start gap-x-4 text-[11px] text-gray-400 font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> 
               Added {formatDate(subject.dateAdded)}
             </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" /> 
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3" /> 
               Last Studied {subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}
             </div>
           </div>
 
           <Button 
             onClick={onStudy} 
-            className="w-full sm:w-auto bg-khan-green hover:bg-khan-green/90 text-white px-8 h-11 font-semibold shadow-lg shadow-khan-green/10 transition-all active:scale-95"
+            className="w-full sm:w-auto bg-[#36b37e] hover:bg-[#2fa371] text-white px-6 h-10 font-bold rounded-md shadow-sm transition-all active:scale-95"
           >
             Continue Practice
           </Button>
