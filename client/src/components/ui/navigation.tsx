@@ -185,23 +185,9 @@ export default function Navigation() {
               </span>
             </Link>
 
-            {/* Pre-login navigation links */}
-            {!isAuthenticated && !loading && (
-              <div className="hidden md:flex items-center gap-6 ml-8">
-                <Link href="/" className={`text-sm font-medium transition-colors ${location === "/" ? "text-[#36b37e]" : "text-gray-600 hover:text-[#36b37e]"}`}>
-                  Home
-                </Link>
-                <Link href="/about" className={`text-sm font-medium transition-colors ${location === "/about" ? "text-[#36b37e]" : "text-gray-600 hover:text-[#36b37e]"}`}>
-                  About Us
-                </Link>
-                <Link href="/story" className={`text-sm font-medium transition-colors ${location === "/story" ? "text-[#36b37e]" : "text-gray-600 hover:text-[#36b37e]"}`}>
-                  Our Story
-                </Link>
-                <Link href="/get-involved" className={`text-sm font-medium transition-colors ${location === "/get-involved" ? "text-[#36b37e]" : "text-gray-600 hover:text-[#36b37e]"}`}>
-                  Get Involved
-                </Link>
-              </div>
-            )}
+            <Link href="/about" className="text-sm font-medium text-gray-500 hover:text-[#36b37e] transition-colors ml-4 hidden md:block">
+              About Us
+            </Link>
 
             {/* Breadcrumb (Dashboard → AP…) */}
             {isAuthenticated && breadcrumbs.length > 0 && (
