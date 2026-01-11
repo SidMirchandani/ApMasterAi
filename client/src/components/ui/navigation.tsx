@@ -185,6 +185,10 @@ export default function Navigation() {
               </span>
             </Link>
 
+            <Link href="/about" className="text-sm font-medium text-gray-500 hover:text-[#36b37e] transition-colors ml-4 hidden md:block">
+              About Us
+            </Link>
+
             {/* Breadcrumb (Dashboard → AP…) */}
             {isAuthenticated && breadcrumbs.length > 0 && (
               <div className="hidden md:flex items-center gap-2 text-[13px] font-bold text-gray-400 uppercase tracking-wider">
