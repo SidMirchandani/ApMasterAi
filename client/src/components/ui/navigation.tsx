@@ -263,7 +263,10 @@ export default function Navigation() {
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
-                    onClick={logout}
+                    onClick={async () => {
+                      await logout();
+                      router.push("/");
+                    }}
                     className="cursor-pointer text-khan-red focus:text-khan-red"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
