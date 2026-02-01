@@ -163,34 +163,34 @@ export default function Navigation() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <nav className="border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-50">
+    <nav className="border-b border-gray-200 bg-white sticky top-0 z-50 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-14">
           {/* LEFT: APMaster + Breadcrumb */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6">
             {/* APMaster root */}
             <Link
               href={isAuthenticated ? "/dashboard" : "/"}
-              className={`flex items-center gap-3 transition-opacity hover:opacity-90 ${
+              className={`flex items-center gap-2.5 transition-opacity hover:opacity-90 ${
                 isInQuizMode ? "pointer-events-none opacity-60" : ""
               }`}
               onClick={handleDisabledClick}
             >
-              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-                <BookOpen className="w-6 h-6 text-primary-foreground" />
+              <div className="w-8 h-8 bg-[#36b37e] rounded flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-white" />
               </div>
 
-              <span className="text-2xl font-semibold text-foreground tracking-tight">
+              <span className="text-lg font-bold text-[#2d3b45] tracking-tight">
                 APMaster
               </span>
             </Link>
 
-            <Link href="/about" className="text-base font-medium text-muted-foreground hover:text-primary transition-colors ml-4 hidden md:block">
-              Mission
+            <Link href="/about" className="text-sm font-medium text-gray-500 hover:text-[#36b37e] transition-colors ml-4 hidden md:block">
+              About Us
             </Link>
 
-            <Link href="/team" className="text-base font-medium text-muted-foreground hover:text-primary transition-colors ml-4 hidden md:block">
-              Team
+            <Link href="/team" className="text-sm font-medium text-gray-500 hover:text-[#36b37e] transition-colors ml-4 hidden md:block">
+              Our Team
             </Link>
 
             {/* Breadcrumb (Dashboard → AP…) */}
