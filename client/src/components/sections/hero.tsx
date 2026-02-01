@@ -53,7 +53,7 @@ export function Hero() {
     <section ref={heroRef} className="relative overflow-hidden py-24 md:py-32 lg:py-48 bg-background">
       {/* Interactive wavy lines */}
       <svg
-        className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
       >
@@ -61,49 +61,42 @@ export function Hero() {
           {lines.map((line, index) => {
             const lineY = (line.yOffset / 100) * (heroRef.current?.clientHeight || 1);
             const distanceY = Math.abs(mousePos.y - lineY);
-            const maxDistanceY = 150; // Smaller vertical range
+            const maxDistanceY = 150;
             const proximityY = Math.max(0, 1 - distanceY / maxDistanceY);
-            
-            // Calculate horizontal position as percentage
             const mouseXPercent = (mousePos.x / (heroRef.current?.clientWidth || 1)) * 100;
             
             return (
               <linearGradient key={index} id={`line-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                {/* Create stops for localized glow effect */}
-                <stop offset="0%" stopColor="hsl(155, 54%, 46%)" stopOpacity="0.08" />
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.05" />
                 <stop 
                   offset={`${Math.max(0, mouseXPercent - 15)}%`} 
-                  stopColor="hsl(155, 54%, 46%)" 
-                  stopOpacity="0.08" 
+                  stopColor="var(--primary)" 
+                  stopOpacity="0.05" 
                 />
                 <stop 
                   offset={`${mouseXPercent}%`} 
-                  stopColor={`hsl(155, 54%, ${46 + proximityY * 20}%)`} 
-                  stopOpacity={0.08 + proximityY * 0.5}
+                  stopColor="var(--primary)" 
+                  stopOpacity={0.05 + proximityY * 0.3}
                 />
                 <stop 
                   offset={`${Math.min(100, mouseXPercent + 15)}%`} 
-                  stopColor="hsl(155, 54%, 46%)" 
-                  stopOpacity="0.08" 
+                  stopColor="var(--primary)" 
+                  stopOpacity="0.05" 
                 />
-                <stop offset="100%" stopColor="hsl(155, 54%, 46%)" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.05" />
               </linearGradient>
             );
           })}
         </defs>
         {lines.map((line, index) => {
           const path = generateWavyPath(line.yOffset, line.amplitude, line.frequency);
-          
           return (
             <path
               key={index}
               d={path}
               stroke={`url(#line-gradient-${index})`}
-              strokeWidth="0.3"
+              strokeWidth="0.1"
               fill="none"
-              style={{
-                transition: 'stroke-width 0.2s ease',
-              }}
             />
           );
         })}
@@ -111,32 +104,31 @@ export function Hero() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center animate-fade-in max-w-4xl mx-auto">
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-foreground mb-8 tracking-tight leading-[1.1]">
-            Master AP Exams with
-            <span className="text-khan-green block mt-2">AI-Powered Learning</span>
+          <h1 className="text-5xl sm:text-6xl md:text-8xl font-semibold text-foreground mb-8 tracking-tight leading-[1.05]">
+            AP Success, <span className="italic font-light">Refined.</span>
           </h1>
 
-          <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed px-4 font-medium">
-            Personalized study plans, adaptive practice tests, and instant feedback to help you ace your AP exams.
+          <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed font-light">
+            Join thousands of students mastering exams through our elite, AI-driven adaptive learning platform.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <Link href="/signup">
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-[#36b37e] hover:bg-[#2fa371] text-white shadow-xl shadow-[#36b37e]/20 px-10 py-7 text-xl font-bold group rounded-2xl transition-all hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 px-10 py-7 text-xl font-medium rounded-full transition-all hover:scale-[1.02] active:scale-95 shadow-lg"
               >
-                Get Started Free
-                <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                Start Learning
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/learn">
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full sm:w-auto border-2 border-border bg-white text-foreground hover:bg-accent px-10 py-7 text-xl font-bold rounded-2xl transition-all"
+                className="w-full sm:w-auto border-2 border-primary/10 bg-transparent text-foreground hover:bg-primary/5 px-10 py-7 text-xl font-medium rounded-full transition-all"
               >
-                Browse Courses
+                View Courses
               </Button>
             </Link>
           </div>
