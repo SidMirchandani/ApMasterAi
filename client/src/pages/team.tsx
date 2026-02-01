@@ -7,16 +7,16 @@ const teamMembers = [
     name: "Siddharth Mirchandani",
     role: "Co-founder",
     initials: "SM",
-    email: "siddharth@apmaster.ai",
-    linkedin: "https://linkedin.com",
+    email: "siddharth.mirchandani@gmail.com",
+    linkedin: "https://www.linkedin.com/in/siddharth-mirchandani-b0b282264/",
     bio: "Passionate about education technology and making high-quality study materials accessible to all students."
   },
   {
     name: "Vivana Satiani",
     role: "Co-founder",
     initials: "VS",
-    email: "vivana@apmaster.ai",
-    linkedin: "https://linkedin.com",
+    email: "satianivivana@gmail.com",
+    linkedin: "https://www.linkedin.com/in/vivanasatiani/",
     bio: "Dedicated to building intelligent tools that empower students to reach their full academic potential."
   }
 ];

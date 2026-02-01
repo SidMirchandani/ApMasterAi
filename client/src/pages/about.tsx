@@ -77,10 +77,10 @@ export default function About() {
               <h3 className="text-2xl font-bold text-[#2d3b45] mb-2">Siddharth Mirchandani</h3>
               <p className="text-[#36b37e] font-semibold mb-4">Co-founder</p>
               <div className="flex justify-center gap-4">
-                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                <a href="https://www.linkedin.com/in/siddharth-mirchandani-b0b282264/" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
                   <Linkedin className="w-5 h-5" />
                 </a>
-                <a href="mailto:siddharth@apmaster.ai" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                <a href="mailto:siddharth.mirchandani@gmail.com" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
                   <Mail className="w-5 h-5" />
                 </a>
               </div>
@@ -93,10 +93,10 @@ export default function About() {
               <h3 className="text-2xl font-bold text-[#2d3b45] mb-2">Vivana Satiani</h3>
               <p className="text-[#36b37e] font-semibold mb-4">Co-founder</p>
               <div className="flex justify-center gap-4">
-                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                <a href="https://www.linkedin.com/in/vivanasatiani/" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
                   <Linkedin className="w-5 h-5" />
                 </a>
-                <a href="mailto:vivana@apmaster.ai" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                <a href="mailto:satianivivana@gmail.com" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
                   <Mail className="w-5 h-5" />
                 </a>
               </div>

@@ -52,9 +52,9 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-400 hover:text-khan-green transition-colors">
+                <a href="mailto:apmaster-contact@gmail.com" className="text-gray-400 hover:text-khan-green transition-colors">
                   Contact Us
-                </Link>
+                </a>
               </li>
               <li>
                 <Link href="#" className="text-gray-400 hover:text-khan-green transition-colors">
