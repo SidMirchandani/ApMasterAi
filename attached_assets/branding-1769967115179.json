@@ -1,0 +1,137 @@
+{
+  "colorScheme": "light",
+  "fonts": [
+    {
+      "family": "Lato",
+      "role": "body"
+    },
+    {
+      "family": "Arial",
+      "role": "unknown"
+    },
+    {
+      "family": "Helvetica",
+      "role": "unknown"
+    }
+  ],
+  "colors": {
+    "primary": "#1E7CB8",
+    "accent": "#1E7CB8",
+    "background": "#FFFFFF",
+    "textPrimary": "#1D608A",
+    "link": "#1D608A"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "Lato",
+      "heading": "Lato"
+    },
+    "fontStacks": {
+      "heading": [
+        "Lato",
+        "Helvetica",
+        "Arial",
+        "sans-serif"
+      ],
+      "body": [
+        "Lato"
+      ],
+      "paragraph": [
+        "Lato"
+      ]
+    },
+    "fontSizes": {
+      "h1": "48px",
+      "h2": "28px",
+      "body": "18px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 8,
+    "borderRadius": "0px"
+  },
+  "components": {
+    "buttonPrimary": {
+      "background": "#1E7CB8",
+      "textColor": "#FFFFFF",
+      "borderRadius": "8px",
+      "borderRadiusCorners": {
+        "topLeft": "8px",
+        "topRight": "8px",
+        "bottomRight": "8px",
+        "bottomLeft": "8px"
+      },
+      "shadow": "none"
+    },
+    "buttonSecondary": {
+      "background": "#1A2331",
+      "textColor": "#FFFFFF",
+      "borderColor": "#1A2331",
+      "borderRadius": "8px",
+      "borderRadiusCorners": {
+        "topLeft": "8px",
+        "topRight": "8px",
+        "bottomRight": "8px",
+        "bottomLeft": "8px"
+      },
+      "shadow": "none"
+    }
+  },
+  "images": {
+    "logo": "https://static.albert.io/marketing/release/b039469/_next/static/media/logo-combined-white.f33fae3e.svg",
+    "favicon": "https://www.albert.io/favicon.ico",
+    "ogImage": null,
+    "logoHref": "File saved at: attached_assets/logoHref.html",
+    "logoAlt": "Albert.io"
+  },
+  "__framework_hints": [],
+  "__llm_logo_reasoning": {
+    "selectedIndex": 0,
+    "reasoning": "Selected #0 because it is visible, medium-sized, located in the header, and links to the homepage, which are strong indicators of the main brand logo.",
+    "confidence": 0.9,
+    "source": "llm"
+  },
+  "__llm_button_reasoning": {
+    "primary": {
+      "index": 0,
+      "text": "Sign Up for Free",
+      "reasoning": "Button #0 'Sign Up for Free' is the primary CTA due to its action-oriented text and vibrant brand color (#1E7CB8), which aligns with the site's primary color scheme."
+    },
+    "secondary": {
+      "index": 4,
+      "text": "Try AdaptiveFREE",
+      "reasoning": "Button #4 'Try AdaptiveFREE' is selected as secondary due to its distinct dark background color (#1A2331), providing a clear contrast to the primary button's color."
+    },
+    "confidence": 0.95
+  },
+  "personality": {
+    "tone": "professional",
+    "energy": "medium",
+    "targetAudience": "students and educators in grades 5-12"
+  },
+  "designSystem": {
+    "framework": "custom",
+    "componentLibrary": ""
+  },
+  "confidence": {
+    "buttons": 0.95,
+    "colors": 0.9,
+    "overall": 0.925
+  },
+  "__llm_metadata": {
+    "logoSelection": {
+      "llmCalled": true,
+      "llmSucceeded": true,
+      "finalSource": "llm",
+      "rawLogoSelection": {
+        "selectedLogoIndex": 0,
+        "selectedLogoReasoning": "Selected #0 because it is visible, medium-sized, located in the header, and links to the homepage, which are strong indicators of the main brand logo.",
+        "confidence": 0.9
+      }
+    },
+    "buttonClassification": {
+      "llmCalled": true,
+      "llmSucceeded": true
+    }
+  }
+}

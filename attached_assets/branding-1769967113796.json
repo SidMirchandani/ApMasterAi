@@ -1,0 +1,158 @@
+{
+  "colorScheme": "light",
+  "fonts": [
+    {
+      "family": "anthropicSans",
+      "role": "body"
+    },
+    {
+      "family": "anthropicSerif",
+      "role": "heading"
+    }
+  ],
+  "colors": {
+    "primary": "#1A73E8",
+    "accent": "#141413",
+    "background": "#FAF9F5",
+    "textPrimary": "#141413",
+    "link": "#FBE0DD"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "anthropicSans",
+      "heading": "anthropicSerif"
+    },
+    "fontStacks": {
+      "heading": [
+        "anthropicSerif",
+        "Georgia",
+        "Times New Roman",
+        "Times",
+        "serif"
+      ],
+      "body": [
+        "anthropicSans",
+        "system-ui",
+        "Segoe UI",
+        "Roboto",
+        "Helvetica",
+        "Arial",
+        "sans-serif"
+      ],
+      "paragraph": [
+        "anthropicSans",
+        "system-ui",
+        "Segoe UI",
+        "Roboto",
+        "Helvetica",
+        "Arial",
+        "sans-serif"
+      ]
+    },
+    "fontSizes": {
+      "h1": "36px",
+      "h2": "56px",
+      "body": "12px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "8px"
+  },
+  "components": {
+    "input": {
+      "background": "#FFFFFF",
+      "textColor": "#141413",
+      "borderColor": "#D9D8D5",
+      "borderRadius": "9.6px",
+      "borderRadiusCorners": {
+        "topLeft": "9.6px",
+        "topRight": "9.6px",
+        "bottomRight": "9.6px",
+        "bottomLeft": "9.6px"
+      },
+      "shadow": "none"
+    },
+    "buttonPrimary": {
+      "background": "#141413",
+      "textColor": "#FFFFFF",
+      "borderRadius": "9.6px",
+      "borderRadiusCorners": {
+        "topLeft": "9.6px",
+        "topRight": "9.6px",
+        "bottomRight": "9.6px",
+        "bottomLeft": "9.6px"
+      },
+      "shadow": "none"
+    },
+    "buttonSecondary": {
+      "background": "#FAF9F5",
+      "textColor": "#141413",
+      "borderColor": "#B8B7B4",
+      "borderRadius": "9.6px",
+      "borderRadiusCorners": {
+        "topLeft": "9.6px",
+        "topRight": "9.6px",
+        "bottomRight": "9.6px",
+        "bottomLeft": "9.6px"
+      },
+      "shadow": "none"
+    }
+  },
+  "images": {
+    "logo": "File saved at: attached_assets/logo.svg",
+    "favicon": "https://claude.ai/favicon.ico",
+    "ogImage": "https://claude.ai/images/claude_ogimage.png",
+    "logoHref": "File saved at: attached_assets/logoHref.html"
+  },
+  "__framework_hints": [],
+  "__llm_logo_reasoning": {
+    "selectedIndex": 0,
+    "reasoning": "Selected #0 because it is the main visible logo in the header, matching the brand 'Claude' inferred from the URL and page title.",
+    "confidence": 0.95,
+    "source": "llm"
+  },
+  "__llm_button_reasoning": {
+    "primary": {
+      "index": 0,
+      "text": "Try Claude",
+      "reasoning": "Button #0 'Try Claude' is likely the primary CTA due to its action-oriented text and dark background color, which stands out against the page's light theme."
+    },
+    "secondary": {
+      "index": 1,
+      "text": "Continue with Google",
+      "reasoning": "Button #1 'Continue with Google' serves as a secondary option with a different background color, providing an alternative login method."
+    },
+    "confidence": 0.9
+  },
+  "personality": {
+    "tone": "modern",
+    "energy": "medium",
+    "targetAudience": "tech-savvy professionals"
+  },
+  "designSystem": {
+    "framework": "tailwind",
+    "componentLibrary": ""
+  },
+  "confidence": {
+    "buttons": 0.9,
+    "colors": 0.9,
+    "overall": 0.9
+  },
+  "__llm_metadata": {
+    "logoSelection": {
+      "llmCalled": true,
+      "llmSucceeded": true,
+      "finalSource": "llm",
+      "rawLogoSelection": {
+        "selectedLogoIndex": 0,
+        "selectedLogoReasoning": "Selected #0 because it is the main visible logo in the header, matching the brand 'Claude' inferred from the URL and page title.",
+        "confidence": 0.95
+      }
+    },
+    "buttonClassification": {
+      "llmCalled": true,
+      "llmSucceeded": true
+    }
+  }
+}

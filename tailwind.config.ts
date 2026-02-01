@@ -13,6 +13,12 @@ export default {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        claude: {
+          bg: "#FAF9F5",
+          text: "#141413",
+          border: "#D9D8D5",
+          accent: "#1A73E8",
+        },
         card: {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",
