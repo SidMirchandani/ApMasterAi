@@ -67,25 +67,98 @@ async function probeMaxQuestionId(crackApPath: string): Promise<number> {
   return lastFound;
 }
 
-function classifyQuestion(text: string, sectionKeywords: Record<string, string[]>): string {
-  const lower = text.toLowerCase();
-  let bestSection = Object.keys(sectionKeywords)[0] || "UNKNOWN";
-  let bestScore = 0;
+function extractPromptBlocks($: cheerio.CheerioAPI, mcontent: cheerio.Cheerio<any>): Block[] {
+  const blocks: Block[] = [];
 
-  for (const [section, keywords] of Object.entries(sectionKeywords)) {
-    let score = 0;
-    for (const kw of keywords) {
-      if (lower.includes(kw.toLowerCase())) {
-        score += kw.includes(" ") ? 2 : 1;
-      }
+  mcontent.children().each((_, el) => {
+    const $el = $(el);
+    if ($el.is("ul") && $el.hasClass("qlist")) return false;
+
+    if ($el.is("p")) {
+      let raw = $el.text().trim();
+      const lt = raw.toLowerCase();
+
+      if (lt.startsWith("question:")) return;
+      if (lt.includes("correct answer")) return;
+      if (lt.includes("explanation")) return;
+
+      raw = raw.replace(/^\s*\d+\.\s*/, "");
+      if (raw) blocks.push({ type: "text", value: raw });
+
+      $el.find("img").each((_i, img) => {
+        const src = $(img).attr("src");
+        if (src) {
+          const imgUrl = src.startsWith("http") ? src : `${BASE_URL}${src.startsWith("/") ? "" : "/"}${src}`;
+          blocks.push({ type: "image", url: imgUrl });
+        }
+      });
     }
-    if (score > bestScore) {
-      bestScore = score;
-      bestSection = section;
+  });
+
+  return blocks;
+}
+
+function extractChoices($: cheerio.CheerioAPI, qlist: cheerio.Cheerio<any>): Record<string, Block[]> {
+  const choices: Record<string, Block[]> = {};
+
+  qlist.find("li").each((_, li) => {
+    const $li = $(li);
+    const raw = $li.text().trim();
+    const m = raw.match(/^([A-E])\.\s*(.*)/s);
+    if (!m) return;
+
+    const letter = m[1];
+    const textPart = m[2].trim();
+    const blks: Block[] = [];
+
+    if (textPart) blks.push({ type: "text", value: textPart });
+
+    $li.find("img").each((_i, img) => {
+      const src = $(img).attr("src");
+      if (src) {
+        const imgUrl = src.startsWith("http") ? src : `${BASE_URL}${src.startsWith("/") ? "" : "/"}${src}`;
+        blks.push({ type: "image", url: imgUrl });
+      }
+    });
+
+    choices[letter] = blks;
+  });
+
+  return choices;
+}
+
+function assignSection(
+  promptBlocks: Block[],
+  choices: Record<string, Block[]>,
+  sectionKeywords: Record<string, string[]>
+): string {
+  let text = "";
+  for (const blk of promptBlocks) {
+    if (blk.type === "text") text += " " + blk.value.toLowerCase();
+  }
+  for (const key of Object.keys(choices)) {
+    for (const blk of choices[key]) {
+      if (blk.type === "text") text += " " + blk.value.toLowerCase();
     }
   }
 
-  return bestSection;
+  const scores: Record<string, number> = {};
+  for (const code of Object.keys(sectionKeywords)) {
+    scores[code] = 0;
+    for (const kw of sectionKeywords[code]) {
+      if (text.includes(kw.toLowerCase())) scores[code]++;
+    }
+  }
+
+  let bestCode = Object.keys(sectionKeywords)[0];
+  let bestScore = 0;
+  for (const code of Object.keys(scores)) {
+    if (scores[code] > bestScore) {
+      bestScore = scores[code];
+      bestCode = code;
+    }
+  }
+  return bestCode;
 }
 
 async function scrapeQuestion(
@@ -95,101 +168,59 @@ async function scrapeQuestion(
   sectionKeywords: Record<string, string[]>
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   const url = `${BASE_URL}/ap/${crackApPath}/question-${qid}-answer-and-explanation.html`;
+
   try {
-    const res = await fetch(url, { redirect: "follow" });
-    if (!res.ok) return { success: false, error: "not_found" };
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; APMaster/1.0)",
+      },
+    });
+    clearTimeout(timeout);
+
+    if (res.status === 404) return { success: false, error: "not_found" };
+    if (!res.ok) return { success: false, error: `http_${res.status}` };
 
     const html = await res.text();
-    if (html.includes("Page not found") || html.includes("404")) {
-      return { success: false, error: "not_found" };
-    }
-
     const $ = cheerio.load(html);
-    const promptBlocks: Block[] = [];
-    const questionDiv = $(".question-content, .entry-content, .post-content, article").first();
+    const mcontent = $("div.mcontent");
+    if (!mcontent.length) return { success: false, error: "no_mcontent" };
 
-    questionDiv.find("p, li, h2, h3, h4, div.question-text").each((_: any, el: any) => {
-      const text = $(el).text().trim();
-      if (text && text.length > 5) {
-        if (text.match(/^(A|B|C|D|E)\.\s/) || text.match(/^\(?(A|B|C|D|E)\)?\s/)) return;
-        if (text.startsWith("Answer:") || text.startsWith("Explanation:")) return;
-        promptBlocks.push({ type: "text", value: text });
-      }
-      $(el).find("img").each((_: any, img: any) => {
-        const src = $(img).attr("src");
-        if (src) {
-          const fullUrl = src.startsWith("http") ? src : `${BASE_URL}${src}`;
-          promptBlocks.push({ type: "image", url: fullUrl });
-        }
-      });
+    const promptBlocks = extractPromptBlocks($, mcontent);
+
+    const qlist = mcontent.find("ul.qlist");
+    if (!qlist.length) return { success: false, error: "no_qlist" };
+
+    const choices = extractChoices($, qlist);
+
+    let correctAnswer: string | null = null;
+    const strongEl = mcontent.find("strong").filter((_, el) => {
+      return /correct answer/i.test($(el).text());
     });
-
-    questionDiv.find("img").each((_: any, img: any) => {
-      const src = $(img).attr("src");
-      if (src && !promptBlocks.some(b => b.type === "image" && b.url === (src.startsWith("http") ? src : `${BASE_URL}${src}`))) {
-        const fullUrl = src.startsWith("http") ? src : `${BASE_URL}${src}`;
-        promptBlocks.push({ type: "image", url: fullUrl });
-      }
-    });
-
-    const choices: Record<string, Block[]> = { A: [], B: [], C: [], D: [], E: [] };
-    const choiceRegex = /^\(?(A|B|C|D|E)\)?[\.\)]\s*(.+)/;
-
-    questionDiv.find("p, li, span").each((_: any, el: any) => {
-      const text = $(el).text().trim();
-      const match = text.match(choiceRegex);
-      if (match) {
-        const letter = match[1];
-        const choiceText = match[2].trim();
-        if (choiceText && choices[letter]) {
-          choices[letter] = [{ type: "text", value: choiceText }];
-        }
-      }
-    });
-
-    let correctAnswer = "";
-    const answerEl = $("strong, b, .answer, .correct-answer").filter(function(this: any) {
-      return /answer/i.test($(this).parent().text()) || /correct/i.test($(this).text());
-    });
-
-    answerEl.each(function(this: any) {
-      const text = $(this).text().trim();
-      const letterMatch = text.match(/\b([A-E])\b/);
-      if (letterMatch && !correctAnswer) {
-        correctAnswer = letterMatch[1];
-      }
-    });
-
-    if (!correctAnswer) {
-      const fullText = $.text();
-      const answerMatch = fullText.match(/(?:answer|correct)[:\s]*\(?([A-E])\)?/i);
-      if (answerMatch) correctAnswer = answerMatch[1];
+    if (strongEl.length) {
+      const parentText = strongEl.first().parent().text().trim();
+      const match = parentText.match(/Correct Answer:\s*([A-E])/);
+      if (match) correctAnswer = match[1];
     }
 
-    const fullQuestionText = promptBlocks
-      .filter(b => b.type === "text")
-      .map(b => (b as { type: "text"; value: string }).value)
-      .join(" ") +
-      " " +
-      Object.values(choices)
-        .flat()
-        .filter(b => b.type === "text")
-        .map(b => (b as { type: "text"; value: string }).value)
-        .join(" ");
-
-    const sectionCode = classifyQuestion(fullQuestionText, sectionKeywords);
+    const sectionCode = assignSection(promptBlocks, choices, sectionKeywords);
 
     return {
       success: true,
       data: {
         subject_code: subjectCode,
-        section_code: sectionCode,
+        question_id: qid,
         prompt_blocks: promptBlocks,
         choices,
         correct_answer: correctAnswer,
+        section_code: sectionCode,
       },
     };
   } catch (err: any) {
+    if (err.name === "AbortError") return { success: false, error: "timeout" };
     return { success: false, error: err.message };
   }
 }
@@ -290,6 +321,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (result.success && result.data) {
       consecutiveNotFound = 0;
       const data = result.data;
+
+      const hasPrompt = data.prompt_blocks && data.prompt_blocks.length > 0;
+      const hasChoices = data.choices && Object.keys(data.choices).length >= 2;
+      if (!hasPrompt || !hasChoices) {
+        skipped++;
+        if (qid % 25 === 0) {
+          sendEvent({
+            type: "progress",
+            current: qid,
+            total: maxId,
+            imported,
+            skipped,
+            errors,
+            message: `Processing Q${qid}/${maxId}...`,
+          });
+        }
+        continue;
+      }
+
       const answerIndex = ["A", "B", "C", "D", "E"].indexOf(data.correct_answer || "");
       const docId = `${data.subject_code}_${data.section_code}_Q${qid}`;
 

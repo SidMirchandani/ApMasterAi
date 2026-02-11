@@ -246,6 +246,36 @@ export default function AdminPage() {
     toast("Import cancelled");
   }
 
+  const [removingSubject, setRemovingSubject] = useState<string | null>(null);
+
+  async function removeSubject(code: string) {
+    if (!token) return;
+    if (!confirm(`Remove all questions for ${code}? This cannot be undone.`)) return;
+    setRemovingSubject(code);
+    try {
+      const res = await fetch("/api/admin/questions/delete-subject", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subjectCode: code }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`Removed ${data.deleted} questions for ${code}`);
+        fetchSubjectStatus();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to remove subject");
+      }
+    } catch (err: any) {
+      toast.error("Remove failed: " + err.message);
+    } finally {
+      setRemovingSubject(null);
+    }
+  }
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -677,8 +707,16 @@ export default function AdminPage() {
                 <p className="text-xs text-gray-500 mb-1">Already added ({alreadyAdded.length}):</p>
                 <div className="flex flex-wrap gap-1">
                   {alreadyAdded.map(s => (
-                    <span key={s.code} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 border border-green-200">
+                    <span key={s.code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 border border-green-200">
                       {s.label} ({subjectStatus[s.code]?.questionCount || 0} Q)
+                      <button
+                        onClick={() => removeSubject(s.code)}
+                        disabled={removingSubject === s.code}
+                        className="ml-1 text-red-400 hover:text-red-600 font-bold"
+                        title={`Remove ${s.label}`}
+                      >
+                        {removingSubject === s.code ? "..." : "×"}
+                      </button>
                     </span>
                   ))}
                 </div>
