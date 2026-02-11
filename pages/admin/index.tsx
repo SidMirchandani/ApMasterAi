@@ -152,7 +152,16 @@ export default function AdminPage() {
     if (!token || !addSubjectCode) return;
     setAddingSubject(true);
     setAddSubjectLog([]);
-    setAddSubjectProgress(null);
+    const subjectLabel = allApSubjectsRef.find(s => s.code === addSubjectCode)?.label || addSubjectCode;
+    setAddSubjectProgress({
+      current: 0,
+      total: 0,
+      imported: 0,
+      skipped: 0,
+      errors: 0,
+      message: `Starting import for ${subjectLabel}...`,
+      phase: "probing",
+    });
 
     const controller = new AbortController();
     addSubjectAbortRef.current = controller;
@@ -765,9 +774,14 @@ export default function AdminPage() {
                   )}
                 </div>
                 {addSubjectProgress.phase === "probing" ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-khan-green" />
-                    <span className="text-sm text-khan-green font-medium">Discovering question range...</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-khan-green" />
+                      <span className="text-sm text-khan-green font-medium">{addSubjectProgress.message || "Discovering question range..."}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div className="bg-khan-green h-2 rounded-full animate-pulse" style={{ width: "100%" }} />
+                    </div>
                   </div>
                 ) : (
                   <Progress

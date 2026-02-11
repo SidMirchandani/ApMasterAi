@@ -3,6 +3,13 @@ import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-
 import { getSubjectConfig, getAllSubjectCodes } from "../../../server/subjects-helper";
 import * as cheerio from "cheerio";
 
+export const config = {
+  api: {
+    responseLimit: false,
+    externalResolver: true,
+  },
+};
+
 function isAllowed(email?: string | null) {
   const adminEmails = process.env.ADMIN_EMAILS || process.env.NEXT_PUBLIC_ADMIN_EMAILS || "";
   const allow = adminEmails.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -17,7 +24,10 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function probeMaxQuestionId(crackApPath: string): Promise<number> {
+async function probeMaxQuestionId(
+  crackApPath: string,
+  onProgress?: (message: string) => void
+): Promise<number> {
   let low = 1;
   let high = 2000;
   let lastFound = 0;
@@ -32,11 +42,13 @@ async function probeMaxQuestionId(crackApPath: string): Promise<number> {
     }
   };
 
+  onProgress?.("Checking if questions exist...");
   if (await checkUrl(1)) lastFound = 1;
   else return 0;
 
   const probePoints = [100, 200, 400, 600, 800, 1000, 1200, 1500, 2000];
   for (const p of probePoints) {
+    onProgress?.(`Probing Q${p}... (found up to Q${lastFound} so far)`);
     if (await checkUrl(p)) {
       lastFound = p;
       low = p;
@@ -47,6 +59,7 @@ async function probeMaxQuestionId(crackApPath: string): Promise<number> {
     await sleep(100);
   }
 
+  onProgress?.(`Narrowing range: Q${low}–Q${high}...`);
   while (high - low > 5) {
     const mid = Math.floor((low + high) / 2);
     if (await checkUrl(mid)) {
@@ -55,6 +68,7 @@ async function probeMaxQuestionId(crackApPath: string): Promise<number> {
     } else {
       high = mid;
     }
+    onProgress?.(`Narrowing: Q${low}–Q${high} (found Q${lastFound})`);
     await sleep(100);
   }
 
@@ -284,7 +298,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     message: `Discovering question range for ${config.displayName} on CrackAP...`,
   });
 
-  const maxId = await probeMaxQuestionId(config.crackApPath);
+  const maxId = await probeMaxQuestionId(config.crackApPath, (msg) => {
+    sendEvent({
+      type: "status",
+      phase: "probing",
+      message: msg,
+    });
+  });
 
   if (maxId === 0) {
     sendEvent({
@@ -326,17 +346,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const hasChoices = data.choices && Object.keys(data.choices).length >= 2;
       if (!hasPrompt || !hasChoices) {
         skipped++;
-        if (qid % 25 === 0) {
-          sendEvent({
-            type: "progress",
-            current: qid,
-            total: maxId,
-            imported,
-            skipped,
-            errors,
-            message: `Processing Q${qid}/${maxId}...`,
-          });
-        }
         continue;
       }
 
@@ -387,7 +396,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (qid % 25 === 0 || qid === maxId) {
+    if (qid % 10 === 0 || qid === maxId) {
       sendEvent({
         type: "progress",
         current: qid,
@@ -395,7 +404,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         imported,
         skipped,
         errors,
-        message: `Processing Q${qid}/${maxId}...`,
+        message: `Processing Q${qid}/${maxId} — ${imported} imported`,
       });
     }
 
