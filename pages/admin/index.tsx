@@ -10,7 +10,8 @@ import {
   User,
 } from "firebase/auth";
 import toast, { Toaster } from "react-hot-toast";
-import { BookOpen, Upload, Search, LogOut, AlertCircle, Loader2 } from "lucide-react";
+import { BookOpen, Upload, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square } from "lucide-react";
+import { Progress } from "../../client/src/components/ui/progress";
 import Link from "next/link";
 import { Button } from "../../client/src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../client/src/components/ui/card";
@@ -88,6 +89,119 @@ export default function AdminPage() {
   const [selectedAction, setSelectedAction] = useState<string>("explanations");
   const [cheatMode, setCheatMode] = useState(false);
 
+  // Auto-scrape state
+  const [scrapeSubject, setScrapeSubject] = useState("");
+  const [scrapeStartId, setScrapeStartId] = useState("1");
+  const [scrapeEndId, setScrapeEndId] = useState("");
+  const [scraping, setScraping] = useState(false);
+  const [scrapeProgress, setScrapeProgress] = useState<{
+    current: number;
+    total: number;
+    imported: number;
+    skipped: number;
+    errors: number;
+    message: string;
+  } | null>(null);
+  const [scrapeLog, setScrapeLog] = useState<string[]>([]);
+  const scrapeAbortRef = useRef<AbortController | null>(null);
+
+  const scrapeSubjects = [
+    { code: "APPSYCH", label: "AP Psychology", maxQ: 1270 },
+    { code: "APMACRO", label: "AP Macroeconomics", maxQ: 900 },
+    { code: "APMICRO", label: "AP Microeconomics", maxQ: 900 },
+    { code: "APCSP", label: "AP Computer Science Principles", maxQ: 800 },
+    { code: "APCHEM", label: "AP Chemistry", maxQ: 1000 },
+    { code: "APGOV", label: "AP U.S. Government", maxQ: 800 },
+  ];
+
+  async function startAutoScrape() {
+    if (!token || !scrapeSubject) return;
+    setScraping(true);
+    setScrapeLog([]);
+    setScrapeProgress(null);
+
+    const controller = new AbortController();
+    scrapeAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/auto-scrape", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subject: scrapeSubject,
+          startId: parseInt(scrapeStartId) || 1,
+          endId: parseInt(scrapeEndId) || undefined,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Scrape failed");
+        setScraping(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        toast.error("No response stream");
+        setScraping(false);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "progress" || event.type === "batch") {
+              setScrapeProgress({
+                current: event.current || 0,
+                total: event.total || 0,
+                imported: event.imported || 0,
+                skipped: event.skipped || 0,
+                errors: event.errors || 0,
+                message: event.message || "",
+              });
+            }
+            if (event.message) {
+              setScrapeLog((prev) => [...prev.slice(-100), event.message]);
+            }
+            if (event.type === "complete") {
+              toast.success(event.message);
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Scrape failed: " + err.message);
+      }
+    } finally {
+      setScraping(false);
+      scrapeAbortRef.current = null;
+    }
+  }
+
+  function stopScrape() {
+    scrapeAbortRef.current?.abort();
+    setScraping(false);
+    toast("Scrape cancelled");
+  }
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -117,9 +231,9 @@ export default function AdminPage() {
       APMACRO: ["BEC", "EI", "NI", "FS", "LR", "OT"],
       APMICRO: ["BEC", "SD", "PC", "IMP", "FM", "MF"],
       APCSP: ["CRD", "DAT", "AAP", "CSN", "IOC"],
-      APCHEM: ["ASP", "MIS", "IMF", "RXN", "KIN", "THERMO", "EQM", "ACB", "ATD"],
-      APGOV: ["FCP", "IAB", "CLR", "APP", "PIP"],
-      APPSYCH: ["SRM", "BB", "SC", "LM", "CD", "MP", "ATC", "SP", "CPD"]
+      APCHEM: ["AMS", "MIP", "IMF", "CR", "KIN", "THE", "EQ", "AB", "ATD"],
+      APGOV: ["FOP", "ILR", "CLR", "APB", "PPP"],
+      APPSYCH: ["BIO", "COG", "DEV", "SOC", "MPH", "SRM", "BB", "SC", "LM", "CD", "MP", "ATC", "SP", "CPD"]
     };
 
     setAvailableSections(subjectSections[subject] || []);
@@ -479,6 +593,104 @@ export default function AdminPage() {
                 </p>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Auto-Scrape Card */}
+        <Card className="border-2 border-dashed border-khan-green/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-khan-green" />
+              Auto-Scrape from CrackAP
+            </CardTitle>
+            <CardDescription>
+              Automatically scrape questions from CrackAP.com, classify them by section using keywords, and import directly to Firestore
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 items-end">
+              <div className="flex-1">
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Subject</label>
+                <Select value={scrapeSubject} onValueChange={(v) => {
+                  setScrapeSubject(v);
+                  const found = scrapeSubjects.find(s => s.code === v);
+                  if (found) setScrapeEndId(String(found.maxQ));
+                }}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Subject to Scrape" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {scrapeSubjects.map((s) => (
+                      <SelectItem key={s.code} value={s.code}>
+                        {s.label} ({s.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-28">
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Start Q#</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={scrapeStartId}
+                  onChange={(e) => setScrapeStartId(e.target.value)}
+                  className="bg-white"
+                />
+              </div>
+              <div className="w-28">
+                <label className="text-sm font-medium text-gray-700 mb-1 block">End Q#</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={scrapeEndId}
+                  onChange={(e) => setScrapeEndId(e.target.value)}
+                  placeholder="Max"
+                  className="bg-white"
+                />
+              </div>
+              {scraping ? (
+                <Button onClick={stopScrape} variant="destructive" className="min-w-[120px]">
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop
+                </Button>
+              ) : (
+                <Button
+                  onClick={startAutoScrape}
+                  disabled={!scrapeSubject}
+                  className="bg-khan-green hover:bg-khan-green-light text-white min-w-[120px]"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Start Scrape
+                </Button>
+              )}
+            </div>
+
+            {scrapeProgress && (
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>{scrapeProgress.message}</span>
+                  <span>{Math.round((scrapeProgress.current / Math.max(scrapeProgress.total, 1)) * 100)}%</span>
+                </div>
+                <Progress
+                  value={(scrapeProgress.current / Math.max(scrapeProgress.total, 1)) * 100}
+                  className="h-2"
+                />
+                <div className="flex gap-4 text-xs text-gray-500">
+                  <span className="text-green-600 font-medium">Imported: {scrapeProgress.imported}</span>
+                  <span className="text-yellow-600">Skipped: {scrapeProgress.skipped}</span>
+                  <span className="text-red-600">Errors: {scrapeProgress.errors}</span>
+                </div>
+              </div>
+            )}
+
+            {scrapeLog.length > 0 && (
+              <div className="mt-3 max-h-40 overflow-y-auto bg-gray-900 text-green-400 rounded-lg p-3 font-mono text-xs">
+                {scrapeLog.map((msg, i) => (
+                  <div key={i} className="py-0.5">{msg}</div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
