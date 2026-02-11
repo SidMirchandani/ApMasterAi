@@ -27,7 +27,7 @@ function sleep(ms: number) {
 
 async function probeMaxQuestionId(
   crackApPath: string,
-  onProgress?: (message: string) => void
+  onProgress?: (message: string, current: number) => void
 ): Promise<number> {
   let low = 1;
   let high = 2000;
@@ -43,13 +43,13 @@ async function probeMaxQuestionId(
     }
   };
 
-  onProgress?.("Checking if questions exist...");
+  onProgress?.("Checking...", 1);
   if (await checkUrl(1)) lastFound = 1;
   else return 0;
 
   const probePoints = [100, 200, 400, 600, 800, 1000, 1200, 1500, 2000];
   for (const p of probePoints) {
-    onProgress?.(`Probing Q${p}... (found up to Q${lastFound} so far)`);
+    onProgress?.(`Probing...`, p);
     if (await checkUrl(p)) {
       lastFound = p;
       low = p;
@@ -60,7 +60,7 @@ async function probeMaxQuestionId(
     await sleep(100);
   }
 
-  onProgress?.(`Narrowing range: Q${low}–Q${high}...`);
+  onProgress?.(`Narrowing...`, low);
   while (high - low > 5) {
     const mid = Math.floor((low + high) / 2);
     if (await checkUrl(mid)) {
@@ -69,13 +69,14 @@ async function probeMaxQuestionId(
     } else {
       high = mid;
     }
-    onProgress?.(`Narrowing: Q${low}–Q${high} (found Q${lastFound})`);
+    onProgress?.(`Narrowing...`, low);
     await sleep(100);
   }
 
   for (let i = low; i <= high; i++) {
     if (await checkUrl(i)) lastFound = i;
     else break;
+    onProgress?.(`Finalizing...`, i);
     await sleep(50);
   }
 
@@ -299,11 +300,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     message: `Discovering question range for ${config.displayName} on CrackAP...`,
   });
 
-  const maxId = await probeMaxQuestionId(config.crackApPath, (msg) => {
+  const maxId = await probeMaxQuestionId(config.crackApPath, (msg, progress) => {
     sendEvent({
       type: "status",
       phase: "probing",
       message: msg,
+      current: progress,
+      total: 2000, // Approximate max for bar
     });
   });
 
@@ -381,7 +384,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             errors,
             current: qid,
             total: maxId,
-            message: `Committed batch — ${imported} imported so far`,
+            message: `Importing...`,
           });
         } catch (err: any) {
           sendEvent({ type: "error", message: `Batch commit failed: ${err.message}` });
@@ -398,18 +401,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (qid % 5 === 0 || qid === maxId) {
-      sendEvent({
-        type: "progress",
-        phase: "scraping",
-        current: qid,
-        total: maxId,
-        imported,
-        skipped,
-        errors,
-        message: `Processing Q${qid}/${maxId} — ${imported} imported`,
-      });
-    }
+    sendEvent({
+      type: "progress",
+      phase: "scraping",
+      current: qid,
+      total: maxId,
+      imported,
+      skipped,
+      errors,
+      message: `Importing...`,
+    });
 
     if (consecutiveNotFound >= 50) {
       sendEvent({

@@ -840,22 +840,10 @@ export default function AdminPage() {
                     <span>{Math.round((addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100)}%</span>
                   )}
                 </div>
-                {addSubjectProgress.phase === "probing" ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-khan-green" />
-                      <span className="text-sm text-khan-green font-medium">{addSubjectProgress.message || "Discovering question range..."}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                      <div className="bg-khan-green h-2 rounded-full animate-pulse" style={{ width: "100%" }} />
-                    </div>
-                  </div>
-                ) : (
-                  <Progress
-                    value={(addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100}
-                    className="h-2"
-                  />
-                )}
+                <Progress
+                  value={(addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100}
+                  className="h-2"
+                />
                 <div className="flex gap-4 text-xs text-gray-500">
                   <span className="text-green-600 font-medium">Imported: {addSubjectProgress.imported}</span>
                   <span className="text-yellow-600">Skipped: {addSubjectProgress.skipped}</span>
