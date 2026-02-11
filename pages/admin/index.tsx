@@ -215,7 +215,7 @@ export default function AdminPage() {
           if (!line.startsWith("data: ")) continue;
           try {
             const event = JSON.parse(line.slice(6));
-            if (event.type === "progress" || event.type === "batch") {
+            if (event.type === "progress" || event.type === "batch" || event.type === "status") {
               setAddSubjectProgress({
                 current: event.current || 0,
                 total: event.total || 0,
@@ -225,20 +225,6 @@ export default function AdminPage() {
                 message: event.message || "",
                 phase: event.phase || "scraping",
               });
-            }
-            if (event.type === "status") {
-              setAddSubjectProgress(prev => ({
-                current: prev?.current || 0,
-                total: prev?.total || 0,
-                imported: prev?.imported || 0,
-                skipped: prev?.skipped || 0,
-                errors: prev?.errors || 0,
-                message: event.message || "",
-                phase: event.phase || "probing",
-              }));
-            }
-            if (event.message) {
-              setAddSubjectLog((prev) => [...prev.slice(-100), event.message]);
             }
             if (event.type === "complete") {
               toast.success(event.message);
@@ -849,14 +835,6 @@ export default function AdminPage() {
                   <span className="text-yellow-600">Skipped: {addSubjectProgress.skipped}</span>
                   <span className="text-red-600">Errors: {addSubjectProgress.errors}</span>
                 </div>
-              </div>
-            )}
-
-            {addSubjectLog.length > 0 && (
-              <div className="mt-3 max-h-40 overflow-y-auto bg-gray-100 border border-gray-200 rounded-lg p-3 font-mono text-xs">
-                {addSubjectLog.map((msg, i) => (
-                  <div key={i} className="py-0.5 text-gray-700">{msg}</div>
-                ))}
               </div>
             )}
           </CardContent>

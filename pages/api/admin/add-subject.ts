@@ -43,7 +43,7 @@ async function probeMaxQuestionId(
     }
   };
 
-  onProgress?.("Checking...", 1);
+  onProgress?.("Probing...", 1);
   if (await checkUrl(1)) lastFound = 1;
   else return 0;
 
@@ -57,10 +57,10 @@ async function probeMaxQuestionId(
       high = p;
       break;
     }
-    await sleep(100);
+    await sleep(200); // Slightly more delay to ensure buffer flushes
   }
 
-  onProgress?.(`Narrowing...`, low);
+  onProgress?.(`Probing...`, low);
   while (high - low > 5) {
     const mid = Math.floor((low + high) / 2);
     if (await checkUrl(mid)) {
@@ -69,15 +69,15 @@ async function probeMaxQuestionId(
     } else {
       high = mid;
     }
-    onProgress?.(`Narrowing...`, low);
-    await sleep(100);
+    onProgress?.(`Probing...`, low);
+    await sleep(200);
   }
 
   for (let i = low; i <= high; i++) {
     if (await checkUrl(i)) lastFound = i;
     else break;
-    onProgress?.(`Finalizing...`, i);
-    await sleep(50);
+    onProgress?.(`Probing...`, i);
+    await sleep(100);
   }
 
   return lastFound;
@@ -384,7 +384,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             errors,
             current: qid,
             total: maxId,
-            message: `Importing...`,
+            message: `Scraping questions...`,
           });
         } catch (err: any) {
           sendEvent({ type: "error", message: `Batch commit failed: ${err.message}` });
@@ -409,7 +409,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       imported,
       skipped,
       errors,
-      message: `Importing...`,
+      message: `Scraping questions...`,
     });
 
     if (consecutiveNotFound >= 50) {
