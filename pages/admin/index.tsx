@@ -109,6 +109,7 @@ export default function AdminPage() {
   const [selectedModel, setSelectedModel] = useState<string>("2.0");
   const [selectedAction, setSelectedAction] = useState<string>("explanations");
   const [cheatMode, setCheatMode] = useState(false);
+  const aiActionAbortRef = useRef<AbortController | null>(null);
   const [explanationProgress, setExplanationProgress] = useState<{
     current: number;
     total: number;
@@ -476,114 +477,97 @@ export default function AdminPage() {
         break;
     }
 
-    if (selectedAction === "explanations") {
-      setExplanationProgress({
-        current: 0,
-        total: questionIds.length,
-        updated: 0,
-        skipped: 0,
-        failed: 0,
-        message: `Starting explanation generation for ${questionIds.length} questions...`,
-      });
+    const actionLabel = selectedAction === "explanations" ? "explanation generation"
+      : selectedAction === "fix-prompts" ? "prompt fixing"
+      : "context generation";
 
-      try {
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ questionIds, model: selectedModel }),
-        });
+    setExplanationProgress({
+      current: 0,
+      total: questionIds.length,
+      updated: 0,
+      skipped: 0,
+      failed: 0,
+      message: `Starting ${actionLabel} for ${questionIds.length} questions...`,
+    });
 
-        if (!res.ok) {
-          const err = await res.json();
-          toast.error(err.error || "Failed to generate explanations");
-          setGeneratingExplanations(false);
-          setExplanationProgress(null);
-          return;
-        }
+    const controller = new AbortController();
+    aiActionAbortRef.current = controller;
 
-        const reader = res.body?.getReader();
-        const decoder = new TextDecoder();
-
-        if (!reader) {
-          toast.error("No response stream");
-          setGeneratingExplanations(false);
-          setExplanationProgress(null);
-          return;
-        }
-
-        let buffer = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            try {
-              const event = JSON.parse(line.slice(6));
-              if (event.type === "progress" || event.type === "rate_limit" || event.type === "error") {
-                setExplanationProgress({
-                  current: event.current || 0,
-                  total: event.total || questionIds.length,
-                  updated: event.updated || 0,
-                  skipped: event.skipped || 0,
-                  failed: event.failed || 0,
-                  message: event.message || "",
-                });
-              }
-              if (event.type === "complete") {
-                toast.success(event.message);
-                fetchFiltered();
-              }
-            } catch {}
-          }
-        }
-      } catch (err: any) {
-        toast.error("Failed: " + err.message);
-      } finally {
-        setGeneratingExplanations(false);
-        setTimeout(() => setExplanationProgress(null), 5000);
-      }
-    } else {
-      const loadingMessage = selectedAction === "fix-prompts"
-        ? `Fixing prompts for ${questionIds.length} questions...`
-        : `Generating context for ${questionIds.length} questions...`;
-      const successMessage = selectedAction === "fix-prompts"
-        ? (data: any) => `Fixed ${data.updated} questions!`
-        : (data: any) => `Generated context for ${data.updated} questions!`;
-
-      const generatePromise = fetch(endpoint, {
+    try {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ questionIds, model: selectedModel }),
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Action failed");
-          return res.json();
-        })
-        .then((data) => {
-          fetchFiltered();
-          return data;
-        })
-        .finally(() => {
-          setGeneratingExplanations(false);
-        });
-
-      toast.promise(generatePromise, {
-        loading: loadingMessage,
-        success: successMessage,
-        error: "Failed to execute action",
+        signal: controller.signal,
       });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || `Failed to start ${actionLabel}`);
+        setGeneratingExplanations(false);
+        setExplanationProgress(null);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        toast.error("No response stream");
+        setGeneratingExplanations(false);
+        setExplanationProgress(null);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "progress" || event.type === "rate_limit" || event.type === "error") {
+              setExplanationProgress({
+                current: event.current || 0,
+                total: event.total || questionIds.length,
+                updated: event.updated || 0,
+                skipped: event.skipped || 0,
+                failed: event.failed || 0,
+                message: event.message || "",
+              });
+            }
+            if (event.type === "complete") {
+              toast.success(event.message);
+              fetchFiltered();
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Failed: " + err.message);
+      }
+    } finally {
+      setGeneratingExplanations(false);
+      aiActionAbortRef.current = null;
+      setTimeout(() => setExplanationProgress(null), 5000);
     }
+  }
+
+  function stopAIAction() {
+    aiActionAbortRef.current?.abort();
+    setGeneratingExplanations(false);
+    toast("AI action cancelled");
+    setTimeout(() => setExplanationProgress(null), 2000);
   }
 
   function toggleQuestion(id: string) {
@@ -881,9 +865,9 @@ export default function AdminPage() {
             )}
 
             {addSubjectLog.length > 0 && (
-              <div className="mt-3 max-h-40 overflow-y-auto bg-gray-900 text-green-400 rounded-lg p-3 font-mono text-xs">
+              <div className="mt-3 max-h-40 overflow-y-auto bg-gray-100 border border-gray-200 rounded-lg p-3 font-mono text-xs">
                 {addSubjectLog.map((msg, i) => (
-                  <div key={i} className="py-0.5">{msg}</div>
+                  <div key={i} className="py-0.5 text-gray-700">{msg}</div>
                 ))}
               </div>
             )}
@@ -974,13 +958,23 @@ export default function AdminPage() {
                     <SelectItem value="2.5">Gemini 2.5 Flash</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button
-                  onClick={executeAIAction}
-                  disabled={generatingExplanations || selectedQuestions.size === 0}
-                  className="bg-khan-green hover:bg-khan-green-light text-white"
-                >
-                  {generatingExplanations ? "Processing..." : `Execute (${selectedQuestions.size})`}
-                </Button>
+                {generatingExplanations ? (
+                  <Button
+                    onClick={stopAIAction}
+                    variant="destructive"
+                  >
+                    <Square className="w-4 h-4 mr-2" />
+                    Abort
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={executeAIAction}
+                    disabled={selectedQuestions.size === 0}
+                    className="bg-khan-green hover:bg-khan-green-light text-white"
+                  >
+                    {`Execute (${selectedQuestions.size})`}
+                  </Button>
+                )}
               </div>
               {explanationProgress && (
                 <div className="mt-3 space-y-2">

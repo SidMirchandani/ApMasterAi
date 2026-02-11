@@ -95,6 +95,9 @@ export default async function handler(
 
   console.log(`Generating explanations for ${total} selected questions...`);
 
+  let aborted = false;
+  req.on("close", () => { aborted = true; });
+
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache, no-transform",
@@ -106,6 +109,7 @@ export default async function handler(
   }
 
   const sendEvent = (data: any) => {
+    if (aborted) return;
     try {
       res.write(`data: ${JSON.stringify(data)}\n\n`);
       if (typeof (res as any).flush === "function") {
@@ -132,6 +136,11 @@ export default async function handler(
 
   for (let i = 0; i < questionIds.length; i++) {
     const questionId = questionIds[i];
+
+    if (aborted) {
+      console.log("Client disconnected, stopping explanation generation.");
+      break;
+    }
 
     try {
       const doc = await questionsRef.doc(questionId).get();

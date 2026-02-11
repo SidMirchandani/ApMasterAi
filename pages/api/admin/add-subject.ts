@@ -8,6 +8,7 @@ export const config = {
     responseLimit: false,
     externalResolver: true,
   },
+  maxDuration: 300,
 };
 
 function isAllowed(email?: string | null) {
@@ -374,6 +375,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           await batch.commit();
           sendEvent({
             type: "batch",
+            phase: "scraping",
             imported,
             skipped,
             errors,
@@ -396,9 +398,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    if (qid % 10 === 0 || qid === maxId) {
+    if (qid % 5 === 0 || qid === maxId) {
       sendEvent({
         type: "progress",
+        phase: "scraping",
         current: qid,
         total: maxId,
         imported,
