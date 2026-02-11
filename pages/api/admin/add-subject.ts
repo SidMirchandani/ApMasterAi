@@ -287,6 +287,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     (res as any).flushHeaders();
   }
 
+  // Pre-fill buffer to bypass aggressive proxy/browser buffering
+  res.write(":" + " ".repeat(2048) + "\n\n");
+  if (typeof (res as any).flush === "function") {
+    (res as any).flush();
+  }
+
   const sendEvent = (data: any) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
     if (typeof (res as any).flush === "function") {
