@@ -109,6 +109,14 @@ export default function AdminPage() {
   const [selectedModel, setSelectedModel] = useState<string>("2.0");
   const [selectedAction, setSelectedAction] = useState<string>("explanations");
   const [cheatMode, setCheatMode] = useState(false);
+  const [explanationProgress, setExplanationProgress] = useState<{
+    current: number;
+    total: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+    message: string;
+  } | null>(null);
 
   // Add Subject state
   const [addSubjectCode, setAddSubjectCode] = useState("");
@@ -455,52 +463,127 @@ export default function AdminPage() {
     const questionIds = Array.from(selectedQuestions);
 
     let endpoint = "/api/generateExplanations";
-    let loadingMessage = "";
-    let successMessage = "";
 
     switch (selectedAction) {
       case "explanations":
         endpoint = "/api/generateExplanations";
-        loadingMessage = `Generating explanations for ${questionIds.length} questions...`;
-        successMessage = (data: any) => `Generated ${data.updated} explanations!`;
         break;
       case "fix-prompts":
         endpoint = "/api/fixPromptsChoices";
-        loadingMessage = `Fixing prompts and choices for ${questionIds.length} questions...`;
-        successMessage = (data: any) => `Fixed ${data.updated} questions!`;
         break;
       case "generate-context":
         endpoint = "/api/generateContext";
-        loadingMessage = `Generating context for ${questionIds.length} questions...`;
-        successMessage = (data: any) => `Generated context for ${data.updated} questions!`;
         break;
     }
 
-    const generatePromise = fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ questionIds, model: selectedModel }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Action failed");
-        return res.json();
-      })
-      .then((data) => {
-        fetchFiltered();
-        return data;
-      })
-      .finally(() => {
-        setGeneratingExplanations(false);
+    if (selectedAction === "explanations") {
+      setExplanationProgress({
+        current: 0,
+        total: questionIds.length,
+        updated: 0,
+        skipped: 0,
+        failed: 0,
+        message: `Starting explanation generation for ${questionIds.length} questions...`,
       });
 
-    toast.promise(generatePromise, {
-      loading: loadingMessage,
-      success: successMessage,
-      error: "Failed to execute action",
-    });
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ questionIds, model: selectedModel }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          toast.error(err.error || "Failed to generate explanations");
+          setGeneratingExplanations(false);
+          setExplanationProgress(null);
+          return;
+        }
+
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (!reader) {
+          toast.error("No response stream");
+          setGeneratingExplanations(false);
+          setExplanationProgress(null);
+          return;
+        }
+
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const event = JSON.parse(line.slice(6));
+              if (event.type === "progress" || event.type === "rate_limit" || event.type === "error") {
+                setExplanationProgress({
+                  current: event.current || 0,
+                  total: event.total || questionIds.length,
+                  updated: event.updated || 0,
+                  skipped: event.skipped || 0,
+                  failed: event.failed || 0,
+                  message: event.message || "",
+                });
+              }
+              if (event.type === "complete") {
+                toast.success(event.message);
+                fetchFiltered();
+              }
+            } catch {}
+          }
+        }
+      } catch (err: any) {
+        toast.error("Failed: " + err.message);
+      } finally {
+        setGeneratingExplanations(false);
+        setTimeout(() => setExplanationProgress(null), 5000);
+      }
+    } else {
+      const loadingMessage = selectedAction === "fix-prompts"
+        ? `Fixing prompts for ${questionIds.length} questions...`
+        : `Generating context for ${questionIds.length} questions...`;
+      const successMessage = selectedAction === "fix-prompts"
+        ? (data: any) => `Fixed ${data.updated} questions!`
+        : (data: any) => `Generated context for ${data.updated} questions!`;
+
+      const generatePromise = fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ questionIds, model: selectedModel }),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Action failed");
+          return res.json();
+        })
+        .then((data) => {
+          fetchFiltered();
+          return data;
+        })
+        .finally(() => {
+          setGeneratingExplanations(false);
+        });
+
+      toast.promise(generatePromise, {
+        loading: loadingMessage,
+        success: successMessage,
+        error: "Failed to execute action",
+      });
+    }
   }
 
   function toggleQuestion(id: string) {
@@ -899,6 +982,25 @@ export default function AdminPage() {
                   {generatingExplanations ? "Processing..." : `Execute (${selectedQuestions.size})`}
                 </Button>
               </div>
+              {explanationProgress && (
+                <div className="mt-3 space-y-2">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{explanationProgress.message}</span>
+                    {explanationProgress.total > 0 && (
+                      <span>{Math.round((explanationProgress.current / Math.max(explanationProgress.total, 1)) * 100)}%</span>
+                    )}
+                  </div>
+                  <Progress
+                    value={(explanationProgress.current / Math.max(explanationProgress.total, 1)) * 100}
+                    className="h-2"
+                  />
+                  <div className="flex gap-4 text-xs text-gray-500">
+                    <span className="text-green-600 font-medium">Generated: {explanationProgress.updated}</span>
+                    <span className="text-yellow-600">Skipped: {explanationProgress.skipped}</span>
+                    <span className="text-red-600">Failed: {explanationProgress.failed}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent>
