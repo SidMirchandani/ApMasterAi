@@ -72,8 +72,29 @@ export default function AdminPage() {
   const [subject, setSubject] = useState("");
   const [section, setSection] = useState("");
   
-  // Get available subjects and sections
-  const availableSubjects = ["APMACRO", "APMICRO", "APCSP", "APCHEM", "APGOV", "APPSYCH"];
+  const allApSubjectsRef = [
+    { code: "APMACRO", label: "AP Macroeconomics" },
+    { code: "APMICRO", label: "AP Microeconomics" },
+    { code: "APCSP", label: "AP Computer Science Principles" },
+    { code: "APCHEM", label: "AP Chemistry" },
+    { code: "APGOV", label: "AP U.S. Government and Politics" },
+    { code: "APPSYCH", label: "AP Psychology" },
+    { code: "APBIO", label: "AP Biology" },
+    { code: "APCALCAB", label: "AP Calculus AB" },
+    { code: "APCALCBC", label: "AP Calculus BC" },
+    { code: "APCSA", label: "AP Computer Science A" },
+    { code: "APUSH", label: "AP U.S. History" },
+    { code: "APWH", label: "AP World History: Modern" },
+    { code: "APEURO", label: "AP European History" },
+    { code: "APLANG", label: "AP English Language" },
+    { code: "APLIT", label: "AP English Literature" },
+    { code: "APSTATS", label: "AP Statistics" },
+    { code: "APPHYS1", label: "AP Physics 1" },
+    { code: "APPHYS2", label: "AP Physics 2" },
+    { code: "APES", label: "AP Environmental Science" },
+    { code: "APHUG", label: "AP Human Geography" },
+  ];
+  const availableSubjects = allApSubjectsRef.map(s => s.code);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
 
   // ZIP import state
@@ -89,59 +110,68 @@ export default function AdminPage() {
   const [selectedAction, setSelectedAction] = useState<string>("explanations");
   const [cheatMode, setCheatMode] = useState(false);
 
-  // Auto-scrape state
-  const [scrapeSubject, setScrapeSubject] = useState("");
-  const [scrapeStartId, setScrapeStartId] = useState("1");
-  const [scrapeEndId, setScrapeEndId] = useState("");
-  const [scraping, setScraping] = useState(false);
-  const [scrapeProgress, setScrapeProgress] = useState<{
+  // Add Subject state
+  const [addSubjectCode, setAddSubjectCode] = useState("");
+  const [addingSubject, setAddingSubject] = useState(false);
+  const [addSubjectProgress, setAddSubjectProgress] = useState<{
     current: number;
     total: number;
     imported: number;
     skipped: number;
     errors: number;
     message: string;
+    phase: string;
   } | null>(null);
-  const [scrapeLog, setScrapeLog] = useState<string[]>([]);
-  const scrapeAbortRef = useRef<AbortController | null>(null);
+  const [addSubjectLog, setAddSubjectLog] = useState<string[]>([]);
+  const addSubjectAbortRef = useRef<AbortController | null>(null);
+  const [subjectStatus, setSubjectStatus] = useState<Record<string, { hasQuestions: boolean; questionCount: number }>>({});
+  const [loadingStatus, setLoadingStatus] = useState(false);
 
-  const scrapeSubjects = [
-    { code: "APPSYCH", label: "AP Psychology", maxQ: 1270 },
-    { code: "APMACRO", label: "AP Macroeconomics", maxQ: 900 },
-    { code: "APMICRO", label: "AP Microeconomics", maxQ: 900 },
-    { code: "APCSP", label: "AP Computer Science Principles", maxQ: 800 },
-    { code: "APCHEM", label: "AP Chemistry", maxQ: 1000 },
-    { code: "APGOV", label: "AP U.S. Government", maxQ: 800 },
-  ];
+  const availableToAdd = allApSubjectsRef.filter(s => !subjectStatus[s.code]?.hasQuestions);
+  const alreadyAdded = allApSubjectsRef.filter(s => subjectStatus[s.code]?.hasQuestions);
 
-  async function startAutoScrape() {
-    if (!token || !scrapeSubject) return;
-    setScraping(true);
-    setScrapeLog([]);
-    setScrapeProgress(null);
+  async function fetchSubjectStatus() {
+    if (!token) return;
+    setLoadingStatus(true);
+    try {
+      const res = await fetch("/api/admin/subject-status", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSubjectStatus(data.data || {});
+      }
+    } catch (err) {
+      console.error("Failed to fetch subject status:", err);
+    } finally {
+      setLoadingStatus(false);
+    }
+  }
+
+  async function startAddSubject() {
+    if (!token || !addSubjectCode) return;
+    setAddingSubject(true);
+    setAddSubjectLog([]);
+    setAddSubjectProgress(null);
 
     const controller = new AbortController();
-    scrapeAbortRef.current = controller;
+    addSubjectAbortRef.current = controller;
 
     try {
-      const res = await fetch("/api/admin/auto-scrape", {
+      const res = await fetch("/api/admin/add-subject", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          subject: scrapeSubject,
-          startId: parseInt(scrapeStartId) || 1,
-          endId: parseInt(scrapeEndId) || undefined,
-        }),
+        body: JSON.stringify({ subjectCode: addSubjectCode }),
         signal: controller.signal,
       });
 
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err.error || "Scrape failed");
-        setScraping(false);
+        toast.error(err.error || "Failed to add subject");
+        setAddingSubject(false);
         return;
       }
 
@@ -150,7 +180,7 @@ export default function AdminPage() {
 
       if (!reader) {
         toast.error("No response stream");
-        setScraping(false);
+        setAddingSubject(false);
         return;
       }
 
@@ -168,48 +198,69 @@ export default function AdminPage() {
           try {
             const event = JSON.parse(line.slice(6));
             if (event.type === "progress" || event.type === "batch") {
-              setScrapeProgress({
+              setAddSubjectProgress({
                 current: event.current || 0,
                 total: event.total || 0,
                 imported: event.imported || 0,
                 skipped: event.skipped || 0,
                 errors: event.errors || 0,
                 message: event.message || "",
+                phase: event.phase || "scraping",
               });
             }
+            if (event.type === "status") {
+              setAddSubjectProgress(prev => ({
+                current: prev?.current || 0,
+                total: prev?.total || 0,
+                imported: prev?.imported || 0,
+                skipped: prev?.skipped || 0,
+                errors: prev?.errors || 0,
+                message: event.message || "",
+                phase: event.phase || "probing",
+              }));
+            }
             if (event.message) {
-              setScrapeLog((prev) => [...prev.slice(-100), event.message]);
+              setAddSubjectLog((prev) => [...prev.slice(-100), event.message]);
             }
             if (event.type === "complete") {
               toast.success(event.message);
+              fetchSubjectStatus();
+              setAddSubjectCode("");
             }
           } catch {}
         }
       }
     } catch (err: any) {
       if (err.name !== "AbortError") {
-        toast.error("Scrape failed: " + err.message);
+        toast.error("Failed: " + err.message);
       }
     } finally {
-      setScraping(false);
-      scrapeAbortRef.current = null;
+      setAddingSubject(false);
+      addSubjectAbortRef.current = null;
     }
   }
 
-  function stopScrape() {
-    scrapeAbortRef.current?.abort();
-    setScraping(false);
-    toast("Scrape cancelled");
+  function stopAddSubject() {
+    addSubjectAbortRef.current?.abort();
+    setAddingSubject(false);
+    toast("Import cancelled");
   }
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      if (u) setToken(await u.getIdToken());
+      if (u) {
+        const t = await u.getIdToken();
+        setToken(t);
+      }
       setLoading(false);
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    if (token) fetchSubjectStatus();
+  }, [token]);
 
   useEffect(() => {
     const savedCheatMode = localStorage.getItem('adminCheatMode');
@@ -226,14 +277,27 @@ export default function AdminPage() {
       return;
     }
 
-    // Define sections for each subject
     const subjectSections: Record<string, string[]> = {
       APMACRO: ["BEC", "EI", "NI", "FS", "LR", "OT"],
       APMICRO: ["BEC", "SD", "PC", "IMP", "FM", "MF"],
       APCSP: ["CRD", "DAT", "AAP", "CSN", "IOC"],
       APCHEM: ["AMS", "MIP", "IMF", "CR", "KIN", "THE", "EQ", "AB", "ATD"],
       APGOV: ["FOP", "ILR", "CLR", "APB", "PPP"],
-      APPSYCH: ["BIO", "COG", "DEV", "SOC", "MPH", "SRM", "BB", "SC", "LM", "CD", "MP", "ATC", "SP", "CPD"]
+      APPSYCH: ["BIO", "COG", "DEV", "SOC", "MPH"],
+      APBIO: ["CL", "CSF", "CE", "CCC", "HER", "GER", "NS", "ECO"],
+      APCALCAB: ["LIM", "DDF", "DCI", "CAD", "AAD", "IAC", "DE", "AI"],
+      APCALCBC: ["LIM", "DDF", "DCI", "CAD", "AAD", "IAC", "DE", "AI", "PPV", "ISS"],
+      APCSA: ["PT", "UO", "BEI", "ITR", "WC", "ARR", "AL", "TDA", "INH", "REC"],
+      APUSH: ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9"],
+      APWH: ["GT", "NE", "LBE", "TI", "REV", "COI", "GC", "CWD", "GLO"],
+      APEURO: ["RE", "AR", "AC", "SPP", "CRR", "IND", "NPP", "GCF", "CCE"],
+      APLANG: ["CRE", "SS", "RS", "OC", "ARG"],
+      APLIT: ["SF1", "PO1", "LF1", "SF2", "PO2", "LF2", "SF3", "PO3", "LF3"],
+      APSTATS: ["EOV", "ETV", "CD", "PRD", "SD", "ICP", "IQM", "ICC", "IQS"],
+      APPHYS1: ["KIN", "DYN", "CMG", "ENR", "MOM", "SHM", "TRM"],
+      APPHYS2: ["FLU", "THD", "EFP", "EC", "MEI", "GPO", "QAN"],
+      APES: ["LWE", "LWB", "POP", "ESR", "LWU", "ERC", "APL", "ATP", "GCH"],
+      APHUG: ["TG", "PMP", "CPP", "PPP", "ARL", "CUL", "IED"],
     };
 
     setAvailableSections(subjectSections[subject] || []);
@@ -596,97 +660,94 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* Auto-Scrape Card */}
+        {/* Add Subject Card */}
         <Card className="border-2 border-dashed border-khan-green/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-khan-green" />
-              Auto-Scrape from CrackAP
+              Add Subject
             </CardTitle>
             <CardDescription>
-              Automatically scrape questions from CrackAP.com, classify them by section using keywords, and import directly to Firestore
+              Select an AP subject to automatically discover questions on CrackAP, classify them by unit, and import to Firestore
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {alreadyAdded.length > 0 && (
+              <div className="mb-2">
+                <p className="text-xs text-gray-500 mb-1">Already added ({alreadyAdded.length}):</p>
+                <div className="flex flex-wrap gap-1">
+                  {alreadyAdded.map(s => (
+                    <span key={s.code} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 border border-green-200">
+                      {s.label} ({subjectStatus[s.code]?.questionCount || 0} Q)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-3 items-end">
               <div className="flex-1">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Subject</label>
-                <Select value={scrapeSubject} onValueChange={(v) => {
-                  setScrapeSubject(v);
-                  const found = scrapeSubjects.find(s => s.code === v);
-                  if (found) setScrapeEndId(String(found.maxQ));
-                }}>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Subject to Add</label>
+                <Select value={addSubjectCode} onValueChange={setAddSubjectCode} disabled={addingSubject}>
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Subject to Scrape" />
+                    <SelectValue placeholder={loadingStatus ? "Loading subjects..." : "Select AP Subject"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {scrapeSubjects.map((s) => (
+                    {availableToAdd.map((s) => (
                       <SelectItem key={s.code} value={s.code}>
-                        {s.label} ({s.code})
+                        {s.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="w-28">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Start Q#</label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={scrapeStartId}
-                  onChange={(e) => setScrapeStartId(e.target.value)}
-                  className="bg-white"
-                />
-              </div>
-              <div className="w-28">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">End Q#</label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={scrapeEndId}
-                  onChange={(e) => setScrapeEndId(e.target.value)}
-                  placeholder="Max"
-                  className="bg-white"
-                />
-              </div>
-              {scraping ? (
-                <Button onClick={stopScrape} variant="destructive" className="min-w-[120px]">
+              {addingSubject ? (
+                <Button onClick={stopAddSubject} variant="destructive" className="min-w-[140px]">
                   <Square className="w-4 h-4 mr-2" />
-                  Stop
+                  Stop Import
                 </Button>
               ) : (
                 <Button
-                  onClick={startAutoScrape}
-                  disabled={!scrapeSubject}
-                  className="bg-khan-green hover:bg-khan-green-light text-white min-w-[120px]"
+                  onClick={startAddSubject}
+                  disabled={!addSubjectCode || loadingStatus}
+                  className="bg-khan-green hover:bg-khan-green-light text-white min-w-[140px]"
                 >
                   <Play className="w-4 h-4 mr-2" />
-                  Start Scrape
+                  Add Subject
                 </Button>
               )}
             </div>
 
-            {scrapeProgress && (
+            {addSubjectProgress && (
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>{scrapeProgress.message}</span>
-                  <span>{Math.round((scrapeProgress.current / Math.max(scrapeProgress.total, 1)) * 100)}%</span>
+                  <span>{addSubjectProgress.message}</span>
+                  {addSubjectProgress.total > 0 && (
+                    <span>{Math.round((addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100)}%</span>
+                  )}
                 </div>
-                <Progress
-                  value={(scrapeProgress.current / Math.max(scrapeProgress.total, 1)) * 100}
-                  className="h-2"
-                />
+                {addSubjectProgress.phase === "probing" ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-khan-green" />
+                    <span className="text-sm text-khan-green font-medium">Discovering question range...</span>
+                  </div>
+                ) : (
+                  <Progress
+                    value={(addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100}
+                    className="h-2"
+                  />
+                )}
                 <div className="flex gap-4 text-xs text-gray-500">
-                  <span className="text-green-600 font-medium">Imported: {scrapeProgress.imported}</span>
-                  <span className="text-yellow-600">Skipped: {scrapeProgress.skipped}</span>
-                  <span className="text-red-600">Errors: {scrapeProgress.errors}</span>
+                  <span className="text-green-600 font-medium">Imported: {addSubjectProgress.imported}</span>
+                  <span className="text-yellow-600">Skipped: {addSubjectProgress.skipped}</span>
+                  <span className="text-red-600">Errors: {addSubjectProgress.errors}</span>
                 </div>
               </div>
             )}
 
-            {scrapeLog.length > 0 && (
+            {addSubjectLog.length > 0 && (
               <div className="mt-3 max-h-40 overflow-y-auto bg-gray-900 text-green-400 rounded-lg p-3 font-mono text-xs">
-                {scrapeLog.map((msg, i) => (
+                {addSubjectLog.map((msg, i) => (
                   <div key={i} className="py-0.5">{msg}</div>
                 ))}
               </div>

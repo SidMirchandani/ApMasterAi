@@ -1,17 +1,26 @@
 import { APSubject, Unit } from './common/types';
 
-// Import all subject modules
 import { apmacro } from './apmacro';
 import { apmicro } from './apmicro';
 import { apcsp } from './apcsp';
 import { apchem } from './apchem';
 import { apgov } from './apgov';
 import { appsych } from './appsych';
+import { apbio } from './apbio';
+import { apcalcab } from './apcalcab';
+import { apcalcbc } from './apcalcbc';
+import { apcsa } from './apcsa';
+import { apush } from './apush';
+import { apwh } from './apwh';
+import { apeuro } from './apeuro';
+import { aplang } from './aplang';
+import { aplit } from './aplit';
+import { apstats } from './apstats';
+import { apphys1 } from './apphys1';
+import { apphys2 } from './apphys2';
+import { apes } from './apes';
+import { aphug } from './aphug';
 
-// Import the subjects object which contains the unitToSectionMap
-import * as subjects from './';
-
-// Auto-register all subjects
 const allSubjects: APSubject[] = [
   apmacro,
   apmicro,
@@ -19,15 +28,27 @@ const allSubjects: APSubject[] = [
   apchem,
   apgov,
   appsych,
+  apbio,
+  apcalcab,
+  apcalcbc,
+  apcsa,
+  apush,
+  apwh,
+  apeuro,
+  aplang,
+  aplit,
+  apstats,
+  apphys1,
+  apphys2,
+  apes,
+  aphug,
 ];
 
-// Create subject registry by subject code
 export const subjectRegistry: Record<string, APSubject> = allSubjects.reduce((acc, subject) => {
   acc[subject.subjectCode] = subject;
   return acc;
 }, {} as Record<string, APSubject>);
 
-// Create subject registry by legacy ID (for backwards compatibility)
 const legacyIdMap: Record<string, string> = {
   'macroeconomics': 'APMACRO',
   'microeconomics': 'APMICRO',
@@ -35,9 +56,22 @@ const legacyIdMap: Record<string, string> = {
   'chemistry': 'APCHEM',
   'government': 'APGOV',
   'psychology': 'APPSYCH',
+  'biology': 'APBIO',
+  'calculus-ab': 'APCALCAB',
+  'calculus-bc': 'APCALCBC',
+  'computer-science-a': 'APCSA',
+  'us-history': 'APUSH',
+  'world-history': 'APWH',
+  'european-history': 'APEURO',
+  'english-language': 'APLANG',
+  'english-literature': 'APLIT',
+  'statistics': 'APSTATS',
+  'physics-1': 'APPHYS1',
+  'physics-2': 'APPHYS2',
+  'environmental-science': 'APES',
+  'human-geography': 'APHUG',
 };
 
-// Create a reverse map from legacy ID to Subject object for quicker lookups
 const legacyIdRegistry: Record<string, APSubject> = Object.entries(legacyIdMap).reduce((acc, [legacyId, subjectCode]) => {
   if (subjectRegistry[subjectCode]) {
     acc[legacyId] = subjectRegistry[subjectCode];
@@ -51,30 +85,16 @@ export function getSubjectByLegacyId(legacyId: string): APSubject | undefined {
 }
 
 export function getSubjectByCode(code: string): APSubject | undefined {
-  const bySubjectCode = subjectRegistry[code];
-  const byLegacyId = legacyIdRegistry[code];
-
-  console.log('🔎 [getSubjectByCode] Lookup:', {
-    input: code,
-    foundBySubjectCode: !!bySubjectCode,
-    foundByLegacyId: !!byLegacyId,
-    result: !!(bySubjectCode || byLegacyId)
-  });
-
-  return bySubjectCode || byLegacyId;
+  return subjectRegistry[code] || legacyIdRegistry[code];
 }
 
 export function getUnitsForSubject(subjectIdOrCode: string): Unit[] {
-  // Try legacy ID first
   let subject = getSubjectByLegacyId(subjectIdOrCode);
-
-  // If not found, try as subject code
   if (!subject) {
     subject = getSubjectByCode(subjectIdOrCode);
   }
 
   if (!subject) {
-    // Fallback for unknown subjects
     return [
       {
         id: "unit1",
@@ -90,74 +110,16 @@ export function getUnitsForSubject(subjectIdOrCode: string): Unit[] {
 }
 
 export function getSectionCodeForUnit(subjectId: string, unitId: string): string | undefined {
-  console.log('🔍 [subjects/index] getSectionCodeForUnit called:', { 
-    subjectId, 
-    unitId,
-    inputTypes: {
-      subjectId: typeof subjectId,
-      unitId: typeof unitId
-    }
-  });
-
-  const subject = getSubjectByLegacyId(subjectId);
-  if (!subject) {
-    console.error('❌ [subjects/index] Subject not found for legacy ID:', {
-      subjectId,
-      availableLegacyIds: Object.keys(legacyIdMap)
-    });
-    return undefined;
-  }
-
-  console.log('📋 [subjects/index] Subject found:', {
-    subjectId,
-    subjectCode: subject.subjectCode,
-    displayName: subject.displayName
-  });
-
-  // Look up section directly from sections object
+  const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
+  if (!subject) return undefined;
   const section = subject.sections[unitId];
-  const sectionCode = section?.code;
-  
-  console.log('🔍 [subjects/index] Section code lookup result:', { 
-    unitId, 
-    sectionCode,
-    found: !!sectionCode
-  });
-
-  return sectionCode;
+  return section?.code;
 }
 
-// Centralized section lookup functions
 export function getSectionByCode(subjectIdOrCode: string, sectionCode: string): { code: string; name: string; unitNumber: number } | undefined {
-  console.log('🔍 [getSectionByCode] Looking up section:', {
-    subjectIdOrCode,
-    sectionCode
-  });
-
   let subject = getSubjectByLegacyId(subjectIdOrCode) || getSubjectByCode(subjectIdOrCode);
-  
-  console.log('📚 [getSectionByCode] Subject lookup result:', {
-    found: !!subject,
-    subjectCode: subject?.subjectCode,
-    displayName: subject?.displayName,
-    hasSection: subject?.sections ? Object.keys(subject.sections) : []
-  });
-
-  if (!subject) {
-    console.warn('⚠️ [getSectionByCode] Subject not found:', subjectIdOrCode);
-    return undefined;
-  }
-
-  // Check both by section code key and by code field
-  const section = subject.sections[sectionCode] || Object.values(subject.sections).find(s => s.code === sectionCode);
-  
-  console.log('🎯 [getSectionByCode] Section lookup result:', {
-    sectionCode,
-    found: !!section,
-    section
-  });
-
-  return section;
+  if (!subject) return undefined;
+  return subject.sections[sectionCode] || Object.values(subject.sections).find(s => s.code === sectionCode);
 }
 
 export function getUnitNumberForSection(subjectIdOrCode: string, sectionCode: string): number | undefined {
@@ -166,31 +128,19 @@ export function getUnitNumberForSection(subjectIdOrCode: string, sectionCode: st
 }
 
 export function getSectionInfo(subjectIdOrCode: string, sectionCode: string): { name: string; unitNumber: number } | undefined {
-  console.log('📖 [getSectionInfo] Called with:', {
-    subjectIdOrCode,
-    sectionCode
-  });
-
   const section = getSectionByCode(subjectIdOrCode, sectionCode);
-  const result = section ? { name: section.name, unitNumber: section.unitNumber } : undefined;
-
-  console.log('📖 [getSectionInfo] Returning:', result);
-
-  return result;
+  return section ? { name: section.name, unitNumber: section.unitNumber } : undefined;
 }
 
-// Export all subjects for course listing
 export function getAllSubjects(): APSubject[] {
   return allSubjects;
 }
 
-// Helper to convert subject code to API code format
 export function getApiCodeForSubject(subjectIdOrCode: string): string | undefined {
   let subject = getSubjectByLegacyId(subjectIdOrCode) || getSubjectByCode(subjectIdOrCode);
   return subject?.subjectCode;
 }
 
-// Helper to get legacy ID from subject code (for URLs)
 export function getLegacyIdForSubjectCode(subjectCode: string): string | undefined {
   const entry = Object.entries(legacyIdMap).find(([_, code]) => code === subjectCode);
   return entry ? entry[0] : undefined;
