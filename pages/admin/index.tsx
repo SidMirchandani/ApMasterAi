@@ -104,7 +104,7 @@ export default function AdminPage() {
     new Set(),
   );
   const [selectedModel, setSelectedModel] = useState<string>("2.5");
-  const [selectedAction, setSelectedAction] = useState<string>("explanations");
+  const [selectedAction, setSelectedAction] = useState<string>("process");
   const [cheatMode, setCheatMode] = useState(false);
   const aiActionAbortRef = useRef<AbortController | null>(null);
   const [explanationProgress, setExplanationProgress] = useState<{
@@ -416,23 +416,23 @@ export default function AdminPage() {
     setGeneratingExplanations(true);
     const questionIds = Array.from(selectedQuestions);
 
-    let endpoint = "/api/generateExplanations";
+    let endpoint = "/api/processQuestions";
 
     switch (selectedAction) {
+      case "process":
+        endpoint = "/api/processQuestions";
+        break;
       case "explanations":
         endpoint = "/api/generateExplanations";
         break;
       case "fix-prompts":
         endpoint = "/api/fixPromptsChoices";
         break;
-      case "generate-context":
-        endpoint = "/api/generateContext";
-        break;
     }
 
-    const actionLabel = selectedAction === "explanations" ? "explanation generation"
-      : selectedAction === "fix-prompts" ? "prompt fixing"
-      : "context generation";
+    const actionLabel = selectedAction === "process" ? "processing (fix + explain)"
+      : selectedAction === "explanations" ? "explanation generation"
+      : "prompt fixing";
 
     setExplanationProgress({
       current: 0,
@@ -880,13 +880,13 @@ export default function AdminPage() {
               </div>
               <div className="flex gap-2 items-center">
                 <Select value={selectedAction} onValueChange={setSelectedAction}>
-                  <SelectTrigger className="w-[220px] bg-white">
+                  <SelectTrigger className="w-[250px] bg-white">
                     <SelectValue placeholder="Select Action" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="explanations">Generate Explanations</SelectItem>
-                    <SelectItem value="fix-prompts">Fix Prompts & Choices</SelectItem>
-                    <SelectItem value="generate-context">Generate Context</SelectItem>
+                    <SelectItem value="process">Process Questions (All-in-One)</SelectItem>
+                    <SelectItem value="explanations">Generate Explanations Only</SelectItem>
+                    <SelectItem value="fix-prompts">Fix Prompts & Choices Only</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
@@ -929,7 +929,7 @@ export default function AdminPage() {
                     className="h-2"
                   />
                   <div className="flex gap-4 text-xs text-gray-500">
-                    <span className="text-green-600 font-medium">Generated: {explanationProgress.updated}</span>
+                    <span className="text-green-600 font-medium">Done: {explanationProgress.updated}</span>
                     <span className="text-yellow-600">Skipped: {explanationProgress.skipped}</span>
                     <span className="text-red-600">Failed: {explanationProgress.failed}</span>
                   </div>
