@@ -250,6 +250,78 @@ export default function AdminPage() {
     toast("Import cancelled");
   }
 
+  const [recategorizing, setRecategorizing] = useState(false);
+  const [recatProgress, setRecatProgress] = useState<{
+    message: string;
+    current: number;
+    total: number;
+    updated: number;
+    skipped: number;
+    errors: number;
+  } | null>(null);
+
+  async function startRecategorizePhysics() {
+    if (!token) return;
+    setRecategorizing(true);
+    setRecatProgress({ message: "Starting recategorization...", current: 0, total: 0, updated: 0, skipped: 0, errors: 0 });
+
+    try {
+      const res = await fetch("/api/admin/recategorize-physics", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Failed to recategorize");
+        setRecategorizing(false);
+        setRecatProgress(null);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) { setRecategorizing(false); return; }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "progress" || event.type === "error") {
+              setRecatProgress({
+                message: event.message || "",
+                current: event.current || 0,
+                total: event.total || 0,
+                updated: event.updated || 0,
+                skipped: event.skipped || 0,
+                errors: event.errors || 0,
+              });
+            }
+            if (event.type === "complete") {
+              toast.success(event.message);
+              fetchSubjectStatus();
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      toast.error("Recategorization failed: " + err.message);
+    } finally {
+      setRecategorizing(false);
+      setTimeout(() => setRecatProgress(null), 5000);
+    }
+  }
+
   const [removingSubject, setRemovingSubject] = useState<string | null>(null);
 
   async function removeSubject(code: string) {
@@ -328,8 +400,8 @@ export default function AdminPage() {
       APLANG: ["CRE", "SS", "RS", "OC", "ARG"],
       APLIT: ["SF1", "PO1", "LF1", "SF2", "PO2", "LF2", "SF3", "PO3", "LF3"],
       APSTATS: ["EOV", "ETV", "CD", "PRD", "SD", "ICP", "IQM", "ICC", "IQS"],
-      APPHYS1: ["KIN", "DYN", "CMG", "ENR", "MOM", "SHM", "TRM"],
-      APPHYS2: ["FLU", "THD", "EFP", "EC", "MEI", "GPO", "QAN"],
+      APPHYS1: ["KIN", "FTD", "WEP", "LMO", "TRD", "EMR", "OSC", "FLU"],
+      APPHYS2: ["THD", "EFP", "EC", "MEI", "GPO", "WPO", "MOD"],
       APES: ["LWE", "LWB", "POP", "ESR", "LWU", "ERC", "APL", "ATP", "GCH"],
       APHUG: ["TG", "PMP", "CPP", "PPP", "ARL", "CUL", "IED"],
     };
@@ -834,6 +906,59 @@ export default function AdminPage() {
                   <span className="text-green-600 font-medium">Imported: {addSubjectProgress.imported}</span>
                   <span className="text-yellow-600">Skipped: {addSubjectProgress.skipped}</span>
                   <span className="text-red-600">Errors: {addSubjectProgress.errors}</span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recategorize Physics Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-orange-500" />
+              Recategorize Physics Questions
+            </CardTitle>
+            <CardDescription>
+              Update all AP Physics 1 and 2 questions to use the latest College Board unit codes
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              onClick={startRecategorizePhysics}
+              disabled={recategorizing}
+              className="bg-orange-500 hover:bg-orange-600 text-white"
+            >
+              {recategorizing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Recategorizing...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Recategorize Physics 1 &amp; 2
+                </>
+              )}
+            </Button>
+            {recatProgress && (
+              <div className="space-y-2 pt-2">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>{recatProgress.message}</span>
+                  {recatProgress.total > 0 && (
+                    <span>{Math.round((recatProgress.current / Math.max(recatProgress.total, 1)) * 100)}%</span>
+                  )}
+                </div>
+                {recatProgress.total > 0 && (
+                  <Progress
+                    value={(recatProgress.current / Math.max(recatProgress.total, 1)) * 100}
+                    className="h-2"
+                  />
+                )}
+                <div className="flex gap-4 text-xs text-gray-500">
+                  <span className="text-green-600 font-medium">Updated: {recatProgress.updated}</span>
+                  <span className="text-yellow-600">Skipped: {recatProgress.skipped}</span>
+                  <span className="text-red-600">Errors: {recatProgress.errors}</span>
                 </div>
               </div>
             )}
