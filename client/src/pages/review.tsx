@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, CheckCircle, XCircle, ChevronRight } from "lucide-react";
+import { RotateCcw, CheckCircle, XCircle, ChevronRight } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
@@ -110,21 +110,10 @@ export default function ReviewPage() {
 
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-              className="dark:text-gray-300"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Back
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-purple-500" />
-              Spaced Review
-            </h1>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <RotateCcw className="w-6 h-6 text-purple-500" />
+            Review
+          </h1>
           <Badge variant="outline" className="text-sm dark:border-gray-600 dark:text-gray-300">
             {dueQuestions.length} due
           </Badge>
@@ -138,10 +127,10 @@ export default function ReviewPage() {
               No questions are due for review right now. Keep practicing to build your review queue.
             </p>
             <Button
-              onClick={() => router.back()}
+              onClick={() => router.push("/dashboard")}
               className="bg-khan-green hover:bg-khan-green-light text-white"
             >
-              Back to Study
+              Start Practicing
             </Button>
           </div>
         ) : currentQuestion ? (

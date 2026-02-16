@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  ArrowLeft,
   BarChart3,
   Target,
   Clock,
@@ -108,19 +107,10 @@ export default function AnalyticsPage() {
       <Navigation />
 
       <div className="container mx-auto px-4 py-6 max-w-5xl">
-        <div className="flex items-center gap-3 mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="dark:text-gray-300"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Back
-          </Button>
+        <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-khan-green" />
-            Performance Analytics
+            Analytics
           </h1>
           {subjectId && (
             <Badge className="bg-khan-green text-white">{subjectId}</Badge>

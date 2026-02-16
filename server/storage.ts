@@ -810,8 +810,14 @@ export class Storage {
       query = query.where('subjectId', '==', subjectId);
     }
 
-    const snapshot = await query.orderBy('createdAt', 'desc').get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await query.get();
+    const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    results.sort((a: any, b: any) => {
+      const aTime = a.createdAt?._seconds || a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?._seconds || b.createdAt?.seconds || 0;
+      return bTime - aTime;
+    });
+    return results;
   }
 
   async isBookmarked(userId: string, questionId: string): Promise<boolean> {

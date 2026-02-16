@@ -18,7 +18,7 @@ import {
   ArrowLeft,
   Trophy,
   HelpCircle,
-  Calendar,
+  RotateCcw,
   Bookmark,
   BarChart3,
 } from "lucide-react";
@@ -332,8 +332,8 @@ export default function Study() {
                 variant="outline"
                 className="w-full h-12 text-base font-medium border-2 border-purple-400 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
               >
-                <Calendar className="mr-2 h-5 w-5" />
-                Review Due Questions
+                <RotateCcw className="mr-2 h-5 w-5" />
+                Review
               </Button>
             </CardContent>
           </Card>
