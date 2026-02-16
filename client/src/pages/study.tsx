@@ -334,7 +334,7 @@ export default function Study() {
                 className="w-full h-12 text-base font-medium border-2 border-purple-400 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
               >
                 <RotateCcw className="mr-2 h-5 w-5" />
-                Practice Again
+                Review Questions
               </Button>
             </CardContent>
           </Card>

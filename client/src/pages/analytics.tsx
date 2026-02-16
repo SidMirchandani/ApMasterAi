@@ -12,12 +12,24 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Calendar,
+  CalendarDays,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+  Area,
+  AreaChart,
+} from "recharts";
 
 interface UnitStats {
   correct: number;
@@ -35,12 +47,19 @@ interface AnalyticsData {
   byUnit: { [unitId: string]: UnitStats };
 }
 
-function predictAPScore(accuracy: number): { score: number; label: string } {
-  if (accuracy >= 85) return { score: 5, label: "Extremely well qualified" };
-  if (accuracy >= 70) return { score: 4, label: "Well qualified" };
-  if (accuracy >= 55) return { score: 3, label: "Qualified" };
-  if (accuracy >= 40) return { score: 2, label: "Possibly qualified" };
-  return { score: 1, label: "No recommendation" };
+interface ScoreHistoryEntry {
+  date: string;
+  accuracy: number;
+  predictedScore: number;
+  totalAttempted: number;
+}
+
+function predictAPScore(accuracy: number): { score: number; label: string; color: string } {
+  if (accuracy >= 85) return { score: 5, label: "Extremely well qualified", color: "#10b981" };
+  if (accuracy >= 70) return { score: 4, label: "Well qualified", color: "#22c55e" };
+  if (accuracy >= 55) return { score: 3, label: "Qualified", color: "#eab308" };
+  if (accuracy >= 40) return { score: 2, label: "Possibly qualified", color: "#f97316" };
+  return { score: 1, label: "No recommendation", color: "#ef4444" };
 }
 
 function formatTime(seconds: number): string {
@@ -49,6 +68,19 @@ function formatTime(seconds: number): string {
   const secs = Math.round(seconds % 60);
   return `${mins}m ${secs}s`;
 }
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+const scoreColors: Record<number, string> = {
+  5: "#10b981",
+  4: "#22c55e",
+  3: "#eab308",
+  2: "#f97316",
+  1: "#ef4444",
+};
 
 export default function AnalyticsPage() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -77,7 +109,24 @@ export default function AnalyticsPage() {
     enabled: isAuthenticated && !!user,
   });
 
+  const { data: historyResponse } = useQuery<{
+    success: boolean;
+    data: ScoreHistoryEntry[];
+  }>({
+    queryKey: ["scoreHistory", subjectId || "all"],
+    queryFn: async () => {
+      const url = subjectId
+        ? `/api/user/score-history?subjectId=${subjectId}`
+        : "/api/user/score-history";
+      const res = await apiRequest("GET", url);
+      if (!res.ok) throw new Error("Failed to fetch score history");
+      return res.json();
+    },
+    enabled: isAuthenticated && !!user,
+  });
+
   const stats = analyticsResponse?.data;
+  const scoreHistory = historyResponse?.data || [];
   const accuracy = stats && stats.totalAttempted > 0
     ? Math.round((stats.totalCorrect / stats.totalAttempted) * 100)
     : 0;
@@ -90,6 +139,11 @@ export default function AnalyticsPage() {
         return accA - accB;
       })
     : [];
+
+  const chartData = scoreHistory.map(entry => ({
+    ...entry,
+    dateLabel: formatDate(entry.date),
+  }));
 
   if (loading || isLoading) {
     return (
@@ -133,7 +187,6 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Overview Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardContent className="p-4 text-center">
@@ -158,38 +211,206 @@ export default function AnalyticsPage() {
               </Card>
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardContent className="p-4 text-center">
-                  <Calendar className="mx-auto h-8 w-8 text-purple-500 mb-2" />
+                  <CalendarDays className="mx-auto h-8 w-8 text-purple-500 mb-2" />
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.dueForReview}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Due for Review</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Predicted AP Score */}
-            <Card className="border-2 border-khan-green dark:border-khan-green dark:bg-gray-900">
+            <Card className="border-2 dark:bg-gray-900 overflow-hidden" style={{ borderColor: predicted.color }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
-                  <TrendingUp className="h-5 w-5 text-khan-green" />
+                  <TrendingUp className="h-5 w-5" style={{ color: predicted.color }} />
                   Predicted AP Score
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-6">
-                  <div className="flex items-center justify-center w-20 h-20 rounded-full bg-khan-green text-white text-3xl font-bold">
+                  <div
+                    className="flex items-center justify-center w-24 h-24 rounded-full text-white text-4xl font-bold shadow-lg"
+                    style={{ backgroundColor: predicted.color }}
+                  >
                     {predicted.score}
                   </div>
                   <div className="flex-1">
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{predicted.label}</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{predicted.label}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      Based on {stats.totalAttempted} questions answered with {accuracy}% accuracy
+                      Based on <span className="font-semibold text-gray-700 dark:text-gray-300">{stats.totalAttempted}</span> questions with <span className="font-semibold" style={{ color: predicted.color }}>{accuracy}%</span> accuracy
                     </p>
-                    <Progress value={accuracy} className="mt-3 h-2" />
+                    <div className="mt-3 flex items-center gap-2">
+                      <Progress value={accuracy} className="h-3 flex-1" />
+                      <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{accuracy}%</span>
+                    </div>
+                    <div className="flex justify-between mt-1 text-[10px] text-gray-400">
+                      <span>Score 1</span>
+                      <span>Score 2</span>
+                      <span>Score 3</span>
+                      <span>Score 4</span>
+                      <span>Score 5</span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Time Stats */}
+            {chartData.length > 1 && (
+              <Card className="dark:bg-gray-900 dark:border-gray-700">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
+                    <TrendingUp className="h-5 w-5 text-blue-500" />
+                    Score Progress Over Time
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4 grid grid-cols-3 gap-3 text-center">
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                      <p className="text-2xl font-bold" style={{ color: scoreColors[chartData[chartData.length - 1]?.predictedScore] || "#6b7280" }}>
+                        {chartData[chartData.length - 1]?.predictedScore || "-"}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Current Score</p>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                      <p className="text-2xl font-bold text-blue-500">
+                        {chartData[chartData.length - 1]?.accuracy || 0}%
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Latest Accuracy</p>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                      {(() => {
+                        const first = chartData[0]?.predictedScore || 0;
+                        const last = chartData[chartData.length - 1]?.predictedScore || 0;
+                        const diff = last - first;
+                        return (
+                          <>
+                            <p className={`text-2xl font-bold ${diff > 0 ? "text-green-500" : diff < 0 ? "text-red-500" : "text-gray-500"}`}>
+                              {diff > 0 ? `+${diff}` : diff === 0 ? "0" : `${diff}`}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Score Change</p>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="accuracyGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
+                        <XAxis
+                          dataKey="dateLabel"
+                          tick={{ fontSize: 11, fill: "#9ca3af" }}
+                          axisLine={{ stroke: "#e5e7eb" }}
+                        />
+                        <YAxis
+                          yAxisId="score"
+                          domain={[0, 5]}
+                          ticks={[1, 2, 3, 4, 5]}
+                          tick={{ fontSize: 11, fill: "#9ca3af" }}
+                          axisLine={{ stroke: "#e5e7eb" }}
+                          label={{ value: "AP Score", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "#9ca3af" }, offset: 20 }}
+                        />
+                        <YAxis
+                          yAxisId="accuracy"
+                          orientation="right"
+                          domain={[0, 100]}
+                          tick={{ fontSize: 11, fill: "#9ca3af" }}
+                          axisLine={{ stroke: "#e5e7eb" }}
+                          label={{ value: "Accuracy %", angle: 90, position: "insideRight", style: { fontSize: 11, fill: "#9ca3af" }, offset: 20 }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "rgba(255,255,255,0.95)",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "8px",
+                            fontSize: "13px",
+                            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                          }}
+                          formatter={(value: any, name: string) => {
+                            if (name === "predictedScore") return [value, "AP Score"];
+                            if (name === "accuracy") return [`${value}%`, "Accuracy"];
+                            return [value, name];
+                          }}
+                          labelFormatter={(label) => `Date: ${label}`}
+                        />
+                        <ReferenceLine yAxisId="score" y={3} stroke="#eab308" strokeDasharray="5 5" strokeOpacity={0.5} />
+                        <Area
+                          yAxisId="accuracy"
+                          type="monotone"
+                          dataKey="accuracy"
+                          stroke="#3b82f6"
+                          fill="url(#accuracyGradient)"
+                          strokeWidth={2}
+                          dot={{ r: 3, fill: "#3b82f6" }}
+                          activeDot={{ r: 5 }}
+                        />
+                        <Line
+                          yAxisId="score"
+                          type="stepAfter"
+                          dataKey="predictedScore"
+                          stroke="#8b5cf6"
+                          strokeWidth={3}
+                          dot={(props: any) => {
+                            const { cx, cy, payload } = props;
+                            const color = scoreColors[payload.predictedScore] || "#6b7280";
+                            return (
+                              <circle
+                                key={`dot-${props.index}`}
+                                cx={cx}
+                                cy={cy}
+                                r={6}
+                                fill={color}
+                                stroke="white"
+                                strokeWidth={2}
+                              />
+                            );
+                          }}
+                          activeDot={{ r: 8 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="flex items-center justify-center gap-6 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-purple-500" />
+                      AP Score (1-5)
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-blue-500" />
+                      Accuracy %
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-6 h-0 border-t-2 border-dashed border-yellow-500" />
+                      Score 3 (Qualified)
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {chartData.length <= 1 && (
+              <Card className="dark:bg-gray-900 dark:border-gray-700 border-dashed">
+                <CardContent className="p-6 text-center">
+                  <TrendingUp className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600 mb-3" />
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Score Progress Chart</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Keep practicing over multiple days to see your AP score trend over time. Your progress will appear here as a chart.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="dark:bg-gray-900 dark:border-gray-700">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
@@ -215,7 +436,6 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            {/* Unit Breakdown */}
             {unitEntries.length > 0 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader className="pb-2">

@@ -86,7 +86,7 @@ export default function Navigation() {
 
     if (location.startsWith("/review")) {
       if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
-      bc.push({ label: "Practice Again", href: "#" });
+      bc.push({ label: "Review Questions", href: "#" });
     }
 
     if (location.startsWith("/analytics")) {

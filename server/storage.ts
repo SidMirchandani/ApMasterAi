@@ -1006,6 +1006,55 @@ export class Storage {
 
     return stats;
   }
+
+  async saveScoreSnapshot(userId: string, subjectId: string, accuracy: number, predictedScore: number, totalAttempted: number): Promise<void> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateKey = today.toISOString().split('T')[0];
+
+    const docId = `${userId}_${subjectId}_${dateKey}`;
+    await db.collection('score_history').doc(docId).set({
+      userId,
+      subjectId,
+      date: admin.firestore.Timestamp.fromDate(today),
+      dateKey,
+      accuracy,
+      predictedScore,
+      totalAttempted,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+  }
+
+  async getScoreHistory(userId: string, subjectId?: string): Promise<any[]> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    let query: admin.firestore.Query = db.collection('score_history')
+      .where('userId', '==', userId);
+
+    if (subjectId) {
+      query = query.where('subjectId', '==', subjectId);
+    }
+
+    const snapshot = await query.get();
+    const results = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        date: data.dateKey,
+        accuracy: data.accuracy,
+        predictedScore: data.predictedScore,
+        totalAttempted: data.totalAttempted,
+      };
+    });
+
+    results.sort((a, b) => a.date.localeCompare(b.date));
+    return results;
+  }
 }
 
 export const storage = new Storage();
