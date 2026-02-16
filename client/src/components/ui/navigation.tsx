@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { BookOpen, LogOut, User, ChevronRight, Sun, Moon, Bookmark, BarChart3, RotateCcw, Menu, X, Info, Users } from "lucide-react";
+import { BookOpen, LogOut, User, ChevronRight, Sun, Moon, Menu, X, Info, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -86,7 +86,7 @@ export default function Navigation() {
 
     if (location.startsWith("/review")) {
       if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
-      bc.push({ label: "Review", href: "#" });
+      bc.push({ label: "Practice Again", href: "#" });
     }
 
     if (location.startsWith("/analytics")) {
@@ -123,15 +123,6 @@ export default function Navigation() {
   };
 
   const breadcrumbs = getBreadcrumbs();
-
-  const navLinks = [
-    { label: "Dashboard", href: "/dashboard", match: "/dashboard" },
-    { label: "Saved", href: "/bookmarks", match: "/bookmarks" },
-    { label: "Review", href: "/review", match: "/review" },
-    { label: "Analytics", href: "/analytics", match: "/analytics" },
-  ];
-
-  const isActiveLink = (match: string) => location.startsWith(match);
 
   return (
     <nav className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-50 shadow-sm">
@@ -177,25 +168,6 @@ export default function Navigation() {
               </div>
             )}
           </div>
-
-          {/* CENTER: Nav links for authenticated users (desktop) */}
-          {isAuthenticated && !isInQuizMode && (
-            <div className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    isActiveLink(link.match)
-                      ? "bg-[#36b37e]/10 text-[#36b37e] dark:bg-[#36b37e]/20"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          )}
 
           {/* RIGHT: Theme + User menu */}
           <div className="flex items-center gap-2">
@@ -323,42 +295,35 @@ export default function Navigation() {
       {/* Mobile menu dropdown */}
       {isAuthenticated && mobileMenuOpen && (
         <div className="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 space-y-1">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileMenuOpen(false)}
-              className={`block px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                isActiveLink(link.match)
-                  ? "bg-[#36b37e]/10 text-[#36b37e] dark:bg-[#36b37e]/20"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2 space-y-1">
-            <Link
-              href="/profile"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              Profile
-            </Link>
-            <Link
-              href="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              About Us
-            </Link>
-            <Link
-              href="/team"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              Our Team
-            </Link>
+          <Link
+            href="/dashboard"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/profile"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            Profile
+          </Link>
+          <Link
+            href="/about"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            About Us
+          </Link>
+          <Link
+            href="/team"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2.5 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            Our Team
+          </Link>
+          <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
             <button
               onClick={async () => {
                 setMobileMenuOpen(false);

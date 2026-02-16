@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Bookmark,
   BarChart3,
+  CalendarDays,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -258,7 +259,7 @@ export default function Study() {
                     {formatDate(currentSubject.examDate)}
                   </p>
                 </div>
-                <Calendar className="h-10 w-10 text-khan-blue" />
+                <CalendarDays className="h-10 w-10 text-khan-blue" />
               </div>
             </CardContent>
           </Card>
@@ -333,7 +334,7 @@ export default function Study() {
                 className="w-full h-12 text-base font-medium border-2 border-purple-400 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
               >
                 <RotateCcw className="mr-2 h-5 w-5" />
-                Review
+                Practice Again
               </Button>
             </CardContent>
           </Card>

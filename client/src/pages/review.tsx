@@ -112,7 +112,7 @@ export default function ReviewPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <RotateCcw className="w-6 h-6 text-purple-500" />
-            Review
+            Practice Again
           </h1>
           <Badge variant="outline" className="text-sm dark:border-gray-600 dark:text-gray-300">
             {dueQuestions.length} due

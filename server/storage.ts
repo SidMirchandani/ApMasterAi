@@ -933,15 +933,28 @@ export class Storage {
     if (!db) throw new Error("Firestore not available");
 
     let query: admin.firestore.Query = db.collection('user_question_state')
-      .where('userId', '==', userId)
-      .where('nextReviewAt', '<=', new Date());
+      .where('userId', '==', userId);
 
     if (subjectId) {
       query = query.where('subjectId', '==', subjectId);
     }
 
-    const snapshot = await query.orderBy('nextReviewAt', 'asc').limit(limit).get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await query.get();
+    const now = new Date();
+    const results = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter((doc: any) => {
+        if (!doc.nextReviewAt) return false;
+        const reviewAt = doc.nextReviewAt.toDate ? doc.nextReviewAt.toDate() : new Date(doc.nextReviewAt);
+        return reviewAt <= now;
+      })
+      .sort((a: any, b: any) => {
+        const aTime = a.nextReviewAt?.toDate ? a.nextReviewAt.toDate().getTime() : new Date(a.nextReviewAt).getTime();
+        const bTime = b.nextReviewAt?.toDate ? b.nextReviewAt.toDate().getTime() : new Date(b.nextReviewAt).getTime();
+        return aTime - bTime;
+      })
+      .slice(0, limit);
+    return results;
   }
 
   async getQuestionStats(userId: string, subjectId?: string): Promise<any> {
