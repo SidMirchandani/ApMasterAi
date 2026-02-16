@@ -212,6 +212,7 @@ export default function Dashboard() {
       toast({ title: "Delete failed", variant: "destructive" });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
       toast({ title: "Subject removed" });
       setShowRemoveDialog(false);
       setSubjectToRemove(null);
