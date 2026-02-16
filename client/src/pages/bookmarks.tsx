@@ -278,7 +278,25 @@ export default function BookmarksPage() {
             </Card>
 
             <div className="flex items-center justify-between">
-              <div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handlePrev}
+                  disabled={currentIndex === 0}
+                  className="dark:border-gray-600 dark:text-gray-300"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  disabled={currentIndex >= bookmarks.length - 1}
+                  className="dark:border-gray-600 dark:text-gray-300"
+                >
+                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
                 {!isRevealed && (
                   <Button
                     variant="outline"
@@ -289,9 +307,7 @@ export default function BookmarksPage() {
                     Reveal Answer
                   </Button>
                 )}
-              </div>
-              <div className="flex items-center gap-2">
-                {!isRevealed ? (
+                {!isRevealed && (
                   <Button
                     onClick={handleSubmit}
                     disabled={!selectedAnswer}
@@ -299,24 +315,6 @@ export default function BookmarksPage() {
                   >
                     Submit
                   </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={handlePrev}
-                      disabled={currentIndex === 0}
-                      className="dark:border-gray-600 dark:text-gray-300"
-                    >
-                      <ChevronLeft className="w-4 h-4 mr-1" /> Prev
-                    </Button>
-                    <Button
-                      onClick={handleNext}
-                      disabled={currentIndex >= bookmarks.length - 1}
-                      className="bg-khan-green hover:bg-khan-green-light text-white"
-                    >
-                      Next <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </div>
                 )}
               </div>
             </div>

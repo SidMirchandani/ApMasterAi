@@ -31,7 +31,7 @@ export default async function handler(
     const subjectId = req.query.subjectId as string | undefined;
     const stats = await storage.getQuestionStats(userId, subjectId);
 
-    if (stats.totalAttempted > 0 && subjectId) {
+    if (stats.totalAttempted >= 25 && subjectId) {
       const accuracy = Math.round((stats.totalCorrect / stats.totalAttempted) * 100);
       const predicted = predictAPScore(accuracy);
       try {

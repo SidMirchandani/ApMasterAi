@@ -130,6 +130,7 @@ export default function AnalyticsPage() {
   const accuracy = stats && stats.totalAttempted > 0
     ? Math.round((stats.totalCorrect / stats.totalAttempted) * 100)
     : 0;
+  const hasEnoughForPrediction = (stats?.totalAttempted || 0) >= 25;
   const predicted = predictAPScore(accuracy);
 
   const unitEntries = stats?.byUnit
@@ -140,10 +141,23 @@ export default function AnalyticsPage() {
       })
     : [];
 
-  const chartData = scoreHistory.map(entry => ({
-    ...entry,
-    dateLabel: formatDate(entry.date),
-  }));
+  const filteredHistory = scoreHistory.filter(entry => (entry.totalAttempted || 0) >= 25);
+  const chartData = (() => {
+    if (filteredHistory.length === 0) return [];
+    const result = [filteredHistory[0]];
+    let nextThreshold = 35;
+    for (let i = 1; i < filteredHistory.length; i++) {
+      const attempted = filteredHistory[i].totalAttempted || 0;
+      if (attempted >= nextThreshold) {
+        result.push(filteredHistory[i]);
+        nextThreshold = attempted - (attempted - 25) % 10 + 10;
+      }
+    }
+    return result.map(entry => ({
+      ...entry,
+      dateLabel: formatDate(entry.date),
+    }));
+  })();
 
   if (loading || isLoading) {
     return (
@@ -218,41 +232,70 @@ export default function AnalyticsPage() {
               </Card>
             </div>
 
-            <Card className="border-2 dark:bg-gray-900 overflow-hidden" style={{ borderColor: predicted.color }}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
-                  <TrendingUp className="h-5 w-5" style={{ color: predicted.color }} />
-                  Predicted AP Score
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-6">
-                  <div
-                    className="flex items-center justify-center w-24 h-24 rounded-full text-white text-4xl font-bold shadow-lg"
-                    style={{ backgroundColor: predicted.color }}
-                  >
-                    {predicted.score}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{predicted.label}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      Based on <span className="font-semibold text-gray-700 dark:text-gray-300">{stats.totalAttempted}</span> questions with <span className="font-semibold" style={{ color: predicted.color }}>{accuracy}%</span> accuracy
-                    </p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <Progress value={accuracy} className="h-3 flex-1" />
-                      <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{accuracy}%</span>
+            {hasEnoughForPrediction ? (
+              <Card className="border-2 dark:bg-gray-900 overflow-hidden" style={{ borderColor: predicted.color }}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
+                    <TrendingUp className="h-5 w-5" style={{ color: predicted.color }} />
+                    Predicted AP Score
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-6">
+                    <div
+                      className="flex items-center justify-center w-24 h-24 rounded-full text-white text-4xl font-bold shadow-lg"
+                      style={{ backgroundColor: predicted.color }}
+                    >
+                      {predicted.score}
                     </div>
-                    <div className="flex justify-between mt-1 text-[10px] text-gray-400">
-                      <span>Score 1</span>
-                      <span>Score 2</span>
-                      <span>Score 3</span>
-                      <span>Score 4</span>
-                      <span>Score 5</span>
+                    <div className="flex-1">
+                      <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{predicted.label}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Based on <span className="font-semibold text-gray-700 dark:text-gray-300">{stats.totalAttempted}</span> questions with <span className="font-semibold" style={{ color: predicted.color }}>{accuracy}%</span> accuracy
+                      </p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <Progress value={accuracy} className="h-3 flex-1" />
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{accuracy}%</span>
+                      </div>
+                      <div className="flex justify-between mt-1 text-[10px] text-gray-400">
+                        <span>Score 1</span>
+                        <span>Score 2</span>
+                        <span>Score 3</span>
+                        <span>Score 4</span>
+                        <span>Score 5</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-2 border-dashed border-gray-300 dark:border-gray-600 dark:bg-gray-900 overflow-hidden">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
+                    <TrendingUp className="h-5 w-5 text-gray-400" />
+                    Predicted AP Score
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center justify-center w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 text-4xl font-bold">
+                      ?
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-lg font-bold text-gray-700 dark:text-gray-300">Not enough data yet</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Answer at least <span className="font-semibold text-gray-700 dark:text-gray-300">25 questions</span> to get your predicted AP score.
+                        You've answered <span className="font-semibold text-gray-700 dark:text-gray-300">{stats.totalAttempted}</span> so far — <span className="font-semibold text-khan-green">{25 - stats.totalAttempted} more to go!</span>
+                      </p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <Progress value={(stats.totalAttempted / 25) * 100} className="h-3 flex-1" />
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{stats.totalAttempted}/25</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {chartData.length > 1 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700">
@@ -405,7 +448,9 @@ export default function AnalyticsPage() {
                   <TrendingUp className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600 mb-3" />
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Score Progress Chart</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Keep practicing over multiple days to see your AP score trend over time. Your progress will appear here as a chart.
+                    {!hasEnoughForPrediction
+                      ? `Answer at least 25 questions to see your first score plot. You've answered ${stats.totalAttempted} so far.`
+                      : "Keep practicing to see your AP score trend over time. New data points are added every 10 questions."}
                   </p>
                 </CardContent>
               </Card>

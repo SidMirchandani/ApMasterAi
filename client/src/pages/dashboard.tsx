@@ -9,6 +9,7 @@ import {
   Plus,
   Calendar,
   AlertTriangle,
+  TrendingUp,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -163,7 +164,7 @@ export default function Dashboard() {
       return res.json();
     },
     onMutate: async ({ id, archive }) => {
-      await queryClient.cancelQueries(["subjects"]);
+      await queryClient.cancelQueries({ queryKey: ["subjects"] });
       const prev = queryClient.getQueryData(["subjects"]);
 
       queryClient.setQueryData(["subjects"], (old: any) => ({
@@ -197,7 +198,7 @@ export default function Dashboard() {
       return res.json();
     },
     onMutate: async (id) => {
-      await queryClient.cancelQueries(["subjects"]);
+      await queryClient.cancelQueries({ queryKey: ["subjects"] });
       const prev = queryClient.getQueryData(["subjects"]);
 
       queryClient.setQueryData(["subjects"], (old: any) => ({
@@ -483,6 +484,14 @@ const ArchivedSection = ({
   </div>
 );
 
+const scoreColorMap: Record<number, string> = {
+  5: "#10b981",
+  4: "#22c55e",
+  3: "#eab308",
+  2: "#f97316",
+  1: "#ef4444",
+};
+
 const SubjectCard = ({
   subject,
   onArchive,
@@ -497,6 +506,27 @@ const SubjectCard = ({
   const subjectMeta = getSubjectByCode(subject.subjectId);
   const units = subjectMeta?.units || [];
   const unitProgress = subject.unitProgress || {};
+
+  const { data: analyticsResponse } = useQuery<{
+    success: boolean;
+    data: { totalAttempted: number; totalCorrect: number };
+  }>({
+    queryKey: ["/api/user/analytics", subject.subjectId],
+    queryFn: async () => {
+      const res = await fetch(`/api/user/analytics?subjectId=${subject.subjectId}`);
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+
+  const analyticsStats = analyticsResponse?.data;
+  const subjectAccuracy = analyticsStats && analyticsStats.totalAttempted >= 25
+    ? Math.round((analyticsStats.totalCorrect / analyticsStats.totalAttempted) * 100)
+    : null;
+  const predictedScore = subjectAccuracy !== null
+    ? (subjectAccuracy >= 85 ? 5 : subjectAccuracy >= 70 ? 4 : subjectAccuracy >= 55 ? 3 : subjectAccuracy >= 40 ? 2 : 1)
+    : null;
 
   return (
     <Card className="overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-900 rounded-lg">
@@ -542,6 +572,17 @@ const SubjectCard = ({
               <span>
                 Exam: {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
               </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+              <span className="text-gray-600 dark:text-gray-400">Predicted Score:</span>
+              {predictedScore !== null ? (
+                <span className="font-bold text-lg" style={{ color: scoreColorMap[predictedScore] }}>
+                  {predictedScore}
+                </span>
+              ) : (
+                <span className="text-gray-600 dark:text-gray-400">N/A</span>
+              )}
             </div>
           </div>
 
