@@ -1,6 +1,6 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 import { getModelName } from "../../lib/gemini-models";
 
@@ -129,24 +129,27 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { questionIds, model = "2.0" } = req.body || {};
+  const { questionIds, model = "2.5" } = req.body || {};
 
   if (!questionIds || !Array.isArray(questionIds) || questionIds.length === 0) {
     return res.status(400).json({ error: "questionIds array is required" });
   }
 
   const selectedModel = getModelName(model);
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: "Missing GEMINI_API_KEY in environment" });
-  }
+
+  const ai = new GoogleGenAI({
+    apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+    httpOptions: {
+      apiVersion: "",
+      baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+    },
+  });
 
   const firebaseAdmin = getFirebaseAdmin();
   if (!firebaseAdmin) {
     return res.status(500).json({ error: "Firebase Admin not initialized" });
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
   const { firestore } = firebaseAdmin;
   const questionsRef = firestore.collection("questions");
   const total = questionIds.length;
@@ -257,17 +260,18 @@ Question:
 
 Remember: Only fix formatting (math notation, symbols, spacing). Keep all words exactly the same.`;
 
-      const modelInstance = genAI.getGenerativeModel({ model: selectedModel });
-
       const result = await callWithRetry(
-        () => modelInstance.generateContent(promptText),
+        () => ai.models.generateContent({
+          model: selectedModel,
+          contents: promptText,
+        }),
         5, 5000,
         (attempt, waitSec) => {
           sendEvent({ type: "rate_limit", current: i + 1, total, updated, skipped, failed, message: `Rate limit hit — waiting ${waitSec}s before retry ${attempt}/5...` });
         }
       );
 
-      let responseText = result.response?.text()?.trim() || "";
+      let responseText = result.text?.trim() || "";
       responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       
       const corrected = JSON.parse(responseText);

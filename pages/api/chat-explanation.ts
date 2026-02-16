@@ -1,6 +1,6 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,14 +24,14 @@ export default async function handler(
       return res.status(400).json({ error: "User question is required" });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("Missing GEMINI_API_KEY in environment");
-    }
+    const ai = new GoogleGenAI({
+      apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+      httpOptions: {
+        apiVersion: "",
+        baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+      },
+    });
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    // Build conversation context
     const conversationContext = conversationHistory
       ?.map((msg: { role: string; content: string }) => 
         `${msg.role === "user" ? "Student" : "Tutor"}: ${msg.content}`
@@ -61,10 +61,12 @@ Provide a clear, concise, and helpful response to the student's question. Focus 
 
 Your response:`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
 
-    const aiResponse = result.response?.text()?.trim() || "I'm sorry, I couldn't generate a response. Please try rephrasing your question.";
+    const aiResponse = result.text?.trim() || "I'm sorry, I couldn't generate a response. Please try rephrasing your question.";
 
     return res.status(200).json({ response: aiResponse });
   } catch (error: any) {

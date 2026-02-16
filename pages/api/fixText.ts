@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 
 export default async function handler(
@@ -21,15 +21,14 @@ export default async function handler(
       return res.status(400).json({ error: "questionIds array is required" });
     }
 
-    // Initialize Gemini with correct v1 SDK
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("Missing GEMINI_API_KEY in environment");
-    }
+    const ai = new GoogleGenAI({
+      apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+      httpOptions: {
+        apiVersion: "",
+        baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+      },
+    });
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    // Initialize Firebase Admin
     const firebaseAdmin = getFirebaseAdmin();
     if (!firebaseAdmin) {
       throw new Error("Firebase Admin not initialized");
@@ -43,7 +42,6 @@ export default async function handler(
 
     let updated = 0;
 
-    // Fix text for selected questions (throttled)
     for (let i = 0; i < questionIds.length; i++) {
       const questionId = questionIds[i];
 
@@ -61,16 +59,15 @@ export default async function handler(
           `Fixing text for Question ${i + 1}/${total} (ID: ${questionId})`,
         );
 
-        // Build prompt for text cleanup
         const promptText = `Fix any formatting or OCR errors in this text. Return ONLY the corrected text, nothing else:\n\n${question.prompt || ""}`;
 
-        // Use correct v1 SDK pattern
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-        const result = await model.generateContent(promptText);
+        const result = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: promptText,
+        });
 
-        const fixedText = result.response?.text()?.trim() || "";
+        const fixedText = result.text?.trim() || "";
 
-        // Update question
         await doc.ref.update({
           prompt: fixedText,
           updatedAt: new Date(),
@@ -85,7 +82,6 @@ export default async function handler(
         );
       }
 
-      // Delay 1 second between requests
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 

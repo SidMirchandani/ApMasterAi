@@ -10,7 +10,7 @@ import {
   User,
 } from "firebase/auth";
 import toast, { Toaster } from "react-hot-toast";
-import { BookOpen, Upload, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square } from "lucide-react";
+import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square } from "lucide-react";
 import { Progress } from "../../client/src/components/ui/progress";
 import Link from "next/link";
 import { Button } from "../../client/src/components/ui/button";
@@ -97,16 +97,13 @@ export default function AdminPage() {
   const availableSubjects = allApSubjectsRef.map(s => s.code);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
 
-  // ZIP import state
-  const [importing, setImporting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(
     new Set(),
   );
-  const [selectedModel, setSelectedModel] = useState<string>("2.0");
+  const [selectedModel, setSelectedModel] = useState<string>("2.5");
   const [selectedAction, setSelectedAction] = useState<string>("explanations");
   const [cheatMode, setCheatMode] = useState(false);
   const aiActionAbortRef = useRef<AbortController | null>(null);
@@ -248,78 +245,6 @@ export default function AdminPage() {
     addSubjectAbortRef.current?.abort();
     setAddingSubject(false);
     toast("Import cancelled");
-  }
-
-  const [recategorizing, setRecategorizing] = useState(false);
-  const [recatProgress, setRecatProgress] = useState<{
-    message: string;
-    current: number;
-    total: number;
-    updated: number;
-    skipped: number;
-    errors: number;
-  } | null>(null);
-
-  async function startRecategorizePhysics() {
-    if (!token) return;
-    setRecategorizing(true);
-    setRecatProgress({ message: "Starting recategorization...", current: 0, total: 0, updated: 0, skipped: 0, errors: 0 });
-
-    try {
-      const res = await fetch("/api/admin/recategorize-physics", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        toast.error(err.error || "Failed to recategorize");
-        setRecategorizing(false);
-        setRecatProgress(null);
-        return;
-      }
-
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      if (!reader) { setRecategorizing(false); return; }
-
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === "progress" || event.type === "error") {
-              setRecatProgress({
-                message: event.message || "",
-                current: event.current || 0,
-                total: event.total || 0,
-                updated: event.updated || 0,
-                skipped: event.skipped || 0,
-                errors: event.errors || 0,
-              });
-            }
-            if (event.type === "complete") {
-              toast.success(event.message);
-              fetchSubjectStatus();
-            }
-          } catch {}
-        }
-      }
-    } catch (err: any) {
-      toast.error("Recategorization failed: " + err.message);
-    } finally {
-      setRecategorizing(false);
-      setTimeout(() => setRecatProgress(null), 5000);
-    }
   }
 
   const [removingSubject, setRemovingSubject] = useState<string | null>(null);
@@ -481,36 +406,6 @@ export default function AdminPage() {
       error: "Failed to delete question",
     });
   }
-
-  const handleZipImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setImporting(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await fetch('/api/admin/import-questions', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        toast.success(`Success! Imported ${data.imported} questions with ${data.images_uploaded} images.`);
-        fetchFiltered(); // Re-fetch questions after import
-      } else {
-        toast.error(`Error: ${data.message || 'Import failed'}`);
-      }
-    } catch (err) {
-      toast.error('Import failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setImporting(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
 
   async function executeAIAction() {
     if (!token || selectedQuestions.size === 0) {
@@ -780,47 +675,75 @@ export default function AdminPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* ZIP Import Card */}
+        {/* Subjects Overview */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              Bulk Import via ZIP
-            </CardTitle>
-            <CardDescription>Import questions and images from a ZIP file</CardDescription>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <BookOpen className="w-5 h-5 text-khan-green" />
+                  Subjects Overview
+                </CardTitle>
+                <CardDescription>
+                  {loadingStatus ? "Loading..." : `${alreadyAdded.length} of ${allApSubjectsRef.length} subjects imported`}
+                </CardDescription>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-khan-gray-dark">
+                  {Object.values(subjectStatus).reduce((sum, s) => sum + (s.questionCount || 0), 0).toLocaleString()}
+                </div>
+                <div className="text-xs text-khan-gray-medium">Total Questions</div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row gap-3 items-center">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".zip"
-                onChange={handleZipImport}
-                style={{ display: 'none' }}
-              />
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-khan-blue hover:bg-khan-blue/90"
-                disabled={importing}
-              >
-                {importing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Import ZIP
-                  </>
-                )}
-              </Button>
-              {importing && (
-                <p className="text-sm text-khan-gray-medium">
-                  Processing ZIP file... This may take a while.
-                </p>
-              )}
-            </div>
+            {loadingStatus ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-khan-green" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {allApSubjectsRef.map(s => {
+                  const status = subjectStatus[s.code];
+                  const hasQuestions = status?.hasQuestions;
+                  const count = status?.questionCount || 0;
+                  return (
+                    <div
+                      key={s.code}
+                      className={`relative group rounded-lg border-2 p-3 transition-all ${
+                        hasQuestions
+                          ? "border-green-200 bg-green-50 hover:border-green-300"
+                          : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-1">
+                        <span className={`text-xs font-bold ${hasQuestions ? "text-green-700" : "text-gray-400"}`}>
+                          {s.code}
+                        </span>
+                        {hasQuestions && (
+                          <button
+                            onClick={() => removeSubject(s.code)}
+                            disabled={removingSubject === s.code}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600 text-xs font-bold leading-none"
+                            title={`Remove ${s.label}`}
+                          >
+                            {removingSubject === s.code ? <Loader2 className="w-3 h-3 animate-spin" /> : "x"}
+                          </button>
+                        )}
+                      </div>
+                      <div className={`text-xs font-medium leading-tight mb-1 ${hasQuestions ? "text-gray-800" : "text-gray-500"}`}>
+                        {s.label.replace("AP ", "")}
+                      </div>
+                      {hasQuestions ? (
+                        <div className="text-lg font-bold text-green-700">{count.toLocaleString()}</div>
+                      ) : (
+                        <div className="text-xs text-gray-400 italic">Not imported</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -832,37 +755,16 @@ export default function AdminPage() {
               Add Subject
             </CardTitle>
             <CardDescription>
-              Select an AP subject to automatically discover questions on CrackAP, classify them by unit, and import to Firestore
+              Select an AP subject to automatically scrape questions from CrackAP, classify by unit, and import
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {alreadyAdded.length > 0 && (
-              <div className="mb-2">
-                <p className="text-xs text-gray-500 mb-1">Already added ({alreadyAdded.length}):</p>
-                <div className="flex flex-wrap gap-1">
-                  {alreadyAdded.map(s => (
-                    <span key={s.code} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 border border-green-200">
-                      {s.label} ({subjectStatus[s.code]?.questionCount || 0} Q)
-                      <button
-                        onClick={() => removeSubject(s.code)}
-                        disabled={removingSubject === s.code}
-                        className="ml-1 text-red-400 hover:text-red-600 font-bold"
-                        title={`Remove ${s.label}`}
-                      >
-                        {removingSubject === s.code ? "..." : "×"}
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="flex flex-col sm:flex-row gap-3 items-end">
               <div className="flex-1">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Subject to Add</label>
                 <Select value={addSubjectCode} onValueChange={setAddSubjectCode} disabled={addingSubject}>
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder={loadingStatus ? "Loading subjects..." : "Select AP Subject"} />
+                    <SelectValue placeholder={loadingStatus ? "Loading subjects..." : availableToAdd.length > 0 ? "Select AP Subject" : "All subjects imported"} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableToAdd.map((s) => (
@@ -906,59 +808,6 @@ export default function AdminPage() {
                   <span className="text-green-600 font-medium">Imported: {addSubjectProgress.imported}</span>
                   <span className="text-yellow-600">Skipped: {addSubjectProgress.skipped}</span>
                   <span className="text-red-600">Errors: {addSubjectProgress.errors}</span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recategorize Physics Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-orange-500" />
-              Recategorize Physics Questions
-            </CardTitle>
-            <CardDescription>
-              Update all AP Physics 1 and 2 questions to use the latest College Board unit codes
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button
-              onClick={startRecategorizePhysics}
-              disabled={recategorizing}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              {recategorizing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Recategorizing...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 mr-2" />
-                  Recategorize Physics 1 &amp; 2
-                </>
-              )}
-            </Button>
-            {recatProgress && (
-              <div className="space-y-2 pt-2">
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>{recatProgress.message}</span>
-                  {recatProgress.total > 0 && (
-                    <span>{Math.round((recatProgress.current / Math.max(recatProgress.total, 1)) * 100)}%</span>
-                  )}
-                </div>
-                {recatProgress.total > 0 && (
-                  <Progress
-                    value={(recatProgress.current / Math.max(recatProgress.total, 1)) * 100}
-                    className="h-2"
-                  />
-                )}
-                <div className="flex gap-4 text-xs text-gray-500">
-                  <span className="text-green-600 font-medium">Updated: {recatProgress.updated}</span>
-                  <span className="text-yellow-600">Skipped: {recatProgress.skipped}</span>
-                  <span className="text-red-600">Errors: {recatProgress.errors}</span>
                 </div>
               </div>
             )}
@@ -1045,8 +894,8 @@ export default function AdminPage() {
                     <SelectValue placeholder="Select Model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="2.0">Gemini 2.0 Flash (Default)</SelectItem>
-                    <SelectItem value="2.5">Gemini 2.5 Flash</SelectItem>
+                    <SelectItem value="2.5">Gemini 2.5 Flash (Default)</SelectItem>
+                    <SelectItem value="2.5pro">Gemini 2.5 Pro</SelectItem>
                   </SelectContent>
                 </Select>
                 {generatingExplanations ? (

@@ -1,25 +1,22 @@
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(req, res) {
   try {
-    // Check for the API key availability
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("Missing GEMINI_API_KEY in environment");
-    }
+    const ai = new GoogleGenAI({
+      apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+      httpOptions: {
+        apiVersion: "",
+        baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+      },
+    });
 
-    // Initialize with correct SDK
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: "Say hello from Gemini 2.5 Flash!",
+    });
 
-    // Get model instance
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    // Generate content
-    const result = await model.generateContent("Say hello from Gemini 2.5 Flash!");
-
-    // Extract and return the text
-    const text = result.response?.text() || "";
+    const text = result.text || "";
     res.status(200).json({ text });
 
   } catch (err) {

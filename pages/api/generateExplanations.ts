@@ -1,6 +1,6 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 import { getModelName } from "../../lib/gemini-models";
 
@@ -65,7 +65,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { questionIds, model = "2.0" } = req.body || {};
+  const { questionIds, model = "2.5" } = req.body || {};
 
   if (
     !questionIds ||
@@ -78,17 +78,19 @@ export default async function handler(
   const selectedModel = getModelName(model);
   console.log(`Using model: ${selectedModel} (from selection: ${model})`);
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: "Missing GEMINI_API_KEY in environment" });
-  }
+  const ai = new GoogleGenAI({
+    apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+    httpOptions: {
+      apiVersion: "",
+      baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+    },
+  });
 
   const firebaseAdmin = getFirebaseAdmin();
   if (!firebaseAdmin) {
     return res.status(500).json({ error: "Firebase Admin not initialized" });
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
   const { firestore } = firebaseAdmin;
   const questionsRef = firestore.collection("questions");
   const total = questionIds.length;
@@ -263,10 +265,11 @@ Keep the ENTIRE explanation to about 100-150 words maximum. Be clear, concise, a
 Your explanation:`
       });
 
-      const modelInstance = genAI.getGenerativeModel({ model: selectedModel });
-
       const result = await callWithRetry(
-        () => modelInstance.generateContent(promptParts),
+        () => ai.models.generateContent({
+          model: selectedModel,
+          contents: [{ role: "user", parts: promptParts }],
+        }),
         5,
         5000,
         (attempt, waitSec) => {
@@ -283,7 +286,7 @@ Your explanation:`
         }
       );
 
-      let explanation = result.response?.text()?.trim() || "";
+      let explanation = result.text?.trim() || "";
       explanation = explanation.replace(/^Explanation:\s*/i, "").trim();
 
       await doc.ref.update({
