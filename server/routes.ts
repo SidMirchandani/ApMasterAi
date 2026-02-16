@@ -226,6 +226,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =====================
+  // BOOKMARK ROUTES
+  // =====================
+  app.post("/api/user/bookmarks/toggle", async (req, res) => {
+    try {
+      const firebaseUid = req.headers['x-user-id'] as string;
+      if (!firebaseUid) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+
+      const { questionId, subjectId, unitId, prompt, choices, answerIndex, explanation, sectionCode } = req.body;
+      if (!questionId || !subjectId) {
+        return res.status(400).json({ success: false, message: "questionId and subjectId are required" });
+      }
+
+      const result = await storage.toggleBookmark(firebaseUid, {
+        questionId, subjectId, unitId: unitId || '', prompt: prompt || '',
+        choices: choices || [], answerIndex: answerIndex ?? 0,
+        explanation: explanation || '', sectionCode,
+      });
+
+      res.json({ success: true, data: result });
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      res.status(500).json({ success: false, message: "Failed to toggle bookmark" });
+    }
+  });
+
+  app.get("/api/user/bookmarks", async (req, res) => {
+    try {
+      const firebaseUid = req.headers['x-user-id'] as string;
+      if (!firebaseUid) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+
+      const subjectId = req.query.subjectId as string | undefined;
+      const bookmarks = await storage.getBookmarks(firebaseUid, subjectId);
+      res.json({ success: true, data: bookmarks });
+    } catch (error) {
+      console.error("Error getting bookmarks:", error);
+      res.status(500).json({ success: false, message: "Failed to get bookmarks" });
+    }
+  });
+
+  app.get("/api/user/bookmarks/ids", async (req, res) => {
+    try {
+      const firebaseUid = req.headers['x-user-id'] as string;
+      if (!firebaseUid) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+
+      const subjectId = req.query.subjectId as string | undefined;
+      const ids = await storage.getBookmarkedQuestionIds(firebaseUid, subjectId);
+      res.json({ success: true, data: ids });
+    } catch (error) {
+      console.error("Error getting bookmark ids:", error);
+      res.status(500).json({ success: false, message: "Failed to get bookmark ids" });
+    }
+  });
+
+  // =====================
+  // SPACED REPETITION ROUTES
+  // =====================
+  app.post("/api/user/questions/track", async (req, res) => {
+    try {
+      const firebaseUid = req.headers['x-user-id'] as string;
+      if (!firebaseUid) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+
+      const { questionId, subjectId, unitId, correct, timeSpentSec, sectionCode, prompt, choices, answerIndex, explanation } = req.body;
+      if (!questionId || !subjectId) {
+        return res.status(400).json({ success: false, message: "questionId and subjectId are required" });
+      }
+
+      await storage.trackQuestionPerformance(firebaseUid, {
+        questionId, subjectId, unitId: unitId || '',
+        correct: !!correct, timeSpentSec: timeSpentSec || 0,
+        sectionCode, prompt, choices, answerIndex, explanation,
+      });
+
+      res.json({ success: true, message: "Question performance tracked" });
+    } catch (error) {
+      console.error("Error tracking question:", error);
+      res.status(500).json({ success: false, message: "Failed to track question" });
+    }
+  });
+
+  app.get("/api/user/questions/due", async (req, res) => {
+    try {
+      const firebaseUid = req.headers['x-user-id'] as string;
+      if (!firebaseUid) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+
+      const subjectId = req.query.subjectId as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const dueReviews = await storage.getDueReviews(firebaseUid, subjectId, limit);
+      res.json({ success: true, data: dueReviews });
+    } catch (error) {
+      console.error("Error getting due reviews:", error);
+      res.status(500).json({ success: false, message: "Failed to get due reviews" });
+    }
+  });
+
+  // =====================
+  // ANALYTICS ROUTE
+  // =====================
+  app.get("/api/user/analytics", async (req, res) => {
+    try {
+      const firebaseUid = req.headers['x-user-id'] as string;
+      if (!firebaseUid) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+
+      const subjectId = req.query.subjectId as string | undefined;
+      const stats = await storage.getQuestionStats(firebaseUid, subjectId);
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      console.error("Error getting analytics:", error);
+      res.status(500).json({ success: false, message: "Failed to get analytics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

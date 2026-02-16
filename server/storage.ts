@@ -761,6 +761,232 @@ export class Storage {
     };
   }
 
+  async toggleBookmark(
+    userId: string,
+    questionData: {
+      questionId: string;
+      subjectId: string;
+      unitId: string;
+      prompt: string;
+      choices: string[];
+      answerIndex: number;
+      explanation: string;
+      sectionCode?: string;
+    }
+  ): Promise<{ bookmarked: boolean }> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const bookmarksRef = db.collection('user_bookmarks');
+    const existing = await bookmarksRef
+      .where('userId', '==', userId)
+      .where('questionId', '==', questionData.questionId)
+      .limit(1)
+      .get();
+
+    if (!existing.empty) {
+      await existing.docs[0].ref.delete();
+      return { bookmarked: false };
+    }
+
+    await bookmarksRef.add({
+      userId,
+      ...questionData,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return { bookmarked: true };
+  }
+
+  async getBookmarks(userId: string, subjectId?: string): Promise<any[]> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    let query: admin.firestore.Query = db.collection('user_bookmarks')
+      .where('userId', '==', userId);
+
+    if (subjectId) {
+      query = query.where('subjectId', '==', subjectId);
+    }
+
+    const snapshot = await query.orderBy('createdAt', 'desc').get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
+
+  async isBookmarked(userId: string, questionId: string): Promise<boolean> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const snapshot = await db.collection('user_bookmarks')
+      .where('userId', '==', userId)
+      .where('questionId', '==', questionId)
+      .limit(1)
+      .get();
+
+    return !snapshot.empty;
+  }
+
+  async getBookmarkedQuestionIds(userId: string, subjectId?: string): Promise<string[]> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    let query: admin.firestore.Query = db.collection('user_bookmarks')
+      .where('userId', '==', userId);
+
+    if (subjectId) {
+      query = query.where('subjectId', '==', subjectId);
+    }
+
+    const snapshot = await query.get();
+    return snapshot.docs.map(doc => doc.data().questionId);
+  }
+
+  async trackQuestionPerformance(
+    userId: string,
+    data: {
+      questionId: string;
+      subjectId: string;
+      unitId: string;
+      correct: boolean;
+      timeSpentSec: number;
+      sectionCode?: string;
+      prompt?: string;
+      choices?: string[];
+      answerIndex?: number;
+      explanation?: string;
+    }
+  ): Promise<void> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const stateRef = db.collection('user_question_state');
+    const existing = await stateRef
+      .where('userId', '==', userId)
+      .where('questionId', '==', data.questionId)
+      .limit(1)
+      .get();
+
+    const now = new Date();
+    const intervalDays = data.correct ? this.getNextInterval(0, true) : 1;
+    const nextReview = new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000);
+
+    if (existing.empty) {
+      const docData: any = {
+        userId,
+        questionId: data.questionId,
+        subjectId: data.subjectId,
+        unitId: data.unitId,
+        sectionCode: data.sectionCode || '',
+        incorrectCount: data.correct ? 0 : 1,
+        correctCount: data.correct ? 1 : 0,
+        streak: data.correct ? 1 : 0,
+        lastAnsweredAt: now,
+        lastResult: data.correct ? 'correct' : 'incorrect',
+        nextReviewAt: nextReview,
+        totalTimeSpentSec: data.timeSpentSec,
+        attemptCount: 1,
+      };
+      if (data.prompt) docData.prompt = data.prompt;
+      if (data.choices) docData.choices = data.choices;
+      if (data.answerIndex !== undefined) docData.answerIndex = data.answerIndex;
+      if (data.explanation) docData.explanation = data.explanation;
+      await stateRef.add(docData);
+    } else {
+      const doc = existing.docs[0];
+      const prev = doc.data();
+      const newStreak = data.correct ? (prev.streak || 0) + 1 : 0;
+      const newIntervalDays = data.correct ? this.getNextInterval(newStreak, true) : 1;
+      const newNextReview = new Date(now.getTime() + newIntervalDays * 24 * 60 * 60 * 1000);
+
+      await doc.ref.update({
+        incorrectCount: (prev.incorrectCount || 0) + (data.correct ? 0 : 1),
+        correctCount: (prev.correctCount || 0) + (data.correct ? 1 : 0),
+        streak: newStreak,
+        lastAnsweredAt: now,
+        lastResult: data.correct ? 'correct' : 'incorrect',
+        nextReviewAt: newNextReview,
+        totalTimeSpentSec: (prev.totalTimeSpentSec || 0) + data.timeSpentSec,
+        attemptCount: (prev.attemptCount || 0) + 1,
+      });
+    }
+  }
+
+  private getNextInterval(streak: number, correct: boolean): number {
+    if (!correct) return 1;
+    const intervals = [1, 3, 7, 14, 30, 60];
+    return intervals[Math.min(streak, intervals.length - 1)];
+  }
+
+  async getDueReviews(userId: string, subjectId?: string, limit: number = 20): Promise<any[]> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    let query: admin.firestore.Query = db.collection('user_question_state')
+      .where('userId', '==', userId)
+      .where('nextReviewAt', '<=', new Date());
+
+    if (subjectId) {
+      query = query.where('subjectId', '==', subjectId);
+    }
+
+    const snapshot = await query.orderBy('nextReviewAt', 'asc').limit(limit).get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
+
+  async getQuestionStats(userId: string, subjectId?: string): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    let query: admin.firestore.Query = db.collection('user_question_state')
+      .where('userId', '==', userId);
+
+    if (subjectId) {
+      query = query.where('subjectId', '==', subjectId);
+    }
+
+    const snapshot = await query.get();
+    const stats = {
+      totalAttempted: 0,
+      totalCorrect: 0,
+      totalIncorrect: 0,
+      totalTimeSpentSec: 0,
+      dueForReview: 0,
+      byUnit: {} as { [unitId: string]: { correct: number; incorrect: number; total: number; avgTimeSec: number } },
+    };
+
+    const now = new Date();
+
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      stats.totalAttempted += data.attemptCount || 0;
+      stats.totalCorrect += data.correctCount || 0;
+      stats.totalIncorrect += data.incorrectCount || 0;
+      stats.totalTimeSpentSec += data.totalTimeSpentSec || 0;
+
+      if (data.nextReviewAt && data.nextReviewAt.toDate && data.nextReviewAt.toDate() <= now) {
+        stats.dueForReview++;
+      }
+
+      const unitId = data.unitId || 'unknown';
+      if (!stats.byUnit[unitId]) {
+        stats.byUnit[unitId] = { correct: 0, incorrect: 0, total: 0, avgTimeSec: 0 };
+      }
+      stats.byUnit[unitId].correct += data.correctCount || 0;
+      stats.byUnit[unitId].incorrect += data.incorrectCount || 0;
+      stats.byUnit[unitId].total += data.attemptCount || 0;
+      stats.byUnit[unitId].avgTimeSec = stats.byUnit[unitId].total > 0
+        ? (stats.byUnit[unitId].avgTimeSec * (stats.byUnit[unitId].total - (data.attemptCount || 0)) + (data.totalTimeSpentSec || 0)) / stats.byUnit[unitId].total
+        : 0;
+    });
+
+    return stats;
+  }
 }
 
 export const storage = new Storage();

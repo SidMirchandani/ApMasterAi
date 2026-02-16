@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { BookOpen, LogOut, User, ChevronRight } from "lucide-react";
+import { BookOpen, LogOut, User, ChevronRight, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,11 +16,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useIsMobile } from "@/lib/hooks/useMobile";
+import { useTheme } from "@/contexts/theme-context";
 
 export default function Navigation() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, isAuthenticated, loading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = router.pathname;
   const isMobile = useIsMobile();
 
@@ -163,7 +165,7 @@ export default function Navigation() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <nav className="border-b border-gray-200 bg-white sticky top-0 z-50 shadow-sm">
+    <nav className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-50 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           {/* LEFT: APMaster + Breadcrumb */}
@@ -180,7 +182,7 @@ export default function Navigation() {
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
 
-              <span className="text-lg font-bold text-[#2d3b45] tracking-tight">
+              <span className="text-lg font-bold text-[#2d3b45] dark:text-white tracking-tight">
                 APMaster
               </span>
             </Link>
@@ -212,12 +214,25 @@ export default function Navigation() {
 
           {/* RIGHT: NAV LINKS + ACCOUNT */}
           <div className="flex items-center gap-4">
-            <Link href="/about" className="text-sm font-medium text-gray-500 hover:text-[#36b37e] transition-colors hidden md:block">
+            <Link href="/about" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#36b37e] transition-colors hidden md:block">
               About Us
             </Link>
-            <Link href="/team" className="text-sm font-medium text-gray-500 hover:text-[#36b37e] transition-colors hidden md:block">
+            <Link href="/team" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#36b37e] transition-colors hidden md:block">
               Our Team
             </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4 text-yellow-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-gray-500" />
+              )}
+            </Button>
             {loading ? (
               <div className="w-8 h-8 bg-gray-100 animate-pulse rounded-full" />
             ) : isAuthenticated && user ? (

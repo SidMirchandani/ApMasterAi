@@ -53,13 +53,13 @@ export function PracticeQuizHeader({
   };
 
   return (
-    <div className="border-b border-gray-200 bg-white sticky top-0 z-50">
+    <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Desktop: single row */}
         <div className="hidden md:flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {title}
               </h1>
               <Sheet>
@@ -188,7 +188,7 @@ export function PracticeQuizHeader({
         <div className="md:hidden py-2">
           {/* First row: Title and Directions */}
           <div className="flex flex-col items-center">
-            <h1 className="text-base font-semibold text-gray-900">
+            <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">
               {getShortTitle(title)}
             </h1>
             <Sheet>

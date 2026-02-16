@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Flag } from "lucide-react";
+import { Flag, Bookmark } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { BlockRenderer } from "./BlockRenderer";
@@ -46,6 +46,8 @@ interface QuestionCardProps {
   isReviewMode?: boolean;
   hidePracticeQuizElements?: boolean;
   cheatMode?: boolean;
+  isBookmarked?: boolean;
+  onToggleBookmark?: () => void;
 }
 
 export function QuestionCard({
@@ -60,6 +62,8 @@ export function QuestionCard({
   isReviewMode = false,
   hidePracticeQuizElements = false,
   cheatMode = false,
+  isBookmarked = false,
+  onToggleBookmark,
 }: QuestionCardProps) {
   if (!question) {
     return null;
@@ -111,11 +115,22 @@ export function QuestionCard({
               </button>
             )}
           </div>
-          {!hidePracticeQuizElements && (
-            <button className="px-2 py-0.5 text-xs font-semibold border border-gray-300 rounded hover:bg-gray-100">
-              ABC
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {onToggleBookmark && (
+              <button
+                onClick={onToggleBookmark}
+                className={`p-1 rounded transition-colors ${isBookmarked ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
+                title={isBookmarked ? "Remove bookmark" : "Bookmark this question"}
+              >
+                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+              </button>
+            )}
+            {!hidePracticeQuizElements && (
+              <button className="px-2 py-0.5 text-xs font-semibold border border-gray-300 rounded hover:bg-gray-100">
+                ABC
+              </button>
+            )}
+          </div>
         </div>
       </CardHeader>
 

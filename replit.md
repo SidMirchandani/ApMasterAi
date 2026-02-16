@@ -110,4 +110,37 @@ The application follows a modern full-stack architecture with clear separation b
 - **Schema**: Shared types between client and server
 - **Commands**: `npm run db:push` for schema updates
 
-The application is designed to be scalable and maintainable, with clear separation of concerns and modern development practices. The current focus is on building the core waitlist functionality before expanding to full AP test preparation features.
+The application is designed to be scalable and maintainable, with clear separation of concerns and modern development practices.
+
+## Recent Changes (February 2026)
+
+### Dark Mode
+- **ThemeProvider**: Context at `client/src/contexts/theme-context.tsx` with localStorage persistence
+- **Toggle**: Sun/Moon icon in navigation bar switches between light and dark themes
+- **Coverage**: Dashboard, study, quiz, bookmarks, review, analytics pages all support dark mode via Tailwind `dark:` classes
+- **SSR Safe**: useTheme returns defaults during server-side rendering
+
+### Bookmarks / Saved Questions
+- **Backend**: Firestore `user_bookmarks` collection with toggle, get, and getIds operations
+- **API**: POST `/api/user/bookmarks/toggle`, GET `/api/user/bookmarks`, GET `/api/user/bookmarks/ids`
+- **Frontend**: Bookmark button on PracticeQuizQuestionCard, dedicated `/bookmarks` page with expand/collapse
+- **Page wrapper**: `pages/bookmarks.tsx` → `client/src/pages/bookmarks.tsx`
+
+### Spaced Repetition System
+- **Backend**: Firestore `user_question_state` collection tracking per-question performance
+- **Algorithm**: Intervals [1, 3, 7, 14, 30, 60] days based on correct answer streak
+- **API**: POST `/api/user/questions/track`, GET `/api/user/questions/due`
+- **Integration**: PracticeQuiz tracks every answer submission with question content
+- **Review Page**: `/review` page shows due questions with interactive flashcard-style review
+- **Page wrapper**: `pages/review.tsx` → `client/src/pages/review.tsx`
+
+### Performance Analytics
+- **Backend**: `getQuestionStats` aggregates per-question data by unit
+- **API**: GET `/api/user/analytics`
+- **Dashboard**: `/analytics` page with accuracy, correct/incorrect counts, predicted AP score, time metrics, and unit breakdown
+- **Page wrapper**: `pages/analytics.tsx` → `client/src/pages/analytics.tsx`
+
+### Mobile Responsive Quiz
+- **Bottom bar**: Compact mobile-friendly buttons with responsive text sizes
+- **Question card**: Touch-friendly answer choices with proper tap targets
+- **Layout**: Responsive padding and spacing throughout quiz flow

@@ -11,6 +11,7 @@ import remarkGfm from "remark-gfm";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { CheckCircle, XCircle, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
 interface Question {
   id: string;
@@ -67,8 +68,10 @@ export function PracticeQuiz({
     [key: number]: string;
   }>({});
   const [cheatMode, setCheatMode] = useState(false);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
     const savedCheatMode = localStorage.getItem('adminCheatMode');
@@ -76,6 +79,54 @@ export function PracticeQuiz({
       setCheatMode(savedCheatMode === 'true');
     }
   }, []);
+
+  useEffect(() => {
+    const loadBookmarks = async () => {
+      if (!user) return;
+      try {
+        const res = await apiRequest("GET", `/api/user/bookmarks/ids?subjectId=${subjectId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setBookmarkedIds(new Set(data.data));
+          }
+        }
+      } catch (e) {
+        console.log("Could not load bookmarks");
+      }
+    };
+    loadBookmarks();
+  }, [user, subjectId]);
+
+  const handleToggleBookmark = async (question: any) => {
+    if (!user) return;
+    try {
+      const res = await apiRequest("POST", "/api/user/bookmarks/toggle", {
+        questionId: question.id,
+        subjectId,
+        unitId: router.query.unit as string || '',
+        prompt: question.prompt || '',
+        choices: question.choices || [],
+        answerIndex: question.answerIndex,
+        explanation: question.explanation || '',
+        sectionCode: question.section_code || '',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBookmarkedIds(prev => {
+          const next = new Set(prev);
+          if (data.data.bookmarked) {
+            next.add(question.id);
+          } else {
+            next.delete(question.id);
+          }
+          return next;
+        });
+      }
+    } catch (e) {
+      console.log("Could not toggle bookmark");
+    }
+  };
 
   // Reverse the questions array to show the newest test first if it's a full-length test
   const orderedQuestions = isFullLength ? [...questions].reverse() : questions;
@@ -171,6 +222,21 @@ export function PracticeQuiz({
       correctLabel,
       isCorrect,
     });
+
+    if (user) {
+      apiRequest("POST", "/api/user/questions/track", {
+        questionId: currentQuestion.id,
+        subjectId,
+        unitId: currentQuestion.id.split("_")[1] || '',
+        correct: isCorrect,
+        timeSpentSec: 0,
+        sectionCode: currentQuestion.section_code || '',
+        prompt: currentQuestion.prompt,
+        choices: currentQuestion.choices,
+        answerIndex: currentQuestion.answerIndex,
+        explanation: currentQuestion.explanation || '',
+      }).catch(() => {});
+    }
 
     // Only track progress for unit-wise practice (not full-length tests)
     if (!isFullLength) {
@@ -315,9 +381,9 @@ export function PracticeQuiz({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
       <div className="flex-1 overflow-y-auto mb-16 pb-2">
-        <div className="max-w-4xl mx-auto px-4 py-3 space-y-2">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-3 space-y-2">
           <PracticeQuizQuestionCard
             question={currentQuestion}
             questionNumber={currentQuestionIndex + 1}
@@ -326,24 +392,26 @@ export function PracticeQuiz({
             onAnswerSelect={handleAnswerSelect}
             isAnswerSubmitted={isAnswerSubmitted}
             cheatMode={cheatMode}
+            isBookmarked={bookmarkedIds.has(currentQuestion?.id)}
+            onToggleBookmark={() => handleToggleBookmark(currentQuestion)}
           />
 
           {isAnswerSubmitted && (
-            <Card className="border-khan-blue bg-blue-50">
+            <Card className="border-khan-blue bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
               <CardHeader className="pb-2 pt-3">
-                <CardTitle className="text-sm">Explanation</CardTitle>
+                <CardTitle className="text-sm dark:text-gray-100">Explanation</CardTitle>
               </CardHeader>
               <CardContent className="pt-0 pb-3">
                 {isGeneratingExplanation ? (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-5 w-5 animate-spin text-khan-blue mr-2" />
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
                       Generating explanation...
                     </span>
                   </div>
                 ) : currentExplanation ? (
                   <>
-                    <div className="text-sm text-gray-700 prose prose-sm max-w-none mb-3">
+                    <div className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none mb-3">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {currentExplanation}
                       </ReactMarkdown>
@@ -365,37 +433,38 @@ export function PracticeQuiz({
       </div>
 
       {/* Fixed Bottom Bar */}
-      <div className="border-t border-gray-200 bg-white fixed bottom-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center gap-4">
-            <div className="flex-1"></div>
-            <div className="flex justify-center items-center gap-4">
+      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 fixed bottom-0 left-0 right-0 z-50">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex justify-between items-center gap-2 sm:gap-4">
+            <div className="hidden sm:flex flex-1"></div>
+            <div className="flex justify-center items-center gap-2 sm:gap-4 flex-1 sm:flex-none">
               {!isAnswerSubmitted ? (
                 <Button
                   onClick={handleSubmitAnswer}
                   disabled={!selectedAnswer}
-                  className="bg-blue-600 hover:bg-blue-700 px-8"
+                  className="bg-blue-600 hover:bg-blue-700 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10"
                 >
-                  Submit Answer
+                  Submit
                 </Button>
               ) : (
                 <Button
                   onClick={handleNextQuestion}
-                  className="bg-blue-600 hover:bg-blue-700 px-8"
+                  className="bg-blue-600 hover:bg-blue-700 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10"
                 >
                   {currentQuestionIndex === orderedQuestions.length - 1
-                    ? "Finish Quiz"
-                    : "Next Question"}
+                    ? "Finish"
+                    : "Next"}
                 </Button>
               )}
             </div>
-            <div className="flex-1 flex justify-end">
+            <div className="flex justify-end">
               <Button
                 onClick={onExit}
                 variant="outline"
-                className="border-red-600 text-red-600 hover:bg-red-50"
+                size="sm"
+                className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm"
               >
-                Exit Quiz
+                Exit
               </Button>
             </div>
           </div>
@@ -404,17 +473,17 @@ export function PracticeQuiz({
 
       {/* Results Summary (Conditionally Rendered) */}
       {showResults && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <Card className="w-11/12 max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <Card className="w-full max-w-md dark:bg-gray-900 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="text-center">Quiz Complete!</CardTitle>
+              <CardTitle className="text-center dark:text-gray-100">Quiz Complete!</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-6">
               <div>
-                <div className="text-4xl font-bold text-blue-600 mb-2">
+                <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
                   {score}/{orderedQuestions.length}
                 </div>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-400">
                   You got {score} question{score !== 1 ? "s" : ""} correct.
                 </p>
               </div>

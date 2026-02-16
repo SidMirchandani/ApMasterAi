@@ -19,6 +19,8 @@ import {
   Trophy,
   HelpCircle,
   Calendar,
+  Bookmark,
+  BarChart3,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -172,7 +174,7 @@ export default function Study() {
 
   if (loading || subjectsLoading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-950">
         <Navigation />
         <div className="flex items-center justify-center h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
@@ -183,11 +185,11 @@ export default function Study() {
 
   if (!currentSubject) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-950">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
               Subject Not Found
             </h1>
             <p className="text-gray-600 mb-8">
@@ -216,14 +218,14 @@ export default function Study() {
   const totalTopics = units.length;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-950">
       <Navigation />
 
       {/* Header Section */}
-      <div className="border-b border-gray-200 bg-white sticky top-0 z-20">
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-20">
         <div className="container mx-auto px-4 py-4 max-w-6xl">
           <div className="text-center">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
               {currentSubject.name}
             </h1>
           </div>
@@ -233,12 +235,12 @@ export default function Study() {
       <div className="container mx-auto px-4 py-4 max-w-6xl">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-2 border-gray-200 shadow-sm">
+          <Card className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Topics Mastered</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Topics Mastered</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {topicsMastered}/{totalTopics}
                   </p>
                 </div>
@@ -247,12 +249,12 @@ export default function Study() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-gray-200 shadow-sm">
+          <Card className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Exam Date</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Exam Date</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {formatDate(currentSubject.examDate)}
                   </p>
                 </div>
@@ -261,12 +263,12 @@ export default function Study() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-gray-200 shadow-sm">
+          <Card className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Overall Progress</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Overall Progress</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {Math.round((topicsMastered / totalTopics) * 100)}%
                   </p>
                 </div>
@@ -277,8 +279,8 @@ export default function Study() {
         </div>
 
         {/* Full-Length Practice Tests */}
-        <Card className="mb-8 border-2 border-gray-200 shadow-sm">
-          <CardHeader className="border-b border-gray-200 bg-gray-50">
+        <Card className="mb-8 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
+          <CardHeader className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-khan-green" />
               Full-Length Practice Tests
@@ -309,9 +311,49 @@ export default function Study() {
           </CardContent>
         </Card>
 
+        {/* Tools Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card className="border border-yellow-200 dark:border-yellow-800 dark:bg-gray-900 shadow-sm">
+            <CardContent className="py-4">
+              <Button
+                onClick={() => router.push(`/bookmarks?subject=${subjectId}`)}
+                variant="outline"
+                className="w-full h-12 text-base font-medium border-2 border-yellow-400 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+              >
+                <Bookmark className="mr-2 h-5 w-5 fill-current" />
+                Saved Questions
+              </Button>
+            </CardContent>
+          </Card>
+          <Card className="border border-purple-200 dark:border-purple-800 dark:bg-gray-900 shadow-sm">
+            <CardContent className="py-4">
+              <Button
+                onClick={() => router.push(`/review?subject=${subjectId}`)}
+                variant="outline"
+                className="w-full h-12 text-base font-medium border-2 border-purple-400 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+              >
+                <Calendar className="mr-2 h-5 w-5" />
+                Review Due Questions
+              </Button>
+            </CardContent>
+          </Card>
+          <Card className="border border-green-200 dark:border-green-800 dark:bg-gray-900 shadow-sm">
+            <CardContent className="py-4">
+              <Button
+                onClick={() => router.push(`/analytics?subject=${subjectId}`)}
+                variant="outline"
+                className="w-full h-12 text-base font-medium border-2 border-green-400 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+              >
+                <BarChart3 className="mr-2 h-5 w-5" />
+                Analytics
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Units Section */}
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
             <Target className="h-6 w-6 text-khan-green" />
             Practice by Unit
           </h2>
@@ -328,7 +370,7 @@ export default function Study() {
             return (
               <Card
                 key={unit.id}
-                className="border-2 border-gray-200 hover:border-khan-green transition-all duration-200 shadow-sm hover:shadow-md"
+                className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 hover:border-khan-green transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-start gap-6">
@@ -339,10 +381,10 @@ export default function Study() {
                           {index + 1}
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 mb-2">
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
                             {unit.title}
                           </h3>
-                          <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 leading-relaxed">
                             {unit.description}
                           </p>
                           <div className="flex flex-wrap gap-2">

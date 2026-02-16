@@ -360,10 +360,10 @@ const BackgroundDecor = () => (
 
 const Header = ({ name }: { name?: string }) => (
   <div className="mb-8">
-    <h1 className="text-2xl sm:text-3xl font-bold text-[#2d3b45] mb-1">
+    <h1 className="text-2xl sm:text-3xl font-bold text-[#2d3b45] dark:text-gray-100 mb-1">
       Welcome back{name ? `, ${name}` : ""}!
     </h1>
-    <p className="text-base text-gray-500 font-medium">Continue your personalized AP preparation journey.</p>
+    <p className="text-base text-gray-500 dark:text-gray-400 font-medium">Continue your personalized AP preparation journey.</p>
   </div>
 );
 
@@ -435,7 +435,7 @@ const ArchivedSection = ({
   <div className="mt-8">
     <button
       onClick={toggle}
-      className="flex justify-between w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100"
+      className="flex justify-between w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
     >
       <h3 className="text-lg font-semibold">
         Archived Subjects ({subjects.length})
@@ -499,12 +499,12 @@ const SubjectCard = ({
   const unitProgress = subject.unitProgress || {};
 
   return (
-    <Card className="overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white rounded-lg">
-      <CardHeader className="pb-4 border-b border-gray-100 bg-gray-50/50">
+    <Card className="overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-900 rounded-lg">
+      <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
         <div className="flex justify-between items-start">
           <div className="space-y-1">
-            <CardTitle className="text-xl font-bold text-[#2d3b45] tracking-tight">{subject.name}</CardTitle>
-            <p className="text-sm text-gray-500 leading-relaxed max-w-2xl font-medium">{subject.description}</p>
+            <CardTitle className="text-xl font-bold text-[#2d3b45] dark:text-gray-100 tracking-tight">{subject.name}</CardTitle>
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl font-medium">{subject.description}</p>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -533,12 +533,12 @@ const SubjectCard = ({
         {/* Meta Grid */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
-            <div className="flex items-center gap-2 text-gray-600">
-              <BookOpen className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <BookOpen className="w-4 h-4 text-gray-400 dark:text-gray-500" />
               <span>{subject.units} Units</span>
             </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <Calendar className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500" />
               <span>
                 Exam: {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
               </span>
@@ -574,7 +574,7 @@ const SubjectCard = ({
 
         {/* Footer info + Button */}
         <div className="pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex flex-wrap justify-center sm:justify-start gap-x-4 text-[11px] text-gray-400 font-bold uppercase tracking-wider">
+          <div className="flex flex-wrap justify-center sm:justify-start gap-x-4 text-[11px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" /> 
               Added {formatDate(subject.dateAdded)}

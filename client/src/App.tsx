@@ -4,22 +4,25 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/auth-context";
 import AuthErrorBoundary from "@/components/auth-error-boundary";
+import { ThemeProvider } from "@/contexts/theme-context";
 
 interface AppProps {
-  children?: React.ReactNode; // ✅ make optional
+  children?: React.ReactNode;
 }
 
 function App({ children }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthErrorBoundary>
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
-        </AuthErrorBoundary>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <AuthErrorBoundary>
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
+          </AuthErrorBoundary>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
