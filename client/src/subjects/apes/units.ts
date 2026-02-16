@@ -48,14 +48,14 @@ export const envScienceUnits: Unit[] = [
     id: "APL",
     title: "Atmospheric Pollution",
     description: "Air pollution sources, acid rain, ozone depletion, and indoor air quality",
-    examWeight: "10-15%",
+    examWeight: "7-10%",
     progress: 0,
   },
   {
     id: "ATP",
     title: "Aquatic and Terrestrial Pollution",
     description: "Water pollution, solid waste, toxicology, and environmental health",
-    examWeight: "10-15%",
+    examWeight: "7-10%",
     progress: 0,
   },
   {

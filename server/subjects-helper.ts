@@ -45,7 +45,7 @@ const SUBJECT_REGISTRY: Record<string, SubjectMeta> = {
       { id: 'SD', title: 'Supply and Demand', description: 'Market equilibrium, consumer and producer surplus, and price controls', examWeight: '20-25%' },
       { id: 'PC', title: 'Production, Cost, and the Perfect Competition Model', description: 'Production functions, cost curves, and profit maximization', examWeight: '22-25%' },
       { id: 'IMP', title: 'Imperfect Competition', description: 'Monopoly, oligopoly, monopolistic competition, and game theory', examWeight: '15-22%' },
-      { id: 'FM', title: 'Factor Markets', description: 'Labor markets, capital markets, and income distribution', examWeight: '10-18%' },
+      { id: 'FM', title: 'Factor Markets', description: 'Labor markets, capital markets, and income distribution', examWeight: '10-13%' },
       { id: 'MF', title: 'Market Failure and the Role of Government', description: 'Externalities, public goods, and income inequality', examWeight: '8-13%' }
     ],
     sectionKeywords: {
@@ -62,8 +62,8 @@ const SUBJECT_REGISTRY: Record<string, SubjectMeta> = {
     displayName: 'AP Computer Science Principles',
     crackApPath: 'computer-science-principles',
     units: [
-      { id: 'CRD', title: 'Creative Development', description: 'Collaboration, program design, and development', examWeight: '10-13%' },
-      { id: 'DAT', title: 'Data', description: 'Binary numbers, data compression, and extraction', examWeight: '17-22%' },
+      { id: 'CRD', title: 'Creative Development', description: 'Collaboration, program design, and development', examWeight: '17-22%' },
+      { id: 'DAT', title: 'Data', description: 'Binary numbers, data compression, and extraction', examWeight: '10-13%' },
       { id: 'AAP', title: 'Algorithms and Programming', description: 'Variables, algorithms, and programming techniques', examWeight: '30-35%' },
       { id: 'CSN', title: 'Computer Systems and Networks', description: 'Internet, routing, and network protocols', examWeight: '11-15%' },
       { id: 'IOC', title: 'Impact of Computing', description: 'Ethics, privacy, security, and societal impacts', examWeight: '21-26%' }
@@ -387,7 +387,7 @@ const SUBJECT_REGISTRY: Record<string, SubjectMeta> = {
       { id: 'PRD', title: 'Probability, Random Variables, and Distributions', description: 'Probability rules and distribution models', examWeight: '10-20%' },
       { id: 'SD', title: 'Sampling Distributions', description: 'Central limit theorem and sampling variability', examWeight: '7-12%' },
       { id: 'ICP', title: 'Inference for Categorical Data: Proportions', description: 'Confidence intervals and tests for proportions', examWeight: '12-15%' },
-      { id: 'IQM', title: 'Inference for Quantitative Data: Means', description: 'T-tests and confidence intervals for means', examWeight: '7-10%' },
+      { id: 'IQM', title: 'Inference for Quantitative Data: Means', description: 'T-tests and confidence intervals for means', examWeight: '10-18%' },
       { id: 'ICC', title: 'Inference for Categorical Data: Chi-Square', description: 'Chi-square tests for association', examWeight: '2-5%' },
       { id: 'IQS', title: 'Inference for Quantitative Data: Slopes', description: 'Inference for regression slopes', examWeight: '2-5%' }
     ],
@@ -462,8 +462,8 @@ const SUBJECT_REGISTRY: Record<string, SubjectMeta> = {
       { id: 'ESR', title: 'Earth Systems and Resources', description: 'Plate tectonics, soil, atmosphere, and water', examWeight: '10-15%' },
       { id: 'LWU', title: 'Land and Water Use', description: 'Agriculture, forestry, mining, and water management', examWeight: '10-15%' },
       { id: 'ERC', title: 'Energy Resources and Consumption', description: 'Renewable and nonrenewable energy sources', examWeight: '10-15%' },
-      { id: 'APL', title: 'Atmospheric Pollution', description: 'Air pollution, smog, and acid deposition', examWeight: '10-15%' },
-      { id: 'ATP', title: 'Aquatic and Terrestrial Pollution', description: 'Water pollution, soil contamination, and waste', examWeight: '10-15%' },
+      { id: 'APL', title: 'Atmospheric Pollution', description: 'Air pollution, smog, and acid deposition', examWeight: '7-10%' },
+      { id: 'ATP', title: 'Aquatic and Terrestrial Pollution', description: 'Water pollution, soil contamination, and waste', examWeight: '7-10%' },
       { id: 'GCH', title: 'Global Change', description: 'Climate change, ozone depletion, and biodiversity loss', examWeight: '15-20%' }
     ],
     sectionKeywords: {
