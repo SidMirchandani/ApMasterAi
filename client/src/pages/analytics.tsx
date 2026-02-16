@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import {
   BarChart3,
   Target,
-  Clock,
   TrendingUp,
   AlertTriangle,
   CheckCircle,
@@ -59,14 +58,7 @@ function predictAPScore(accuracy: number): { score: number; label: string; color
   if (accuracy >= 70) return { score: 4, label: "Well qualified", color: "#22c55e" };
   if (accuracy >= 55) return { score: 3, label: "Qualified", color: "#eab308" };
   if (accuracy >= 40) return { score: 2, label: "Possibly qualified", color: "#f97316" };
-  return { score: 1, label: "No recommendation", color: "#ef4444" };
-}
-
-function formatTime(seconds: number): string {
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.round(seconds % 60);
-  return `${mins}m ${secs}s`;
+  return { score: 1, label: "Needs improvement", color: "#ef4444" };
 }
 
 function formatDate(dateStr: string): string {
@@ -141,19 +133,11 @@ export default function AnalyticsPage() {
       })
     : [];
 
-  const filteredHistory = scoreHistory.filter(entry => (entry.totalAttempted || 0) >= 25);
   const chartData = (() => {
-    if (filteredHistory.length === 0) return [];
-    const result = [filteredHistory[0]];
-    let nextThreshold = 35;
-    for (let i = 1; i < filteredHistory.length; i++) {
-      const attempted = filteredHistory[i].totalAttempted || 0;
-      if (attempted >= nextThreshold) {
-        result.push(filteredHistory[i]);
-        nextThreshold = attempted - (attempted - 25) % 10 + 10;
-      }
-    }
-    return result.map(entry => ({
+    if (scoreHistory.length === 0) return [];
+    const validHistory = scoreHistory.filter(entry => (entry.totalAttempted || 0) >= 25 || !entry.totalAttempted);
+    if (validHistory.length === 0) return [];
+    return validHistory.map(entry => ({
       ...entry,
       dateLabel: formatDate(entry.date),
     }));
@@ -297,7 +281,7 @@ export default function AnalyticsPage() {
               </Card>
             )}
 
-            {chartData.length > 1 && (
+            {chartData.length >= 1 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
@@ -442,7 +426,7 @@ export default function AnalyticsPage() {
               </Card>
             )}
 
-            {chartData.length <= 1 && (
+            {chartData.length === 0 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700 border-dashed">
                 <CardContent className="p-6 text-center">
                   <TrendingUp className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600 mb-3" />
@@ -455,31 +439,6 @@ export default function AnalyticsPage() {
                 </CardContent>
               </Card>
             )}
-
-            <Card className="dark:bg-gray-900 dark:border-gray-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
-                  <Clock className="h-5 w-5 text-blue-500" />
-                  Time Metrics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Study Time</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                      {formatTime(stats.totalTimeSpentSec)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Avg per Question</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                      {stats.totalAttempted > 0 ? formatTime(stats.totalTimeSpentSec / stats.totalAttempted) : "N/A"}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             {unitEntries.length > 0 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700">
