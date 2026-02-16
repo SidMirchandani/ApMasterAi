@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bookmark, Trash2, Eye, ChevronLeft, ChevronRight, CheckCircle, XCircle } from "lucide-react";
+import { ToastAction } from "@/components/ui/toast";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -87,11 +88,32 @@ export default function BookmarksPage() {
         subjectId: question.subjectId,
       });
       if (!res.ok) throw new Error("Failed to remove bookmark");
-      return res.json();
+      return { question };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["bookmarks"], exact: false });
-      toast({ title: "Bookmark removed" });
+      const removedQ = data.question;
+      toast({
+        title: "Bookmark removed",
+        action: (
+          <ToastAction
+            altText="Undo remove"
+            onClick={async () => {
+              try {
+                await apiRequest("POST", "/api/user/bookmarks/toggle", {
+                  questionId: removedQ.questionId,
+                  subjectId: removedQ.subjectId,
+                });
+                queryClient.invalidateQueries({ queryKey: ["bookmarks"], exact: false });
+              } catch (e) {
+                console.log("Could not undo");
+              }
+            }}
+          >
+            Undo
+          </ToastAction>
+        ),
+      });
     },
   });
 

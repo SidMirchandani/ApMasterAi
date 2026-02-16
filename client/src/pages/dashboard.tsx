@@ -513,7 +513,7 @@ const SubjectCard = ({
   }>({
     queryKey: ["/api/user/analytics", subject.subjectId],
     queryFn: async () => {
-      const res = await fetch(`/api/user/analytics?subjectId=${subject.subjectId}`);
+      const res = await apiRequest("GET", `/api/user/analytics?subjectId=${subject.subjectId}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },

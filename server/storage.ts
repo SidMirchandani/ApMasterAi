@@ -977,6 +977,22 @@ export class Storage {
     }
   }
 
+  async restoreToReview(userId: string, questionId: string): Promise<void> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const snapshot = await db.collection('user_question_state')
+      .where('userId', '==', userId)
+      .where('questionId', '==', questionId)
+      .limit(1)
+      .get();
+
+    if (!snapshot.empty) {
+      await snapshot.docs[0].ref.update({ needsReview: true });
+    }
+  }
+
   async getQuestionStats(userId: string, subjectId?: string): Promise<any> {
     await this.ensureConnection();
     const db = this.getDbInstance();

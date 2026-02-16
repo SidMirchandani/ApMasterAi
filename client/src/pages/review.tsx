@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RotateCcw, CheckCircle, XCircle, ChevronRight, ChevronLeft, Trash2 } from "lucide-react";
+import { ToastAction } from "@/components/ui/toast";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface DueQuestion {
   questionId: string;
@@ -52,6 +54,7 @@ export default function ReviewPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const subjectId = router.query.subject as string | undefined;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -108,10 +111,11 @@ export default function ReviewPage() {
 
   const handleRemove = async () => {
     if (!currentQuestion) return;
+    const removedQuestion = currentQuestion;
     setIsRemoving(true);
     try {
       await apiRequest("POST", "/api/user/questions/remove", {
-        questionId: currentQuestion.questionId,
+        questionId: removedQuestion.questionId,
       });
       const newQuestions = dueQuestions.filter((_, i) => i !== currentIndex);
       queryClient.setQueryData(["dueReviews", subjectId || "all"], {
@@ -123,6 +127,26 @@ export default function ReviewPage() {
       }
       setSelectedAnswer(null);
       setIsSubmitted(false);
+      toast({
+        title: "Question removed from review",
+        action: (
+          <ToastAction
+            altText="Undo remove"
+            onClick={async () => {
+              try {
+                await apiRequest("POST", "/api/user/questions/restore", {
+                  questionId: removedQuestion.questionId,
+                });
+                refetch();
+              } catch (e) {
+                console.log("Could not undo removal");
+              }
+            }}
+          >
+            Undo
+          </ToastAction>
+        ),
+      });
     } catch (e) {
       console.log("Could not remove question");
     } finally {
@@ -276,42 +300,36 @@ export default function ReviewPage() {
               </CardContent>
             </Card>
 
-            <div className="flex items-center justify-end gap-2">
-              {!isSubmitted ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <Button
-                  onClick={handleSubmit}
-                  disabled={!selectedAnswer}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  variant="outline"
+                  onClick={handlePrev}
+                  disabled={currentIndex === 0}
+                  className="dark:border-gray-600 dark:text-gray-300"
                 >
-                  Submit
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Prev
                 </Button>
-              ) : (
-                <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  disabled={currentIndex >= dueQuestions.length - 1}
+                  className="dark:border-gray-600 dark:text-gray-300"
+                >
+                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                {!isSubmitted && (
                   <Button
-                    variant="outline"
-                    onClick={handlePrev}
-                    disabled={currentIndex === 0}
-                    className="dark:border-gray-600 dark:text-gray-300"
+                    onClick={handleSubmit}
+                    disabled={!selectedAnswer}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
                   >
-                    <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                    Submit
                   </Button>
-                  <Button
-                    onClick={currentIndex < dueQuestions.length - 1 ? handleNext : () => {
-                      refetch();
-                      setCurrentIndex(0);
-                      setSelectedAnswer(null);
-                      setIsSubmitted(false);
-                    }}
-                    className="bg-khan-green hover:bg-khan-green-light text-white"
-                  >
-                    {currentIndex < dueQuestions.length - 1 ? (
-                      <>Next <ChevronRight className="w-4 h-4 ml-1" /></>
-                    ) : (
-                      "Finish Review"
-                    )}
-                  </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="flex justify-center gap-1 pt-2">
