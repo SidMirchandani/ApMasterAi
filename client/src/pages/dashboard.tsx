@@ -546,18 +546,26 @@ const SubjectCard = ({
           </div>
 
           {/* Unit Grid */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {units.map((u: any, i: number) => {
               const unitData = unitProgress[u.id];
               const stat = getUnitStatus(unitData);
+              const isMastered = stat.status === "Mastered";
               
               return (
                 <div
                   key={u.id}
-                  className={`w-6 h-6 rounded-sm ${stat.bg} border border-black/5 flex items-center justify-center text-[9px] text-white shadow-sm transition-transform hover:scale-110 cursor-help`}
+                  className={`w-8 h-8 rounded-md ${stat.bg} border border-black/5 flex items-center justify-center shadow-sm transition-transform hover:scale-110 cursor-help`}
                   title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
                 >
-                  {stat.status === "Mastered" && "👑"}
+                  {isMastered && (
+                    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
+                      <path d="M2 8L5 4L8 7L12 2L16 7L19 4L22 8L19 19H5L2 8Z" fill="#FFD700" stroke="#DAA520" strokeWidth="1"/>
+                      <circle cx="8" cy="12" r="1.2" fill="#DAA520"/>
+                      <circle cx="12" cy="11" r="1.2" fill="#DAA520"/>
+                      <circle cx="16" cy="12" r="1.2" fill="#DAA520"/>
+                    </svg>
+                  )}
                 </div>
               );
             })}
