@@ -288,12 +288,22 @@ export default function Study() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button
                 onClick={() =>
-                  router.push(`/full-length-history?subject=${subjectId}`)
+                  router.push(`/quiz?subject=${subjectId}&unit=full-length`)
                 }
                 className="bg-khan-green hover:bg-khan-green-light h-12 text-base font-medium"
               >
                 <BookOpen className="mr-2 h-5 w-5" />
                 MCQ Full-Length Test
+              </Button>
+              <Button
+                onClick={() =>
+                  router.push(`/full-length-history?subject=${subjectId}`)
+                }
+                variant="outline"
+                className="h-12 text-base font-medium border-2 border-khan-green text-khan-green hover:bg-khan-green/5"
+              >
+                <Clock className="mr-2 h-5 w-5" />
+                Full-Length Test History
               </Button>
             </div>
           </CardContent>

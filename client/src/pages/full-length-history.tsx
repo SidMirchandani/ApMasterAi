@@ -102,17 +102,6 @@ export default function FullLengthHistory() {
             </h1>
           </div>
 
-          <div className="flex items-center justify-center mb-3">
-            <Button
-              onClick={handleStartNewTest}
-              className="bg-khan-green hover:bg-khan-green/90 w-full max-w-md"
-              size="lg"
-            >
-              <PlayCircle className="mr-2 h-5 w-5" />
-              Start New Test
-            </Button>
-          </div>
-
           {testHistory.length === 0 ? (
             <Card>
               <CardContent className="pt-3 pb-3 text-center">
