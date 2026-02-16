@@ -107,11 +107,18 @@ export function PracticeQuiz({
       return next;
     });
     try {
+      let promptText = question.prompt || '';
+      if (!promptText && question.prompt_blocks) {
+        promptText = question.prompt_blocks
+          .filter((b: any) => b.type === 'text')
+          .map((b: any) => b.value)
+          .join(' ');
+      }
       const res = await apiRequest("POST", "/api/user/bookmarks/toggle", {
         questionId: qId,
         subjectId,
         unitId: router.query.unit as string || '',
-        prompt: question.prompt || '',
+        prompt: promptText,
         choices: question.choices || [],
         answerIndex: question.answerIndex,
         explanation: question.explanation || '',
@@ -237,7 +244,7 @@ export function PracticeQuiz({
         correct: isCorrect,
         timeSpentSec: 0,
         sectionCode: currentQuestion.section_code || '',
-        prompt: currentQuestion.prompt,
+        prompt: currentQuestion.prompt || (currentQuestion.prompt_blocks ? currentQuestion.prompt_blocks.filter((b: any) => b.type === 'text').map((b: any) => b.value).join(' ') : ''),
         choices: currentQuestion.choices,
         answerIndex: currentQuestion.answerIndex,
         explanation: currentQuestion.explanation || '',

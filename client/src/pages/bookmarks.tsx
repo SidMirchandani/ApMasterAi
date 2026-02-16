@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bookmark, Trash2, Lightbulb, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bookmark, Trash2, Eye, ChevronLeft, ChevronRight, CheckCircle, XCircle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -52,8 +52,8 @@ export default function BookmarksPage() {
   const subjectId = router.query.subject as string | undefined;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [showHint, setShowHint] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -95,25 +95,32 @@ export default function BookmarksPage() {
   const bookmarks = bookmarksResponse?.data || [];
   const currentQuestion = bookmarks[currentIndex];
 
+  const resetState = () => {
+    setSelectedAnswer(null);
+    setIsRevealed(false);
+    setIsSubmitted(false);
+  };
+
   const handleNext = () => {
     if (currentIndex < bookmarks.length - 1) {
       setCurrentIndex(currentIndex + 1);
-      setSelectedAnswer(null);
-      setShowHint(false);
-      setIsRevealed(false);
+      resetState();
     }
   };
 
   const handlePrev = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
-      setSelectedAnswer(null);
-      setShowHint(false);
-      setIsRevealed(false);
+      resetState();
     }
   };
 
   const handleReveal = () => {
+    setIsRevealed(true);
+  };
+
+  const handleSubmit = () => {
+    setIsSubmitted(true);
     setIsRevealed(true);
   };
 
@@ -123,9 +130,7 @@ export default function BookmarksPage() {
     if (currentIndex >= bookmarks.length - 1 && currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
-    setSelectedAnswer(null);
-    setShowHint(false);
-    setIsRevealed(false);
+    resetState();
   };
 
   useEffect(() => {
@@ -177,8 +182,8 @@ export default function BookmarksPage() {
         ) : currentQuestion ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Question {currentIndex + 1} of {bookmarks.length}
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Q{currentIndex + 1} of {bookmarks.length}
               </span>
               <div className="flex items-center gap-2">
                 {currentQuestion.unitId && (
@@ -203,7 +208,7 @@ export default function BookmarksPage() {
                 <p className="text-base text-gray-900 dark:text-gray-100 mb-6 leading-relaxed font-medium">
                   {typeof currentQuestion.prompt === "string" && currentQuestion.prompt
                     ? currentQuestion.prompt
-                    : `Saved question ${currentIndex + 1}`}
+                    : `Q${currentIndex + 1}`}
                 </p>
 
                 {(() => {
@@ -238,10 +243,10 @@ export default function BookmarksPage() {
                               </span>
                               <span className="text-gray-800 dark:text-gray-200 flex-1">{text}</span>
                               {isRevealed && isCorrect && (
-                                <span className="text-green-500 text-sm font-semibold flex-shrink-0">Correct</span>
+                                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                               )}
                               {isRevealed && isSelected && !isCorrect && (
-                                <span className="text-red-500 text-sm font-semibold flex-shrink-0">Your answer</span>
+                                <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                               )}
                             </div>
                           </button>
@@ -251,48 +256,48 @@ export default function BookmarksPage() {
                   );
                 })()}
 
-                {showHint && !isRevealed && (
-                  <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                    <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1">
-                      <Lightbulb className="w-3 h-3" /> Hint
-                    </p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      The correct answer is option {String.fromCharCode(65 + currentQuestion.answerIndex)}.
-                      {currentQuestion.explanation && " Try to think about why before revealing the full explanation."}
-                    </p>
-                  </div>
-                )}
-
                 {isRevealed && currentQuestion.explanation && (
                   <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">Explanation</p>
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{currentQuestion.explanation}</p>
                   </div>
                 )}
+
+                {isSubmitted && (
+                  <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
+                    selectedAnswer === String.fromCharCode(65 + currentQuestion.answerIndex)
+                      ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
+                      : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
+                  }`}>
+                    {selectedAnswer === String.fromCharCode(65 + currentQuestion.answerIndex)
+                      ? "Correct!"
+                      : `Incorrect. The correct answer is ${String.fromCharCode(65 + currentQuestion.answerIndex)}.`}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             <div className="flex items-center justify-between">
-              <div className="flex gap-2">
+              <div>
                 {!isRevealed && (
                   <Button
                     variant="outline"
-                    onClick={() => setShowHint(!showHint)}
-                    className="border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                    onClick={handleReveal}
+                    className="border-blue-400 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   >
-                    <Lightbulb className="w-4 h-4 mr-1" />
-                    {showHint ? "Hide Hint" : "Show Hint"}
+                    <Eye className="w-4 h-4 mr-1" />
+                    Reveal Answer
                   </Button>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 {!isRevealed ? (
                   <Button
-                    onClick={handleReveal}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={handleSubmit}
+                    disabled={!selectedAnswer}
+                    className="bg-khan-green hover:bg-khan-green-light text-white"
                   >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Reveal Answer
+                    Submit
                   </Button>
                 ) : (
                   <div className="flex gap-2">
@@ -302,7 +307,7 @@ export default function BookmarksPage() {
                       disabled={currentIndex === 0}
                       className="dark:border-gray-600 dark:text-gray-300"
                     >
-                      <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                      <ChevronLeft className="w-4 h-4 mr-1" /> Prev
                     </Button>
                     <Button
                       onClick={handleNext}
@@ -322,9 +327,7 @@ export default function BookmarksPage() {
                   key={idx}
                   onClick={() => {
                     setCurrentIndex(idx);
-                    setSelectedAnswer(null);
-                    setShowHint(false);
-                    setIsRevealed(false);
+                    resetState();
                   }}
                   className={`w-2 h-2 rounded-full transition-colors ${
                     idx === currentIndex

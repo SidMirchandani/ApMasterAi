@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RotateCcw, CheckCircle, XCircle, ChevronRight, ChevronLeft, Lightbulb, Eye } from "lucide-react";
+import { RotateCcw, CheckCircle, XCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
@@ -51,8 +51,7 @@ export default function ReviewPage() {
   const subjectId = router.query.subject as string | undefined;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [showHint, setShowHint] = useState(false);
-  const [isRevealed, setIsRevealed] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -79,9 +78,9 @@ export default function ReviewPage() {
   const dueQuestions = dueResponse?.data || [];
   const currentQuestion = dueQuestions[currentIndex];
 
-  const handleReveal = async () => {
-    if (!currentQuestion) return;
-    setIsRevealed(true);
+  const handleSubmit = async () => {
+    if (!currentQuestion || !selectedAnswer) return;
+    setIsSubmitted(true);
 
     const correctLetter = currentQuestion.answerIndex !== undefined
       ? String.fromCharCode(65 + currentQuestion.answerIndex)
@@ -106,8 +105,7 @@ export default function ReviewPage() {
     if (currentIndex < dueQuestions.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setSelectedAnswer(null);
-      setShowHint(false);
-      setIsRevealed(false);
+      setIsSubmitted(false);
     }
   };
 
@@ -115,8 +113,7 @@ export default function ReviewPage() {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
       setSelectedAnswer(null);
-      setShowHint(false);
-      setIsRevealed(false);
+      setIsSubmitted(false);
     }
   };
 
@@ -163,8 +160,8 @@ export default function ReviewPage() {
         ) : currentQuestion ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Question {currentIndex + 1} of {dueQuestions.length}
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Q{currentIndex + 1} of {dueQuestions.length}
               </span>
               <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
                 Streak: {currentQuestion.correctStreak} | Attempts: {currentQuestion.totalAttempts}
@@ -174,7 +171,7 @@ export default function ReviewPage() {
             <Card className="dark:bg-gray-900 dark:border-gray-700">
               <CardContent className="p-6">
                 <p className="text-base text-gray-900 dark:text-gray-100 mb-6 leading-relaxed font-medium">
-                  {currentQuestion.prompt || `Review question ${currentIndex + 1}`}
+                  {currentQuestion.prompt || `Q${currentIndex + 1}`}
                 </p>
 
                 {currentQuestion.choices && (() => {
@@ -190,7 +187,7 @@ export default function ReviewPage() {
                         const isCorrect = letter === correctLetter;
 
                         let borderClass = "border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500";
-                        if (isRevealed) {
+                        if (isSubmitted) {
                           if (isCorrect) borderClass = "border-green-500 bg-green-50 dark:bg-green-900/30";
                           else if (isSelected && !isCorrect) borderClass = "border-red-500 bg-red-50 dark:bg-red-900/30";
                           else borderClass = "border-gray-200 dark:border-gray-700";
@@ -201,20 +198,20 @@ export default function ReviewPage() {
                         return (
                           <button
                             key={letter}
-                            onClick={() => !isRevealed && setSelectedAnswer(letter)}
-                            disabled={isRevealed}
+                            onClick={() => !isSubmitted && setSelectedAnswer(letter)}
+                            disabled={isSubmitted}
                             className={`w-full text-left p-4 rounded-lg border-2 ${borderClass} transition-all disabled:cursor-default`}
                           >
                             <div className="flex items-start gap-3">
-                              <span className={`font-bold mt-0.5 ${isRevealed && isCorrect ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}>
+                              <span className={`font-bold mt-0.5 ${isSubmitted && isCorrect ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}>
                                 {letter}.
                               </span>
                               <span className="text-gray-800 dark:text-gray-200 flex-1">{text}</span>
-                              {isRevealed && isCorrect && (
-                                <span className="text-green-500 text-sm font-semibold flex-shrink-0">Correct</span>
+                              {isSubmitted && isCorrect && (
+                                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                               )}
-                              {isRevealed && isSelected && !isCorrect && (
-                                <span className="text-red-500 text-sm font-semibold flex-shrink-0">Your answer</span>
+                              {isSubmitted && isSelected && !isCorrect && (
+                                <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                               )}
                             </div>
                           </button>
@@ -224,20 +221,20 @@ export default function ReviewPage() {
                   );
                 })()}
 
-                {showHint && !isRevealed && currentQuestion.answerIndex !== undefined && (
-                  <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                    <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1">
-                      <Lightbulb className="w-3 h-3" /> Hint
-                    </p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      The correct answer is option {String.fromCharCode(65 + currentQuestion.answerIndex)}.
-                      {currentQuestion.explanation && " Try to reason through it before revealing the explanation."}
-                    </p>
+                {isSubmitted && (
+                  <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
+                    selectedAnswer === (currentQuestion.answerIndex !== undefined ? String.fromCharCode(65 + currentQuestion.answerIndex) : '')
+                      ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
+                      : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
+                  }`}>
+                    {selectedAnswer === (currentQuestion.answerIndex !== undefined ? String.fromCharCode(65 + currentQuestion.answerIndex) : '')
+                      ? "Correct!"
+                      : `Incorrect. The correct answer is ${currentQuestion.answerIndex !== undefined ? String.fromCharCode(65 + currentQuestion.answerIndex) : '?'}.`}
                   </div>
                 )}
 
-                {isRevealed && currentQuestion.explanation && (
-                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                {isSubmitted && currentQuestion.explanation && (
+                  <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">Explanation</p>
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{currentQuestion.explanation}</p>
                   </div>
@@ -245,57 +242,42 @@ export default function ReviewPage() {
               </CardContent>
             </Card>
 
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                {!isRevealed && (
+            <div className="flex items-center justify-end gap-2">
+              {!isSubmitted ? (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!selectedAnswer}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  Submit
+                </Button>
+              ) : (
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => setShowHint(!showHint)}
-                    className="border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                    onClick={handlePrev}
+                    disabled={currentIndex === 0}
+                    className="dark:border-gray-600 dark:text-gray-300"
                   >
-                    <Lightbulb className="w-4 h-4 mr-1" />
-                    {showHint ? "Hide Hint" : "Show Hint"}
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Prev
                   </Button>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {!isRevealed ? (
                   <Button
-                    onClick={handleReveal}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    onClick={currentIndex < dueQuestions.length - 1 ? handleNext : () => {
+                      refetch();
+                      setCurrentIndex(0);
+                      setSelectedAnswer(null);
+                      setIsSubmitted(false);
+                    }}
+                    className="bg-khan-green hover:bg-khan-green-light text-white"
                   >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Reveal Answer
+                    {currentIndex < dueQuestions.length - 1 ? (
+                      <>Next <ChevronRight className="w-4 h-4 ml-1" /></>
+                    ) : (
+                      "Finish Review"
+                    )}
                   </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={handlePrev}
-                      disabled={currentIndex === 0}
-                      className="dark:border-gray-600 dark:text-gray-300"
-                    >
-                      <ChevronLeft className="w-4 h-4 mr-1" /> Previous
-                    </Button>
-                    <Button
-                      onClick={currentIndex < dueQuestions.length - 1 ? handleNext : () => {
-                        refetch();
-                        setCurrentIndex(0);
-                        setSelectedAnswer(null);
-                        setShowHint(false);
-                        setIsRevealed(false);
-                      }}
-                      className="bg-khan-green hover:bg-khan-green-light text-white"
-                    >
-                      {currentIndex < dueQuestions.length - 1 ? (
-                        <>Next <ChevronRight className="w-4 h-4 ml-1" /></>
-                      ) : (
-                        "Finish Review"
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-center gap-1 pt-2">
@@ -305,8 +287,7 @@ export default function ReviewPage() {
                   onClick={() => {
                     setCurrentIndex(idx);
                     setSelectedAnswer(null);
-                    setShowHint(false);
-                    setIsRevealed(false);
+                    setIsSubmitted(false);
                   }}
                   className={`w-2 h-2 rounded-full transition-colors ${
                     idx === currentIndex

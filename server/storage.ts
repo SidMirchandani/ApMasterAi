@@ -877,8 +877,10 @@ export class Storage {
       .get();
 
     const now = new Date();
-    const intervalDays = data.correct ? this.getNextInterval(0, true) : 1;
-    const nextReview = new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000);
+    const intervalMs = data.correct
+      ? this.getNextInterval(0, true) * 24 * 60 * 60 * 1000
+      : 10 * 60 * 1000;
+    const nextReview = new Date(now.getTime() + intervalMs);
 
     if (existing.empty) {
       const docData: any = {
@@ -905,8 +907,10 @@ export class Storage {
       const doc = existing.docs[0];
       const prev = doc.data();
       const newStreak = data.correct ? (prev.streak || 0) + 1 : 0;
-      const newIntervalDays = data.correct ? this.getNextInterval(newStreak, true) : 1;
-      const newNextReview = new Date(now.getTime() + newIntervalDays * 24 * 60 * 60 * 1000);
+      const newIntervalMs = data.correct
+        ? this.getNextInterval(newStreak, true) * 24 * 60 * 60 * 1000
+        : 10 * 60 * 1000;
+      const newNextReview = new Date(now.getTime() + newIntervalMs);
 
       await doc.ref.update({
         incorrectCount: (prev.incorrectCount || 0) + (data.correct ? 0 : 1),
