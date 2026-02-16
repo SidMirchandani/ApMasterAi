@@ -123,7 +123,7 @@ The application is designed to be scalable and maintainable, with clear separati
 ### Bookmarks / Saved Questions
 - **Backend**: Firestore `user_bookmarks` collection with toggle, get, and getIds operations
 - **API**: POST `/api/user/bookmarks/toggle`, GET `/api/user/bookmarks`, GET `/api/user/bookmarks/ids`
-- **Frontend**: Bookmark button on PracticeQuizQuestionCard, dedicated `/bookmarks` page with expand/collapse
+- **Frontend**: Bookmark button on PracticeQuizQuestionCard, quiz-style `/bookmarks` page with question display, choices, Show Hint, Reveal Answer, and navigation
 - **Page wrapper**: `pages/bookmarks.tsx` → `client/src/pages/bookmarks.tsx`
 
 ### Spaced Repetition System
@@ -131,13 +131,15 @@ The application is designed to be scalable and maintainable, with clear separati
 - **Algorithm**: Intervals [1, 3, 7, 14, 30, 60] days based on correct answer streak
 - **API**: POST `/api/user/questions/track`, GET `/api/user/questions/due`
 - **Integration**: PracticeQuiz tracks every answer submission with question content
-- **Review Page**: `/review` page shows due questions with interactive flashcard-style review
+- **Review Page**: `/review` page ("Review Questions") with quiz-style interface: question display, choices, Show Hint, Reveal Answer with explanation, streak/attempts stats
 - **Page wrapper**: `pages/review.tsx` → `client/src/pages/review.tsx`
 
 ### Performance Analytics
 - **Backend**: `getQuestionStats` aggregates per-question data by unit
-- **API**: GET `/api/user/analytics`
-- **Dashboard**: `/analytics` page with accuracy, correct/incorrect counts, predicted AP score, time metrics, and unit breakdown
+- **Score History**: Firestore `score_history` collection with daily snapshots (accuracy, predicted AP score)
+- **API**: GET `/api/user/analytics`, GET `/api/user/score-history`
+- **Auto-snapshot**: Analytics API saves score snapshot when subject-specific analytics are loaded
+- **Dashboard**: `/analytics` page with accuracy, correct/incorrect counts, predicted AP score (color-coded), time metrics, unit breakdown, and AP score progress chart over time (recharts AreaChart)
 - **Page wrapper**: `pages/analytics.tsx` → `client/src/pages/analytics.tsx`
 
 ### Mobile Responsive Quiz
