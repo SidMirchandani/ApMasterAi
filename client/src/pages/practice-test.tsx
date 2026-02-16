@@ -83,7 +83,7 @@ export default function PracticeTest() {
                   55 Questions
                 </h3>
                 <p className="text-xs text-khan-gray-medium">
-                  Multiple choice & FRQ
+                  Multiple choice
                 </p>
               </div>
 

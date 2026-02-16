@@ -15,7 +15,6 @@ import {
   Clock,
   Target,
   CheckCircle,
-  PlayCircle,
   ArrowLeft,
   Trophy,
   HelpCircle,
@@ -296,13 +295,6 @@ export default function Study() {
                 <BookOpen className="mr-2 h-5 w-5" />
                 MCQ Full-Length Test
               </Button>
-              <Button
-                disabled
-                className="bg-gray-300 h-12 text-base opacity-50 cursor-not-allowed font-medium"
-              >
-                <PlayCircle className="mr-2 h-5 w-5" />
-                FRQ Full-Length Test (Coming Soon)
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -406,14 +398,6 @@ export default function Study() {
                       >
                         <BookOpen className="mr-2 h-4 w-4" />
                         Unit MCQ Practice
-                      </Button>
-                      <Button
-                        disabled
-                        variant="outline"
-                        className="border-2 border-gray-300 h-11 opacity-50 cursor-not-allowed font-medium"
-                      >
-                        <PlayCircle className="mr-2 h-4 w-4" />
-                        Unit FRQ Practice (Soon)
                       </Button>
                     </div>
                   </div>
