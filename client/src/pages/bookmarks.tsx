@@ -36,12 +36,15 @@ function extractChoiceText(choice: any): string {
 
 function getChoicesArray(choices: string[] | Record<string, any>): { letter: string; text: string }[] {
   if (Array.isArray(choices)) {
-    return choices.map((c, i) => ({ letter: String.fromCharCode(65 + i), text: extractChoiceText(c) }));
+    return choices
+      .map((c, i) => ({ letter: String.fromCharCode(65 + i), text: extractChoiceText(c) }))
+      .filter(({ letter, text }) => letter !== "E" || text.trim() !== "");
   }
   const keys = ["A", "B", "C", "D", "E"];
   return keys
     .filter(k => choices[k] !== undefined)
-    .map(k => ({ letter: k, text: extractChoiceText(choices[k]) }));
+    .map(k => ({ letter: k, text: extractChoiceText(choices[k]) }))
+    .filter(({ letter, text }) => letter !== "E" || text.trim() !== "");
 }
 
 export default function BookmarksPage() {
