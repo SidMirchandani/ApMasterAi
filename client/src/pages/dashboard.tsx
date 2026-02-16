@@ -238,7 +238,7 @@ export default function Dashboard() {
       <BackgroundDecor />
       <Navigation />
 
-      <main className="py-10 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
+      <main className="py-5 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
         <Header name={userProfile?.data?.firstName} />
 
         {subjectsLoading || !subjectsResponse ? (
@@ -246,9 +246,9 @@ export default function Dashboard() {
         ) : subjects.length === 0 ? (
           <EmptyState router={router} />
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold tracking-tight">My Subjects</h2>
+              <h2 className="text-xl font-bold tracking-tight">My Subjects</h2>
               <Button
                 onClick={() => router.push("/learn")}
                 variant="outline"
@@ -261,7 +261,7 @@ export default function Dashboard() {
             {subjectsFetching && <RefreshingState />}
 
             {/* Active subjects */}
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-4">
               {activeSubjects.map((subject) => (
                 <SubjectCard
                   key={subject.id}
@@ -360,11 +360,11 @@ const BackgroundDecor = () => (
 );
 
 const Header = ({ name }: { name?: string }) => (
-  <div className="mb-8">
-    <h1 className="text-2xl sm:text-3xl font-bold text-[#2d3b45] dark:text-gray-100 mb-1">
+  <div className="mb-4">
+    <h1 className="text-xl sm:text-2xl font-bold text-[#2d3b45] dark:text-gray-100 mb-0.5">
       Welcome back{name ? `, ${name}` : ""}!
     </h1>
-    <p className="text-base text-gray-500 dark:text-gray-400 font-medium">Continue your personalized AP preparation journey.</p>
+    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Continue your personalized AP preparation journey.</p>
   </div>
 );
 
@@ -530,11 +530,11 @@ const SubjectCard = ({
 
   return (
     <Card className="overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-900 rounded-lg">
-      <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+      <CardHeader className="pb-2 pt-3 px-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
         <div className="flex justify-between items-start">
-          <div className="space-y-1">
-            <CardTitle className="text-xl font-bold text-[#2d3b45] dark:text-gray-100 tracking-tight">{subject.name}</CardTitle>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl font-medium">{subject.description}</p>
+          <div className="space-y-0.5">
+            <CardTitle className="text-lg font-bold text-[#2d3b45] dark:text-gray-100 tracking-tight">{subject.name}</CardTitle>
+            <p className="text-xs text-gray-500 dark:text-gray-400 leading-snug max-w-2xl font-medium">{subject.description}</p>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -559,10 +559,10 @@ const SubjectCard = ({
         </div>
       </CardHeader>
 
-      <CardContent className="py-6 space-y-6">
+      <CardContent className="py-3 px-4 space-y-3">
         {/* Meta Grid */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
               <BookOpen className="w-4 h-4 text-gray-400 dark:text-gray-500" />
               <span>{subject.units} Units</span>
@@ -587,7 +587,7 @@ const SubjectCard = ({
           </div>
 
           {/* Unit Grid */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {units.map((u: any, i: number) => {
               const unitData = unitProgress[u.id];
               const stat = getUnitStatus(unitData);
@@ -596,7 +596,7 @@ const SubjectCard = ({
               return (
                 <div
                   key={u.id}
-                  className={`w-8 h-8 rounded-md ${stat.bg} border border-black/5 flex items-center justify-center shadow-sm transition-transform hover:scale-110 cursor-help`}
+                  className={`w-7 h-7 rounded ${stat.bg} border border-black/5 flex items-center justify-center shadow-sm transition-transform hover:scale-110 cursor-help`}
                   title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
                 >
                   {isMastered && (
@@ -614,8 +614,8 @@ const SubjectCard = ({
         </div>
 
         {/* Footer info + Button */}
-        <div className="pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex flex-wrap justify-center sm:justify-start gap-x-4 text-[11px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
+        <div className="pt-1 flex flex-col sm:flex-row justify-between items-center gap-2">
+          <div className="flex flex-wrap justify-center sm:justify-start gap-x-3 text-[11px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" /> 
               Added {formatDate(subject.dateAdded)}
@@ -628,7 +628,7 @@ const SubjectCard = ({
 
           <Button 
             onClick={onStudy} 
-            className="w-full sm:w-auto bg-[#36b37e] hover:bg-[#2fa371] text-white px-6 h-10 font-bold rounded-md shadow-sm transition-all active:scale-95"
+            className="w-full sm:w-auto bg-[#36b37e] hover:bg-[#2fa371] text-white px-5 h-9 text-sm font-bold rounded-md shadow-sm transition-all active:scale-95"
           >
             Continue Practice
           </Button>
