@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { BlockRenderer } from "./BlockRenderer";
-import { Bookmark } from "lucide-react";
+import { BookmarkCheck } from "lucide-react";
 
 type Block =
   | { type: "text"; value: string }
@@ -88,15 +88,16 @@ export function PracticeQuizQuestionCard({
             {onToggleBookmark && (
               <button
                 onClick={onToggleBookmark}
-                className={`p-1 rounded transition-colors ${isBookmarked ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
-                title={isBookmarked ? "Remove bookmark" : "Bookmark this question"}
+                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                  isBookmarked
+                    ? 'bg-yellow-100 text-yellow-700 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-400 dark:border-yellow-600'
+                    : 'bg-white text-gray-500 border border-gray-300 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400'
+                }`}
               >
-                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+                <BookmarkCheck className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
+                {isBookmarked ? 'Saved' : 'Save for Review'}
               </button>
             )}
-            <button className="px-2 py-0.5 text-xs font-semibold border border-gray-300 rounded hover:bg-gray-100">
-              ABC
-            </button>
           </div>
         </div>
       </CardHeader>

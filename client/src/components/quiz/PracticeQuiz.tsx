@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { PracticeQuizHeader } from "./PracticeQuizHeader";
 import { PracticeQuizQuestionCard } from "./PracticeQuizQuestionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ExplanationChat } from "@/components/ui/explanation-chat";
+
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
@@ -85,11 +85,9 @@ export function PracticeQuiz({
       if (!user) return;
       try {
         const res = await apiRequest("GET", `/api/user/bookmarks/ids?subjectId=${subjectId}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success) {
-            setBookmarkedIds(new Set(data.data));
-          }
+        const data = await res.json();
+        if (data.success) {
+          setBookmarkedIds(new Set(data.data));
         }
       } catch (e) {
         console.log("Could not load bookmarks");
@@ -100,9 +98,17 @@ export function PracticeQuiz({
 
   const handleToggleBookmark = async (question: any) => {
     if (!user) return;
+    const qId = question.id;
+    const wasBookmarked = bookmarkedIds.has(qId);
+    setBookmarkedIds(prev => {
+      const next = new Set(prev);
+      if (wasBookmarked) next.delete(qId);
+      else next.add(qId);
+      return next;
+    });
     try {
       const res = await apiRequest("POST", "/api/user/bookmarks/toggle", {
-        questionId: question.id,
+        questionId: qId,
         subjectId,
         unitId: router.query.unit as string || '',
         prompt: question.prompt || '',
@@ -111,20 +117,20 @@ export function PracticeQuiz({
         explanation: question.explanation || '',
         sectionCode: question.section_code || '',
       });
-      if (res.ok) {
-        const data = await res.json();
-        setBookmarkedIds(prev => {
-          const next = new Set(prev);
-          if (data.data.bookmarked) {
-            next.add(question.id);
-          } else {
-            next.delete(question.id);
-          }
-          return next;
-        });
-      }
+      const data = await res.json();
+      setBookmarkedIds(prev => {
+        const next = new Set(prev);
+        if (data.data.bookmarked) next.add(qId);
+        else next.delete(qId);
+        return next;
+      });
     } catch (e) {
-      console.log("Could not toggle bookmark");
+      setBookmarkedIds(prev => {
+        const next = new Set(prev);
+        if (wasBookmarked) next.add(qId);
+        else next.delete(qId);
+        return next;
+      });
     }
   };
 
@@ -411,19 +417,11 @@ export function PracticeQuiz({
                   </div>
                 ) : currentExplanation ? (
                   <>
-                    <div className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none mb-3">
+                    <div className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {currentExplanation}
                       </ReactMarkdown>
                     </div>
-                    <ExplanationChat
-                      questionPrompt={currentQuestion.prompt}
-                      explanation={currentExplanation}
-                      correctAnswer={
-                        currentQuestion.choices[currentQuestion.answerIndex]
-                      }
-                      choices={currentQuestion.choices}
-                    />
                   </>
                 ) : null}
               </CardContent>
