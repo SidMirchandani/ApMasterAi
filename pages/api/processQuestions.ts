@@ -179,6 +179,7 @@ export default async function handler(
   let updated = 0;
   let skipped = 0;
   let failed = 0;
+  let processed = 0;
 
   sendEvent({
     type: "progress",
@@ -186,79 +187,66 @@ export default async function handler(
     message: `Starting processing for ${total} questions (fix formatting + generate explanations)...`,
   });
 
-  const BASE_DELAY_MS = 2000;
+  const BATCH_SIZE = 5;
+  const BATCH_DELAY_MS = 300;
 
-  for (let i = 0; i < questionIds.length; i++) {
-    const questionId = questionIds[i];
+  async function processOneQuestion(questionId: string, idx: number): Promise<"updated" | "skipped"> {
+    const doc = await questionsRef.doc(questionId).get();
 
-    if (aborted) {
-      console.log("Client disconnected, stopping processing.");
-      break;
+    if (!doc.exists) {
+      return "skipped";
     }
 
-    try {
-      const doc = await questionsRef.doc(questionId).get();
+    const question = doc.data();
 
-      if (!doc.exists) {
-        skipped++;
-        sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Q${i + 1}/${total}: not found, skipped` });
-        continue;
-      }
+    const hasExplanation = question.explanation && question.explanation.trim() !== '';
+    const isPromptFixed = question.tags && question.tags.includes("prompt_fixed");
 
-      const question = doc.data();
+    if (hasExplanation && isPromptFixed) {
+      return "skipped";
+    }
 
-      const hasExplanation = question.explanation && question.explanation.trim() !== '';
-      const isPromptFixed = question.tags && question.tags.includes("prompt_fixed");
+    const needsFix = !isPromptFixed;
+    const needsExplanation = !hasExplanation;
 
-      if (hasExplanation && isPromptFixed) {
-        skipped++;
-        sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Q${i + 1}/${total}: already processed, skipped` });
-        continue;
-      }
+    const promptParts: any[] = [];
 
-      const needsFix = !isPromptFixed;
-      const needsExplanation = !hasExplanation;
+    let questionText = "";
+    if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
+      questionText = flattenChoiceText(question.prompt_blocks);
+    }
 
-      sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Processing Q${i + 1}/${total}...` });
+    let choicesText = "";
+    const choiceLetters: string[] = [];
+    Object.entries(question.choices ?? {}).forEach(([letter, blocks]: [string, any]) => {
+      const ct = flattenChoiceText(blocks);
+      choicesText += `${letter}. ${ct}\n`;
+      choiceLetters.push(letter);
+    });
 
-      const promptParts: any[] = [];
+    const correctLabel = String.fromCharCode(65 + question.answerIndex);
+    const correctAnswerBlocks = question.choices?.[correctLabel];
+    const correctAnswer = correctAnswerBlocks ? flattenChoiceText(correctAnswerBlocks) : "";
 
-      let questionText = "";
-      if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
-        questionText = flattenChoiceText(question.prompt_blocks);
-      }
+    const tasks: string[] = [];
+    const jsonFields: string[] = [];
 
-      let choicesText = "";
-      const choiceLetters: string[] = [];
-      Object.entries(question.choices ?? {}).forEach(([letter, blocks]: [string, any]) => {
-        const ct = flattenChoiceText(blocks);
-        choicesText += `${letter}. ${ct}\n`;
-        choiceLetters.push(letter);
-      });
-
-      const correctLabel = String.fromCharCode(65 + question.answerIndex);
-      const correctAnswerBlocks = question.choices?.[correctLabel];
-      const correctAnswer = correctAnswerBlocks ? flattenChoiceText(correctAnswerBlocks) : "";
-
-      const tasks: string[] = [];
-      const jsonFields: string[] = [];
-
-      if (needsFix) {
-        tasks.push(`TASK - FIX FORMATTING:
+    if (needsFix) {
+      tasks.push(`TASK - FIX FORMATTING:
 Fix ONLY formatting issues in the question text and answer choices. Do NOT change any words.
 Only fix: math notation, chemical formulas, symbols, spacing, punctuation spacing, missing periods.
 Do NOT change words, rephrase, fix grammar, or add content.`);
-        jsonFields.push(`"fixed_question": "the formatting-fixed question text"`);
-        jsonFields.push(`"fixed_choices": {${choiceLetters.map(l => `"${l}": "formatting-fixed choice ${l}"`).join(", ")}}`);
-      }
+      jsonFields.push(`"fixed_question": "the formatting-fixed question text"`);
+      jsonFields.push(`"fixed_choices": {${choiceLetters.map(l => `"${l}": "formatting-fixed choice ${l}"`).join(", ")}}`);
+    }
 
-      if (needsExplanation) {
-        tasks.push(`TASK - GENERATE EXPLANATION:
+    if (needsExplanation) {
+      tasks.push(`TASK - GENERATE EXPLANATION:
 Generate a concise explanation (100-150 words). Structure: **Concept**: 1-2 sentences on what this tests. **Why ${correctLabel} is correct**: Why this answer is right. **Why other choices are wrong**: Brief reason each incorrect choice fails. Use \\n for newlines within the explanation string.`);
-        jsonFields.push(`"explanation": "your concise explanation with \\n for newlines"`);
-      }
+      jsonFields.push(`"explanation": "your concise explanation with \\n for newlines"`);
+    }
 
-      let combinedPrompt = `You are an expert AP tutor. Process this AP exam question.
+    let combinedPrompt = `You are an expert AP tutor. Process this AP exam question.
 
 ${tasks.join("\n\n")}
 
@@ -278,137 +266,157 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no code fences, no extra tex
   ${jsonFields.join(",\n  ")}
 }`;
 
-      promptParts.push({ text: combinedPrompt });
+    promptParts.push({ text: combinedPrompt });
 
-      if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
-        for (const block of question.prompt_blocks) {
-          if (block.type === "image" && block.url) {
-            try {
-              const base64Data = await fetchImageAsBase64(block.url);
-              promptParts.push({
-                inlineData: {
-                  mimeType: "image/png",
-                  data: base64Data
-                }
-              });
-            } catch (err) {
-              console.error(`Failed to fetch image ${block.url}:`, err);
-            }
-          }
-        }
-      }
-
-      for (const [letter, blocks] of Object.entries(question.choices ?? {})) {
-        for (const block of blocks as any[]) {
-          if (block.type === "image" && block.url) {
-            try {
-              const base64Data = await fetchImageAsBase64(block.url);
-              promptParts.push({
-                inlineData: {
-                  mimeType: "image/png",
-                  data: base64Data
-                }
-              });
-            } catch (err) {
-              console.error(`Failed to fetch choice image ${block.url}:`, err);
-            }
-          }
-        }
-      }
-
-      const result = await callWithRetry(
-        () => ai.models.generateContent({
-          model: selectedModel,
-          contents: [{ role: "user", parts: promptParts }],
-        }),
-        5, 5000,
-        (attempt, waitSec) => {
-          console.log(`Rate limit hit, retry ${attempt}/5 — waiting ${waitSec}s...`);
-          sendEvent({ type: "rate_limit", current: i + 1, total, updated, skipped, failed, message: `Rate limit hit — waiting ${waitSec}s before retry ${attempt}/5...` });
-        }
-      );
-
-      let responseText = result.text?.trim() || "";
-      responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-      const firstBrace = responseText.indexOf('{');
-      const lastBrace = responseText.lastIndexOf('}');
-      if (firstBrace !== -1 && lastBrace > firstBrace) {
-        responseText = responseText.substring(firstBrace, lastBrace + 1);
-      }
-
-      let parsed: any;
-      try {
-        parsed = JSON.parse(responseText);
-      } catch (parseErr) {
-        const sanitized = responseText
-          .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : '')
-          .replace(/\n/g, '\\n')
-          .replace(/\t/g, '\\t');
-        try {
-          parsed = JSON.parse(sanitized);
-        } catch {
-          throw new Error(`JSON parse failed: ${(responseText).substring(0, 120)}...`);
-        }
-      }
-
-      const updateData: any = { updatedAt: new Date() };
-
-      if (needsFix && parsed.fixed_question) {
-        const updatedPromptBlocks = question.prompt_blocks?.map((block: any) => {
-          if (block.type === "text") {
-            return { ...block, value: parsed.fixed_question };
-          }
-          return block;
-        }) || [{ type: "text", value: parsed.fixed_question }];
-
-        updateData.prompt_blocks = removeDuplicateBlocks(updatedPromptBlocks);
-
-        if (parsed.fixed_choices) {
-          const updatedChoices: any = {};
-          for (const [letter, blocks] of Object.entries(question.choices ?? {})) {
-            const correctedBlocks = (blocks as any[]).map((block: any) => {
-              if (block.type === "text") {
-                return { ...block, value: parsed.fixed_choices[letter] || block.value };
+    if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
+      for (const block of question.prompt_blocks) {
+        if (block.type === "image" && block.url) {
+          try {
+            const base64Data = await fetchImageAsBase64(block.url);
+            promptParts.push({
+              inlineData: {
+                mimeType: "image/png",
+                data: base64Data
               }
-              return block;
             });
-            updatedChoices[letter] = removeDuplicateBlocks(correctedBlocks);
+          } catch (err) {
+            console.error(`Failed to fetch image ${block.url}:`, err);
           }
-          updateData.choices = updatedChoices;
         }
-
-        const existingTags = question.tags || [];
-        updateData.tags = existingTags.includes("prompt_fixed")
-          ? existingTags
-          : [...existingTags, "prompt_fixed"];
       }
-
-      if (needsExplanation && parsed.explanation) {
-        let explanation = parsed.explanation.trim();
-        explanation = explanation.replace(/^Explanation:\s*/i, "").trim();
-        updateData.explanation = explanation;
-      }
-
-      await doc.ref.update(updateData);
-
-      updated++;
-      console.log(`Processed question ${doc.id} (${i + 1}/${total})`);
-
-      sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Processed ${updated}/${total - skipped} questions` });
-    } catch (error: any) {
-      failed++;
-      const isQuota = isQuotaError(error);
-      console.error(`Failed to process ${questionId}:`, isQuota ? "Quota exhausted" : error.message);
-      sendEvent({
-        type: "progress", current: i + 1, total, updated, skipped, failed,
-        message: isQuota
-          ? `Q${i + 1}: Quota exhausted after retries — skipped`
-          : `Q${i + 1}: Failed — ${(error.message || "").substring(0, 80)}`,
-      });
     }
 
-    await new Promise((resolve) => setTimeout(resolve, BASE_DELAY_MS));
+    for (const [letter, blocks] of Object.entries(question.choices ?? {})) {
+      for (const block of blocks as any[]) {
+        if (block.type === "image" && block.url) {
+          try {
+            const base64Data = await fetchImageAsBase64(block.url);
+            promptParts.push({
+              inlineData: {
+                mimeType: "image/png",
+                data: base64Data
+              }
+            });
+          } catch (err) {
+            console.error(`Failed to fetch choice image ${block.url}:`, err);
+          }
+        }
+      }
+    }
+
+    const result = await callWithRetry(
+      () => ai.models.generateContent({
+        model: selectedModel,
+        contents: [{ role: "user", parts: promptParts }],
+      }),
+      5, 5000,
+      (attempt, waitSec) => {
+        console.log(`Rate limit hit Q${idx + 1}, retry ${attempt}/5 — waiting ${waitSec}s...`);
+      }
+    );
+
+    let responseText = result.text?.trim() || "";
+    responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+    const firstBrace = responseText.indexOf('{');
+    const lastBrace = responseText.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      responseText = responseText.substring(firstBrace, lastBrace + 1);
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(responseText);
+    } catch (parseErr) {
+      const sanitized = responseText
+        .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : '')
+        .replace(/\n/g, '\\n')
+        .replace(/\t/g, '\\t');
+      try {
+        parsed = JSON.parse(sanitized);
+      } catch {
+        throw new Error(`JSON parse failed: ${(responseText).substring(0, 120)}...`);
+      }
+    }
+
+    const updateData: any = { updatedAt: new Date() };
+
+    if (needsFix && parsed.fixed_question) {
+      const updatedPromptBlocks = question.prompt_blocks?.map((block: any) => {
+        if (block.type === "text") {
+          return { ...block, value: parsed.fixed_question };
+        }
+        return block;
+      }) || [{ type: "text", value: parsed.fixed_question }];
+
+      updateData.prompt_blocks = removeDuplicateBlocks(updatedPromptBlocks);
+
+      if (parsed.fixed_choices) {
+        const updatedChoices: any = {};
+        for (const [letter, blocks] of Object.entries(question.choices ?? {})) {
+          const correctedBlocks = (blocks as any[]).map((block: any) => {
+            if (block.type === "text") {
+              return { ...block, value: parsed.fixed_choices[letter] || block.value };
+            }
+            return block;
+          });
+          updatedChoices[letter] = removeDuplicateBlocks(correctedBlocks);
+        }
+        updateData.choices = updatedChoices;
+      }
+
+      const existingTags = question.tags || [];
+      updateData.tags = existingTags.includes("prompt_fixed")
+        ? existingTags
+        : [...existingTags, "prompt_fixed"];
+    }
+
+    if (needsExplanation && parsed.explanation) {
+      let explanation = parsed.explanation.trim();
+      explanation = explanation.replace(/^Explanation:\s*/i, "").trim();
+      updateData.explanation = explanation;
+    }
+
+    await doc.ref.update(updateData);
+    console.log(`Processed question ${doc.id} (${idx + 1}/${total})`);
+    return "updated";
+  }
+
+  for (let batchStart = 0; batchStart < questionIds.length; batchStart += BATCH_SIZE) {
+    if (aborted) {
+      console.log("Client disconnected, stopping processing.");
+      break;
+    }
+
+    const batchEnd = Math.min(batchStart + BATCH_SIZE, questionIds.length);
+    const batch = questionIds.slice(batchStart, batchEnd);
+
+    sendEvent({ type: "progress", current: batchStart, total, updated, skipped, failed, message: `Processing batch ${Math.floor(batchStart / BATCH_SIZE) + 1} (Q${batchStart + 1}-${batchEnd})...` });
+
+    const results = await Promise.allSettled(
+      batch.map((questionId: string, batchIdx: number) =>
+        processOneQuestion(questionId, batchStart + batchIdx)
+      )
+    );
+
+    for (const result of results) {
+      processed++;
+      if (result.status === "fulfilled") {
+        if (result.value === "updated") updated++;
+        else if (result.value === "skipped") skipped++;
+      } else {
+        failed++;
+        const error = result.reason;
+        const isQuota = isQuotaError(error);
+        console.error(`Failed to process question:`, isQuota ? "Quota exhausted" : error?.message);
+      }
+    }
+
+    sendEvent({ type: "progress", current: processed, total, updated, skipped, failed, message: `Batch done — ${updated} updated, ${skipped} skipped, ${failed} failed (${processed}/${total})` });
+
+    if (batchEnd < questionIds.length) {
+      await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+    }
   }
 
   console.log(`Completed: Processed ${updated}/${total} questions (${skipped} skipped, ${failed} failed)`);
