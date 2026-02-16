@@ -114,22 +114,22 @@ export default function Course() {
     <div className="min-h-screen bg-khan-background">
       <Navigation />
 
-      <div className="py-12 px-4 sm:px-6 lg:px-8">
+      <div className="py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-khan-gray-dark mb-4">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold text-khan-gray-dark mb-3">
               {courseName}
             </h1>
-            <p className="text-xl text-khan-gray-medium max-w-2xl mx-auto">
+            <p className="text-lg text-khan-gray-medium max-w-2xl mx-auto">
               Master the concepts and skills you need to succeed on your AP
               exam.
             </p>
           </div>
 
-          <div className="bg-white rounded-lg border-2 border-gray-100 p-8 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-lg border-2 border-gray-100 p-6 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="text-center">
-                <div className="w-16 h-16 bg-khan-blue rounded-lg flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 bg-khan-blue rounded-lg flex items-center justify-center mx-auto mb-3">
                   <Target className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
@@ -141,7 +141,7 @@ export default function Course() {
               </div>
 
               <div className="text-center">
-                <div className="w-16 h-16 bg-khan-green rounded-lg flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center mx-auto mb-3">
                   <BookOpen className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
@@ -153,7 +153,7 @@ export default function Course() {
               </div>
 
               <div className="text-center">
-                <div className="w-16 h-16 bg-khan-purple rounded-lg flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 bg-khan-purple rounded-lg flex items-center justify-center mx-auto mb-3">
                   <Clock className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
@@ -166,10 +166,10 @@ export default function Course() {
             </div>
 
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-khan-gray-dark mb-4">
+              <h2 className="text-xl font-bold text-khan-gray-dark mb-3">
                 Ready to Start Studying?
               </h2>
-              <p className="text-khan-gray-medium mb-6">
+              <p className="text-khan-gray-medium mb-4">
                 Add {courseName} to your dashboard and start practicing with real AP-style questions.
               </p>
               <Button
@@ -180,7 +180,7 @@ export default function Course() {
                 <Plus className="w-5 h-5 mr-2" />
                 {isAdding ? "Adding..." : "Add to Dashboard"}
               </Button>
-              <div className="flex items-center justify-center space-x-2 text-khan-green mt-6">
+              <div className="flex items-center justify-center space-x-2 text-khan-green mt-4">
                 <Users className="w-5 h-5" />
                 <span className="font-medium">
                   Join thousands of students preparing for success

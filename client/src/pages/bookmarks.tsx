@@ -179,9 +179,9 @@ export default function BookmarksPage() {
     <div className="min-h-screen bg-white dark:bg-gray-950">
       <Navigation />
 
-      <div className="container mx-auto px-4 py-6 max-w-3xl">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+      <div className="container mx-auto px-4 py-4 max-w-3xl">
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Bookmark className="w-6 h-6 text-yellow-500 fill-current" />
             Saved Questions
           </h1>
@@ -191,10 +191,10 @@ export default function BookmarksPage() {
         </div>
 
         {bookmarks.length === 0 ? (
-          <div className="text-center py-16">
-            <Bookmark className="mx-auto h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">No saved questions yet</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
+          <div className="text-center py-10">
+            <Bookmark className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">No saved questions yet</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
               Bookmark questions during practice to review them later
             </p>
             <Button
@@ -229,8 +229,8 @@ export default function BookmarksPage() {
             </div>
 
             <Card className="dark:bg-gray-900 dark:border-gray-700">
-              <CardContent className="p-6">
-                <p className="text-base text-gray-900 dark:text-gray-100 mb-6 leading-relaxed font-medium">
+              <CardContent className="p-4">
+                <p className="text-base text-gray-900 dark:text-gray-100 mb-4 leading-relaxed font-medium">
                   {typeof currentQuestion.prompt === "string" && currentQuestion.prompt
                     ? currentQuestion.prompt
                     : `Q${currentIndex + 1}`}
@@ -282,7 +282,7 @@ export default function BookmarksPage() {
                 })()}
 
                 {isRevealed && currentQuestion.explanation && (
-                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">Explanation</p>
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{currentQuestion.explanation}</p>
                   </div>

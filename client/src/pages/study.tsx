@@ -224,9 +224,9 @@ export default function Study() {
 
       {/* Header Section */}
       <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-20">
-        <div className="container mx-auto px-4 py-4 max-w-6xl">
+        <div className="container mx-auto px-4 py-3 max-w-6xl">
           <div className="text-center">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
               {currentSubject.name}
             </h1>
           </div>
@@ -235,23 +235,23 @@ export default function Study() {
 
       <div className="container mx-auto px-4 py-4 max-w-6xl">
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <Card className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Topics Mastered</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {topicsMastered}/{totalTopics}
                   </p>
                 </div>
-                <Trophy className="h-10 w-10 text-khan-green" />
+                <Trophy className="h-8 w-8 text-khan-green" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Exam Date</p>
@@ -259,41 +259,41 @@ export default function Study() {
                     {formatDate(currentSubject.examDate)}
                   </p>
                 </div>
-                <CalendarDays className="h-10 w-10 text-khan-blue" />
+                <CalendarDays className="h-8 w-8 text-khan-blue" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Overall Progress</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {Math.round((topicsMastered / totalTopics) * 100)}%
                   </p>
                 </div>
-                <Target className="h-10 w-10 text-khan-orange" />
+                <Target className="h-8 w-8 text-khan-orange" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Full-Length Practice Tests */}
-        <Card className="mb-8 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
+        <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
           <CardHeader className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-khan-green" />
               Full-Length Practice Tests
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button
                 onClick={() =>
                   router.push(`/quiz?subject=${subjectId}&unit=full-length`)
                 }
-                className="bg-khan-green hover:bg-khan-green-light h-12 text-base font-medium"
+                className="bg-khan-green hover:bg-khan-green-light h-10 text-base font-medium"
               >
                 <BookOpen className="mr-2 h-5 w-5" />
                 MCQ Full-Length Test
@@ -303,7 +303,7 @@ export default function Study() {
                   router.push(`/full-length-history?subject=${subjectId}`)
                 }
                 variant="outline"
-                className="h-12 text-base font-medium border-2 border-khan-green text-khan-green hover:bg-khan-green/5"
+                className="h-10 text-base font-medium border-2 border-khan-green text-khan-green hover:bg-khan-green/5"
               >
                 <Clock className="mr-2 h-5 w-5" />
                 Full-Length Test History
@@ -313,13 +313,13 @@ export default function Study() {
         </Card>
 
         {/* Tools Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <Card className="border border-yellow-200 dark:border-yellow-800 dark:bg-gray-900 shadow-sm">
-            <CardContent className="py-4">
+            <CardContent className="py-3">
               <Button
                 onClick={() => router.push(`/bookmarks?subject=${subjectId}`)}
                 variant="outline"
-                className="w-full h-12 text-base font-medium border-2 border-yellow-400 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+                className="w-full h-10 text-base font-medium border-2 border-yellow-400 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
               >
                 <Bookmark className="mr-2 h-5 w-5 fill-current" />
                 Saved Questions
@@ -327,11 +327,11 @@ export default function Study() {
             </CardContent>
           </Card>
           <Card className="border border-purple-200 dark:border-purple-800 dark:bg-gray-900 shadow-sm">
-            <CardContent className="py-4">
+            <CardContent className="py-3">
               <Button
                 onClick={() => router.push(`/review?subject=${subjectId}`)}
                 variant="outline"
-                className="w-full h-12 text-base font-medium border-2 border-purple-400 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                className="w-full h-10 text-base font-medium border-2 border-purple-400 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
               >
                 <RotateCcw className="mr-2 h-5 w-5" />
                 Review Questions
@@ -339,11 +339,11 @@ export default function Study() {
             </CardContent>
           </Card>
           <Card className="border border-green-200 dark:border-green-800 dark:bg-gray-900 shadow-sm">
-            <CardContent className="py-4">
+            <CardContent className="py-3">
               <Button
                 onClick={() => router.push(`/analytics?subject=${subjectId}`)}
                 variant="outline"
-                className="w-full h-12 text-base font-medium border-2 border-green-400 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+                className="w-full h-10 text-base font-medium border-2 border-green-400 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
               >
                 <BarChart3 className="mr-2 h-5 w-5" />
                 Analytics
@@ -353,8 +353,8 @@ export default function Study() {
         </div>
 
         {/* Units Section */}
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+        <div className="mb-3">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
             <Target className="h-6 w-6 text-khan-green" />
             Practice by Unit
           </h2>
@@ -373,19 +373,19 @@ export default function Study() {
                 key={unit.id}
                 className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 hover:border-khan-green transition-all duration-200 shadow-sm hover:shadow-md"
               >
-                <CardContent className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                <CardContent className="p-4">
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                     {/* Left: Unit Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-khan-green text-white flex items-center justify-center font-bold text-lg">
+                      <div className="flex items-start gap-4 mb-2">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-khan-green text-white flex items-center justify-center font-bold text-lg">
                           {index + 1}
                         </div>
                         <div className="flex-1">
                           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
                             {unit.title}
                           </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 leading-relaxed">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 leading-relaxed">
                             {unit.description}
                           </p>
                           <div className="flex flex-wrap gap-2">
@@ -440,14 +440,14 @@ export default function Study() {
                     </div>
 
                     {/* Right: Action Buttons */}
-                    <div className="flex flex-col gap-3 lg:min-w-[280px]">
+                    <div className="flex flex-col gap-3 lg:min-w-[240px]">
                       <Button
                         onClick={() => {
                           router.push(
                             `/quiz?subject=${subjectId}&unit=${unit.id}`,
                           );
                         }}
-                        className="bg-khan-green hover:bg-khan-green-light h-11 font-medium"
+                        className="bg-khan-green hover:bg-khan-green-light h-10 font-medium"
                       >
                         <BookOpen className="mr-2 h-4 w-4" />
                         Unit MCQ Practice

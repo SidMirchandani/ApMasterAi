@@ -158,9 +158,9 @@ export default function AnalyticsPage() {
     <div className="min-h-screen bg-white dark:bg-gray-950">
       <Navigation />
 
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+      <div className="container mx-auto px-4 py-4 max-w-5xl">
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-khan-green" />
             Analytics
           </h1>
@@ -170,10 +170,10 @@ export default function AnalyticsPage() {
         </div>
 
         {!stats || stats.totalAttempted === 0 ? (
-          <div className="text-center py-16">
-            <BarChart3 className="mx-auto h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">No data yet</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
+          <div className="text-center py-10">
+            <BarChart3 className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">No data yet</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
               Start practicing questions to see your performance analytics
             </p>
             <Button
@@ -184,7 +184,7 @@ export default function AnalyticsPage() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardContent className="p-4 text-center">
@@ -291,19 +291,19 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4 grid grid-cols-3 gap-3 text-center">
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
                       <p className="text-2xl font-bold" style={{ color: scoreColors[chartData[chartData.length - 1]?.predictedScore] || "#6b7280" }}>
                         {chartData[chartData.length - 1]?.predictedScore || "-"}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Current Score</p>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
                       <p className="text-2xl font-bold text-blue-500">
                         {chartData[chartData.length - 1]?.accuracy || 0}%
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Latest Accuracy</p>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
                       {(() => {
                         const first = chartData[0]?.predictedScore || 0;
                         const last = chartData[chartData.length - 1]?.predictedScore || 0;
@@ -452,7 +452,7 @@ export default function AnalyticsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {unitEntries.map(([unitId, unitStats]) => {
                       const unitAcc = unitStats.total > 0
                         ? Math.round((unitStats.correct / unitStats.total) * 100)

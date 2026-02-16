@@ -217,13 +217,13 @@ export default function Courses() {
 
       <Navigation />
 
-      <div className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="py-6 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-khan-gray-dark mb-4">
+          <div className="text-center mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-khan-gray-dark mb-3">
               Choose Your <span className="text-khan-green">AP Subject</span>
             </h1>
-            <p className="text-xl text-khan-gray-medium max-w-2xl mx-auto mb-8">
+            <p className="text-lg text-khan-gray-medium max-w-2xl mx-auto mb-4">
               Select an AP course to begin your personalized learning journey.
             </p>
             <div className="max-w-md mx-auto relative">
@@ -239,12 +239,12 @@ export default function Courses() {
           </div>
 
           {filteredSubjects.length === 0 && searchQuery.trim() && (
-            <div className="text-center py-12 text-khan-gray-medium">
+            <div className="text-center py-8 text-khan-gray-medium">
               No subjects match "{searchQuery}". Try a different search term.
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredSubjects
               .map((subject) => {
                 const isAdded = addedSubjectIds.has(subject.id);
@@ -257,7 +257,7 @@ export default function Courses() {
                     key={subject.id}
                     className="bg-white border-2 border-gray-100 hover:border-khan-green/30 hover:shadow-md transition-all"
                   >
-                    <CardHeader className="pb-4">
+                    <CardHeader className="pb-3">
                       <CardTitle className="text-lg font-bold text-khan-gray-dark">
                         {subject.name}
                       </CardTitle>
@@ -268,7 +268,7 @@ export default function Courses() {
 
                     <CardContent>
                       {/* Metadata */}
-                      <div className="flex items-center justify-between text-sm text-khan-gray-medium mb-6">
+                      <div className="flex items-center justify-between text-sm text-khan-gray-medium mb-4">
                         <div className="flex items-center space-x-1">
                           <BookOpen className="w-4 h-4" />
                           <span className="text-khan-gray-dark font-medium">

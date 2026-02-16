@@ -200,7 +200,7 @@ export default function FullLengthResults() {
       </div>
 
       <Navigation />
-      <main className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+      <main className="py-6 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-khan-gray-dark text-center">

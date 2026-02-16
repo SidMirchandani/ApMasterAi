@@ -185,9 +185,9 @@ export default function ReviewPage() {
     <div className="min-h-screen bg-white dark:bg-gray-950">
       <Navigation />
 
-      <div className="container mx-auto px-4 py-6 max-w-3xl">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+      <div className="container mx-auto px-4 py-4 max-w-3xl">
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <RotateCcw className="w-6 h-6 text-purple-500" />
             Review Questions
           </h1>
@@ -197,10 +197,10 @@ export default function ReviewPage() {
         </div>
 
         {dueQuestions.length === 0 ? (
-          <div className="text-center py-16">
-            <CheckCircle className="mx-auto h-16 w-16 text-green-400 mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">All caught up!</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
+          <div className="text-center py-10">
+            <CheckCircle className="mx-auto h-12 w-12 text-green-400 mb-4" />
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">All caught up!</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
               No questions to review. Questions you get wrong during practice will appear here.
             </p>
             <Button
@@ -227,8 +227,8 @@ export default function ReviewPage() {
             </div>
 
             <Card className="dark:bg-gray-900 dark:border-gray-700">
-              <CardContent className="p-6">
-                <p className="text-base text-gray-900 dark:text-gray-100 mb-6 leading-relaxed font-medium">
+              <CardContent className="p-4">
+                <p className="text-base text-gray-900 dark:text-gray-100 mb-4 leading-relaxed font-medium">
                   {currentQuestion.prompt || `Q${currentIndex + 1}`}
                 </p>
 

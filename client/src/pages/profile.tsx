@@ -135,10 +135,10 @@ export default function Profile() {
       </div>
 
       <Navigation />
-      <main className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+      <main className="py-6 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-3xl mx-auto">
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-khan-gray-dark">Profile Settings</h1>
+          <div className="mb-4 text-center">
+            <h1 className="text-2xl font-bold text-khan-gray-dark">Profile Settings</h1>
             <p className="text-khan-gray-medium mt-1">Manage your account information</p>
           </div>
 
@@ -153,7 +153,7 @@ export default function Profile() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-khan-gray-dark font-medium flex items-center gap-2">
                     <Mail className="h-4 w-4" />
@@ -214,7 +214,7 @@ export default function Profile() {
                   </p>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-2">
                   <Button
                     type="submit"
                     disabled={!hasChanges || updateProfileMutation.isPending}
