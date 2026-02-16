@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { BookOpen, Clock, ArrowRight, Check } from "lucide-react";
+import { BookOpen, Clock, ArrowRight, Check, Search } from "lucide-react";
 
 import {
   Card,
@@ -141,6 +141,19 @@ export default function Courses() {
     }
   }, [addSubjectMutation.error, addSubjectMutation.isPending, toast]);
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredSubjects = useMemo(() => {
+    const sorted = [...apSubjects].sort((a, b) => a.name.localeCompare(b.name));
+    if (!searchQuery.trim()) return sorted;
+    const q = searchQuery.toLowerCase();
+    return sorted.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
   // ---------------------------------------------------
   // HANDLE ADD CLICK
   // ---------------------------------------------------
@@ -195,13 +208,8 @@ export default function Courses() {
 
   if (!isAuthenticated) return null;
 
-  // ---------------------------------------------------
-  // UI
-  // ---------------------------------------------------
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative overflow-hidden">
-      {/* Decorative circles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
@@ -211,19 +219,33 @@ export default function Courses() {
 
       <div className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold text-khan-gray-dark mb-4">
               Choose Your <span className="text-khan-green">AP Subject</span>
             </h1>
-            <p className="text-xl text-khan-gray-medium max-w-2xl mx-auto">
+            <p className="text-xl text-khan-gray-medium max-w-2xl mx-auto mb-8">
               Select an AP course to begin your personalized learning journey.
             </p>
+            <div className="max-w-md mx-auto relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-khan-gray-medium" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search AP subjects..."
+                className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-khan-gray-dark placeholder:text-khan-gray-medium focus:border-khan-green focus:outline-none focus:ring-1 focus:ring-khan-green transition-colors"
+              />
+            </div>
           </div>
 
-          {/* Subject Grid */}
+          {filteredSubjects.length === 0 && searchQuery.trim() && (
+            <div className="text-center py-12 text-khan-gray-medium">
+              No subjects match "{searchQuery}". Try a different search term.
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...apSubjects]
-              .sort((a, b) => a.name.localeCompare(b.name))
+            {filteredSubjects
               .map((subject) => {
                 const isAdded = addedSubjectIds.has(subject.id);
                 const isAdding =
