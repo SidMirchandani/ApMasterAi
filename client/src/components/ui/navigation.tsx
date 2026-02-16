@@ -169,8 +169,15 @@ export default function Navigation() {
             )}
           </div>
 
-          {/* RIGHT: Theme + User menu */}
+          {/* RIGHT: Theme + About/Team + User menu */}
           <div className="flex items-center gap-2">
+            <Link href="/about" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#36b37e] transition-colors hidden md:block">
+              About
+            </Link>
+            <Link href="/team" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#36b37e] transition-colors hidden md:block">
+              Team
+            </Link>
+
             <Button
               variant="ghost"
               size="sm"
@@ -270,9 +277,6 @@ export default function Navigation() {
               </>
             ) : (
               <>
-                <Link href="/about" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#36b37e] transition-colors hidden md:block">
-                  About
-                </Link>
                 <Link href="/login">
                   <Button
                     variant="ghost"
