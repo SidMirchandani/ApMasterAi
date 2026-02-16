@@ -146,6 +146,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       flaggedQuestions: Array.from(flaggedQuestions),
       timeElapsed,
       timeRemaining,
+      questionIds: questions.map((q: any) => q.id),
     };
 
     try {

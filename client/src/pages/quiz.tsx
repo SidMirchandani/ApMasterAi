@@ -387,15 +387,15 @@ export default function Quiz() {
     setShowResumeDialog(false);
     setIsLoading(true);
 
-    // Restore timer state
     if (savedExamState && savedExamState.timeElapsed !== undefined) {
       setTimeElapsed(savedExamState.timeElapsed);
     }
 
-    // Fetch questions
     try {
       const subjectApiCode = getApiCodeForSubject(subjectId as string);
       if (!subjectApiCode) throw new Error("Invalid subject");
+
+      const savedQuestionIds: string[] | undefined = savedExamState?.questionIds;
 
       const examConfig = EXAM_CONFIGS[subjectApiCode];
       const questionLimit = examConfig?.questions || 60;
@@ -406,7 +406,19 @@ export default function Quiz() {
       if (!response.ok) throw new Error("Failed to fetch questions");
       const data = await response.json();
       if (data.success && data.data?.length > 0) {
-        setQuestions(data.data);
+        if (savedQuestionIds && savedQuestionIds.length > 0) {
+          const questionMap = new Map(data.data.map((q: any) => [q.id, q]));
+          const ordered = savedQuestionIds
+            .map((id: string) => questionMap.get(id))
+            .filter(Boolean);
+          if (ordered.length > 0) {
+            setQuestions(ordered);
+          } else {
+            setQuestions(data.data);
+          }
+        } else {
+          setQuestions(data.data);
+        }
       } else {
         setError("No questions found for this subject");
       }
