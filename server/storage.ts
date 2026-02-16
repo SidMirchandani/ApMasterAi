@@ -894,6 +894,7 @@ export class Storage {
         streak: data.correct ? 1 : 0,
         lastAnsweredAt: now,
         lastResult: data.correct ? 'correct' : 'incorrect',
+        needsReview: !data.correct,
         nextReviewAt: nextReview,
         totalTimeSpentSec: data.timeSpentSec,
         attemptCount: 1,
@@ -912,7 +913,7 @@ export class Storage {
         : 10 * 60 * 1000;
       const newNextReview = new Date(now.getTime() + newIntervalMs);
 
-      await doc.ref.update({
+      const updateData: any = {
         incorrectCount: (prev.incorrectCount || 0) + (data.correct ? 0 : 1),
         correctCount: (prev.correctCount || 0) + (data.correct ? 1 : 0),
         streak: newStreak,
@@ -921,7 +922,11 @@ export class Storage {
         nextReviewAt: newNextReview,
         totalTimeSpentSec: (prev.totalTimeSpentSec || 0) + data.timeSpentSec,
         attemptCount: (prev.attemptCount || 0) + 1,
-      });
+      };
+      if (!data.correct) {
+        updateData.needsReview = true;
+      }
+      await doc.ref.update(updateData);
     }
   }
 
@@ -944,21 +949,32 @@ export class Storage {
     }
 
     const snapshot = await query.get();
-    const now = new Date();
     const results = snapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter((doc: any) => {
-        if (!doc.nextReviewAt) return false;
-        const reviewAt = doc.nextReviewAt.toDate ? doc.nextReviewAt.toDate() : new Date(doc.nextReviewAt);
-        return reviewAt <= now;
-      })
+      .filter((doc: any) => doc.needsReview === true || (doc.needsReview === undefined && doc.lastResult === 'incorrect'))
       .sort((a: any, b: any) => {
-        const aTime = a.nextReviewAt?.toDate ? a.nextReviewAt.toDate().getTime() : new Date(a.nextReviewAt).getTime();
-        const bTime = b.nextReviewAt?.toDate ? b.nextReviewAt.toDate().getTime() : new Date(b.nextReviewAt).getTime();
-        return aTime - bTime;
+        const aTime = a.lastAnsweredAt?.toDate ? a.lastAnsweredAt.toDate().getTime() : 0;
+        const bTime = b.lastAnsweredAt?.toDate ? b.lastAnsweredAt.toDate().getTime() : 0;
+        return bTime - aTime;
       })
       .slice(0, limit);
     return results;
+  }
+
+  async removeFromReview(userId: string, questionId: string): Promise<void> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const snapshot = await db.collection('user_question_state')
+      .where('userId', '==', userId)
+      .where('questionId', '==', questionId)
+      .limit(1)
+      .get();
+
+    if (!snapshot.empty) {
+      await snapshot.docs[0].ref.update({ needsReview: false });
+    }
   }
 
   async getQuestionStats(userId: string, subjectId?: string): Promise<any> {
@@ -992,7 +1008,7 @@ export class Storage {
       stats.totalIncorrect += data.incorrectCount || 0;
       stats.totalTimeSpentSec += data.totalTimeSpentSec || 0;
 
-      if (data.nextReviewAt && data.nextReviewAt.toDate && data.nextReviewAt.toDate() <= now) {
+      if (data.needsReview === true || (data.needsReview === undefined && data.lastResult === 'incorrect')) {
         stats.dueForReview++;
       }
 

@@ -939,22 +939,32 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col className="w-10" />
+                  <col className="w-16" />
+                  <col className="w-14" />
+                  <col style={{ width: '25%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col className="w-14" />
+                  <col style={{ width: '20%' }} />
+                  <col className="w-20" />
+                </colgroup>
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="p-3 text-center">
+                    <th className="p-2 text-center">
                       <Checkbox
                         checked={items.length > 0 && selectedQuestions.size === items.length}
                         onCheckedChange={toggleSelectAll}
                       />
                     </th>
-                    <th className="p-3 text-left font-semibold text-khan-gray-dark">Subject</th>
-                    <th className="p-3 text-left font-semibold text-khan-gray-dark">Section</th>
-                    <th className="p-3 text-left font-semibold text-khan-gray-dark">Prompt</th>
-                    <th className="p-3 text-left font-semibold text-khan-gray-dark">Choices</th>
-                    <th className="p-3 text-center font-semibold text-khan-gray-dark">Answer</th>
-                    <th className="p-3 text-left font-semibold text-khan-gray-dark">Explanation</th>
-                    <th className="p-3 text-center font-semibold text-khan-gray-dark">Actions</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark text-xs">Subject</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark text-xs">Section</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark text-xs">Prompt</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark text-xs">Choices</th>
+                    <th className="p-2 text-center font-semibold text-khan-gray-dark text-xs">Ans</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark text-xs">Explanation</th>
+                    <th className="p-2 text-center font-semibold text-khan-gray-dark text-xs">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1025,10 +1035,10 @@ function Row({
   const renderQuestionPrompt = () => {
     if (q.prompt_blocks && q.prompt_blocks.length > 0) {
       return (
-        <div className="max-w-xs text-xs space-y-1">
+        <div className="text-xs space-y-1 break-words">
           {q.prompt_blocks.map((block, idx) => {
             if (block.type === "text") {
-              return <div key={idx} className="truncate">{block.value}</div>;
+              return <div key={idx} className="line-clamp-3">{block.value}</div>;
             } else if (block.type === "image") {
               return (
                 <div key={idx} className="group relative inline-block">
@@ -1060,7 +1070,7 @@ function Row({
     }
 
     return (
-      <div className="max-w-xs">
+      <div className="text-xs break-words">
         {hasImage && (
           <div className="mb-1 space-y-1">
             {q.image_urls.question.map((url, idx) => (
@@ -1079,7 +1089,7 @@ function Row({
             ))}
           </div>
         )}
-        {hasText && <div className="truncate text-xs">{q.prompt}</div>}
+        {hasText && <div className="line-clamp-3">{q.prompt}</div>}
       </div>
     );
   };
@@ -1153,34 +1163,37 @@ function Row({
   if (!edit) {
     return (
       <tr className="border-b hover:bg-gray-50">
-        <td className="p-3 text-center align-top">
+        <td className="p-2 text-center align-top">
           <Checkbox
             checked={selected}
             onCheckedChange={onToggleSelect}
           />
         </td>
-        <td className="p-3 align-top">{q.subject_code || "-"}</td>
-        <td className="p-3 align-top">{q.section_code || "-"}</td>
-        <td className="p-3 align-top">{renderQuestionPrompt()}</td>
-        <td className="p-3 align-top">
+        <td className="p-2 align-top text-xs break-words">{q.subject_code || "-"}</td>
+        <td className="p-2 align-top text-xs break-words">{q.section_code || "-"}</td>
+        <td className="p-2 align-top">{renderQuestionPrompt()}</td>
+        <td className="p-2 align-top">
           <div className="text-xs space-y-1">
             {(['A', 'B', 'C', 'D', 'E'] as const).map((letter) => (
-              <div key={letter}>
-                {letter}. {renderChoice(letter)}
+              <div key={letter} className="break-words">
+                <span className="font-medium">{letter}.</span> {renderChoice(letter)}
               </div>
             ))}
           </div>
         </td>
-        <td className="p-3 text-center align-top font-semibold">
+        <td className="p-2 text-center align-top font-semibold text-xs">
           ({String.fromCharCode(65 + q.answerIndex)})
         </td>
-        <td className="p-3 align-top max-w-xs truncate text-xs">{q.explanation || "-"}</td>
-        <td className="p-3 text-center align-top">
-          <div className="flex gap-2 justify-center">
+        <td className="p-2 align-top text-xs break-words overflow-hidden">
+          <div className="line-clamp-4">{q.explanation || "-"}</div>
+        </td>
+        <td className="p-2 text-center align-top">
+          <div className="flex gap-1 justify-center flex-col">
             <Button
               size="sm"
               variant="outline"
               onClick={() => setEdit(true)}
+              className="text-xs px-2 h-7"
             >
               Edit
             </Button>
@@ -1188,6 +1201,7 @@ function Row({
               size="sm"
               variant="destructive"
               onClick={() => onDelete(q.id)}
+              className="text-xs px-2 h-7"
             >
               Delete
             </Button>

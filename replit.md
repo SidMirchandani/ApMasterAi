@@ -126,12 +126,12 @@ The application is designed to be scalable and maintainable, with clear separati
 - **Frontend**: Bookmark button on PracticeQuizQuestionCard, quiz-style `/bookmarks` page with question display, choices, Show Hint, Reveal Answer, and navigation
 - **Page wrapper**: `pages/bookmarks.tsx` → `client/src/pages/bookmarks.tsx`
 
-### Spaced Repetition System
-- **Backend**: Firestore `user_question_state` collection tracking per-question performance
-- **Algorithm**: Intervals [1, 3, 7, 14, 30, 60] days based on correct answer streak
-- **API**: POST `/api/user/questions/track`, GET `/api/user/questions/due`
+### Review Questions System
+- **Backend**: Firestore `user_question_state` collection tracking per-question performance with `needsReview` flag
+- **Logic**: Wrong answers set `needsReview: true`; questions stay in review until student manually removes them via trash icon
+- **API**: POST `/api/user/questions/track`, GET `/api/user/questions/due`, POST `/api/user/questions/remove`
 - **Integration**: PracticeQuiz tracks every answer submission with question content
-- **Review Page**: `/review` page ("Review Questions") with quiz-style interface: question display, choices, Show Hint, Reveal Answer with explanation, streak/attempts stats
+- **Review Page**: `/review` page with quiz-style interface (Submit only), trash icon to remove questions from review
 - **Page wrapper**: `pages/review.tsx` → `client/src/pages/review.tsx`
 
 ### Performance Analytics

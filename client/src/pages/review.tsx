@@ -3,10 +3,10 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RotateCcw, CheckCircle, XCircle, ChevronRight, ChevronLeft } from "lucide-react";
+import { RotateCcw, CheckCircle, XCircle, ChevronRight, ChevronLeft, Trash2 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 
 interface DueQuestion {
@@ -48,10 +48,12 @@ function getChoicesArray(choices: string[] | Record<string, any>): { letter: str
 export default function ReviewPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const subjectId = router.query.subject as string | undefined;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -66,8 +68,8 @@ export default function ReviewPage() {
     queryKey: ["dueReviews", subjectId || "all"],
     queryFn: async () => {
       const url = subjectId
-        ? `/api/user/questions/due?subjectId=${subjectId}&limit=20`
-        : "/api/user/questions/due?limit=20";
+        ? `/api/user/questions/due?subjectId=${subjectId}&limit=50`
+        : "/api/user/questions/due?limit=50";
       const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed to fetch due reviews");
       return res.json();
@@ -98,6 +100,30 @@ export default function ReviewPage() {
       });
     } catch (e) {
       console.log("Could not track review");
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!currentQuestion) return;
+    setIsRemoving(true);
+    try {
+      await apiRequest("POST", "/api/user/questions/remove", {
+        questionId: currentQuestion.questionId,
+      });
+      const newQuestions = dueQuestions.filter((_, i) => i !== currentIndex);
+      queryClient.setQueryData(["dueReviews", subjectId || "all"], {
+        success: true,
+        data: newQuestions,
+      });
+      if (currentIndex >= newQuestions.length && newQuestions.length > 0) {
+        setCurrentIndex(newQuestions.length - 1);
+      }
+      setSelectedAnswer(null);
+      setIsSubmitted(false);
+    } catch (e) {
+      console.log("Could not remove question");
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -139,7 +165,7 @@ export default function ReviewPage() {
             Review Questions
           </h1>
           <Badge variant="outline" className="text-sm dark:border-gray-600 dark:text-gray-300">
-            {dueQuestions.length} due
+            {dueQuestions.length} to review
           </Badge>
         </div>
 
@@ -148,7 +174,7 @@ export default function ReviewPage() {
             <CheckCircle className="mx-auto h-16 w-16 text-green-400 mb-4" />
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">All caught up!</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              No questions are due for review right now. Keep practicing to build your review queue.
+              No questions to review. Questions you get wrong during practice will appear here.
             </p>
             <Button
               onClick={() => router.push("/dashboard")}
@@ -163,9 +189,14 @@ export default function ReviewPage() {
               <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Q{currentIndex + 1} of {dueQuestions.length}
               </span>
-              <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                Streak: {currentQuestion.correctStreak} | Attempts: {currentQuestion.totalAttempts}
-              </Badge>
+              <button
+                onClick={handleRemove}
+                disabled={isRemoving}
+                className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                title="Remove from review"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
             </div>
 
             <Card className="dark:bg-gray-900 dark:border-gray-700">
