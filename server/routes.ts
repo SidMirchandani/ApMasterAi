@@ -350,6 +350,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/questions/report", async (req, res) => {
+    try {
+      const firebaseUid = req.headers['x-user-id'] as string;
+      if (!firebaseUid) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+
+      const { questionId, subjectId, reason, details } = req.body;
+      if (!questionId || !subjectId || !reason) {
+        return res.status(400).json({ success: false, message: "Missing required fields" });
+      }
+
+      const user = await storage.getUserByFirebaseUid(firebaseUid);
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      const report = await storage.createQuestionReport({
+        userId: user.id,
+        questionId,
+        subjectId,
+        reason,
+        details,
+      });
+
+      res.json({ success: true, data: report });
+    } catch (error) {
+      console.error("Error creating question report:", error);
+      res.status(500).json({ success: false, message: "Failed to create report" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

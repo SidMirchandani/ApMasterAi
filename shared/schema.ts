@@ -28,7 +28,19 @@ export interface User {
   createdAt: Date;
 }
 
+export interface QuestionReport {
+  id: string;
+  userId: string;
+  questionId: string;
+  subjectId: string;
+  reason: string;
+  details?: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  createdAt: Date;
+}
+
 // Type helpers
+export type CreateQuestionReport = Omit<QuestionReport, 'id' | 'status' | 'createdAt'>;
 export type CreateUserSubject = Omit<UserSubject, 'id' | 'dateAdded'>;
 export type UpdateUserSubject = Partial<Omit<UserSubject, 'id' | 'userId'>>;
 export type CreateWaitlistEntry = Omit<WaitlistEntry, 'id' | 'signedUpAt'>;

@@ -1,7 +1,29 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { BlockRenderer } from "./BlockRenderer";
-import { BookmarkCheck } from "lucide-react";
+import { BookmarkCheck, AlertTriangle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useState } from "react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type Block =
   | { type: "text"; value: string }
@@ -18,6 +40,7 @@ interface Question {
   correct_answer?: string;
   explanation?: string;
   prompt?: string;
+  subjectId?: string;
   image_urls?: {
     question?: string[];
     A?: string[];
@@ -51,9 +74,45 @@ export function PracticeQuizQuestionCard({
   isBookmarked = false,
   onToggleBookmark,
 }: PracticeQuizQuestionCardProps) {
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<string>("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [isReporting, setIsReporting] = useState(false);
+  const { toast } = useToast();
+
   if (!question) {
     return null;
   }
+
+  const handleReportSubmit = async () => {
+    if (!reportReason) return;
+    setIsReporting(true);
+    try {
+      const res = await apiRequest("POST", "/api/questions/report", {
+        questionId: question.id,
+        subjectId: question.subject_code || question.subjectId || "unknown",
+        reason: reportReason,
+        details: reportDetails,
+      });
+      if (res.ok) {
+        toast({
+          title: "Report submitted",
+          description: "Thank you for helping us improve our questions.",
+        });
+        setIsReportDialogOpen(false);
+        setReportReason("");
+        setReportDetails("");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsReporting(false);
+    }
+  };
 
   const allChoices = Object.keys(question.choices) as Array<"A" | "B" | "C" | "D" | "E">;
 
@@ -98,6 +157,63 @@ export function PracticeQuizQuestionCard({
                 {isBookmarked ? 'Saved' : 'Save for Review'}
               </button>
             )}
+            <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+              <DialogTrigger asChild>
+                <button
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-white text-gray-500 border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-colors"
+                  title="Report an issue with this question"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Report
+                </button>
+              </DialogTrigger>
+              <DialogContent className="dark:bg-gray-900 dark:border-gray-700">
+                <DialogHeader>
+                  <DialogTitle className="dark:text-white">Report Question</DialogTitle>
+                  <DialogDescription className="dark:text-gray-400">
+                    Notice an error? Let us know so we can fix it.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label className="dark:text-gray-200">Reason</Label>
+                    <Select value={reportReason} onValueChange={setReportReason}>
+                      <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200">
+                        <SelectValue placeholder="Select a reason" />
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                        <SelectItem value="typo" className="dark:text-gray-200 dark:focus:bg-gray-700">Typo or formatting issue</SelectItem>
+                        <SelectItem value="incorrect_answer" className="dark:text-gray-200 dark:focus:bg-gray-700">Incorrect answer</SelectItem>
+                        <SelectItem value="wrong_explanation" className="dark:text-gray-200 dark:focus:bg-gray-700">Confusing or wrong explanation</SelectItem>
+                        <SelectItem value="image_issue" className="dark:text-gray-200 dark:focus:bg-gray-700">Image not loading/unclear</SelectItem>
+                        <SelectItem value="other" className="dark:text-gray-200 dark:focus:bg-gray-700">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="dark:text-gray-200">Details (optional)</Label>
+                    <Textarea
+                      placeholder="Tell us more about the issue..."
+                      value={reportDetails}
+                      onChange={(e) => setReportDetails(e.target.value)}
+                      className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsReportDialogOpen(false)} className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleReportSubmit}
+                    disabled={!reportReason || isReporting}
+                    className="bg-red-600 hover:bg-red-700 text-white border-none"
+                  >
+                    {isReporting ? "Submitting..." : "Submit Report"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </CardHeader>

@@ -33,6 +33,17 @@ export interface User {
   createdAt: Date;
 }
 
+export interface QuestionReport {
+  id: string;
+  userId: string;
+  questionId: string;
+  subjectId: string;
+  reason: string;
+  details?: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  createdAt: Date;
+}
+
 // Development mode in-memory storage
 const devStorage = {
   users: new Map(),
