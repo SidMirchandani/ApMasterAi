@@ -362,13 +362,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, message: "Missing required fields" });
       }
 
-      const user = await storage.getUserByFirebaseUid(firebaseUid);
-      if (!user) {
-        return res.status(404).json({ success: false, message: "User not found" });
-      }
+      // Check if user exists, if not create one (consistent with other routes)
+      const userId = await getOrCreateUser(firebaseUid);
 
       const report = await storage.createQuestionReport({
-        userId: user.id,
+        userId, // storage.ts expects userId as string (doc ID)
         questionId,
         subjectId,
         reason,
