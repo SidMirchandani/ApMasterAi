@@ -1102,6 +1102,42 @@ export class Storage {
     results.sort((a, b) => a.date.localeCompare(b.date));
     return results;
   }
+
+  async createQuestionReport(report: Omit<QuestionReport, 'id' | 'status' | 'createdAt'>): Promise<QuestionReport> {
+    if (isDevelopmentMode()) {
+      const id = `dev-report-${Date.now()}`;
+      const newReport: QuestionReport = {
+        id,
+        ...report,
+        status: 'pending',
+        createdAt: new Date(),
+      };
+      // In-memory storage for reports if needed, but for now just return it
+      return newReport;
+    }
+
+    return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
+
+      const docRef = db.collection('question_reports').doc();
+      const newReportData = {
+        ...report,
+        status: 'pending',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      await docRef.set(newReportData);
+      const doc = await docRef.get();
+      
+      return {
+        id: doc.id,
+        ...doc.data(),
+        createdAt: (doc.data()?.createdAt as admin.firestore.Timestamp)?.toDate() || new Date(),
+      } as QuestionReport;
+    });
+  }
 }
 
 export const storage = new Storage();
