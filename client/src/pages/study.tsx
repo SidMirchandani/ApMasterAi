@@ -22,6 +22,7 @@ import {
   Bookmark,
   BarChart3,
   CalendarDays,
+  Calculator,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -31,6 +32,15 @@ import { apSubjects } from "@/lib/ap-subjects";
 import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/lib/hooks/useMobile";
 import { getUnitsForSubject } from "@/subjects";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+const CALCULATOR_SUBJECTS = ["calculus-ab", "calculus-bc", "statistics", "chemistry", "physics-1", "physics-2"];
 
 interface StudySubject {
   id: number;
@@ -39,7 +49,6 @@ interface StudySubject {
   name: string;
   description: string;
   units: number;
-  difficulty: string;
   examDate: string | number | Date | { seconds: number } | null;
   progress: number;
   masteryLevel: number;
@@ -50,6 +59,7 @@ interface StudySubject {
       status: string;
       highestScore: number;
       scores: number[];
+      mcqScore?: number;
     };
   };
 }
@@ -247,6 +257,36 @@ export default function Study() {
             </div>
             
             <div className="flex flex-wrap gap-3">
+              {CALCULATOR_SUBJECTS.includes(subjectId || "") && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="px-4 py-2 h-auto rounded-xl bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                        <Calculator className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest leading-none mb-1">Tools</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">
+                          Calculator
+                        </p>
+                      </div>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl h-[600px] p-0">
+                    <DialogHeader className="p-4 border-b">
+                      <DialogTitle>Desmos Graphing Calculator</DialogTitle>
+                    </DialogHeader>
+                    <iframe
+                      src="https://www.desmos.com/calculator"
+                      className="w-full h-full"
+                      title="Desmos Calculator"
+                    />
+                  </DialogContent>
+                </Dialog>
+              )}
               <div className="px-4 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-khan-green/10 flex items-center justify-center">
                   <Trophy className="h-5 w-5 text-khan-green" />

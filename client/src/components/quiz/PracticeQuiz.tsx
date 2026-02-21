@@ -5,13 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calculator } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { CheckCircle, XCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+const CALCULATOR_SUBJECTS = ["calculus-ab", "calculus-bc", "statistics", "chemistry", "physics-1", "physics-2"];
 
 interface Question {
   id: string;
@@ -21,6 +30,7 @@ interface Question {
   explanation: string;
   subject_code?: string;
   section_code?: string;
+  prompt_blocks?: any[];
   image_urls?: {
     question?: string[];
     A?: string[];
@@ -69,9 +79,12 @@ export function PracticeQuiz({
   }>({});
   const [cheatMode, setCheatMode] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [showCalculator, setShowCalculator] = useState(false);
 
   const router = useRouter();
   const { user } = useAuth();
+
+  const isCalculatorAllowed = CALCULATOR_SUBJECTS.includes(subjectId);
 
   useEffect(() => {
     const savedCheatMode = localStorage.getItem('adminCheatMode');
@@ -212,14 +225,6 @@ export function PracticeQuiz({
     if (!selectedAnswer || !currentQuestion) return;
     setIsAnswerSubmitted(true);
 
-    console.log(`🔍 [PracticeQuiz] handleSubmitAnswer called:`, {
-      questionId: currentQuestion.id,
-      questionIndex: currentQuestionIndex,
-      selectedAnswer,
-      isFullLength,
-      subjectId,
-    });
-
     // Save the answer
     setFinalUserAnswers((prev) => ({
       ...prev,
@@ -229,12 +234,6 @@ export function PracticeQuiz({
     const correctLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
     const isCorrect = selectedAnswer === correctLabel;
     if (isCorrect) setScore((s) => s + 1);
-
-    console.log(`✓ [PracticeQuiz] Answer checked:`, {
-      selectedAnswer,
-      correctLabel,
-      isCorrect,
-    });
 
     if (user) {
       apiRequest("POST", "/api/user/questions/track", {
@@ -269,13 +268,6 @@ export function PracticeQuiz({
           return question && question.id.split("_")[1] === unit;
         }).length + 1; // +1 for the current questioneing submitted
 
-      console.log(`📊 [PracticeQuiz] Answered unit questions count:`, {
-        answeredSoFar: answeredUnitQuestions - 1,
-        currentAnswer: 1,
-        total: answeredUnitQuestions,
-        finalUserAnswers: Object.keys(finalUserAnswers).length,
-      });
-
       // Count correct answers for this unit
       let correctCount = 0;
       Object.entries(finalUserAnswers).forEach(([index, answer]) => {
@@ -288,26 +280,9 @@ export function PracticeQuiz({
       // Add current answer if correct
       if (isCorrect) correctCount++;
 
-      console.log(`✅ [PracticeQuiz] Correct answers count:`, {
-        correctFromPrevious: correctCount - (isCorrect ? 1 : 0),
-        currentCorrect: isCorrect ? 1 : 0,
-        totalCorrect: correctCount,
-      });
-
       // Calculate percentage based on answered questions so far
       const percentage = Math.round(
         (correctCount / answeredUnitQuestions) * 100,
-      );
-
-      console.log(`🎯 [PracticeQuiz] Calculated percentage:`, {
-        correctCount,
-        answeredUnitQuestions,
-        percentage,
-        calculation: `${correctCount}/${answeredUnitQuestions} = ${percentage}%`,
-      });
-
-      console.log(
-        `📊 [PracticeQuiz] Saving unit progress for subject=${subjectId}, unit=${unit}, score=${percentage}% (${correctCount}/${answeredUnitQuestions})`,
       );
 
       // Save the unit progress
@@ -321,20 +296,11 @@ export function PracticeQuiz({
               // Trigger a refetch of subjects data by dispatching a custom event
               window.dispatchEvent(new CustomEvent("subjectsUpdated"));
             });
-          } else {
-            response.text().then((text) => {
-              console.error(
-                `Failed to save unit progress. Status: ${response.status}, Response:`,
-                text,
-              );
-            });
           }
         })
         .catch((error) => {
           console.error("Error saving unit progress:", error);
         });
-    } else {
-      // Full-length test - don't track unit progresslLength=${isFullLength})`);
     }
   };
 
@@ -372,14 +338,6 @@ export function PracticeQuiz({
     setIsReviewMode(false);
     // Don't save, just exit
     onExit();
-  };
-
-  // Helper function to capitalize subject name
-  const formatSubjectName = (subjectId: string) => {
-    return subjectId
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
   };
 
   // Render review mode if active
@@ -423,13 +381,11 @@ export function PracticeQuiz({
                     </span>
                   </div>
                 ) : currentExplanation ? (
-                  <>
-                    <div className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {currentExplanation}
-                      </ReactMarkdown>
-                    </div>
-                  </>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {currentExplanation}
+                    </ReactMarkdown>
+                  </div>
                 ) : null}
               </CardContent>
             </Card>
@@ -441,7 +397,32 @@ export function PracticeQuiz({
       <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 fixed bottom-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex justify-between items-center gap-2 sm:gap-4">
-            <div className="hidden sm:flex flex-1"></div>
+            <div className="flex flex-1 items-center">
+              {isCalculatorAllowed && (
+                <Dialog open={showCalculator} onOpenChange={setShowCalculator}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    >
+                      <Calculator className="w-4 h-4 mr-2" />
+                      Calculator
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl h-[600px] p-0">
+                    <DialogHeader className="p-4 border-b">
+                      <DialogTitle>Desmos Graphing Calculator</DialogTitle>
+                    </DialogHeader>
+                    <iframe
+                      src="https://www.desmos.com/calculator"
+                      className="w-full h-full"
+                      title="Desmos Calculator"
+                    />
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
             <div className="flex justify-center items-center gap-2 sm:gap-4 flex-1 sm:flex-none">
               {!isAnswerSubmitted ? (
                 <Button

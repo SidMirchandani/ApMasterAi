@@ -91,7 +91,9 @@ export default function BookmarksPage() {
       return { question };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["bookmarks"], exact: false });
+      // Invalidate both general bookmarks and subject-specific bookmarks
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+      
       const removedQ = data.question;
       toast({
         title: "Bookmark removed",
@@ -100,13 +102,20 @@ export default function BookmarksPage() {
             altText="Undo remove"
             onClick={async () => {
               try {
-                // Call toggle again to re-add the bookmark
-                await apiRequest("POST", "/api/user/bookmarks/toggle", {
+                const res = await apiRequest("POST", "/api/user/bookmarks/toggle", {
                   questionId: removedQ.questionId,
                   subjectId: removedQ.subjectId,
+                  unitId: removedQ.unitId || "",
+                  prompt: removedQ.prompt || "",
+                  choices: removedQ.choices || [],
+                  answerIndex: removedQ.answerIndex ?? 0,
+                  explanation: removedQ.explanation || "",
+                  sectionCode: removedQ.sectionCode || "",
                 });
-                // Invalidate to refresh the list
-                await queryClient.invalidateQueries({ queryKey: ["bookmarks"], exact: false });
+                
+                if (!res.ok) throw new Error("Failed to restore");
+                
+                await queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
                 toast({ title: "Bookmark restored" });
               } catch (e) {
                 console.error("Could not undo", e);
