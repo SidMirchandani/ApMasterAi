@@ -446,7 +446,7 @@ export default function AnalyticsPage() {
                           yAxisId="left"
                           type="monotone"
                           dataKey="projectedScore"
-                          stroke="#9ca3af"
+                          stroke={predicted.score >= 3 ? "#22c55e" : "#ef4444"}
                           strokeWidth={2}
                           strokeDasharray="6 4"
                           dot={false}
@@ -505,7 +505,7 @@ export default function AnalyticsPage() {
                       AP Score
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="w-8 h-0 border-t-2 border-dashed border-gray-400" />
+                      <div className={`w-8 h-0 border-t-2 border-dashed ${predicted.score >= 3 ? "border-green-500" : "border-red-500"}`} />
                       Projected Level
                     </div>
                     <div className="flex items-center gap-1.5">
