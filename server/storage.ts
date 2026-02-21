@@ -1067,21 +1067,51 @@ export class Storage {
     const db = this.getDbInstance();
     if (!db) throw new Error("Firestore not available");
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dateKey = today.toISOString().split('T')[0];
+    const now = new Date();
+    const dateKey = now.toISOString().split('T')[0];
+    const milestone = Math.floor(totalAttempted / 25) * 25;
+    if (milestone < 25) return;
 
-    const docId = `${userId}_${subjectId}_${dateKey}`;
+    const docId = `${userId}_${subjectId}_m${milestone}`;
+    const existing = await db.collection('score_history').doc(docId).get();
+    if (existing.exists) return;
+
     await db.collection('score_history').doc(docId).set({
       userId,
       subjectId,
-      date: admin.firestore.Timestamp.fromDate(today),
+      date: admin.firestore.Timestamp.fromDate(now),
       dateKey,
       accuracy,
       predictedScore,
-      totalAttempted,
+      totalAttempted: milestone,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
+    });
+  }
+
+  async backfillScoreSnapshots(userId: string, subjectId: string, currentAccuracy: number, currentPredicted: number, totalAttempted: number): Promise<void> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const now = new Date();
+    const dateKey = now.toISOString().split('T')[0];
+
+    for (let m = 25; m <= totalAttempted; m += 25) {
+      const docId = `${userId}_${subjectId}_m${m}`;
+      const existing = await db.collection('score_history').doc(docId).get();
+      if (!existing.exists) {
+        await db.collection('score_history').doc(docId).set({
+          userId,
+          subjectId,
+          date: admin.firestore.Timestamp.fromDate(now),
+          dateKey,
+          accuracy: currentAccuracy,
+          predictedScore: currentPredicted,
+          totalAttempted: m,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+    }
   }
 
   async getScoreHistory(userId: string, subjectId?: string): Promise<any[]> {
@@ -1107,7 +1137,7 @@ export class Storage {
       };
     });
 
-    results.sort((a, b) => a.date.localeCompare(b.date));
+    results.sort((a, b) => a.totalAttempted - b.totalAttempted);
     return results;
   }
 

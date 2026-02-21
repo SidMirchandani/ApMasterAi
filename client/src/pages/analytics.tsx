@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    const minSlots = 10;
+    const minSlots = 5;
     const totalSlots = Math.max(minSlots, sortedHistory.length + 2);
     const lastScore = sortedHistory[sortedHistory.length - 1]?.predictedScore || 0;
 
@@ -149,14 +149,14 @@ export default function AnalyticsPage() {
         const isLast = i === sortedHistory.length - 1;
         result.push({
           ...sortedHistory[i],
-          dateLabel: `Update ${i + 1}`,
+          dateLabel: `${i + 1}`,
           fullDate: formatDate(sortedHistory[i].date),
           predictedScore: sortedHistory[i].predictedScore,
           projectedScore: isLast ? lastScore : undefined,
         });
       } else {
         result.push({
-          dateLabel: `Update ${i + 1}`,
+          dateLabel: `${i + 1}`,
           fullDate: "",
           predictedScore: undefined,
           projectedScore: lastScore,
@@ -265,11 +265,11 @@ export default function AnalyticsPage() {
                         <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{accuracy}%</span>
                       </div>
                       <div className="flex justify-between mt-1 text-[10px] text-gray-400">
-                        <span>Score 1</span>
-                        <span>Score 2</span>
-                        <span>Score 3</span>
-                        <span>Score 4</span>
-                        <span>Score 5</span>
+                        <span>1</span>
+                        <span>2</span>
+                        <span>3</span>
+                        <span>4</span>
+                        <span>5</span>
                       </div>
                     </div>
                   </div>

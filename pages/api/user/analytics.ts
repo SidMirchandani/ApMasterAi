@@ -34,9 +34,9 @@ export default async function handler(
     if (stats.totalAttempted >= 25 && subjectId) {
       const predicted = predictAPScore(stats.accuracy);
       try {
-        await storage.saveScoreSnapshot(userId, subjectId, stats.accuracy, predicted, stats.totalAttempted);
+        await storage.backfillScoreSnapshots(userId, subjectId, stats.accuracy, predicted, stats.totalAttempted);
       } catch (e) {
-        console.error("Failed to save score snapshot:", e);
+        console.error("Failed to save score snapshots:", e);
       }
     }
 
