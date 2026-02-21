@@ -500,10 +500,10 @@ export default function Quiz() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fa]">
+      <div className="min-h-screen bg-khan-background">
         <Navigation />
         <div className="flex items-center justify-center h-96">
-          <div className="w-10 h-10 border-4 border-[#1a73e8] border-t-transparent rounded-full animate-spin"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
         </div>
       </div>
     );

@@ -125,52 +125,70 @@ export default function Navigation() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <nav className="border-b border-gray-200 dark:border-gray-700 bg-white/80 backdrop-blur-md dark:bg-gray-900/80 sticky top-0 z-50 shadow-sm">
+    <nav className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-50 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-14">
           {/* LEFT: Logo + Breadcrumbs */}
-          <div className="flex items-center gap-6 min-w-0">
+          <div className="flex items-center gap-4 min-w-0">
             <Link
               href={isAuthenticated ? "/dashboard" : "/"}
-              className={`flex items-center gap-2.5 transition-opacity hover:opacity-90 flex-shrink-0 ${
+              className={`flex items-center gap-2 transition-opacity hover:opacity-90 flex-shrink-0 ${
                 isInQuizMode ? "pointer-events-none opacity-60" : ""
               }`}
               onClick={handleDisabledClick}
             >
-              <div className="w-8 h-8 bg-[#1a73e8] rounded-lg flex items-center justify-center shadow-sm">
+              <div className="w-8 h-8 bg-[#36b37e] rounded flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-medium text-[#202124] dark:text-white tracking-tight hidden sm:inline">
-                Master
+              <span className="text-lg font-bold text-[#2d3b45] dark:text-white tracking-tight hidden sm:inline">
+                APMaster
               </span>
             </Link>
 
-            <div className="hidden md:flex items-center gap-1">
-              <Link href="/dashboard" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${router.pathname === "/dashboard" ? "text-[#1a73e8] bg-blue-50" : "text-[#5f6368] hover:bg-gray-100"}`}>
-                Dashboard
-              </Link>
-              <Link href="/about" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${router.pathname === "/about" ? "text-[#1a73e8] bg-blue-50" : "text-[#5f6368] hover:bg-gray-100"}`}>
-                About
-              </Link>
-              <Link href="/team" className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${router.pathname === "/team" ? "text-[#1a73e8] bg-blue-50" : "text-[#5f6368] hover:bg-gray-100"}`}>
-                Team
-              </Link>
-            </div>
+            {isAuthenticated && breadcrumbs.length > 0 && (
+              <div className="hidden lg:flex items-center gap-1.5 text-[13px] font-semibold text-gray-400 min-w-0">
+                {breadcrumbs.map((crumb, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                    {crumb.href === "#" ? (
+                      <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap truncate max-w-[150px]">
+                        {crumb.label}
+                      </span>
+                    ) : (
+                      <Link
+                        href={crumb.href}
+                        className="hover:text-[#36b37e] transition-colors whitespace-nowrap truncate max-w-[150px]"
+                        onClick={handleDisabledClick}
+                      >
+                        {crumb.label}
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* RIGHT: Theme + About/Team + User menu */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Link href="/about" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#36b37e] transition-colors hidden md:block">
+              About
+            </Link>
+            <Link href="/team" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#36b37e] transition-colors hidden md:block">
+              Team
+            </Link>
+
             <Button
               variant="ghost"
               size="sm"
               onClick={toggleTheme}
-              className="h-9 w-9 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
               {theme === "dark" ? (
-                <Sun className="w-4 h-4 text-yellow-500" />
+                <Sun className="w-4 h-4 text-yellow-400" />
               ) : (
-                <Moon className="w-4 h-4 text-[#5f6368]" />
+                <Moon className="w-4 h-4 text-gray-500" />
               )}
             </Button>
 
@@ -178,20 +196,17 @@ export default function Navigation() {
               <div className="w-8 h-8 bg-gray-100 animate-pulse rounded-full" />
             ) : isAuthenticated && user ? (
               <>
-                <div className="h-8 w-8 rounded-full bg-[#1a73e8] flex items-center justify-center text-white text-xs font-bold border-2 border-white shadow-sm cursor-pointer hover:opacity-90 transition-opacity">
-                  {user?.email?.[0].toUpperCase()}
-                </div>
                 {/* Mobile hamburger */}
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="h-9 w-9 p-0 md:hidden"
+                  className="h-8 w-8 p-0 md:hidden"
                 >
                   {mobileMenuOpen ? (
-                    <X className="w-5 h-5 text-[#5f6368] dark:text-gray-400" />
+                    <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   ) : (
-                    <Menu className="w-5 h-5 text-[#5f6368] dark:text-gray-400" />
+                    <Menu className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   )}
                 </Button>
 
@@ -265,14 +280,14 @@ export default function Navigation() {
                 <Link href="/login">
                   <Button
                     variant="ghost"
-                    className="text-[#5f6368] hover:text-[#1a73e8] font-medium text-sm"
+                    className="text-gray-600 hover:text-[#36b37e] font-bold text-sm"
                   >
-                    Sign in
+                    Login
                   </Button>
                 </Link>
                 <Link href="/signup">
-                  <Button className="google-btn-primary h-9">
-                    Get started
+                  <Button className="bg-[#36b37e] hover:bg-[#2fa371] text-white font-bold px-5 h-9 rounded shadow-sm text-sm">
+                    Sign Up
                   </Button>
                 </Link>
               </>

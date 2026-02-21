@@ -111,12 +111,12 @@ export function Hero() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center animate-fade-in max-w-4xl mx-auto">
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-medium text-[#202124] mb-8 tracking-tight leading-[1.1]">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-foreground mb-8 tracking-tight leading-[1.1]">
             Master AP Exams with
-            <span className="text-[#1a73e8] block mt-2">AI-Powered Learning</span>
+            <span className="text-khan-green block mt-2">AI-Powered Learning</span>
           </h1>
 
-          <p className="text-xl sm:text-2xl text-[#5f6368] max-w-2xl mx-auto mb-12 leading-relaxed px-4 font-medium">
+          <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed px-4 font-medium">
             Personalized study plans, adaptive practice tests, and instant feedback to help you ace your AP exams.
           </p>
 
@@ -124,7 +124,7 @@ export function Hero() {
             <Link href="/signup">
               <Button
                 size="lg"
-                className="w-full sm:w-auto google-btn-primary h-14 px-10 text-xl font-medium group transition-all hover:scale-[1.02] active:scale-95"
+                className="w-full sm:w-auto bg-[#36b37e] hover:bg-[#2fa371] text-white shadow-xl shadow-[#36b37e]/20 px-10 py-7 text-xl font-bold group rounded-2xl transition-all hover:scale-105 active:scale-95"
               >
                 Get Started Free
                 <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
@@ -133,7 +133,8 @@ export function Hero() {
             <Link href="/learn">
               <Button
                 size="lg"
-                className="w-full sm:w-auto google-btn-outline h-14 px-10 text-xl font-medium transition-all"
+                variant="outline"
+                className="w-full sm:w-auto border-2 border-border bg-white text-foreground hover:bg-accent px-10 py-7 text-xl font-bold rounded-2xl transition-all"
               >
                 Browse Courses
               </Button>

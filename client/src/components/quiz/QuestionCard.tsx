@@ -151,44 +151,44 @@ export function QuestionCard({
   const shouldShowCorrectness = isAnswerSubmitted || isFullLength;
 
   return (
-    <Card className={`google-card ${isFlagged ? "border-[#ea4335] ring-1 ring-[#ea4335]" : ""}`}>
-      <CardHeader className="pb-2 pt-2 border-b border-gray-100 bg-[#f8f9fa] dark:bg-gray-800/50">
-        <div className="flex items-center justify-between min-h-[40px]">
-          <div className="flex items-center gap-3">
+    <Card className={`${isFlagged ? "border-red-500 border-2" : ""}`}>
+      <CardHeader className="pb-1 pt-2">
+        <div className="flex items-center justify-between border-b pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-gray-50 min-h-[48px]">
+          <div className="flex items-center gap-2">
             {!hidePracticeQuizElements && (
-              <div className="bg-[#202124] text-white px-2.5 py-0.5 font-medium text-xs rounded">
+              <div className="bg-black text-white px-2 py-0.5 font-bold text-xs rounded">
                 {questionNumber}
               </div>
             )}
             {isFullLength && (
               <button
                 onClick={onToggleFlag}
-                className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
-                  isFlagged ? "text-[#ea4335]" : "text-[#5f6368] hover:text-[#202124]"
+                className={`flex items-center gap-1 text-xs font-medium ${
+                  isFlagged ? "text-black" : "text-gray-600"
                 }`}
               >
-                <Flag className={`h-3.5 w-3.5 ${isFlagged ? "fill-current" : ""}`} />
-                <span>Review later</span>
+                <Flag className={`h-3 w-3 ${isFlagged ? "fill-current" : ""}`} />
+                <span>Mark for Review</span>
               </button>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {onToggleBookmark && (
               <button
                 onClick={onToggleBookmark}
-                className={`p-1.5 rounded transition-colors ${isBookmarked ? 'text-[#fbbc04]' : 'text-[#5f6368] hover:bg-gray-100 hover:text-[#fbbc04]'}`}
+                className={`p-1 rounded transition-colors ${isBookmarked ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
                 title={isBookmarked ? "Remove bookmark" : "Bookmark this question"}
               >
-                <Bookmark className={`w-4.5 h-4.5 ${isBookmarked ? 'fill-current' : ''}`} />
+                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
               </button>
             )}
             <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
               <DialogTrigger asChild>
                 <button
-                  className="p-1.5 rounded text-[#5f6368] hover:bg-red-50 hover:text-[#ea4335] transition-colors"
+                  className="p-1 rounded text-gray-400 hover:text-red-500 transition-colors"
                   title="Report an issue with this question"
                 >
-                  <AlertTriangle className="w-4.5 h-4.5" />
+                  <AlertTriangle className="w-4 h-4" />
                 </button>
               </DialogTrigger>
               <DialogContent>
