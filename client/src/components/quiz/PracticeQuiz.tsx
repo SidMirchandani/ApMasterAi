@@ -25,12 +25,12 @@ const CALCULATOR_SUBJECTS = ["calculus-ab", "calculus-bc", "statistics", "chemis
 interface Question {
   id: string;
   prompt: string;
-  choices: string[];
+  choices: any; // Using any to match the variant shapes from different components
   answerIndex: number;
   explanation: string;
   subject_code?: string;
   section_code?: string;
-  prompt_blocks?: any[];
+  prompt_blocks: any[];
   image_urls?: {
     question?: string[];
     A?: string[];
