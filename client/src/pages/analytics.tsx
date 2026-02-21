@@ -142,21 +142,44 @@ export default function AnalyticsPage() {
     const generatePath = (n: number, target: number): number[] => {
       if (n <= 0) return [];
       if (n === 1) return [target];
-      const path = [2];
-      for (let i = 1; i < n; i++) {
-        const remaining = n - 1 - i;
-        const current = path[i - 1];
-        const diff = target - current;
-        if (diff > remaining) {
-          path.push(Math.min(current + 1, target));
-        } else if (diff < -remaining) {
-          path.push(Math.max(current - 1, 2));
-        } else {
-          if (diff > 0) path.push(current + 1);
-          else if (diff < 0) path.push(current - 1);
-          else path.push(current);
+      if (n === 2) return [2, target];
+
+      const path: number[] = [2];
+      const stepsToTarget = target - 2;
+      const availableSteps = n - 1;
+
+      if (availableSteps <= stepsToTarget) {
+        for (let i = 1; i < n; i++) {
+          path.push(Math.min(path[i - 1] + 1, target));
+        }
+      } else {
+        const extraSteps = availableSteps - stepsToTarget;
+        let current = 2;
+        let zigUp = true;
+        for (let i = 1; i < n; i++) {
+          const remaining = n - 1 - i;
+          const distToTarget = target - current;
+
+          if (distToTarget >= remaining) {
+            current = Math.min(current + 1, target);
+          } else if (i < extraSteps + 1 && current < target) {
+            if (zigUp && current + 1 <= target) {
+              current = current + 1;
+              zigUp = false;
+            } else if (!zigUp && current - 1 >= 2) {
+              current = current - 1;
+              zigUp = true;
+            } else {
+              current = Math.min(current + 1, target);
+            }
+          } else {
+            if (distToTarget > 0) current = current + 1;
+            else current = current;
+          }
+          path.push(current);
         }
       }
+
       path[n - 1] = target;
       return path;
     };
@@ -165,20 +188,17 @@ export default function AnalyticsPage() {
       (a.totalAttempted || 0) - (b.totalAttempted || 0)
     );
 
+    const isBackfilledData = sortedHistory.length > 1 &&
+      sortedHistory.every(s => s.predictedScore === sortedHistory[0].predictedScore);
+
     const scores: number[] = [];
-    if (sortedHistory.length >= numPoints) {
+    if (sortedHistory.length >= numPoints && !isBackfilledData) {
       for (let i = 0; i < numPoints; i++) {
         scores.push(sortedHistory[i]?.predictedScore ?? currentScore);
       }
     } else {
       const syntheticPath = generatePath(numPoints, currentScore);
-      for (let i = 0; i < numPoints; i++) {
-        if (i < sortedHistory.length) {
-          scores.push(sortedHistory[i]?.predictedScore ?? syntheticPath[i]);
-        } else {
-          scores.push(syntheticPath[i]);
-        }
-      }
+      scores.push(...syntheticPath);
     }
 
     const minSlots = 5;
