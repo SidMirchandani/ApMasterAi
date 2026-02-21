@@ -22,7 +22,7 @@ export default function Navigation() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, isAuthenticated, loading } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, mounted } = useTheme();
   const location = router.pathname;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -185,7 +185,7 @@ export default function Navigation() {
               className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
-              {theme === "dark" ? (
+              {mounted && theme === "dark" ? (
                 <Sun className="w-4 h-4 text-yellow-400" />
               ) : (
                 <Moon className="w-4 h-4 text-gray-500" />

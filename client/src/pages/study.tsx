@@ -22,7 +22,6 @@ import {
   Bookmark,
   BarChart3,
   CalendarDays,
-  Calculator,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -32,15 +31,6 @@ import { apSubjects } from "@/lib/ap-subjects";
 import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/lib/hooks/useMobile";
 import { getUnitsForSubject } from "@/subjects";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
-const CALCULATOR_SUBJECTS = ["calculus-ab", "calculus-bc", "statistics", "chemistry", "physics-1", "physics-2"];
 
 interface StudySubject {
   id: number;
@@ -234,77 +224,41 @@ export default function Study() {
 
       {/* Header Section */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => router.push("/dashboard")}
-                className="text-gray-500 hover:text-khan-green -ml-2"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Button>
-              <div className="space-y-2">
-                <h1 className="text-3xl md:text-4xl font-black text-[#2d3b45] dark:text-gray-100 tracking-tight">
-                  {currentSubject.name}
-                </h1>
-                <p className="text-gray-500 dark:text-gray-400 max-w-2xl text-lg leading-relaxed">
-                  {currentSubject.description}
-                </p>
-              </div>
+        <div className="container mx-auto px-4 py-4 max-w-6xl">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => router.push("/dashboard")}
+            className="text-gray-500 hover:text-khan-green -ml-2 mb-2"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black text-[#2d3b45] dark:text-gray-100 tracking-tight">
+                {currentSubject.name}
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                {currentSubject.description}
+              </p>
             </div>
             
-            <div className="flex flex-wrap gap-3">
-              {CALCULATOR_SUBJECTS.includes(subjectId || "") && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="px-4 py-2 h-auto rounded-xl bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                        <Calculator className="h-5 w-5 text-blue-500" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest leading-none mb-1">Tools</p>
-                        <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">
-                          Calculator
-                        </p>
-                      </div>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl h-[600px] p-0">
-                    <DialogHeader className="p-4 border-b">
-                      <DialogTitle>Desmos Graphing Calculator</DialogTitle>
-                    </DialogHeader>
-                    <iframe
-                      src="https://www.desmos.com/calculator"
-                      className="w-full h-full"
-                      title="Desmos Calculator"
-                    />
-                  </DialogContent>
-                </Dialog>
-              )}
-              <div className="px-4 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-khan-green/10 flex items-center justify-center">
-                  <Trophy className="h-5 w-5 text-khan-green" />
-                </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-khan-green" />
                 <div>
-                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Mastery</p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">
+                  <p className="text-[9px] uppercase font-bold text-gray-400 tracking-widest leading-none">Mastery</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">
                     {topicsMastered}/{totalTopics}
                   </p>
                 </div>
               </div>
-              <div className="px-4 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-khan-blue/10 flex items-center justify-center">
-                  <CalendarDays className="h-5 w-5 text-khan-blue" />
-                </div>
+              <div className="px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-khan-blue" />
                 <div>
-                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Exam Date</p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">
+                  <p className="text-[9px] uppercase font-bold text-gray-400 tracking-widest leading-none">Exam Date</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">
                     {formatDate(currentSubject.examDate)}
                   </p>
                 </div>
