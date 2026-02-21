@@ -292,14 +292,24 @@ export default function Study() {
             <BarChart3 className="mr-2 h-5 w-5" />
             Detailed Analytics
           </Button>
-          <Button
-            onClick={() => router.push(`/review?subject=${subjectId}`)}
-            variant="outline"
-            className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-purple-400 text-gray-700 dark:text-gray-300 font-bold"
-          >
-            <RotateCcw className="mr-2 h-5 w-5" />
-            Review Weak Spots
-          </Button>
+          <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
+            <Button
+              onClick={() => router.push(`/review?subject=${subjectId}`)}
+              variant="outline"
+              className="h-14 md:h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-purple-400 text-gray-700 dark:text-gray-300 font-bold"
+            >
+              <RotateCcw className="mr-2 h-5 w-5" />
+              Review
+            </Button>
+            <Button
+              onClick={() => router.push(`/bookmarks?subject=${subjectId}`)}
+              variant="outline"
+              className="h-14 md:h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-yellow-400 text-gray-700 dark:text-gray-300 font-bold"
+            >
+              <Bookmark className="mr-2 h-5 w-5 fill-current text-yellow-500" />
+              Saved
+            </Button>
+          </div>
         </div>
 
         {/* Units Grid */}
