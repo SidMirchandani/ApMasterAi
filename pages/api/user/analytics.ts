@@ -32,10 +32,9 @@ export default async function handler(
     const stats = await storage.getQuestionStats(userId, subjectId);
 
     if (stats.totalAttempted >= 25 && subjectId) {
-      const accuracy = Math.round((stats.totalCorrect / stats.totalAttempted) * 100);
-      const predicted = predictAPScore(accuracy);
+      const predicted = predictAPScore(stats.accuracy);
       try {
-        await storage.saveScoreSnapshot(userId, subjectId, accuracy, predicted, stats.totalAttempted);
+        await storage.saveScoreSnapshot(userId, subjectId, stats.accuracy, predicted, stats.totalAttempted);
       } catch (e) {
         console.error("Failed to save score snapshot:", e);
       }

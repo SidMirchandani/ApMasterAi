@@ -1017,19 +1017,18 @@ export class Storage {
     }
 
     const snapshot = await query.get();
+    const allDocs = snapshot.docs.map(doc => doc.data());
     const stats = {
       totalAttempted: 0,
       totalCorrect: 0,
       totalIncorrect: 0,
       totalTimeSpentSec: 0,
       dueForReview: 0,
+      accuracy: 0,
       byUnit: {} as { [unitId: string]: { correct: number; incorrect: number; total: number; avgTimeSec: number } },
     };
 
-    const now = new Date();
-
-    snapshot.docs.forEach(doc => {
-      const data = doc.data();
+    allDocs.forEach(data => {
       stats.totalAttempted += data.attemptCount || 0;
       stats.totalCorrect += data.correctCount || 0;
       stats.totalIncorrect += data.incorrectCount || 0;
@@ -1050,6 +1049,15 @@ export class Storage {
         ? (stats.byUnit[unitId].avgTimeSec * (stats.byUnit[unitId].total - (data.attemptCount || 0)) + (data.totalTimeSpentSec || 0)) / stats.byUnit[unitId].total
         : 0;
     });
+
+    const sorted = [...allDocs].sort((a, b) => {
+      const aTime = a.lastAnsweredAt?.toDate ? a.lastAnsweredAt.toDate().getTime() : (a.lastAnsweredAt instanceof Date ? a.lastAnsweredAt.getTime() : 0);
+      const bTime = b.lastAnsweredAt?.toDate ? b.lastAnsweredAt.toDate().getTime() : (b.lastAnsweredAt instanceof Date ? b.lastAnsweredAt.getTime() : 0);
+      return bTime - aTime;
+    });
+    const last50 = sorted.slice(0, 50);
+    const last50Correct = last50.filter(s => s.lastResult === 'correct').length;
+    stats.accuracy = last50.length > 0 ? Math.round((last50Correct / last50.length) * 100) : 0;
 
     return stats;
   }

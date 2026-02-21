@@ -18,15 +18,14 @@ import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Cell,
 } from "recharts";
 
 interface UnitStats {
@@ -42,6 +41,7 @@ interface AnalyticsData {
   totalIncorrect: number;
   totalTimeSpentSec: number;
   dueForReview: number;
+  accuracy?: number;
   byUnit: { [unitId: string]: UnitStats };
 }
 
@@ -135,16 +135,35 @@ export default function AnalyticsPage() {
   const chartData = (() => {
     if (scoreHistory.length === 0) return [];
     
-    // Sort history by date to ensure proper progression
     const sortedHistory = [...scoreHistory].sort((a, b) => 
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    return sortedHistory.map((entry, index) => ({
-      ...entry,
-      dateLabel: `Update ${index + 1}`,
-      fullDate: formatDate(entry.date),
-    }));
+    const minSlots = 10;
+    const totalSlots = Math.max(minSlots, sortedHistory.length + 2);
+    const lastScore = sortedHistory[sortedHistory.length - 1]?.predictedScore || 0;
+
+    const result: any[] = [];
+    for (let i = 0; i < totalSlots; i++) {
+      if (i < sortedHistory.length) {
+        const isLast = i === sortedHistory.length - 1;
+        result.push({
+          ...sortedHistory[i],
+          dateLabel: `Update ${i + 1}`,
+          fullDate: formatDate(sortedHistory[i].date),
+          predictedScore: sortedHistory[i].predictedScore,
+          projectedScore: isLast ? lastScore : undefined,
+        });
+      } else {
+        result.push({
+          dateLabel: `Update ${i + 1}`,
+          fullDate: "",
+          predictedScore: undefined,
+          projectedScore: lastScore,
+        });
+      }
+    }
+    return result;
   })();
 
   if (loading || isLoading) {
@@ -300,25 +319,20 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4 px-1">
-                    Your score starts after the first 20 questions, then updates every 10 additional questions to show your growth.
+                    Your score updates every 25 questions. The dashed line shows your current projected level.
                   </p>
-                  <div className="mb-4 grid grid-cols-3 gap-3 text-center">
+                  <div className="mb-4 grid grid-cols-2 gap-3 text-center">
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
-                      <p className="text-2xl font-bold" style={{ color: scoreColors[chartData[chartData.length - 1]?.predictedScore] || "#6b7280" }}>
-                        {chartData[chartData.length - 1]?.predictedScore || "-"}
+                      <p className="text-2xl font-bold" style={{ color: scoreColors[(() => { const real = chartData.filter(d => d.predictedScore !== undefined); return real[real.length - 1]?.predictedScore; })()] || "#6b7280" }}>
+                        {(() => { const real = chartData.filter(d => d.predictedScore !== undefined); return real[real.length - 1]?.predictedScore || "-"; })()}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Current Score</p>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
-                      <p className="text-2xl font-bold text-blue-500">
-                        {chartData[chartData.length - 1]?.accuracy || 0}%
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Latest Accuracy</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
                       {(() => {
-                        const first = chartData[0]?.predictedScore || 0;
-                        const last = chartData[chartData.length - 1]?.predictedScore || 0;
+                        const real = chartData.filter(d => d.predictedScore !== undefined);
+                        const first = real[0]?.predictedScore || 0;
+                        const last = real[real.length - 1]?.predictedScore || 0;
                         const diff = last - first;
                         return (
                           <>
@@ -334,36 +348,35 @@ export default function AnalyticsPage() {
 
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                      <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:opacity-10" />
                         <XAxis
                           dataKey="dateLabel"
-                          tick={{ fontSize: 12, fill: "#9ca3af" }}
+                          tick={{ fontSize: 11, fill: "#9ca3af" }}
                           axisLine={{ stroke: "#e5e7eb" }}
                           tickLine={false}
-                          padding={{ left: 0, right: 20 }}
-                          scale="point"
                         />
                         <YAxis
-                          yAxisId="score"
+                          yAxisId="left"
                           domain={[0, 5]}
-                          ticks={[0, 1, 2, 3, 4, 5]}
+                          ticks={[1, 2, 3, 4, 5]}
                           tick={{ fontSize: 12, fill: "#9ca3af" }}
                           axisLine={false}
                           tickLine={false}
                           label={{ value: "AP Score", angle: -90, position: "insideLeft", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
                         />
                         <YAxis
-                          yAxisId="accuracy"
+                          yAxisId="right"
                           orientation="right"
-                          domain={[0, 100]}
+                          domain={[0, 5]}
+                          ticks={[1, 2, 3, 4, 5]}
                           tick={{ fontSize: 12, fill: "#9ca3af" }}
                           axisLine={false}
                           tickLine={false}
-                          label={{ value: "Accuracy %", angle: 90, position: "insideRight", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
+                          label={{ value: "AP Score", angle: 90, position: "insideRight", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
                         />
                         <Tooltip
-                          cursor={{ fill: 'transparent' }}
+                          cursor={false}
                           contentStyle={{
                             backgroundColor: "rgba(255,255,255,0.98)",
                             border: "1px solid #e5e7eb",
@@ -373,48 +386,82 @@ export default function AnalyticsPage() {
                             padding: "12px"
                           }}
                           formatter={(value: any, name: string) => {
-                            if (name === "predictedScore") return [value, "AP Score"];
-                            if (name === "accuracy") return [`${value}%`, "Accuracy"];
-                            return [value, name];
+                            if (name === "projectedScore") return [value, "Projected Score"];
+                            return [value, "AP Score"];
                           }}
                           labelFormatter={(label, payload) => {
                             const entry = payload[0]?.payload;
-                            return entry ? `Progress: ${label} (${entry.fullDate})` : `Progress: ${label}`;
+                            if (entry?.fullDate) return `${label} (${entry.fullDate})`;
+                            return label;
                           }}
                         />
-                        <ReferenceLine yAxisId="score" y={3} stroke="#eab308" strokeDasharray="5 5" strokeWidth={2} label={{ position: 'right', value: '3', fill: '#eab308', fontSize: 10 }} />
-                        
-                        <Bar
-                          yAxisId="score"
-                          dataKey="predictedScore"
-                          radius={[6, 6, 0, 0]}
-                          barSize={32}
-                        >
-                          {chartData.map((entry, index) => (
-                            <Cell key={`cell-score-${index}`} fill={scoreColors[entry.predictedScore] || "#8b5cf6"} />
-                          ))}
-                        </Bar>
+                        <ReferenceLine yAxisId="left" y={3} stroke="#eab308" strokeDasharray="5 5" strokeWidth={1.5} label={{ position: 'right', value: 'Qualified', fill: '#eab308', fontSize: 10 }} />
 
-                        <Bar
-                          yAxisId="accuracy"
-                          dataKey="accuracy"
-                          radius={[6, 6, 0, 0]}
-                          barSize={32}
-                          fill="#3b82f6"
-                          fillOpacity={0.6}
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="projectedScore"
+                          stroke="#9ca3af"
+                          strokeWidth={2}
+                          strokeDasharray="6 4"
+                          dot={false}
+                          activeDot={false}
+                          connectNulls={false}
                         />
-                      </BarChart>
+
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="predictedScore"
+                          stroke="#8b5cf6"
+                          strokeWidth={3}
+                          connectNulls={false}
+                          dot={(props: any) => {
+                            const { cx, cy, payload } = props;
+                            if (payload.predictedScore === undefined) return <></>;
+                            const color = scoreColors[payload.predictedScore] || "#8b5cf6";
+                            return (
+                              <circle
+                                key={`dot-${props.index}`}
+                                cx={cx}
+                                cy={cy}
+                                r={7}
+                                fill={color}
+                                stroke="white"
+                                strokeWidth={3}
+                                style={{ cursor: "pointer" }}
+                              />
+                            );
+                          }}
+                          activeDot={(props: any) => {
+                            const { cx, cy, payload } = props;
+                            if (payload.predictedScore === undefined) return <></>;
+                            const color = scoreColors[payload.predictedScore] || "#8b5cf6";
+                            return (
+                              <circle
+                                cx={cx}
+                                cy={cy}
+                                r={10}
+                                fill={color}
+                                stroke="white"
+                                strokeWidth={3}
+                                style={{ filter: "drop-shadow(0 0 6px rgba(139,92,246,0.5))" }}
+                              />
+                            );
+                          }}
+                        />
+                      </LineChart>
                     </ResponsiveContainer>
                   </div>
 
                   <div className="flex items-center justify-center gap-6 mt-3 text-xs text-gray-500 dark:text-gray-400">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-purple-500" />
-                      AP Score (1-5)
+                      <div className="w-8 h-0 border-t-[3px] border-purple-500" />
+                      AP Score
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-blue-500" />
-                      Accuracy %
+                      <div className="w-8 h-0 border-t-2 border-dashed border-gray-400" />
+                      Projected Level
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-6 h-0 border-t-2 border-dashed border-yellow-500" />
