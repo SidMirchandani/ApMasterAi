@@ -17,6 +17,11 @@ export interface UserSubject {
   dateAdded: Date;
   unitProgress?: { [unitId: string]: { status: string; mcqScore: number; lastPracticed: Date } };
   savedExamState?: any; // Added to store exam state
+  externalResources?: {
+    khanAcademy?: string;
+    youtubePlaylist?: string;
+    officialCED?: string;
+  };
 }
 
 export interface WaitlistEntry {

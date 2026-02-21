@@ -12,6 +12,11 @@ export interface UserSubject {
   masteryLevel: number;
   lastStudied?: string | number | Date | { seconds: number } | null;
   dateAdded?: string | number | Date | { seconds: number } | null;
+  externalResources?: {
+    khanAcademy?: string;
+    youtubePlaylist?: string;
+    officialCED?: string;
+  };
 }
 
 export interface WaitlistEntry {
