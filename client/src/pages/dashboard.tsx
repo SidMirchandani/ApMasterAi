@@ -234,11 +234,10 @@ export default function Dashboard() {
   // MAIN UI
   // =====================
   return (
-    <div className="min-h-screen bg-background relative">
-      <BackgroundDecor />
+    <div className="min-h-screen bg-[#f8f9fa] relative">
       <Navigation />
 
-      <main className="py-5 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
+      <main className="py-8 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
         <Header name={userProfile?.data?.firstName} />
 
         {subjectsLoading || !subjectsResponse ? (
@@ -246,13 +245,12 @@ export default function Dashboard() {
         ) : subjects.length === 0 ? (
           <EmptyState router={router} />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold tracking-tight">My Subjects</h2>
+              <h2 className="text-xl font-medium tracking-tight text-[#202124]">My Subjects</h2>
               <Button
                 onClick={() => router.push("/learn")}
-                variant="outline"
-                className="border-[#36b37e] text-[#36b37e] hover:bg-[#36b37e] hover:text-white transition-colors"
+                className="google-btn-outline"
               >
                 <Plus className="mr-2 w-4 h-4" /> Add Courses
               </Button>
@@ -295,19 +293,19 @@ export default function Dashboard() {
 
       {/* Delete dialog */}
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="rounded-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Subject?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-xl font-medium text-[#202124]">Delete Subject?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#5f6368]">
               Are you sure you want to delete <b>{subjectToRemove?.name}</b>?
               This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-md border-gray-300">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate(String(subjectToRemove?.id))}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-[#ea4335] hover:bg-[#d93025] text-white rounded-md"
             >
               Delete
             </AlertDialogAction>
@@ -320,15 +318,15 @@ export default function Dashboard() {
         open={!!subjectToArchive}
         onOpenChange={(v) => !v && setSubjectToArchive(null)}
       >
-        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="rounded-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Archive Subject?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-xl font-medium text-[#202124]">Archive Subject?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#5f6368]">
               Move <b>{subjectToArchive?.name}</b> to archive?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-md border-gray-300">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 archiveMutation.mutate({
@@ -337,7 +335,7 @@ export default function Dashboard() {
                 });
                 setSubjectToArchive(null);
               }}
-              className="bg-khan-blue hover:bg-khan-blue/90"
+              className="bg-[#1a73e8] hover:bg-[#185abc] text-white rounded-md"
             >
               Archive
             </AlertDialogAction>
@@ -360,19 +358,19 @@ const BackgroundDecor = () => (
 );
 
 const Header = ({ name }: { name?: string }) => (
-  <div className="mb-4">
-    <h1 className="text-xl sm:text-2xl font-bold text-[#2d3b45] dark:text-gray-100 mb-0.5">
-      Welcome back{name ? `, ${name}` : ""}!
+  <div className="mb-8">
+    <h1 className="text-2xl sm:text-3xl font-medium text-[#202124] dark:text-gray-100 mb-1">
+      Welcome back{name ? `, ${name}` : ""}
     </h1>
-    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Continue your personalized AP preparation journey.</p>
+    <p className="text-sm text-[#5f6368] dark:text-gray-400">Continue your personalized AP preparation journey.</p>
   </div>
 );
 
 const CenteredLoader = ({ text }: { text: string }) => (
-  <div className="flex items-center justify-center py-16">
+  <div className="flex items-center justify-center py-24">
     <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4" />
-      <p>{text}</p>
+      <div className="w-12 h-12 border-4 border-[#1a73e8] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+      <p className="text-[#5f6368]">{text}</p>
     </div>
   </div>
 );
@@ -529,18 +527,18 @@ const SubjectCard = ({
     : null;
 
   return (
-    <Card className="overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-900 rounded-lg">
-      <CardHeader className="pb-2 pt-3 px-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+    <Card className="google-card overflow-hidden">
+      <CardHeader className="pb-3 pt-4 px-6 border-b border-gray-100 dark:border-gray-800 bg-[#f8f9fa] dark:bg-gray-800/50">
         <div className="flex justify-between items-start">
-          <div className="space-y-0.5">
-            <CardTitle className="text-lg font-bold text-[#2d3b45] dark:text-gray-100 tracking-tight">{subject.name}</CardTitle>
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-snug max-w-2xl font-medium">{subject.description}</p>
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-medium text-[#202124] dark:text-gray-100 tracking-tight">{subject.name}</CardTitle>
+            <p className="text-sm text-[#5f6368] dark:text-gray-400 leading-snug max-w-2xl">{subject.description}</p>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-khan-blue hover:bg-gray-100 h-8 w-8 p-0"
+              className="text-[#5f6368] hover:text-[#1a73e8] hover:bg-blue-50 h-9 w-9 p-0"
               onClick={onArchive}
               title="Archive"
             >
@@ -549,7 +547,7 @@ const SubjectCard = ({
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-destructive hover:bg-destructive/5 h-8 w-8 p-0"
+              className="text-[#5f6368] hover:text-[#ea4335] hover:bg-red-50 h-9 w-9 p-0"
               onClick={onDelete}
               title="Delete"
             >
@@ -559,35 +557,33 @@ const SubjectCard = ({
         </div>
       </CardHeader>
 
-      <CardContent className="py-3 px-4 space-y-3">
-        {/* Meta Grid */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <BookOpen className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+      <CardContent className="py-4 px-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex items-center gap-2 text-[#5f6368] dark:text-gray-400">
+              <BookOpen className="w-4 h-4" />
               <span>{subject.units} Units</span>
             </div>
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <div className="flex items-center gap-2 text-[#5f6368] dark:text-gray-400">
+              <Calendar className="w-4 h-4" />
               <span>
                 Exam: {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-              <span className="text-gray-600 dark:text-gray-400">Predicted Score:</span>
+              <TrendingUp className="w-4 h-4 text-[#5f6368]" />
+              <span className="text-[#5f6368] dark:text-gray-400">Predicted Score:</span>
               {predictedScore !== null ? (
-                <span className="font-bold text-lg" style={{ color: scoreColorMap[predictedScore] }}>
+                <span className="font-medium text-lg" style={{ color: scoreColorMap[predictedScore] }}>
                   {predictedScore}
                 </span>
               ) : (
-                <span className="text-gray-600 dark:text-gray-400">N/A</span>
+                <span className="text-[#5f6368] dark:text-gray-400">N/A</span>
               )}
             </div>
           </div>
 
-          {/* Unit Grid */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {units.map((u: any, i: number) => {
               const unitData = unitProgress[u.id];
               const stat = getUnitStatus(unitData);
@@ -596,15 +592,12 @@ const SubjectCard = ({
               return (
                 <div
                   key={u.id}
-                  className={`w-7 h-7 rounded ${stat.bg} border border-black/5 flex items-center justify-center shadow-sm transition-transform hover:scale-110 cursor-help`}
+                  className={`w-8 h-8 rounded-md ${stat.bg} border border-black/5 flex items-center justify-center shadow-sm transition-transform hover:scale-110 cursor-help`}
                   title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
                 >
                   {isMastered && (
                     <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
                       <path d="M2 8L5 4L8 7L12 2L16 7L19 4L22 8L19 19H5L2 8Z" fill="#FFD700" stroke="#DAA520" strokeWidth="1"/>
-                      <circle cx="8" cy="12" r="1.2" fill="#DAA520"/>
-                      <circle cx="12" cy="11" r="1.2" fill="#DAA520"/>
-                      <circle cx="16" cy="12" r="1.2" fill="#DAA520"/>
                     </svg>
                   )}
                 </div>
@@ -613,22 +606,21 @@ const SubjectCard = ({
           </div>
         </div>
 
-        {/* Footer info + Button */}
-        <div className="pt-1 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <div className="flex flex-wrap justify-center sm:justify-start gap-x-3 text-[11px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> 
+        <div className="pt-2 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex flex-wrap justify-center sm:justify-start gap-x-4 text-xs text-[#5f6368] dark:text-gray-500 font-medium">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" /> 
               Added {formatDate(subject.dateAdded)}
             </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3" /> 
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> 
               Last Studied {subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}
             </div>
           </div>
 
           <Button 
             onClick={onStudy} 
-            className="w-full sm:w-auto bg-[#36b37e] hover:bg-[#2fa371] text-white px-5 h-9 text-sm font-bold rounded-md shadow-sm transition-all active:scale-95"
+            className="w-full sm:w-auto google-btn-primary px-8 h-10 text-sm font-medium"
           >
             Continue Practice
           </Button>

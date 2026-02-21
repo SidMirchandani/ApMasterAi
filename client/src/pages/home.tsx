@@ -18,10 +18,10 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#f8f9fa] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-khan-gray-medium">Loading...</p>
+          <div className="w-10 h-10 border-4 border-[#1a73e8] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#5f6368]">Loading...</p>
         </div>
       </div>
     );
@@ -32,12 +32,14 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#f8f9fa]">
       <Navigation />
-      <Hero />
-      <HeroStats />
-      <Features />
-      <FAQ />
+      <main>
+        <Hero />
+        <HeroStats />
+        <Features />
+        <FAQ />
+      </main>
     </div>
   );
 }
