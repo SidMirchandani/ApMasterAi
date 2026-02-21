@@ -226,6 +226,11 @@ export function PracticeQuizQuestionCard({
             let bgColor = "bg-white dark:bg-gray-900";
             let textColor = "text-gray-700 dark:text-white";
 
+            if (cheatMode && isCorrectAnswer && !isAnswerSubmitted) {
+              borderColor = "border-green-300 dark:border-green-500";
+              bgColor = "bg-green-50/50 dark:bg-green-900/20";
+            }
+
             if (isAnswerSubmitted) {
               if (isCorrectAnswer) {
                 borderColor = "border-green-500 dark:border-green-600";
