@@ -246,13 +246,16 @@ export default function Dashboard() {
         ) : subjects.length === 0 ? (
           <EmptyState router={router} />
         ) : (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold tracking-tight">My Subjects</h2>
+          <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-[#2d3b45] dark:text-gray-100">My Subjects</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Manage and track your AP exam preparation.</p>
+              </div>
               <Button
                 onClick={() => router.push("/learn")}
                 variant="outline"
-                className="border-[#36b37e] text-[#36b37e] hover:bg-[#36b37e] hover:text-white transition-colors"
+                className="w-full sm:w-auto border-[#36b37e] text-[#36b37e] hover:bg-[#36b37e] hover:text-white transition-all shadow-sm"
               >
                 <Plus className="mr-2 w-4 h-4" /> Add Courses
               </Button>
@@ -261,7 +264,7 @@ export default function Dashboard() {
             {subjectsFetching && <RefreshingState />}
 
             {/* Active subjects */}
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 pb-4">
               {activeSubjects.map((subject) => (
                 <SubjectCard
                   key={subject.id}
@@ -529,18 +532,30 @@ const SubjectCard = ({
     : null;
 
   return (
-    <Card className="overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-900 rounded-lg">
-      <CardHeader className="pb-2 pt-3 px-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
-        <div className="flex justify-between items-start">
-          <div className="space-y-0.5">
-            <CardTitle className="text-lg font-bold text-[#2d3b45] dark:text-gray-100 tracking-tight">{subject.name}</CardTitle>
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-snug max-w-2xl font-medium">{subject.description}</p>
+    <Card className="flex flex-col h-full overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-900 rounded-xl">
+      <CardHeader className="pb-3 pt-4 px-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
+        <div className="flex justify-between items-start gap-4">
+          <div className="space-y-1">
+            <CardTitle className="text-lg font-bold text-[#2d3b45] dark:text-gray-100 tracking-tight leading-tight">
+              {subject.name}
+            </CardTitle>
+            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <BookOpen className="w-3 h-3" />
+                {subject.units} Units
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-khan-blue hover:bg-gray-100 h-8 w-8 p-0"
+              className="text-gray-400 hover:text-khan-blue hover:bg-gray-100 dark:hover:bg-gray-800 h-8 w-8 p-0"
               onClick={onArchive}
               title="Archive"
             >
@@ -559,78 +574,67 @@ const SubjectCard = ({
         </div>
       </CardHeader>
 
-      <CardContent className="py-3 px-4 space-y-3">
-        {/* Meta Grid */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <BookOpen className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-              <span>{subject.units} Units</span>
+      <CardContent className="flex-1 py-4 px-5 flex flex-col justify-between space-y-4">
+        <div className="space-y-4">
+          {/* Progress Overview */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-1">Predicted Score</p>
+              <div className="flex items-baseline gap-1">
+                {predictedScore !== null ? (
+                  <span className="text-2xl font-black" style={{ color: scoreColorMap[predictedScore] }}>
+                    {predictedScore}
+                  </span>
+                ) : (
+                  <span className="text-lg font-bold text-gray-400 italic">N/A</span>
+                )}
+                <TrendingUp className="w-3 h-3 text-gray-400" />
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-              <span>
-                Exam: {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-              <span className="text-gray-600 dark:text-gray-400">Predicted Score:</span>
-              {predictedScore !== null ? (
-                <span className="font-bold text-lg" style={{ color: scoreColorMap[predictedScore] }}>
-                  {predictedScore}
-                </span>
-              ) : (
-                <span className="text-gray-600 dark:text-gray-400">N/A</span>
-              )}
+            
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-1">Unit Mastery</p>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {units.slice(0, 10).map((u: any, i: number) => {
+                  const unitData = unitProgress[u.id];
+                  const stat = getUnitStatus(unitData);
+                  const isMastered = stat.status === "Mastered";
+                  
+                  return (
+                    <div
+                      key={u.id}
+                      className={`w-5 h-5 rounded-sm ${stat.bg} border border-black/5 flex items-center justify-center shadow-xs transition-transform hover:scale-110 cursor-help`}
+                      title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
+                    >
+                      {isMastered && (
+                        <div className="w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_4px_rgba(250,204,21,0.6)]" />
+                      )}
+                    </div>
+                  );
+                })}
+                {units.length > 10 && (
+                  <span className="text-[10px] text-gray-400 self-center">+{units.length - 10}</span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Unit Grid */}
-          <div className="flex items-center gap-1">
-            {units.map((u: any, i: number) => {
-              const unitData = unitProgress[u.id];
-              const stat = getUnitStatus(unitData);
-              const isMastered = stat.status === "Mastered";
-              
-              return (
-                <div
-                  key={u.id}
-                  className={`w-7 h-7 rounded ${stat.bg} border border-black/5 flex items-center justify-center shadow-sm transition-transform hover:scale-110 cursor-help`}
-                  title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
-                >
-                  {isMastered && (
-                    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
-                      <path d="M2 8L5 4L8 7L12 2L16 7L19 4L22 8L19 19H5L2 8Z" fill="#FFD700" stroke="#DAA520" strokeWidth="1"/>
-                      <circle cx="8" cy="12" r="1.2" fill="#DAA520"/>
-                      <circle cx="12" cy="11" r="1.2" fill="#DAA520"/>
-                      <circle cx="16" cy="12" r="1.2" fill="#DAA520"/>
-                    </svg>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+            {subject.description}
+          </p>
         </div>
 
-        {/* Footer info + Button */}
-        <div className="pt-1 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <div className="flex flex-wrap justify-center sm:justify-start gap-x-3 text-[11px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> 
-              Added {formatDate(subject.dateAdded)}
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3" /> 
-              Last Studied {subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}
-            </div>
+        <div className="pt-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+            <span>Last session: {subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}</span>
           </div>
 
           <Button 
             onClick={onStudy} 
-            className="w-full sm:w-auto bg-[#36b37e] hover:bg-[#2fa371] text-white px-5 h-9 text-sm font-bold rounded-md shadow-sm transition-all active:scale-95"
+            className="w-full bg-[#36b37e] hover:bg-[#2fa371] text-white py-5 h-11 text-sm font-bold rounded-lg shadow-md hover:shadow-lg transition-all active:scale-[0.98] group"
           >
-            Continue Practice
+            <span>Continue Practice</span>
+            <TrendingUp className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
       </CardContent>
