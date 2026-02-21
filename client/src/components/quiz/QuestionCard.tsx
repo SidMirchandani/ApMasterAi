@@ -151,9 +151,9 @@ export function QuestionCard({
   const shouldShowCorrectness = isAnswerSubmitted || isFullLength;
 
   return (
-    <Card className={`${isFlagged ? "border-red-500 border-2" : ""}`}>
+    <Card className={`${isFlagged ? "border-red-500 border-2" : ""} dark:bg-gray-900 dark:border-gray-700`}>
       <CardHeader className="pb-1 pt-2">
-        <div className="flex items-center justify-between border-b pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-gray-50 min-h-[48px]">
+        <div className="flex items-center justify-between border-b dark:border-gray-700 pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-gray-50 dark:bg-gray-800 min-h-[48px]">
           <div className="flex items-center gap-2">
             {!hidePracticeQuizElements && (
               <div className="bg-black text-white px-2 py-0.5 font-bold text-xs rounded">
@@ -164,7 +164,7 @@ export function QuestionCard({
               <button
                 onClick={onToggleFlag}
                 className={`flex items-center gap-1 text-xs font-medium ${
-                  isFlagged ? "text-black" : "text-gray-600"
+                  isFlagged ? "text-black dark:text-white" : "text-gray-600 dark:text-gray-400"
                 }`}
               >
                 <Flag className={`h-3 w-3 ${isFlagged ? "fill-current" : ""}`} />
@@ -238,7 +238,7 @@ export function QuestionCard({
               </DialogContent>
             </Dialog>
             {!hidePracticeQuizElements && (
-              <button className="px-2 py-0.5 text-xs font-semibold border border-gray-300 rounded hover:bg-gray-100">
+              <button className="px-2 py-0.5 text-xs font-semibold border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300">
                 ABC
               </button>
             )}
@@ -249,7 +249,7 @@ export function QuestionCard({
       <CardContent className="space-y-2 p-0 pt-2 pb-2 px-3">
         {/* Question Counter for Practice Quizzes */}
         {hidePracticeQuizElements && totalQuestions && (
-          <div className="text-sm font-semibold text-gray-700 mb-2">
+          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
             Question {questionNumber} of {totalQuestions}
           </div>
         )}
@@ -267,41 +267,37 @@ export function QuestionCard({
               const isCorrectAnswer = label === correctAnswerLabel;
 
               // Determine the background and border color for this choice
-              let bgColor = "bg-white";
-              let borderColor = "border-gray-200";
+              let bgColor = "bg-white dark:bg-gray-800";
+              let borderColor = "border-gray-200 dark:border-gray-600";
 
-              // Show correct answer in cheat mode (before submission/review)
               if (cheatMode && isCorrectAnswer && !isAnswerSubmitted && !isReviewMode) {
-                bgColor = "bg-green-50";
-                borderColor = "border-green-300";
+                bgColor = "bg-green-50 dark:bg-green-900/30";
+                borderColor = "border-green-300 dark:border-green-600";
               }
 
               if (isReviewMode) {
-                // Review mode: always show correct/incorrect
                 if (isUserAnswer && isCorrect) {
-                  bgColor = "bg-green-50";
+                  bgColor = "bg-green-50 dark:bg-green-900/30";
                   borderColor = "border-green-500";
                 } else if (isUserAnswer && !isCorrect) {
-                  bgColor = "bg-red-50";
+                  bgColor = "bg-red-50 dark:bg-red-900/30";
                   borderColor = "border-red-500";
                 } else if (isCorrectAnswer && !isCorrect) {
-                  bgColor = "bg-green-50";
+                  bgColor = "bg-green-50 dark:bg-green-900/30";
                   borderColor = "border-green-500";
                 }
               } else if (isAnswerSubmitted) {
-                // Answer submitted (practice quiz)
                 if (isUserAnswer && isCorrect) {
-                  bgColor = "bg-green-50";
+                  bgColor = "bg-green-50 dark:bg-green-900/30";
                   borderColor = "border-green-500";
                 } else if (isUserAnswer && !isCorrect) {
-                  bgColor = "bg-red-50";
+                  bgColor = "bg-red-50 dark:bg-red-900/30";
                   borderColor = "border-red-500";
                 } else if (isCorrectAnswer && !isCorrect) {
-                  bgColor = "bg-green-50";
+                  bgColor = "bg-green-50 dark:bg-green-900/30";
                   borderColor = "border-green-500";
                 }
               } else if (isUserAnswer) {
-                // Selected but not submitted yet
                 borderColor = "border-blue-600";
               }
 
@@ -310,14 +306,14 @@ export function QuestionCard({
                   key={label}
                   className={`flex items-center gap-2 p-3 rounded border transition-all cursor-pointer min-h-[48px]
                     ${bgColor} ${borderColor}
-                    ${!shouldShowCorrectness && !isUserAnswer ? "hover:bg-gray-50 hover:border-gray-300" : ""}
+                    ${!shouldShowCorrectness && !isUserAnswer ? "hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500" : ""}
                   `}
                   onClick={() => !isAnswerSubmitted && onAnswerSelect(label)}
                 >
                   <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center font-semibold text-xs ${
                     isUserAnswer
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-400 bg-white'
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/40'
+                      : 'border-gray-400 bg-white dark:bg-gray-700 dark:border-gray-500'
                   }`}>
                     {label}
                   </div>

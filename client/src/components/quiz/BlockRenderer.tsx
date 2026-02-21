@@ -32,7 +32,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, className 
                 className="object-contain w-full h-full max-h-[200px] cursor-zoom-in"
                 loading="lazy"
               />
-              <div className="hidden group-hover:block absolute z-[100] top-0 left-full ml-3 p-2 bg-white shadow-2xl rounded-md pointer-events-none">
+              <div className="hidden group-hover:block absolute z-[100] top-0 left-full ml-3 p-2 bg-white dark:bg-gray-800 shadow-2xl rounded-md pointer-events-none">
                 <img
                   src={block.url}
                   alt={`Content image ${index + 1} - Full size`}
