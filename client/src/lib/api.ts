@@ -16,7 +16,7 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     const uid = currentUser.uid;
     const now = Date.now();
 
-    if (tokenCache && tokenCache.uid === uid && tokenCache.expiry > now + 5 * 60 * 1000) {
+    if (tokenCache && tokenCache.uid === uid && tokenCache.expiry > now + 2 * 60 * 1000) {
       console.log("Using cached token");
       return {
         "Authorization": `Bearer ${tokenCache.token}`,
@@ -25,7 +25,8 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     }
 
     console.log("Getting auth headers for user:", uid);
-    const token = await getAuthToken(false);
+    // Force refresh if token is near expiry or missing
+    const token = await getAuthToken(true);
 
     if (!token) {
       return {};
