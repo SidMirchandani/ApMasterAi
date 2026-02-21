@@ -223,241 +223,164 @@ export default function Study() {
       <Navigation />
 
       {/* Header Section */}
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-20">
-        <div className="container mx-auto px-4 py-3 max-w-6xl">
-          <div className="text-center">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {currentSubject.name}
-            </h1>
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => router.push("/dashboard")}
+                className="text-gray-500 hover:text-khan-green -ml-2"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+              <div className="space-y-2">
+                <h1 className="text-3xl md:text-4xl font-black text-[#2d3b45] dark:text-gray-100 tracking-tight">
+                  {currentSubject.name}
+                </h1>
+                <p className="text-gray-500 dark:text-gray-400 max-w-2xl text-lg leading-relaxed">
+                  {currentSubject.description}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <div className="px-4 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-khan-green/10 flex items-center justify-center">
+                  <Trophy className="h-5 w-5 text-khan-green" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Mastery</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">
+                    {topicsMastered}/{totalTopics}
+                  </p>
+                </div>
+              </div>
+              <div className="px-4 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-khan-blue/10 flex items-center justify-center">
+                  <CalendarDays className="h-5 w-5 text-khan-blue" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Exam Date</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">
+                    {formatDate(currentSubject.examDate)}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-4 max-w-6xl">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <Card className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Topics Mastered</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {topicsMastered}/{totalTopics}
-                  </p>
-                </div>
-                <Trophy className="h-8 w-8 text-khan-green" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Exam Date</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {formatDate(currentSubject.examDate)}
-                  </p>
-                </div>
-                <CalendarDays className="h-8 w-8 text-khan-blue" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Overall Progress</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {Math.round((topicsMastered / totalTopics) * 100)}%
-                  </p>
-                </div>
-                <Target className="h-8 w-8 text-khan-orange" />
-              </div>
-            </CardContent>
-          </Card>
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+          <Button
+            onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
+            className="md:col-span-2 bg-[#36b37e] hover:bg-[#2fa371] h-14 text-lg font-bold shadow-md hover:shadow-lg transition-all"
+          >
+            <BookOpen className="mr-3 h-6 w-6" />
+            Take Full-Length Practice Test
+          </Button>
+          <Button
+            onClick={() => router.push(`/analytics?subject=${subjectId}`)}
+            variant="outline"
+            className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-khan-green text-gray-700 dark:text-gray-300 font-bold"
+          >
+            <BarChart3 className="mr-2 h-5 w-5" />
+            Detailed Analytics
+          </Button>
+          <Button
+            onClick={() => router.push(`/review?subject=${subjectId}`)}
+            variant="outline"
+            className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-purple-400 text-gray-700 dark:text-gray-300 font-bold"
+          >
+            <RotateCcw className="mr-2 h-5 w-5" />
+            Review Weak Spots
+          </Button>
         </div>
 
-        {/* Full-Length Practice Tests */}
-        <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 shadow-sm">
-          <CardHeader className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-khan-green" />
-              Full-Length Practice Tests
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button
-                onClick={() =>
-                  router.push(`/quiz?subject=${subjectId}&unit=full-length`)
-                }
-                className="bg-khan-green hover:bg-khan-green-light h-10 text-base font-medium"
-              >
-                <BookOpen className="mr-2 h-5 w-5" />
-                MCQ Full-Length Test
-              </Button>
-              <Button
-                onClick={() =>
-                  router.push(`/full-length-history?subject=${subjectId}`)
-                }
-                variant="outline"
-                className="h-10 text-base font-medium border-2 border-khan-green text-khan-green hover:bg-khan-green/5"
-              >
-                <Clock className="mr-2 h-5 w-5" />
-                Full-Length Test History
-              </Button>
+        {/* Units Grid */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black text-[#2d3b45] dark:text-gray-100 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-khan-green flex items-center justify-center">
+                <Target className="h-5 w-5 text-white" />
+              </div>
+              Course Content
+            </h2>
+            <div className="flex items-center gap-2 text-sm font-bold text-gray-400 uppercase tracking-widest">
+              <span>{totalTopics} Units Total</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Tools Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <Card className="border border-yellow-200 dark:border-yellow-800 dark:bg-gray-900 shadow-sm">
-            <CardContent className="py-3">
-              <Button
-                onClick={() => router.push(`/bookmarks?subject=${subjectId}`)}
-                variant="outline"
-                className="w-full h-10 text-base font-medium border-2 border-yellow-400 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
-              >
-                <Bookmark className="mr-2 h-5 w-5 fill-current" />
-                Saved Questions
-              </Button>
-            </CardContent>
-          </Card>
-          <Card className="border border-purple-200 dark:border-purple-800 dark:bg-gray-900 shadow-sm">
-            <CardContent className="py-3">
-              <Button
-                onClick={() => router.push(`/review?subject=${subjectId}`)}
-                variant="outline"
-                className="w-full h-10 text-base font-medium border-2 border-purple-400 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-              >
-                <RotateCcw className="mr-2 h-5 w-5" />
-                Review Questions
-              </Button>
-            </CardContent>
-          </Card>
-          <Card className="border border-green-200 dark:border-green-800 dark:bg-gray-900 shadow-sm">
-            <CardContent className="py-3">
-              <Button
-                onClick={() => router.push(`/analytics?subject=${subjectId}`)}
-                variant="outline"
-                className="w-full h-10 text-base font-medium border-2 border-green-400 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
-              >
-                <BarChart3 className="mr-2 h-5 w-5" />
-                Analytics
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+          <div className="grid grid-cols-1 gap-4">
+            {units.map((unit, index) => {
+              const unitData = getUnitData(unit.id);
+              const score = unitData?.highestScore || 0;
+              const hasAttempted = unitData && unitData.scores?.length > 0;
+              const level = getProgressLevel(score, hasAttempted);
+              const isMastered = level === "Mastered";
 
-        {/* Units Section */}
-        <div className="mb-3">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
-            <Target className="h-6 w-6 text-khan-green" />
-            Practice by Unit
-          </h2>
-        </div>
-
-        <div className="space-y-4">
-          {units.map((unit, index) => {
-            const unitData = getUnitData(unit.id);
-            const score = unitData?.highestScore || 0;
-            const hasAttempted = unitData && unitData.scores?.length > 0;
-            const level = getProgressLevel(score, hasAttempted);
-            const badgeColor = getProgressBadgeColor(level);
-
-            return (
-              <Card
-                key={unit.id}
-                className="border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 hover:border-khan-green transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <CardContent className="p-4">
-                  <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                    {/* Left: Unit Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-4 mb-2">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-khan-green text-white flex items-center justify-center font-bold text-lg">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
-                            {unit.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 leading-relaxed">
-                            {unit.description}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge
-                              variant="outline"
-                              className="text-xs border-gray-300 text-gray-700"
-                            >
-                              Exam Weight: {unit.examWeight}
-                            </Badge>
-                            <div className="relative group">
-                              <Badge className={`text-xs ${badgeColor}`}>
-                                {level === "Mastered" && "👑 "}
-                                {level}
-                              </Badge>
-
-                              {/* Tooltip */}
-                              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white shadow-xl rounded-lg p-3 border-2 border-gray-200 z-10 whitespace-nowrap">
-                                <div className="text-xs font-semibold mb-2 text-gray-900">
-                                  Progress Legend
-                                </div>
-                                <div className="space-y-1.5 text-xs">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-green-600"></div>
-                                    <span className="text-gray-700">
-                                      Mastered (80%+)
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-blue-500"></div>
-                                    <span className="text-gray-700">
-                                      Proficient (60%+)
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-orange-500"></div>
-                                    <span className="text-gray-700">
-                                      In Progress (&lt;60%)
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded bg-gray-300"></div>
-                                    <span className="text-gray-700">
-                                      Not Started
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
+              return (
+                <Card
+                  key={unit.id}
+                  className="group border border-gray-200 dark:border-gray-800 dark:bg-gray-900/50 hover:border-khan-green dark:hover:border-khan-green transition-all duration-300 overflow-hidden"
+                >
+                  <CardContent className="p-0">
+                    <div className="flex flex-col md:flex-row">
+                      <div className="p-6 flex-1">
+                        <div className="flex items-start gap-4">
+                          <div className={`shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-black text-xl transition-colors ${
+                            isMastered ? 'bg-khan-green text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <h3 className="text-xl font-bold text-[#2d3b45] dark:text-gray-100">
+                                {unit.title}
+                              </h3>
+                              {isMastered && (
+                                <Badge className="bg-yellow-400 hover:bg-yellow-500 text-black font-black px-2 py-0 h-6 flex items-center gap-1 border-none shadow-sm">
+                                  👑 Mastered
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-gray-500 dark:text-gray-400 leading-relaxed text-sm max-w-3xl">
+                              {unit.description}
+                            </p>
+                            <div className="flex items-center gap-4 pt-2">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+                                <BookOpen className="w-3.5 h-3.5" />
+                                Weight: {unit.examWeight}
+                              </span>
+                              {!isMastered && hasAttempted && (
+                                <span className="text-[10px] font-black uppercase tracking-widest text-khan-blue flex items-center gap-1.5">
+                                  <Target className="w-3.5 h-3.5" />
+                                  Best Score: {score}%
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
                       </div>
+                      <div className="px-6 pb-6 md:pb-0 md:w-64 flex items-center bg-gray-50/50 dark:bg-gray-800/30 border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800">
+                        <Button
+                          onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)}
+                          className="w-full bg-white dark:bg-gray-800 hover:bg-khan-green hover:text-white text-[#2d3b45] dark:text-gray-100 border-2 border-gray-200 dark:border-gray-700 hover:border-khan-green font-bold h-12 transition-all group-hover:shadow-md"
+                        >
+                          Practice Unit
+                        </Button>
+                      </div>
                     </div>
-
-                    {/* Right: Action Buttons */}
-                    <div className="flex flex-col gap-3 lg:min-w-[240px]">
-                      <Button
-                        onClick={() => {
-                          router.push(
-                            `/quiz?subject=${subjectId}&unit=${unit.id}`,
-                          );
-                        }}
-                        className="bg-khan-green hover:bg-khan-green-light h-10 font-medium"
-                      >
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        Unit MCQ Practice
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

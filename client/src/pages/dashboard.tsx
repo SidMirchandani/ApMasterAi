@@ -607,7 +607,9 @@ const SubjectCard = ({
                       title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
                     >
                       {isMastered && (
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_4px_rgba(250,204,21,0.6)]" />
+                        <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3">
+                          <path d="M2 8L5 4L8 7L12 2L16 7L19 4L22 8L19 19H5L2 8Z" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5"/>
+                        </svg>
                       )}
                     </div>
                   );
