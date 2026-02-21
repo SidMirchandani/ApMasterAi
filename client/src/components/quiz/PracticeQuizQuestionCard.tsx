@@ -213,7 +213,7 @@ export function PracticeQuizQuestionCard({
       </CardHeader>
 
       <CardContent className="p-6 space-y-6">
-        <div className="text-gray-900 dark:text-gray-100 leading-relaxed text-base">
+        <div className="text-gray-900 dark:text-white leading-relaxed text-base">
           <BlockRenderer blocks={question.prompt_blocks || []} />
         </div>
 
@@ -224,7 +224,7 @@ export function PracticeQuizQuestionCard({
 
             let borderColor = "border-gray-200 dark:border-gray-800";
             let bgColor = "bg-white dark:bg-gray-900";
-            let textColor = "text-gray-700 dark:text-gray-300";
+            let textColor = "text-gray-700 dark:text-white";
 
             if (isAnswerSubmitted) {
               if (isCorrectAnswer) {
@@ -256,7 +256,7 @@ export function PracticeQuizQuestionCard({
                 <div className={`flex-shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center font-bold text-sm transition-colors
                   ${isUserAnswer 
                     ? 'bg-blue-600 border-blue-600 text-white' 
-                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'
+                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-white'
                   }
                 `}>
                   {label}
