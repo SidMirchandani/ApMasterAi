@@ -221,6 +221,7 @@ export function PracticeQuizQuestionCard({
           {choices.map((label) => {
             const isUserAnswer = selectedAnswer === label;
             const isCorrectAnswer = label === correctAnswerLabel;
+            const isCheating = cheatMode && isCorrectAnswer;
 
             let borderColor = "border-gray-200 dark:border-gray-800";
             let bgColor = "bg-white dark:bg-gray-900";
@@ -240,6 +241,9 @@ export function PracticeQuizQuestionCard({
               borderColor = "border-blue-500 dark:border-blue-600";
               bgColor = "bg-blue-50/30 dark:bg-blue-900/10";
               textColor = "text-blue-700 dark:text-blue-300";
+            } else if (isCheating) {
+              borderColor = "border-green-400/50 dark:border-green-600/50";
+              bgColor = "bg-green-50/30 dark:bg-green-900/10";
             } else {
               bgColor = "bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50";
             }
