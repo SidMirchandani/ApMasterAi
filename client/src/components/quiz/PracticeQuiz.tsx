@@ -12,6 +12,7 @@ import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { CheckCircle, XCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -83,6 +84,7 @@ export function PracticeQuiz({
 
   const router = useRouter();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const isCalculatorAllowed = CALCULATOR_SUBJECTS.includes(subjectId);
 
@@ -268,6 +270,8 @@ export function PracticeQuiz({
         .then((response) => {
           if (response.ok) {
             response.json().then(() => {
+              queryClient.invalidateQueries({ queryKey: ["subjects"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/user/analytics", subjectId] });
               window.dispatchEvent(new CustomEvent("subjectsUpdated"));
             });
           }

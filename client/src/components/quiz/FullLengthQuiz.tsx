@@ -7,6 +7,7 @@ import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QuizReviewPage } from "./QuizReviewPage";
 import { useRouter } from "next/router";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import { getSubjectByLegacyId } from '@/subjects';
@@ -43,6 +44,7 @@ interface FullLengthQuizProps {
 
 export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit, savedState, examConfig }: FullLengthQuizProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(savedState?.currentQuestionIndex || 0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>(savedState?.userAnswers || {});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set(savedState?.flaggedQuestions || []));
@@ -228,6 +230,11 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
       const result = await response.json();
       const testId = result.data.id;
+
+      // Invalidate queries to ensure dashboard and analytics are up to date
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/analytics", subjectId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/score-history", subjectId] });
 
       await apiRequest(
         "DELETE",
