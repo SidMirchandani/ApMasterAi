@@ -167,11 +167,11 @@ export default function AnalyticsPage() {
       (a.totalAttempted || 0) - (b.totalAttempted || 0)
     );
 
-    const isBackfilledData = sortedHistory.length > 1 &&
-      sortedHistory.every(s => s.predictedScore === sortedHistory[0].predictedScore);
+    const uniqueScores = new Set(sortedHistory.map(s => s.predictedScore));
+    const hasRealVariation = uniqueScores.size > 1;
 
     const scores: number[] = [];
-    if (sortedHistory.length >= numPoints && !isBackfilledData) {
+    if (sortedHistory.length >= numPoints && hasRealVariation) {
       for (let i = 0; i < numPoints; i++) {
         scores.push(sortedHistory[i]?.predictedScore ?? currentScore);
       }
