@@ -133,6 +133,17 @@ export default function AdminPage() {
   const [subjectStatus, setSubjectStatus] = useState<Record<string, { hasQuestions: boolean; questionCount: number }>>({});
   const [loadingStatus, setLoadingStatus] = useState(false);
 
+  const [migratingImages, setMigratingImages] = useState(false);
+  const [migrateSubjectCode, setMigrateSubjectCode] = useState("");
+  const migrateAbortRef = useRef<AbortController | null>(null);
+  const [migrateProgress, setMigrateProgress] = useState<{
+    current: number;
+    total: number;
+    made_public: number;
+    failed: number;
+    message: string;
+  } | null>(null);
+
   const availableToAdd = allApSubjectsRef.filter(s => !subjectStatus[s.code]?.hasQuestions);
   const alreadyAdded = allApSubjectsRef.filter(s => subjectStatus[s.code]?.hasQuestions);
 
@@ -275,6 +286,95 @@ export default function AdminPage() {
     } finally {
       setRemovingSubject(null);
     }
+  }
+
+  async function startImageMigration() {
+    if (!token) return;
+    setMigratingImages(true);
+    setMigrateProgress({ current: 0, total: 0, made_public: 0, failed: 0, message: "Starting migration..." });
+
+    const controller = new AbortController();
+    migrateAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/migrate-images", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subjectCode: migrateSubjectCode && migrateSubjectCode !== "all" ? migrateSubjectCode : undefined }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Failed to start migration");
+        setMigratingImages(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        toast.error("No response stream");
+        setMigratingImages(false);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "progress") {
+              setMigrateProgress({
+                current: event.current || 0,
+                total: event.total || 0,
+                made_public: event.made_public || 0,
+                failed: event.failed || 0,
+                message: event.message || "",
+              });
+            }
+            if (event.type === "complete") {
+              toast.success(event.message);
+              setMigrateProgress({
+                current: event.total || 0,
+                total: event.total || 0,
+                made_public: event.made_public || 0,
+                failed: event.failed || 0,
+                message: event.message || "",
+              });
+            }
+            if (event.type === "error") {
+              toast.error(event.message);
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Migration failed: " + err.message);
+      }
+    } finally {
+      setMigratingImages(false);
+      migrateAbortRef.current = null;
+    }
+  }
+
+  function stopImageMigration() {
+    migrateAbortRef.current?.abort();
+    setMigratingImages(false);
+    toast("Migration cancelled");
   }
 
   useEffect(() => {
@@ -552,22 +652,22 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-khan-background flex items-center justify-center">
-        <div className="text-khan-gray-dark">Loading...</div>
+      <div className="min-h-screen bg-khan-background dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-khan-gray-dark dark:text-gray-300">Loading...</div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-khan-background flex items-center justify-center px-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-khan-background dark:bg-gray-900 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="text-center">
             <Link href="/" className="inline-flex items-center justify-center space-x-3 mb-4">
               <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center">
                 <BookOpen className="w-7 h-7 text-white" />
               </div>
-              <span className="text-3xl font-bold text-khan-gray-dark">APMaster</span>
+              <span className="text-3xl font-bold text-khan-gray-dark dark:text-white">APMaster</span>
             </Link>
             <CardTitle className="text-2xl">Admin Login</CardTitle>
             <CardDescription>Sign in to access the admin dashboard</CardDescription>
@@ -592,14 +692,14 @@ export default function AdminPage() {
 
   if (!isAllowed) {
     return (
-      <div className="min-h-screen bg-khan-background flex items-center justify-center px-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-khan-background dark:bg-gray-900 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="text-center">
             <Link href="/" className="inline-flex items-center justify-center space-x-3 mb-4">
               <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center">
                 <BookOpen className="w-7 h-7 text-white" />
               </div>
-              <span className="text-3xl font-bold text-khan-gray-dark">APMaster</span>
+              <span className="text-3xl font-bold text-khan-gray-dark dark:text-white">APMaster</span>
             </Link>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -633,11 +733,11 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-khan-background">
+    <div className="min-h-screen bg-khan-background dark:bg-gray-900">
       <Toaster position="top-right" />
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center space-x-3">
@@ -645,8 +745,8 @@ export default function AdminPage() {
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-khan-gray-dark">APMaster Admin</h1>
-                <p className="text-sm text-khan-gray-medium">Question Management</p>
+                <h1 className="text-2xl font-bold text-khan-gray-dark dark:text-white">APMaster Admin</h1>
+                <p className="text-sm text-khan-gray-medium dark:text-gray-400">Question Management</p>
               </div>
             </Link>
             <div className="flex items-center gap-4">
@@ -656,11 +756,11 @@ export default function AdminPage() {
                   checked={cheatMode}
                   onCheckedChange={handleCheatModeToggle}
                 />
-                <Label htmlFor="cheat-mode" className="text-sm font-medium cursor-pointer">
+                <Label htmlFor="cheat-mode" className="text-sm font-medium cursor-pointer dark:text-gray-300">
                   Cheat Mode
                 </Label>
               </div>
-              <span className="text-sm text-khan-gray-medium">{user.email}</span>
+              <span className="text-sm text-khan-gray-medium dark:text-gray-400">{user.email}</span>
               <Button
                 onClick={() => signOut(auth)}
                 variant="outline"
@@ -676,23 +776,23 @@ export default function AdminPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Subjects Overview */}
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-xl">
+                <CardTitle className="flex items-center gap-2 text-xl dark:text-white">
                   <BookOpen className="w-5 h-5 text-khan-green" />
                   Subjects Overview
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="dark:text-gray-400">
                   {loadingStatus ? "Loading..." : `${alreadyAdded.length} of ${allApSubjectsRef.length} subjects imported`}
                 </CardDescription>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-khan-gray-dark">
+                <div className="text-2xl font-bold text-khan-gray-dark dark:text-white">
                   {Object.values(subjectStatus).reduce((sum, s) => sum + (s.questionCount || 0), 0).toLocaleString()}
                 </div>
-                <div className="text-xs text-khan-gray-medium">Total Questions</div>
+                <div className="text-xs text-khan-gray-medium dark:text-gray-400">Total Questions</div>
               </div>
             </div>
           </CardHeader>
@@ -712,12 +812,12 @@ export default function AdminPage() {
                       key={s.code}
                       className={`relative group rounded-lg border-2 p-3 transition-all ${
                         hasQuestions
-                          ? "border-green-200 bg-green-50 hover:border-green-300"
-                          : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                          ? "border-green-200 bg-green-50 hover:border-green-300 dark:border-green-700 dark:bg-green-900/30"
+                          : "border-gray-200 bg-gray-50 hover:border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                       }`}
                     >
                       <div className="flex items-start justify-between mb-1">
-                        <span className={`text-xs font-bold ${hasQuestions ? "text-green-700" : "text-gray-400"}`}>
+                        <span className={`text-xs font-bold ${hasQuestions ? "text-green-700 dark:text-green-400" : "text-gray-400 dark:text-gray-500"}`}>
                           {s.code}
                         </span>
                         {hasQuestions && (
@@ -731,13 +831,13 @@ export default function AdminPage() {
                           </button>
                         )}
                       </div>
-                      <div className={`text-xs font-medium leading-tight mb-1 ${hasQuestions ? "text-gray-800" : "text-gray-500"}`}>
+                      <div className={`text-xs font-medium leading-tight mb-1 ${hasQuestions ? "text-gray-800 dark:text-gray-200" : "text-gray-500 dark:text-gray-400"}`}>
                         {s.label.replace("AP ", "")}
                       </div>
                       {hasQuestions ? (
-                        <div className="text-lg font-bold text-green-700">{count.toLocaleString()}</div>
+                        <div className="text-lg font-bold text-green-700 dark:text-green-400">{count.toLocaleString()}</div>
                       ) : (
-                        <div className="text-xs text-gray-400 italic">Not imported</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500 italic">Not imported</div>
                       )}
                     </div>
                   );
@@ -748,22 +848,22 @@ export default function AdminPage() {
         </Card>
 
         {/* Add Subject Card */}
-        <Card className="border-2 border-dashed border-khan-green/30">
+        <Card className="border-2 border-dashed border-khan-green/30 dark:bg-gray-800 dark:border-green-600/30">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 dark:text-white">
               <Zap className="w-5 h-5 text-khan-green" />
               Add Subject
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="dark:text-gray-400">
               Select an AP subject to automatically scrape questions from CrackAP, classify by unit, and import
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3 items-end">
               <div className="flex-1">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Subject to Add</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Subject to Add</label>
                 <Select value={addSubjectCode} onValueChange={setAddSubjectCode} disabled={addingSubject}>
-                  <SelectTrigger className="bg-white">
+                  <SelectTrigger className="bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
                     <SelectValue placeholder={loadingStatus ? "Loading subjects..." : availableToAdd.length > 0 ? "Select AP Subject" : "All subjects imported"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -794,7 +894,7 @@ export default function AdminPage() {
 
             {addSubjectProgress && (
               <div className="space-y-3 pt-2">
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                   <span>{addSubjectProgress.message}</span>
                   {addSubjectProgress.total > 0 && (
                     <span>{Math.round((addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100)}%</span>
@@ -804,7 +904,7 @@ export default function AdminPage() {
                   value={(addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100}
                   className="h-2"
                 />
-                <div className="flex gap-4 text-xs text-gray-500">
+                <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
                   <span className="text-green-600 font-medium">Imported: {addSubjectProgress.imported}</span>
                   <span className="text-yellow-600">Skipped: {addSubjectProgress.skipped}</span>
                   <span className="text-red-600">Errors: {addSubjectProgress.errors}</span>
@@ -814,19 +914,86 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* Filter Card */}
-        <Card>
+        {/* Image Migration Card */}
+        <Card className="border-2 border-dashed border-orange-300 dark:border-orange-600 dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 dark:text-white">
+              <AlertCircle className="w-5 h-5 text-orange-500" />
+              Migrate Firebase Storage Images
+            </CardTitle>
+            <CardDescription className="dark:text-gray-400">
+              Make Firebase Storage images publicly accessible so they load without the proxy
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 items-end">
+              <div className="flex-1">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Subject (optional)</label>
+                <Select value={migrateSubjectCode} onValueChange={setMigrateSubjectCode} disabled={migratingImages}>
+                  <SelectTrigger className="bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                    <SelectValue placeholder="All subjects with Firebase images" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Subjects</SelectItem>
+                    <SelectItem value="APCSP">AP Computer Science Principles</SelectItem>
+                    <SelectItem value="APMICRO">AP Microeconomics</SelectItem>
+                    <SelectItem value="APMACRO">AP Macroeconomics</SelectItem>
+                    <SelectItem value="APCHEM">AP Chemistry</SelectItem>
+                    <SelectItem value="APGOV">AP U.S. Government</SelectItem>
+                    <SelectItem value="APPSYCH">AP Psychology</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {migratingImages ? (
+                <Button onClick={stopImageMigration} variant="destructive" className="min-w-[160px]">
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop Migration
+                </Button>
+              ) : (
+                <Button
+                  onClick={startImageMigration}
+                  className="bg-orange-500 hover:bg-orange-600 text-white min-w-[160px]"
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Make Images Public
+                </Button>
+              )}
+            </div>
+
+            {migrateProgress && (
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                  <span>{migrateProgress.message}</span>
+                  {migrateProgress.total > 0 && (
+                    <span>{Math.round((migrateProgress.current / Math.max(migrateProgress.total, 1)) * 100)}%</span>
+                  )}
+                </div>
+                <Progress
+                  value={migrateProgress.total > 0 ? (migrateProgress.current / Math.max(migrateProgress.total, 1)) * 100 : 0}
+                  className="h-2"
+                />
+                <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-green-600 font-medium">Made Public: {migrateProgress.made_public}</span>
+                  <span className="text-red-600">Failed: {migrateProgress.failed}</span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Filter Card */}
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 dark:text-white">
               <Search className="w-5 w-5" />
               Filter Questions
             </CardTitle>
-            <CardDescription>Search by subject and section code</CardDescription>
+            <CardDescription className="dark:text-gray-400">Search by subject and section code</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3">
               <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger className="flex-1 bg-white">
+                <SelectTrigger className="flex-1 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
                   <SelectValue placeholder="Select Subject" />
                 </SelectTrigger>
                 <SelectContent>
@@ -843,7 +1010,7 @@ export default function AdminPage() {
                 onValueChange={setSection}
                 disabled={!subject}
               >
-                <SelectTrigger className="flex-1 bg-white">
+                <SelectTrigger className="flex-1 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
                   <SelectValue placeholder={subject ? "All Sections" : "Select subject first"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -869,18 +1036,18 @@ export default function AdminPage() {
         </Card>
 
         {/* Questions Table Card */}
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Questions ({items.length})</CardTitle>
+                <CardTitle className="dark:text-white">Questions ({items.length})</CardTitle>
                 <CardDescription>
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
               </div>
               <div className="flex gap-2 items-center">
                 <Select value={selectedAction} onValueChange={setSelectedAction}>
-                  <SelectTrigger className="w-[250px] bg-white">
+                  <SelectTrigger className="w-[250px] bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
                     <SelectValue placeholder="Select Action" />
                   </SelectTrigger>
                   <SelectContent>
@@ -890,7 +1057,7 @@ export default function AdminPage() {
                   </SelectContent>
                 </Select>
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="w-[200px] bg-white">
+                  <SelectTrigger className="w-[200px] bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
                     <SelectValue placeholder="Select Model" />
                   </SelectTrigger>
                   <SelectContent>
@@ -950,7 +1117,7 @@ export default function AdminPage() {
                   <col style={{ width: '20%' }} />
                   <col className="w-20" />
                 </colgroup>
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                   <tr>
                     <th className="p-2 text-center">
                       <Checkbox
@@ -958,13 +1125,13 @@ export default function AdminPage() {
                         onCheckedChange={toggleSelectAll}
                       />
                     </th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark text-xs">Subject</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark text-xs">Section</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark text-xs">Prompt</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark text-xs">Choices</th>
-                    <th className="p-2 text-center font-semibold text-khan-gray-dark text-xs">Ans</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark text-xs">Explanation</th>
-                    <th className="p-2 text-center font-semibold text-khan-gray-dark text-xs">Actions</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Subject</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Section</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Prompt</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Choices</th>
+                    <th className="p-2 text-center font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Ans</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Explanation</th>
+                    <th className="p-2 text-center font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -981,7 +1148,7 @@ export default function AdminPage() {
                 </tbody>
               </table>
               {items.length === 0 && (
-                <div className="p-8 text-center text-khan-gray-medium">
+                <div className="p-8 text-center text-khan-gray-medium dark:text-gray-400">
                   No questions found. Upload a CSV or adjust filters.
                 </div>
               )}
@@ -991,6 +1158,25 @@ export default function AdminPage() {
       </div>
     </div>
   );
+}
+
+const FIREBASE_STORAGE_PREFIXES = [
+  "https://storage.googleapis.com/gen-lang-client-0260042933.firebasestorage.app/",
+  "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0260042933.firebasestorage.app/o/",
+  "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0260042933.appspot.com/o/",
+];
+
+function getImageUrl(url: string): string {
+  if (!url) return url;
+  for (const prefix of FIREBASE_STORAGE_PREFIXES) {
+    if (url.startsWith(prefix)) {
+      let storagePath = url.slice(prefix.length);
+      storagePath = storagePath.split("?")[0];
+      storagePath = decodeURIComponent(storagePath);
+      return `/api/image-proxy?path=${encodeURIComponent(storagePath)}`;
+    }
+  }
+  return url;
 }
 
 function Row({
@@ -1040,15 +1226,16 @@ function Row({
             if (block.type === "text") {
               return <div key={idx} className="line-clamp-3">{block.value}</div>;
             } else if (block.type === "image") {
+              const imgSrc = getImageUrl(block.url);
               return (
                 <div key={idx} className="group relative inline-block">
                   <img
-                    src={block.url}
+                    src={imgSrc}
                     alt={`Question image ${idx + 1}`}
                     className="h-8 w-auto rounded border border-gray-300 cursor-pointer"
                   />
                   <img
-                    src={block.url}
+                    src={imgSrc}
                     alt={`Question image ${idx + 1} enlarged`}
                     className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
                   />
@@ -1073,20 +1260,23 @@ function Row({
       <div className="text-xs break-words">
         {hasImage && (
           <div className="mb-1 space-y-1">
-            {q.image_urls.question.map((url, idx) => (
-              <div key={idx} className="group relative inline-block">
-                <img
-                  src={url}
-                  alt={`Question image ${idx + 1}`}
-                  className="h-8 w-auto rounded border border-gray-300 cursor-pointer"
-                />
-                <img
-                  src={url}
-                  alt={`Question image ${idx + 1} enlarged`}
-                  className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
-                />
-              </div>
-            ))}
+            {q.image_urls.question.map((url, idx) => {
+              const imgSrc = getImageUrl(url);
+              return (
+                <div key={idx} className="group relative inline-block">
+                  <img
+                    src={imgSrc}
+                    alt={`Question image ${idx + 1}`}
+                    className="h-8 w-auto rounded border border-gray-300 cursor-pointer"
+                  />
+                  <img
+                    src={imgSrc}
+                    alt={`Question image ${idx + 1} enlarged`}
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
         {hasText && <div className="line-clamp-3">{q.prompt}</div>}
@@ -1103,15 +1293,16 @@ function Row({
             if (block.type === "text") {
               return <span key={idx}>{block.value}</span>;
             } else if (block.type === "image") {
+              const imgSrc = getImageUrl(block.url);
               return (
                 <div key={idx} className="group relative inline-block mr-1">
                   <img
-                    src={block.url}
+                    src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1}`}
                     className="h-6 w-auto rounded border border-gray-300 cursor-pointer"
                   />
                   <img
-                    src={block.url}
+                    src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
                     className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
                   />
@@ -1139,20 +1330,23 @@ function Row({
       <div>
         {hasImage && (
           <div className="mb-1 space-x-1">
-            {choiceImages.map((url, idx) => (
-              <div key={idx} className="group relative inline-block">
-                <img
-                  src={url}
-                  alt={`Choice ${choiceKey} image ${idx + 1}`}
-                  className="h-6 w-auto rounded border border-gray-300 cursor-pointer"
-                />
-                <img
-                  src={url}
-                  alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
-                  className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
-                />
-              </div>
-            ))}
+            {choiceImages.map((url, idx) => {
+              const imgSrc = getImageUrl(url);
+              return (
+                <div key={idx} className="group relative inline-block">
+                  <img
+                    src={imgSrc}
+                    alt={`Choice ${choiceKey} image ${idx + 1}`}
+                    className="h-6 w-auto rounded border border-gray-300 cursor-pointer"
+                  />
+                  <img
+                    src={imgSrc}
+                    alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
         {hasText && <span>{choice}</span>}
@@ -1162,15 +1356,15 @@ function Row({
 
   if (!edit) {
     return (
-      <tr className="border-b hover:bg-gray-50">
+      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600">
         <td className="p-2 text-center align-top">
           <Checkbox
             checked={selected}
             onCheckedChange={onToggleSelect}
           />
         </td>
-        <td className="p-2 align-top text-xs break-words">{q.subject_code || "-"}</td>
-        <td className="p-2 align-top text-xs break-words">{q.section_code || "-"}</td>
+        <td className="p-2 align-top text-xs break-words dark:text-gray-300">{q.subject_code || "-"}</td>
+        <td className="p-2 align-top text-xs break-words dark:text-gray-300">{q.section_code || "-"}</td>
         <td className="p-2 align-top">{renderQuestionPrompt()}</td>
         <td className="p-2 align-top">
           <div className="text-xs space-y-1">
@@ -1212,7 +1406,7 @@ function Row({
   }
 
   return (
-    <tr className="border-b bg-blue-50">
+    <tr className="border-b bg-blue-50 dark:bg-blue-900/30">
       <td className="p-2 text-center">
         <Checkbox
           checked={selected}
@@ -1237,14 +1431,14 @@ function Row({
       </td>
       <td className="p-2">
         <textarea
-          className="w-full border rounded p-2 min-h-[80px]"
+          className="w-full border rounded p-2 min-h-[80px] dark:bg-gray-700 dark:text-white dark:border-gray-600"
           value={form.prompt}
           onChange={(e) => setForm((s) => ({ ...s, prompt: e.target.value }))}
         />
       </td>
       <td className="p-2">
         <textarea
-          className="w-full border rounded p-2 min-h-[80px]"
+          className="w-full border rounded p-2 min-h-[80px] dark:bg-gray-700 dark:text-white dark:border-gray-600"
           value={form.choicesText}
           onChange={(e) =>
             setForm((s) => ({ ...s, choicesText: e.target.value }))
@@ -1263,7 +1457,7 @@ function Row({
       </td>
       <td className="p-2">
         <textarea
-          className="w-full border rounded p-2 min-h-[80px]"
+          className="w-full border rounded p-2 min-h-[80px] dark:bg-gray-700 dark:text-white dark:border-gray-600"
           value={form.explanation}
           onChange={(e) =>
             setForm((s) => ({ ...s, explanation: e.target.value }))
