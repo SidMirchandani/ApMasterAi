@@ -19,7 +19,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, className 
       {blocks.map((block, index) => {
         if (block.type === "text") {
           return (
-            <p key={index} className="text-gray-800 dark:text-white leading-snug">
+            <p key={index} className="text-gray-900 dark:text-white leading-relaxed">
               {block.value}
             </p>
           );

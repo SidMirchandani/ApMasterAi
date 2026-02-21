@@ -4,26 +4,26 @@ import { BookOpen, Linkedin, Mail } from "lucide-react";
 
 export default function About() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background text-foreground">
       <Navigation />
       
       <main className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-[#36b37e] rounded-2xl mb-4 shadow-lg shadow-green-100">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-[#36b37e] rounded-2xl mb-4 shadow-lg shadow-green-100 dark:shadow-none">
             <BookOpen className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-extrabold text-[#2d3b45] sm:text-4xl tracking-tight mb-4">
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl tracking-tight mb-4">
             About APMaster.ai
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Democratizing elite-level AP preparation for every student.
           </p>
         </div>
 
-        <Card className="border-none shadow-xl bg-gradient-to-br from-gray-50 to-white overflow-hidden mb-16">
+        <Card className="border-none shadow-xl bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden mb-16">
           <CardContent className="p-6 sm:p-8">
-            <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-              <p className="text-2xl font-bold text-[#2d3b45] mb-4 border-l-4 border-[#36b37e] pl-6 italic">
+            <div className="prose prose-lg max-w-none text-gray-700 dark:text-gray-300 leading-relaxed">
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 border-l-4 border-[#36b37e] pl-6 italic">
                 AP success shouldn’t come with a price tag.
               </p>
               
@@ -32,7 +32,7 @@ export default function About() {
                   Too many students face AP exams feeling unprepared, not because they lack ability, but because high-quality resources are locked behind paywalls. Traditional test prep has become expensive, stressful, and unequal, creating gaps where opportunity should exist.
                 </p>
                 
-                <p className="font-semibold text-[#2d3b45]">
+                <p className="font-semibold text-gray-900 dark:text-gray-100">
                   Our mission is to close that gap.
                 </p>
                 
@@ -49,13 +49,13 @@ export default function About() {
                 </p>
                 
                 <div className="bg-[#36b37e]/5 p-6 rounded-2xl border border-[#36b37e]/10 my-6">
-                  <p className="text-xl font-bold text-[#2d3b45] mb-4">Our vision is simple but ambitious:</p>
-                  <p className="text-lg text-[#2d3b45]">
+                  <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Our vision is simple but ambitious:</p>
+                  <p className="text-lg text-gray-900 dark:text-gray-100">
                     To democratize AP education, remove financial and structural barriers, and empower students everywhere to reach their full academic potential.
                   </p>
                 </div>
                 
-                <p className="text-xl font-medium text-[#2d3b45]">
+                <p className="text-xl font-medium text-gray-900 dark:text-gray-100">
                   No gatekeeping. No unnecessary stress. Just smarter, more accessible learning.
                 </p>
                 
@@ -68,35 +68,35 @@ export default function About() {
         </Card>
 
         <div className="mt-12">
-          <h2 className="text-3xl font-bold text-[#2d3b45] text-center mb-6">Our Team</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 text-center mb-6">Our Team</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="text-center group">
-              <div className="w-32 h-32 bg-[#36b37e]/10 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-[#36b37e]/20 transition-all duration-300 group-hover:border-[#36b37e]">
+              <div className="w-32 h-32 bg-[#36b37e]/10 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-[#36b37e]/20 dark:border-gray-800 transition-all duration-300 group-hover:border-[#36b37e]">
                 <span className="text-4xl font-bold text-[#36b37e]">SM</span>
               </div>
-              <h3 className="text-2xl font-bold text-[#2d3b45] mb-2">Siddharth Mirchandani</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Siddharth Mirchandani</h3>
               <p className="text-[#36b37e] font-semibold mb-4">Co-founder</p>
               <div className="flex justify-center gap-4">
-                <a href="https://www.linkedin.com/in/siddharth-mirchandani-b0b282264/" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                <a href="https://www.linkedin.com/in/siddharth-mirchandani-b0b282264/" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-[#36b37e] hover:text-white transition-colors">
                   <Linkedin className="w-5 h-5" />
                 </a>
-                <a href="mailto:siddharth.mirchandani@gmail.com" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                <a href="mailto:siddharth.mirchandani@gmail.com" className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-[#36b37e] hover:text-white transition-colors">
                   <Mail className="w-5 h-5" />
                 </a>
               </div>
             </div>
 
             <div className="text-center group">
-              <div className="w-32 h-32 bg-[#36b37e]/10 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-[#36b37e]/20 transition-all duration-300 group-hover:border-[#36b37e]">
+              <div className="w-32 h-32 bg-[#36b37e]/10 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-[#36b37e]/20 dark:border-gray-800 transition-all duration-300 group-hover:border-[#36b37e]">
                 <span className="text-4xl font-bold text-[#36b37e]">VS</span>
               </div>
-              <h3 className="text-2xl font-bold text-[#2d3b45] mb-2">Vivana Satiani</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Vivana Satiani</h3>
               <p className="text-[#36b37e] font-semibold mb-4">Co-founder</p>
               <div className="flex justify-center gap-4">
-                <a href="https://www.linkedin.com/in/vivanasatiani/" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                <a href="https://www.linkedin.com/in/vivanasatiani/" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-[#36b37e] hover:text-white transition-colors">
                   <Linkedin className="w-5 h-5" />
                 </a>
-                <a href="mailto:satianivivana@gmail.com" className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-[#36b37e] hover:text-white transition-colors">
+                <a href="mailto:satianivivana@gmail.com" className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-[#36b37e] hover:text-white transition-colors">
                   <Mail className="w-5 h-5" />
                 </a>
               </div>
@@ -105,8 +105,8 @@ export default function About() {
         </div>
       </main>
 
-      <footer className="bg-gray-50 border-t border-gray-200 py-8 mt-12">
-        <div className="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
+      <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-8 mt-12">
+        <div className="max-w-7xl mx-auto px-4 text-center text-gray-500 dark:text-gray-400 text-sm">
           <p>&copy; {new Date().getFullYear()} APMaster.ai. All rights reserved.</p>
         </div>
       </footer>

@@ -78,7 +78,7 @@ html, body {
   }
 
   body {
-    @apply font-sans antialiased bg-[#f8f9fa] dark:bg-gray-950 text-foreground;
+    @apply font-sans antialiased bg-background dark:bg-background text-foreground;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     font-size: 14px;
     line-height: 1.5;
