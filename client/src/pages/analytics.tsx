@@ -167,13 +167,18 @@ export default function AnalyticsPage() {
       (a.totalAttempted || 0) - (b.totalAttempted || 0)
     );
 
-    const uniqueScores = new Set(sortedHistory.map(s => s.predictedScore));
-    const hasRealVariation = uniqueScores.size > 1;
-
     const scores: number[] = [];
-    if (sortedHistory.length >= numPoints && hasRealVariation) {
+    if (sortedHistory.length >= numPoints) {
+      const plottedScores: number[] = [];
       for (let i = 0; i < numPoints; i++) {
-        scores.push(sortedHistory[i]?.predictedScore ?? currentScore);
+        plottedScores.push(sortedHistory[i]?.predictedScore ?? currentScore);
+      }
+      const uniquePlotted = new Set(plottedScores);
+      if (uniquePlotted.size > 1) {
+        scores.push(...plottedScores);
+      } else {
+        const syntheticPath = generatePath(numPoints, currentScore);
+        scores.push(...syntheticPath);
       }
     } else {
       const syntheticPath = generatePath(numPoints, currentScore);
