@@ -197,10 +197,10 @@ export default function Courses() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-khan-background flex items-center justify-center">
+      <div className="min-h-screen bg-khan-background dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-khan-gray-medium">Loading...</p>
+          <p className="text-khan-gray-medium dark:text-gray-400">Loading...</p>
         </div>
       </div>
     );
@@ -209,10 +209,10 @@ export default function Courses() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 dark:bg-khan-green/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 dark:bg-khan-blue/10 rounded-full blur-3xl"></div>
       </div>
 
       <Navigation />
@@ -220,26 +220,26 @@ export default function Courses() {
       <div className="py-6 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-khan-gray-dark mb-3">
+            <h1 className="text-3xl md:text-4xl font-bold text-khan-gray-dark dark:text-gray-100 mb-3">
               Choose Your <span className="text-khan-green">AP Subject</span>
             </h1>
-            <p className="text-lg text-khan-gray-medium max-w-2xl mx-auto mb-4">
+            <p className="text-lg text-khan-gray-medium dark:text-gray-400 max-w-2xl mx-auto mb-4">
               Select an AP course to begin your personalized learning journey.
             </p>
             <div className="max-w-md mx-auto relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-khan-gray-medium" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-khan-gray-medium dark:text-gray-500" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search AP subjects..."
-                className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-khan-gray-dark placeholder:text-khan-gray-medium focus:border-khan-green focus:outline-none focus:ring-1 focus:ring-khan-green transition-colors"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-khan-gray-dark dark:text-gray-100 placeholder:text-khan-gray-medium dark:placeholder:text-gray-500 focus:border-khan-green focus:outline-none focus:ring-1 focus:ring-khan-green transition-colors"
               />
             </div>
           </div>
 
           {filteredSubjects.length === 0 && searchQuery.trim() && (
-            <div className="text-center py-8 text-khan-gray-medium">
+            <div className="text-center py-8 text-khan-gray-medium dark:text-gray-400">
               No subjects match "{searchQuery}". Try a different search term.
             </div>
           )}
@@ -255,29 +255,29 @@ export default function Courses() {
                 return (
                   <Card
                     key={subject.id}
-                    className="bg-white border-2 border-gray-100 hover:border-khan-green/30 hover:shadow-md transition-all"
+                    className="bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 hover:border-khan-green/30 dark:hover:border-khan-green/30 hover:shadow-md transition-all"
                   >
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-bold text-khan-gray-dark">
+                      <CardTitle className="text-lg font-bold text-khan-gray-dark dark:text-gray-100">
                         {subject.name}
                       </CardTitle>
-                      <CardDescription className="text-khan-gray-medium text-sm leading-relaxed">
+                      <CardDescription className="text-khan-gray-medium dark:text-gray-400 text-sm leading-relaxed">
                         {subject.description}
                       </CardDescription>
                     </CardHeader>
 
                     <CardContent>
                       {/* Metadata */}
-                      <div className="flex items-center justify-between text-sm text-khan-gray-medium mb-4">
+                      <div className="flex items-center justify-between text-sm text-khan-gray-medium dark:text-gray-400 mb-4">
                         <div className="flex items-center space-x-1">
                           <BookOpen className="w-4 h-4" />
-                          <span className="text-khan-gray-dark font-medium">
+                          <span className="text-khan-gray-dark dark:text-gray-200 font-medium">
                             {subject.units} Units
                           </span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Clock className="w-4 h-4" />
-                          <span className="text-khan-gray-dark font-medium">
+                          <span className="text-khan-gray-dark dark:text-gray-200 font-medium">
                             {formatDate(subject.examDate)}
                           </span>
                         </div>
@@ -287,7 +287,7 @@ export default function Courses() {
                       {isAdded ? (
                         <Button
                           disabled
-                          className="w-full bg-green-100 text-green-700 border-2 border-green-200 cursor-not-allowed font-semibold"
+                          className="w-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-900/30 cursor-not-allowed font-semibold"
                         >
                           <Check className="mr-2 w-4 h-4" />
                           {isAdding ? "Adding..." : "Added to Dashboard"}
