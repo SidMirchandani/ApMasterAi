@@ -118,9 +118,9 @@ export default function AnalyticsPage() {
 
   const stats = analyticsResponse?.data;
   const scoreHistory = historyResponse?.data || [];
-  const accuracy = stats && stats.totalAttempted > 0
+  const accuracy = stats?.accuracy ?? (stats && stats.totalAttempted > 0
     ? Math.round((stats.totalCorrect / stats.totalAttempted) * 100)
-    : 0;
+    : 0);
   const hasEnoughForPrediction = (stats?.totalAttempted || 0) >= 25;
   const predicted = predictAPScore(accuracy);
 
@@ -341,7 +341,8 @@ export default function AnalyticsPage() {
                           tick={{ fontSize: 12, fill: "#9ca3af" }}
                           axisLine={{ stroke: "#e5e7eb" }}
                           tickLine={false}
-                          padding={{ left: 20, right: 20 }}
+                          padding={{ left: 0, right: 20 }}
+                          scale="point"
                         />
                         <YAxis
                           yAxisId="score"
@@ -432,7 +433,7 @@ export default function AnalyticsPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {!hasEnoughForPrediction
                       ? `Answer at least 25 questions to see your first score plot. You've answered ${stats.totalAttempted} so far.`
-                      : "Keep practicing to see your AP score trend over time. New data points are added every 10 questions."}
+                      : "Keep practicing to see your AP score trend over time. New data points are added every 25 questions."}
                   </p>
                 </CardContent>
               </Card>
