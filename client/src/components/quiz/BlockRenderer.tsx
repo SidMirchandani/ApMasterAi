@@ -18,9 +18,11 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, className 
     <div className={`space-y-1 ${className}`}>
       {blocks.map((block, index) => {
         if (block.type === "text") {
+          const text = block.value || (block as any).content || "";
+          if (!text) return null;
           return (
             <p key={index} className="text-gray-900 dark:text-white leading-relaxed">
-              {block.value}
+              {text}
             </p>
           );
         } else if (block.type === "image") {

@@ -6,6 +6,7 @@ import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
+import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -68,7 +69,7 @@ export default function SectionReview() {
         try {
           const data = JSON.parse(router.query.data as string);
           setSectionData(data);
-          setQuestions(data.questions);
+          setQuestions(normalizeQuestions(data.questions));
           setUserAnswers(data.userAnswers);
           setIsLoading(false);
           return;
@@ -87,7 +88,7 @@ export default function SectionReview() {
 
           const data = await response.json();
           setSectionData(data.data);
-          setQuestions(data.data.questions);
+          setQuestions(normalizeQuestions(data.data.questions));
           setUserAnswers(data.data.userAnswers);
         } else {
           const response = await apiRequest(
@@ -101,7 +102,7 @@ export default function SectionReview() {
 
           const data = await response.json();
           setSectionData(data.data);
-          setQuestions(data.data.questions);
+          setQuestions(normalizeQuestions(data.data.questions));
           setUserAnswers(data.data.userAnswers);
         }
       } catch (error) {

@@ -6,6 +6,7 @@ import { ArrowLeft, CheckCircle, XCircle, BookOpen, TrendingUp } from "lucide-re
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
+import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ReactMarkdown from "react-markdown";
@@ -102,7 +103,7 @@ export default function FullLengthResults() {
         const data = await response.json();
 
         setTestData(data.data);
-        setQuestions(data.data.questions);
+        setQuestions(normalizeQuestions(data.data.questions));
         setUserAnswers(data.data.userAnswers);
         setScore(data.data.score);
         setTotalQuestions(data.data.totalQuestions);

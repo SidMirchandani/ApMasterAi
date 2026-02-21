@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
+import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import { FullLengthQuiz } from "@/components/quiz/FullLengthQuiz";
 import { PracticeQuiz } from "@/components/quiz/PracticeQuiz";
 import { QuizResults } from "@/components/quiz/QuizResults";
@@ -137,7 +138,7 @@ export default function Quiz() {
           const data = await response.json();
           if (data.success && data.data?.length > 0) {
             // Shuffle all questions and select the required number
-            const shuffled = [...data.data].sort(() => Math.random() - 0.5);
+            const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
             setQuestions(shuffled.slice(0, questionLimit));
           } else {
             setError("No questions found for this subject");
@@ -211,7 +212,7 @@ export default function Quiz() {
           });
 
           if (data.success && data.data?.length > 0) {
-            const shuffled = [...data.data].sort(() => Math.random() - 0.5);
+            const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
             setQuestions(shuffled.slice(0, 25));
             console.log("✅ [Quiz] Questions loaded successfully:", shuffled.length);
           } else {
@@ -335,7 +336,7 @@ export default function Quiz() {
           if (!response.ok) throw new Error("Failed to fetch questions");
           const data = await response.json();
           if (data.success && data.data?.length > 0) {
-            const shuffled = [...data.data].sort(() => Math.random() - 0.5);
+            const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
             setQuestions(shuffled.slice(0, questionLimit));
           } else {
             setError("No questions found for this subject");
@@ -353,7 +354,7 @@ export default function Quiz() {
           if (!response.ok) throw new Error("Failed to fetch");
           const data = await response.json();
           if (data.success && data.data?.length > 0) {
-            const shuffled = [...data.data].sort(() => Math.random() - 0.5);
+            const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
             setQuestions(shuffled.slice(0, 25));
           } else {
             setError("No questions found");
@@ -406,18 +407,19 @@ export default function Quiz() {
       if (!response.ok) throw new Error("Failed to fetch questions");
       const data = await response.json();
       if (data.success && data.data?.length > 0) {
+        const normalized = normalizeQuestions(data.data);
         if (savedQuestionIds && savedQuestionIds.length > 0) {
-          const questionMap = new Map(data.data.map((q: any) => [q.id, q]));
+          const questionMap = new Map(normalized.map((q: any) => [q.id, q]));
           const ordered = savedQuestionIds
             .map((id: string) => questionMap.get(id))
             .filter(Boolean);
           if (ordered.length > 0) {
             setQuestions(ordered);
           } else {
-            setQuestions(data.data);
+            setQuestions(normalized);
           }
         } else {
-          setQuestions(data.data);
+          setQuestions(normalized);
         }
       } else {
         setError("No questions found for this subject");
@@ -461,7 +463,7 @@ export default function Quiz() {
       if (!response.ok) throw new Error("Failed to fetch questions");
       const data = await response.json();
       if (data.success && data.data?.length > 0) {
-        setQuestions(data.data);
+        setQuestions(normalizeQuestions(data.data));
       } else {
         setError("No questions found for this subject");
       }

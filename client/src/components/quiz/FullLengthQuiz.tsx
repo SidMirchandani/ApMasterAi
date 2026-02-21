@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { QuizReviewPage } from "./QuizReviewPage";
 import { useRouter } from "next/router";
 import { apiRequest } from "@/lib/api";
+import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import { getSubjectByLegacyId } from '@/subjects';
 
 interface Question {
@@ -206,16 +207,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
       const percentage = Math.round((correctCount / questions.length) * 100);
 
-      // Format questions with proper structure
-      const formattedQuestions = questions.map(q => ({
-        ...q,
-        prompt_blocks: q.prompt_blocks || (q.prompt ? [{ type: 'text', content: q.prompt }] : []),
-        choices: typeof q.choices === 'object' && !Array.isArray(q.choices) ? q.choices :
-          (Array.isArray(q.choices) ? q.choices.reduce((obj, choice, index) => {
-            const label = String.fromCharCode(65 + index);
-            return { ...obj, [label]: [choice] };
-          }, {}) : {})
-      }));
+      const formattedQuestions = normalizeQuestions(questions);
 
       const response = await apiRequest(
         "POST",
