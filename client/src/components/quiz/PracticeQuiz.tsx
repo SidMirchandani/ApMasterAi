@@ -432,7 +432,7 @@ export function PracticeQuiz({
                     className="hidden md:flex border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:border-blue-400 dark:text-blue-400"
                   >
                     <Calculator className="w-4 h-4 mr-2" />
-                    Calculator
+                    {showCalculator ? "Hide Calculator" : "Show Calculator"}
                   </Button>
 
                   {/* Mobile Dialog */}
