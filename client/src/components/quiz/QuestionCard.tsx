@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Flag, Bookmark, AlertTriangle } from "lucide-react";
+import { Flag, Bookmark, AlertTriangle, XCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { BlockRenderer } from "./BlockRenderer";
@@ -86,6 +86,7 @@ export function QuestionCard({
   isBookmarked = false,
   onToggleBookmark,
 }: QuestionCardProps) {
+  const [crossedOut, setCrossedOut] = useState<Set<string>>(new Set());
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string>("");
   const [reportDetails, setReportDetails] = useState("");
@@ -265,10 +266,16 @@ export function QuestionCard({
             {choices.map((label) => {
               const isUserAnswer = selectedAnswer === label;
               const isCorrectAnswer = label === correctAnswerLabel;
+              const isCrossedOut = crossedOut.has(label);
 
               // Determine the background and border color for this choice
               let bgColor = "bg-white dark:bg-gray-800";
               let borderColor = "border-gray-200 dark:border-gray-600";
+              let opacity = "opacity-100";
+
+              if (isCrossedOut && !isAnswerSubmitted && !isReviewMode) {
+                opacity = "opacity-40";
+              }
 
               if (cheatMode && isCorrectAnswer && !isAnswerSubmitted && !isReviewMode) {
                 bgColor = "bg-green-50 dark:bg-green-900/30";
@@ -304,8 +311,8 @@ export function QuestionCard({
               return (
                 <div
                   key={label}
-                  className={`flex items-center gap-2 p-3 rounded border transition-all cursor-pointer min-h-[48px]
-                    ${bgColor} ${borderColor}
+                  className={`flex items-center gap-2 p-3 rounded border transition-all cursor-pointer min-h-[48px] relative group/choice
+                    ${bgColor} ${borderColor} ${opacity}
                     ${!shouldShowCorrectness && !isUserAnswer ? "hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500" : ""}
                   `}
                   onClick={() => !isAnswerSubmitted && onAnswerSelect(label)}
@@ -317,9 +324,26 @@ export function QuestionCard({
                   }`}>
                     {label}
                   </div>
-                  <div className="flex-1 text-sm leading-snug">
+                  <div className={`flex-1 text-sm leading-snug ${isCrossedOut && !isAnswerSubmitted && !isReviewMode ? 'line-through decoration-2' : ''}`}>
                     <BlockRenderer blocks={question.choices[label]} />
                   </div>
+                  {!isAnswerSubmitted && !isReviewMode && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCrossedOut(prev => {
+                          const next = new Set(prev);
+                          if (next.has(label)) next.delete(label);
+                          else next.add(label);
+                          return next;
+                        });
+                      }}
+                      className="opacity-0 group-hover/choice:opacity-100 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 transition-opacity"
+                      title="Cross out"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               );
             })}

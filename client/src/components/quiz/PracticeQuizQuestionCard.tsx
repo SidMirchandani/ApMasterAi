@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { BlockRenderer } from "./BlockRenderer";
-import { BookmarkCheck, AlertTriangle } from "lucide-react";
+import { BookmarkCheck, AlertTriangle, XCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -74,6 +74,7 @@ export function PracticeQuizQuestionCard({
   isBookmarked = false,
   onToggleBookmark,
 }: PracticeQuizQuestionCardProps) {
+  const [crossedOut, setCrossedOut] = useState<Set<string>>(new Set());
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string>("");
   const [reportDetails, setReportDetails] = useState("");
@@ -221,10 +222,16 @@ export function PracticeQuizQuestionCard({
           {choices.map((label) => {
             const isUserAnswer = selectedAnswer === label;
             const isCorrectAnswer = label === correctAnswerLabel;
+            const isCrossedOut = crossedOut.has(label);
 
             let borderColor = "border-gray-200 dark:border-gray-800";
             let bgColor = "bg-white dark:bg-gray-900";
             let textColor = "text-gray-700 dark:text-white";
+            let opacity = "opacity-100";
+
+            if (isCrossedOut && !isAnswerSubmitted) {
+              opacity = "opacity-40";
+            }
 
             if (cheatMode && isCorrectAnswer && !isAnswerSubmitted) {
               borderColor = "border-green-300 dark:border-green-500";
@@ -254,8 +261,8 @@ export function PracticeQuizQuestionCard({
                 key={label}
                 disabled={isAnswerSubmitted}
                 onClick={() => onAnswerSelect(label)}
-                className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left
-                  ${borderColor} ${bgColor} ${isAnswerSubmitted ? 'cursor-default' : 'cursor-pointer hover:shadow-sm'}
+                className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left relative group/choice
+                  ${borderColor} ${bgColor} ${opacity} ${isAnswerSubmitted ? 'cursor-default' : 'cursor-pointer hover:shadow-sm'}
                 `}
               >
                 <div className={`flex-shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center font-bold text-sm transition-colors
@@ -266,9 +273,26 @@ export function PracticeQuizQuestionCard({
                 `}>
                   {label}
                 </div>
-                <div className={`flex-1 text-base leading-relaxed ${textColor}`}>
+                <div className={`flex-1 text-base leading-relaxed ${textColor} ${isCrossedOut && !isAnswerSubmitted ? 'line-through decoration-2' : ''}`}>
                   <BlockRenderer blocks={question.choices[label]} />
                 </div>
+                {!isAnswerSubmitted && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCrossedOut(prev => {
+                        const next = new Set(prev);
+                        if (next.has(label)) next.delete(label);
+                        else next.add(label);
+                        return next;
+                      });
+                    }}
+                    className="opacity-0 group-hover/choice:opacity-100 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 transition-opacity"
+                    title="Cross out"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                )}
               </button>
             );
           })}
