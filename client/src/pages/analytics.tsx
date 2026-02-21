@@ -135,11 +135,16 @@ export default function AnalyticsPage() {
 
   const chartData = (() => {
     if (scoreHistory.length === 0) return [];
-    const validHistory = scoreHistory.filter(entry => (entry.totalAttempted || 0) >= 25 || !entry.totalAttempted);
-    if (validHistory.length === 0) return [];
-    return validHistory.map(entry => ({
+    
+    // Sort history by date to ensure proper progression
+    const sortedHistory = [...scoreHistory].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    return sortedHistory.map((entry, index) => ({
       ...entry,
-      dateLabel: formatDate(entry.date),
+      dateLabel: index === 0 ? "Initial" : `+${index * 10} q's`,
+      fullDate: formatDate(entry.date),
     }));
   })();
 
@@ -284,12 +289,20 @@ export default function AnalyticsPage() {
             {chartData.length >= 1 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
-                    <TrendingUp className="h-5 w-5 text-blue-500" />
-                    Score Progress Over Time
+                  <CardTitle className="text-lg flex items-center justify-between dark:text-gray-100">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-blue-500" />
+                      Score Progress Over Time
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-normal border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400">
+                      Calculated using rolling last 50 questions
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4 px-1">
+                    Your score starts after the first 20 questions, then updates every 10 additional questions to show your growth.
+                  </p>
                   <div className="mb-4 grid grid-cols-3 gap-3 text-center">
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
                       <p className="text-2xl font-bold" style={{ color: scoreColors[chartData[chartData.length - 1]?.predictedScore] || "#6b7280" }}>
@@ -368,7 +381,10 @@ export default function AnalyticsPage() {
                             if (name === "accuracy") return [`${value}%`, "Accuracy"];
                             return [value, name];
                           }}
-                          labelFormatter={(label) => `Date: ${label}`}
+                          labelFormatter={(label, payload) => {
+                            const entry = payload[0]?.payload;
+                            return entry ? `Update: ${label} (${entry.fullDate})` : `Update: ${label}`;
+                          }}
                         />
                         <ReferenceLine yAxisId="score" y={3} stroke="#eab308" strokeDasharray="5 5" strokeOpacity={0.5} />
                         <Area
