@@ -154,7 +154,6 @@ export function PracticeQuiz({
     }
   };
 
-  // Reverse the questions array to show the newest test first if it's a full-length test
   const orderedQuestions = isFullLength ? [...questions].reverse() : questions;
   const currentQuestion = orderedQuestions[currentQuestionIndex];
   const currentExplanation =
@@ -212,20 +211,10 @@ export function PracticeQuiz({
     }
   };
 
-  const toggleFlag = () => {
-    setFlaggedQuestions((prev) => {
-      const ns = new Set(prev);
-      if (ns.has(currentQuestionIndex)) ns.delete(currentQuestionIndex);
-      else ns.add(currentQuestionIndex);
-      return ns;
-    });
-  };
-
   const handleSubmitAnswer = () => {
     if (!selectedAnswer || !currentQuestion) return;
     setIsAnswerSubmitted(true);
 
-    // Save the answer
     setFinalUserAnswers((prev) => ({
       ...prev,
       [currentQuestionIndex]: selectedAnswer,
@@ -250,25 +239,14 @@ export function PracticeQuiz({
       }).catch(() => {});
     }
 
-    // Only track progress for unit-wise practice (not full-length tests)
     if (!isFullLength) {
-      // Extract unit from question ID (e.g., "APMACRO_BEC_Q1" -> "BEC")
       const unit = currentQuestion.id.split("_")[1];
-
-      // Count total questions and correct answers for this unit
-      const unitQuestions = orderedQuestions.filter(
-        (q) => q.id.split("_")[1] === unit,
-      );
-      const unitQuestionsCount = unitQuestions.length;
-
-      // Count how many of this unit's questions have been answered
       const answeredUnitQuestions =
         Object.keys(finalUserAnswers).filter((index) => {
           const question = orderedQuestions[parseInt(index)];
           return question && question.id.split("_")[1] === unit;
-        }).length + 1; // +1 for the current questioneing submitted
+        }).length + 1;
 
-      // Count correct answers for this unit
       let correctCount = 0;
       Object.entries(finalUserAnswers).forEach(([index, answer]) => {
         const question = orderedQuestions[parseInt(index)];
@@ -277,15 +255,12 @@ export function PracticeQuiz({
           if (answer === correctLabel) correctCount++;
         }
       });
-      // Add current answer if correct
       if (isCorrect) correctCount++;
 
-      // Calculate percentage based on answered questions so far
       const percentage = Math.round(
         (correctCount / answeredUnitQuestions) * 100,
       );
 
-      // Save the unit progress
       apiRequest("PUT", `/api/user/subjects/${subjectId}/unit-progress`, {
         unitId: unit,
         mcqScore: percentage,
@@ -293,7 +268,6 @@ export function PracticeQuiz({
         .then((response) => {
           if (response.ok) {
             response.json().then(() => {
-              // Trigger a refetch of subjects data by dispatching a custom event
               window.dispatchEvent(new CustomEvent("subjectsUpdated"));
             });
           }
@@ -310,25 +284,22 @@ export function PracticeQuiz({
       setSelectedAnswer(null);
       setIsAnswerSubmitted(false);
     } else {
-      // For full-length tests, navigate directly to results page
       if (isFullLength && lastSavedTestId) {
         router.push(
           `/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`,
         );
       } else {
-        setShowResults(true); // Show results modal for practice quizzes only
+        setShowResults(true);
       }
     }
   };
 
   const handleReview = () => {
     if (isFullLength && lastSavedTestId) {
-      // Navigate to the full-length-results page
       router.push(
         `/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`,
       );
     } else {
-      // For practice quizzes, open review mode
       setShowResults(false);
       setIsReviewMode(true);
     }
@@ -336,11 +307,9 @@ export function PracticeQuiz({
 
   const handleCloseReview = () => {
     setIsReviewMode(false);
-    // Don't save, just exit
     onExit();
   };
 
-  // Render review mode if active
   if (isReviewMode) {
     return (
       <PracticeQuizReview
@@ -352,18 +321,18 @@ export function PracticeQuiz({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col text-gray-900 dark:text-gray-100">
       <div className="flex-1 flex overflow-hidden">
         {/* Desmos Sidebar */}
         {isCalculatorAllowed && showCalculator && (
-          <div className="w-1/3 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col hidden md:flex">
+          <div className="w-full md:w-1/3 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col z-40">
             <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-              <h3 className="font-semibold dark:text-gray-100">Desmos Calculator</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Desmos Calculator</h3>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowCalculator(false)}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <XCircle className="h-4 w-4" />
               </Button>
@@ -376,7 +345,7 @@ export function PracticeQuiz({
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto mb-16 pb-2">
+        <div className={`flex-1 overflow-y-auto mb-16 pb-2 ${showCalculator ? 'hidden md:block' : 'block'}`}>
           <div className="max-w-4xl mx-auto px-2 sm:px-4 py-3 space-y-2">
             <PracticeQuizQuestionCard
               question={currentQuestion}
@@ -391,17 +360,15 @@ export function PracticeQuiz({
             />
 
             {isAnswerSubmitted && (
-              <Card className="border-khan-blue bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
+              <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
                 <CardHeader className="pb-2 pt-3">
-                  <CardTitle className="text-sm dark:text-gray-100">Explanation</CardTitle>
+                  <CardTitle className="text-sm text-blue-800 dark:text-blue-300">Explanation</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 pb-3">
                   {isGeneratingExplanation ? (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 className="h-5 w-5 animate-spin text-khan-blue mr-2" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        Generating explanation...
-                      </span>
+                    <div className="flex items-center justify-center py-4 text-gray-600 dark:text-gray-400">
+                      <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mr-2" />
+                      <span className="text-sm">Generating explanation...</span>
                     </div>
                   ) : currentExplanation ? (
                     <div className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
@@ -418,49 +385,20 @@ export function PracticeQuiz({
       </div>
 
       {/* Fixed Bottom Bar */}
-      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 fixed bottom-0 left-0 right-0 z-50">
+      <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 fixed bottom-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex justify-between items-center gap-2 sm:gap-4">
             <div className="flex flex-1 items-center">
               {isCalculatorAllowed && (
-                <>
-                  {/* Desktop Toggle */}
-                  <Button
-                    variant={showCalculator ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => setShowCalculator(!showCalculator)}
-                    className="hidden md:flex border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:border-blue-400 dark:text-blue-400"
-                  >
-                    <Calculator className="w-4 h-4 mr-2" />
-                    {showCalculator ? "Hide Calculator" : "Show Calculator"}
-                  </Button>
-
-                  {/* Mobile Dialog */}
-                  <div className="md:hidden">
-                    <Dialog open={showCalculator} onOpenChange={setShowCalculator}>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:border-blue-400 dark:text-blue-400"
-                        >
-                          <Calculator className="w-4 h-4 mr-2" />
-                          Calculator
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl h-[80vh] p-0 dark:bg-gray-900 dark:border-gray-800">
-                        <DialogHeader className="p-4 border-b dark:border-gray-800">
-                          <DialogTitle className="dark:text-gray-100">Desmos Graphing Calculator</DialogTitle>
-                        </DialogHeader>
-                        <iframe
-                          src="https://www.desmos.com/calculator"
-                          className="w-full h-full"
-                          title="Desmos Calculator"
-                        />
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </>
+                <Button
+                  variant={showCalculator ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setShowCalculator(!showCalculator)}
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:border-blue-500 dark:text-blue-400"
+                >
+                  <Calculator className="w-4 h-4 mr-2" />
+                  {showCalculator ? "Hide Calculator" : "Show Calculator"}
+                </Button>
               )}
             </div>
             <div className="flex justify-center items-center gap-2 sm:gap-4 flex-1 sm:flex-none">
@@ -468,14 +406,14 @@ export function PracticeQuiz({
                 <Button
                   onClick={handleSubmitAnswer}
                   disabled={!selectedAnswer}
-                  className="bg-blue-600 hover:bg-blue-700 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10 text-white border-none shadow-none"
                 >
                   Submit
                 </Button>
               ) : (
                 <Button
                   onClick={handleNextQuestion}
-                  className="bg-blue-600 hover:bg-blue-700 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10 text-white border-none shadow-none"
                 >
                   {currentQuestionIndex === orderedQuestions.length - 1
                     ? "Finish"
@@ -488,7 +426,7 @@ export function PracticeQuiz({
                 onClick={onExit}
                 variant="outline"
                 size="sm"
-                className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm dark:border-red-400 dark:text-red-400"
+                className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm dark:border-red-500 dark:text-red-400"
               >
                 Exit
               </Button>
@@ -497,12 +435,11 @@ export function PracticeQuiz({
         </div>
       </div>
 
-      {/* Results Summary (Conditionally Rendered) */}
       {showResults && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <Card className="w-full max-w-md dark:bg-gray-900 dark:border-gray-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <Card className="w-full max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
             <CardHeader>
-              <CardTitle className="text-center dark:text-gray-100">Quiz Complete!</CardTitle>
+              <CardTitle className="text-center text-gray-900 dark:text-gray-100">Quiz Complete!</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-6">
               <div>
@@ -516,7 +453,7 @@ export function PracticeQuiz({
               <Button
                 onClick={handleReview}
                 size="lg"
-                className="bg-blue-600 hover:bg-blue-700 w-full text-lg py-6 text-white"
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 w-full text-lg py-6 text-white border-none"
               >
                 Review Answers
               </Button>

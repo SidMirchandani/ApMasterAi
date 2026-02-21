@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RadioGroup } from "@/components/ui/radio-group";
 import { BlockRenderer } from "./BlockRenderer";
 import { BookmarkCheck, AlertTriangle } from "lucide-react";
 import {
@@ -115,21 +115,15 @@ export function PracticeQuizQuestionCard({
   };
 
   const allChoices = Object.keys(question.choices) as Array<"A" | "B" | "C" | "D" | "E">;
-
-  // Filter out choice E if it's blank
   const choices = allChoices.filter((label) => {
     if (label !== "E") return true;
-
     const choiceBlocks = question.choices[label];
     if (!choiceBlocks || choiceBlocks.length === 0) return false;
-
-    // Check if it's only empty text
     if (choiceBlocks.length === 1 &&
         choiceBlocks[0].type === "text" &&
         (!choiceBlocks[0].value || choiceBlocks[0].value.trim() === "")) {
       return false;
     }
-
     return true;
   });
 
@@ -137,9 +131,9 @@ export function PracticeQuizQuestionCard({
   const isCorrect = selectedAnswer === correctAnswerLabel;
 
   return (
-    <Card className="dark:bg-gray-900 dark:border-gray-800">
-      <CardHeader className="pb-1 pt-2">
-        <div className="flex items-center justify-between border-b dark:border-gray-800 pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-gray-50 dark:bg-gray-800 min-h-[48px]">
+    <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+      <CardHeader className="p-0">
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3 bg-gray-50/50 dark:bg-gray-800/50">
           <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
             Question {questionNumber} of {totalQuestions}
           </div>
@@ -147,67 +141,67 @@ export function PracticeQuizQuestionCard({
             {onToggleBookmark && (
               <button
                 onClick={onToggleBookmark}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
                   isBookmarked
-                    ? 'bg-yellow-100 text-yellow-700 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-400 dark:border-yellow-600'
-                    : 'bg-white text-gray-500 border border-gray-300 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400'
+                    ? 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-400 dark:border-yellow-600'
+                    : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700'
                 }`}
               >
                 <BookmarkCheck className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
-                {isBookmarked ? 'Saved' : 'Save for Review'}
+                {isBookmarked ? 'Saved' : 'Save'}
               </button>
             )}
             <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
               <DialogTrigger asChild>
                 <button
-                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-white text-gray-500 border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-colors"
-                  title="Report an issue with this question"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white text-gray-500 border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-all duration-200"
+                  title="Report issue"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
                   Report
                 </button>
               </DialogTrigger>
-              <DialogContent className="dark:bg-gray-900 dark:border-gray-800">
+              <DialogContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                 <DialogHeader>
-                  <DialogTitle className="dark:text-white">Report Question</DialogTitle>
-                  <DialogDescription className="dark:text-gray-400">
-                    Notice an error? Let us know so we can fix it.
+                  <DialogTitle className="text-gray-900 dark:text-gray-100">Report Question</DialogTitle>
+                  <DialogDescription className="text-gray-500 dark:text-gray-400">
+                    Help us improve by describing the issue with this question.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label className="dark:text-gray-200">Reason</Label>
+                    <Label className="text-gray-700 dark:text-gray-300">Reason</Label>
                     <Select value={reportReason} onValueChange={setReportReason}>
-                      <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200">
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                         <SelectValue placeholder="Select a reason" />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                        <SelectItem value="typo" className="dark:text-gray-200 dark:focus:bg-gray-700">Typo or formatting issue</SelectItem>
-                        <SelectItem value="incorrect_answer" className="dark:text-gray-200 dark:focus:bg-gray-700">Incorrect answer</SelectItem>
-                        <SelectItem value="wrong_explanation" className="dark:text-gray-200 dark:focus:bg-gray-700">Confusing or wrong explanation</SelectItem>
-                        <SelectItem value="image_issue" className="dark:text-gray-200 dark:focus:bg-gray-700">Image not loading/unclear</SelectItem>
-                        <SelectItem value="other" className="dark:text-gray-200 dark:focus:bg-gray-700">Other</SelectItem>
+                      <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                        <SelectItem value="typo">Typo or formatting</SelectItem>
+                        <SelectItem value="incorrect_answer">Incorrect answer</SelectItem>
+                        <SelectItem value="wrong_explanation">Wrong explanation</SelectItem>
+                        <SelectItem value="image_issue">Image issue</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="dark:text-gray-200">Details (optional)</Label>
+                    <Label className="text-gray-700 dark:text-gray-300">Details</Label>
                     <Textarea
-                      placeholder="Tell us more about the issue..."
+                      placeholder="Describe the issue..."
                       value={reportDetails}
                       onChange={(e) => setReportDetails(e.target.value)}
-                      className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder:text-gray-500"
+                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 min-h-[100px]"
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsReportDialogOpen(false)} className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
+                  <Button variant="ghost" onClick={() => setIsReportDialogOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                     Cancel
                   </Button>
                   <Button
                     onClick={handleReportSubmit}
                     disabled={!reportReason || isReporting}
-                    className="bg-red-600 hover:bg-red-700 text-white border-none"
+                    className="bg-red-600 hover:bg-red-700 text-white"
                   >
                     {isReporting ? "Submitting..." : "Submit Report"}
                   </Button>
@@ -218,66 +212,61 @@ export function PracticeQuizQuestionCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-2 p-0 pt-2 pb-2 px-3">
-        {/* Question Prompt */}
-        <div className="space-y-2 min-h-0 leading-snug">
+      <CardContent className="p-6 space-y-6">
+        <div className="text-gray-900 dark:text-gray-100 leading-relaxed text-base">
           <BlockRenderer blocks={question.prompt_blocks || []} />
         </div>
 
-        {/* Choices */}
-        <div className="space-y-1">
-          <RadioGroup value={selectedAnswer || ""} onValueChange={onAnswerSelect}>
-            {choices.map((label) => {
-              const isUserAnswer = selectedAnswer === label;
-              const isCorrectAnswer = label === correctAnswerLabel;
+        <div className="space-y-3">
+          {choices.map((label) => {
+            const isUserAnswer = selectedAnswer === label;
+            const isCorrectAnswer = label === correctAnswerLabel;
 
-              // Determine background and border colors
-              let bgColor = "bg-white dark:bg-gray-900";
-              let borderColor = "border-gray-200 dark:border-gray-800";
+            let borderColor = "border-gray-200 dark:border-gray-800";
+            let bgColor = "bg-white dark:bg-gray-900";
+            let textColor = "text-gray-700 dark:text-gray-300";
 
-              if (cheatMode && isCorrectAnswer && !isAnswerSubmitted) {
-                bgColor = "bg-green-50 dark:bg-green-900/30";
-                borderColor = "border-green-300 dark:border-green-600";
+            if (isAnswerSubmitted) {
+              if (isCorrectAnswer) {
+                borderColor = "border-green-500 dark:border-green-600";
+                bgColor = "bg-green-50/50 dark:bg-green-900/20";
+                textColor = "text-green-700 dark:text-green-300";
+              } else if (isUserAnswer && !isCorrect) {
+                borderColor = "border-red-500 dark:border-red-600";
+                bgColor = "bg-red-50/50 dark:bg-red-900/20";
+                textColor = "text-red-700 dark:text-red-300";
               }
+            } else if (isUserAnswer) {
+              borderColor = "border-blue-500 dark:border-blue-600";
+              bgColor = "bg-blue-50/30 dark:bg-blue-900/10";
+              textColor = "text-blue-700 dark:text-blue-300";
+            } else {
+              bgColor = "bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50";
+            }
 
-              if (isAnswerSubmitted) {
-                if (isUserAnswer && isCorrect) {
-                  bgColor = "bg-green-50 dark:bg-green-900/30";
-                  borderColor = "border-green-500";
-                } else if (isUserAnswer && !isCorrect) {
-                  bgColor = "bg-red-50 dark:bg-red-900/30";
-                  borderColor = "border-red-500";
-                } else if (isCorrectAnswer && !isCorrect) {
-                  bgColor = "bg-green-50 dark:bg-green-900/30";
-                  borderColor = "border-green-500";
-                }
-              } else if (isUserAnswer) {
-                borderColor = "border-blue-600";
-              }
-
-              return (
-                <div
-                  key={label}
-                  className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-3 rounded border transition-all cursor-pointer min-h-[48px]
-                    ${bgColor} ${borderColor}
-                    ${!isAnswerSubmitted && !isUserAnswer ? "hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-700" : ""}
-                  `}
-                  onClick={() => !isAnswerSubmitted && onAnswerSelect(label)}
-                >
-                  <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center font-semibold text-xs ${
-                    isUserAnswer
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/50'
-                      : 'border-gray-400 dark:border-gray-500 bg-white dark:bg-gray-800'
-                  }`}>
-                    <span className="dark:text-gray-200">{label}</span>
-                  </div>
-                  <div className="flex-1 text-sm leading-snug dark:text-gray-200">
-                    <BlockRenderer blocks={question.choices[label]} />
-                  </div>
+            return (
+              <button
+                key={label}
+                disabled={isAnswerSubmitted}
+                onClick={() => onAnswerSelect(label)}
+                className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left
+                  ${borderColor} ${bgColor} ${isAnswerSubmitted ? 'cursor-default' : 'cursor-pointer hover:shadow-sm'}
+                `}
+              >
+                <div className={`flex-shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center font-bold text-sm transition-colors
+                  ${isUserAnswer 
+                    ? 'bg-blue-600 border-blue-600 text-white' 
+                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'
+                  }
+                `}>
+                  {label}
                 </div>
-              );
-            })}
-          </RadioGroup>
+                <div className={`flex-1 text-base leading-relaxed ${textColor}`}>
+                  <BlockRenderer blocks={question.choices[label]} />
+                </div>
+              </button>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
