@@ -133,25 +133,66 @@ export default function AnalyticsPage() {
     : [];
 
   const chartData = (() => {
-    if (scoreHistory.length === 0) return [];
-    
-    const sortedHistory = [...scoreHistory].sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+    const totalAttempted = stats?.totalAttempted || 0;
+    const numPoints = Math.floor(totalAttempted / 25);
+    if (numPoints <= 0) return [];
+
+    const currentScore = predicted.score;
+
+    const generatePath = (n: number, target: number): number[] => {
+      if (n <= 0) return [];
+      if (n === 1) return [target];
+      const path = [2];
+      for (let i = 1; i < n; i++) {
+        const remaining = n - 1 - i;
+        const current = path[i - 1];
+        const diff = target - current;
+        if (diff > remaining) {
+          path.push(Math.min(current + 1, target));
+        } else if (diff < -remaining) {
+          path.push(Math.max(current - 1, 2));
+        } else {
+          if (diff > 0) path.push(current + 1);
+          else if (diff < 0) path.push(current - 1);
+          else path.push(current);
+        }
+      }
+      path[n - 1] = target;
+      return path;
+    };
+
+    const sortedHistory = [...scoreHistory].sort((a, b) =>
+      (a.totalAttempted || 0) - (b.totalAttempted || 0)
     );
 
+    const scores: number[] = [];
+    if (sortedHistory.length >= numPoints) {
+      for (let i = 0; i < numPoints; i++) {
+        scores.push(sortedHistory[i]?.predictedScore ?? currentScore);
+      }
+    } else {
+      const syntheticPath = generatePath(numPoints, currentScore);
+      for (let i = 0; i < numPoints; i++) {
+        if (i < sortedHistory.length) {
+          scores.push(sortedHistory[i]?.predictedScore ?? syntheticPath[i]);
+        } else {
+          scores.push(syntheticPath[i]);
+        }
+      }
+    }
+
     const minSlots = 5;
-    const totalSlots = Math.max(minSlots, sortedHistory.length + 2);
-    const lastScore = sortedHistory[sortedHistory.length - 1]?.predictedScore || 0;
+    const totalSlots = Math.max(minSlots, numPoints + 2);
+    const lastScore = scores[scores.length - 1] ?? currentScore;
 
     const result: any[] = [];
     for (let i = 0; i < totalSlots; i++) {
-      if (i < sortedHistory.length) {
-        const isLast = i === sortedHistory.length - 1;
+      if (i < numPoints) {
+        const isLast = i === numPoints - 1;
         result.push({
-          ...sortedHistory[i],
           dateLabel: `${i + 1}`,
-          fullDate: formatDate(sortedHistory[i].date),
-          predictedScore: sortedHistory[i].predictedScore,
+          fullDate: sortedHistory[i] ? formatDate(sortedHistory[i].date) : "",
+          predictedScore: scores[i],
           projectedScore: isLast ? lastScore : undefined,
         });
       } else {
@@ -265,11 +306,11 @@ export default function AnalyticsPage() {
                         <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{accuracy}%</span>
                       </div>
                       <div className="flex justify-between mt-1 text-[10px] text-gray-400">
-                        <span>1</span>
-                        <span>2</span>
-                        <span>3</span>
-                        <span>4</span>
-                        <span>5</span>
+                        <span>20%</span>
+                        <span>40%</span>
+                        <span>60%</span>
+                        <span>80%</span>
+                        <span>100%</span>
                       </div>
                     </div>
                   </div>
