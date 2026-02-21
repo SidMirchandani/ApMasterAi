@@ -144,43 +144,22 @@ export default function AnalyticsPage() {
       if (n === 1) return [target];
       if (n === 2) return [2, target];
 
-      const path: number[] = [2];
-      const stepsToTarget = target - 2;
-      const availableSteps = n - 1;
+      const path: number[] = [2, 2];
+      let current = 2;
+      const stepsRemaining = n - 2;
 
-      if (availableSteps <= stepsToTarget) {
-        for (let i = 1; i < n; i++) {
-          path.push(Math.min(path[i - 1] + 1, target));
-        }
-      } else {
-        const extraSteps = availableSteps - stepsToTarget;
-        let current = 2;
-        let zigUp = true;
-        for (let i = 1; i < n; i++) {
-          const remaining = n - 1 - i;
-          const distToTarget = target - current;
-
-          if (distToTarget >= remaining) {
-            current = Math.min(current + 1, target);
-          } else if (i < extraSteps + 1 && current < target) {
-            if (zigUp && current + 1 <= target) {
-              current = current + 1;
-              zigUp = false;
-            } else if (!zigUp && current - 1 >= 2) {
-              current = current - 1;
-              zigUp = true;
-            } else {
-              current = Math.min(current + 1, target);
-            }
-          } else {
-            if (distToTarget > 0) current = current + 1;
-            else current = current;
-          }
+      for (let i = 1; i <= stepsRemaining; i++) {
+        if (i === stepsRemaining) {
+          path.push(target);
+        } else {
+          const leftSteps = stepsRemaining - i;
+          const gap = target - current;
+          const increment = Math.max(1, Math.ceil(gap / (leftSteps + 1)));
+          current = Math.min(current + increment, target);
           path.push(current);
         }
       }
 
-      path[n - 1] = target;
       return path;
     };
 

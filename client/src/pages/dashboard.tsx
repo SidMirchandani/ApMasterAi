@@ -525,7 +525,7 @@ const SubjectCard = ({
 
   const analyticsStats = analyticsResponse?.data;
   const subjectAccuracy = analyticsStats && analyticsStats.totalAttempted >= 25
-    ? Math.round((analyticsStats.totalCorrect / analyticsStats.totalAttempted) * 100)
+    ? (analyticsStats.accuracy ?? Math.round((analyticsStats.totalCorrect / analyticsStats.totalAttempted) * 100))
     : null;
   const predictedScore = subjectAccuracy !== null
     ? (subjectAccuracy >= 85 ? 5 : subjectAccuracy >= 70 ? 4 : subjectAccuracy >= 55 ? 3 : subjectAccuracy >= 40 ? 2 : 1)
