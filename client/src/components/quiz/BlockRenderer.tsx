@@ -9,6 +9,17 @@ interface BlockRendererProps {
   className?: string;
 }
 
+const FIREBASE_STORAGE_PREFIX = "https://storage.googleapis.com/gen-lang-client-0260042933.firebasestorage.app/";
+
+function getImageUrl(url: string): string {
+  if (!url) return url;
+  if (url.startsWith(FIREBASE_STORAGE_PREFIX)) {
+    const storagePath = url.replace(FIREBASE_STORAGE_PREFIX, "");
+    return `/api/image-proxy?path=${encodeURIComponent(storagePath)}`;
+  }
+  return url;
+}
+
 export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, className = "" }) => {
   if (!blocks || blocks.length === 0) {
     return null;
@@ -26,17 +37,18 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, className 
             </p>
           );
         } else if (block.type === "image") {
+          const imgSrc = getImageUrl(block.url);
           return (
             <div key={index} className="relative inline-flex items-start justify-start max-w-[260px] max-h-[200px] overflow-visible rounded-md align-top shrink-0 group">
               <img
-                src={block.url}
+                src={imgSrc}
                 alt={`Content image ${index + 1}`}
                 className="object-contain w-full h-full max-h-[200px] cursor-zoom-in"
                 loading="lazy"
               />
               <div className="hidden group-hover:block absolute z-[100] top-0 left-full ml-3 p-2 bg-white dark:bg-gray-800 shadow-2xl rounded-md pointer-events-none">
                 <img
-                  src={block.url}
+                  src={imgSrc}
                   alt={`Content image ${index + 1} - Full size`}
                   className="object-contain max-w-[600px] max-h-[600px]"
                 />
