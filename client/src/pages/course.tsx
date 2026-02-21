@@ -76,10 +76,10 @@ export default function Course() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-khan-background flex items-center justify-center">
+      <div className="min-h-screen bg-khan-background dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-khan-gray-medium">Loading...</p>
+          <p className="text-khan-gray-medium dark:text-gray-400">Loading...</p>
         </div>
       </div>
     );

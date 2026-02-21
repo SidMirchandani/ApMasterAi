@@ -63,7 +63,7 @@ const getUnitStatus = (unitData: any) => {
 
   if (!unitData) {
     console.log('⚪ [getUnitStatus] No data -> Not Started');
-    return { bg: "bg-gray-200", status: "Not Started", score: 0 };
+    return { bg: "bg-gray-200 dark:bg-gray-800", status: "Not Started", score: 0 };
   }
 
   const score = unitData.highestScore ?? unitData.mcqScore ?? 0;
@@ -372,10 +372,10 @@ const Header = ({ name }: { name?: string }) => (
 );
 
 const CenteredLoader = ({ text }: { text: string }) => (
-  <div className="flex items-center justify-center py-16">
+  <div className="flex items-center justify-center py-16 bg-background">
     <div className="text-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4" />
-      <p>{text}</p>
+      <p className="text-foreground">{text}</p>
     </div>
   </div>
 );
