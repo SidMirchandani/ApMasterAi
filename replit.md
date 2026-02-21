@@ -117,7 +117,7 @@ The application is designed to be scalable and maintainable, with clear separati
 ### Dark Mode
 - **ThemeProvider**: Context at `client/src/contexts/theme-context.tsx` with localStorage persistence
 - **Toggle**: Sun/Moon icon in navigation bar switches between light and dark themes
-- **Coverage**: Dashboard, study, quiz, bookmarks, review, analytics pages all support dark mode via Tailwind `dark:` classes
+- **Coverage**: Dashboard, study, quiz, bookmarks, review, analytics, and admin pages all support dark mode via Tailwind `dark:` classes
 - **SSR Safe**: useTheme returns defaults during server-side rendering
 
 ### Bookmarks / Saved Questions
@@ -146,3 +146,11 @@ The application is designed to be scalable and maintainable, with clear separati
 - **Bottom bar**: Compact mobile-friendly buttons with responsive text sizes
 - **Question card**: Touch-friendly answer choices with proper tap targets
 - **Layout**: Responsive padding and spacing throughout quiz flow
+
+### Image Migration Admin Tool
+- **API**: POST `/api/admin/migrate-images` with SSE streaming for progress
+- **Function**: Makes Firebase Storage images publicly accessible via `file.makePublic()`
+- **Coverage**: Scans both modern `prompt_blocks` and legacy `image_urls` fields
+- **URL Patterns**: Handles multiple Firebase Storage URL formats (storage.googleapis.com, firebasestorage.googleapis.com)
+- **Admin UI**: Migration card with subject selector, start/stop buttons, and progress bar
+- **Image Proxy**: Admin page routes Firebase Storage URLs through `/api/image-proxy` for thumbnails
