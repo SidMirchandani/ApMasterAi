@@ -353,43 +353,67 @@ export function PracticeQuiz({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <div className="flex-1 overflow-y-auto mb-16 pb-2">
-        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-3 space-y-2">
-          <PracticeQuizQuestionCard
-            question={currentQuestion}
-            questionNumber={currentQuestionIndex + 1}
-            totalQuestions={orderedQuestions.length}
-            selectedAnswer={selectedAnswer}
-            onAnswerSelect={handleAnswerSelect}
-            isAnswerSubmitted={isAnswerSubmitted}
-            cheatMode={cheatMode}
-            isBookmarked={bookmarkedIds.has(currentQuestion?.id)}
-            onToggleBookmark={() => handleToggleBookmark(currentQuestion)}
-          />
+      <div className="flex-1 flex overflow-hidden">
+        {/* Desmos Sidebar */}
+        {isCalculatorAllowed && showCalculator && (
+          <div className="w-1/3 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col hidden md:flex">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+              <h3 className="font-semibold dark:text-gray-100">Desmos Calculator</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowCalculator(false)}
+                className="h-8 w-8 p-0"
+              >
+                <XCircle className="h-4 w-4" />
+              </Button>
+            </div>
+            <iframe
+              src="https://www.desmos.com/calculator"
+              className="flex-1 w-full"
+              title="Desmos Calculator"
+            />
+          </div>
+        )}
 
-          {isAnswerSubmitted && (
-            <Card className="border-khan-blue bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-              <CardHeader className="pb-2 pt-3">
-                <CardTitle className="text-sm dark:text-gray-100">Explanation</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 pb-3">
-                {isGeneratingExplanation ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-khan-blue mr-2" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      Generating explanation...
-                    </span>
-                  </div>
-                ) : currentExplanation ? (
-                  <div className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {currentExplanation}
-                    </ReactMarkdown>
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          )}
+        <div className="flex-1 overflow-y-auto mb-16 pb-2">
+          <div className="max-w-4xl mx-auto px-2 sm:px-4 py-3 space-y-2">
+            <PracticeQuizQuestionCard
+              question={currentQuestion}
+              questionNumber={currentQuestionIndex + 1}
+              totalQuestions={orderedQuestions.length}
+              selectedAnswer={selectedAnswer}
+              onAnswerSelect={handleAnswerSelect}
+              isAnswerSubmitted={isAnswerSubmitted}
+              cheatMode={cheatMode}
+              isBookmarked={bookmarkedIds.has(currentQuestion?.id)}
+              onToggleBookmark={() => handleToggleBookmark(currentQuestion)}
+            />
+
+            {isAnswerSubmitted && (
+              <Card className="border-khan-blue bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
+                <CardHeader className="pb-2 pt-3">
+                  <CardTitle className="text-sm dark:text-gray-100">Explanation</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 pb-3">
+                  {isGeneratingExplanation ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-khan-blue mr-2" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Generating explanation...
+                      </span>
+                    </div>
+                  ) : currentExplanation ? (
+                    <div className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {currentExplanation}
+                      </ReactMarkdown>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
 
@@ -399,28 +423,44 @@ export function PracticeQuiz({
           <div className="flex justify-between items-center gap-2 sm:gap-4">
             <div className="flex flex-1 items-center">
               {isCalculatorAllowed && (
-                <Dialog open={showCalculator} onOpenChange={setShowCalculator}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                    >
-                      <Calculator className="w-4 h-4 mr-2" />
-                      Calculator
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl h-[600px] p-0">
-                    <DialogHeader className="p-4 border-b">
-                      <DialogTitle>Desmos Graphing Calculator</DialogTitle>
-                    </DialogHeader>
-                    <iframe
-                      src="https://www.desmos.com/calculator"
-                      className="w-full h-full"
-                      title="Desmos Calculator"
-                    />
-                  </DialogContent>
-                </Dialog>
+                <>
+                  {/* Desktop Toggle */}
+                  <Button
+                    variant={showCalculator ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setShowCalculator(!showCalculator)}
+                    className="hidden md:flex border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:border-blue-400 dark:text-blue-400"
+                  >
+                    <Calculator className="w-4 h-4 mr-2" />
+                    Calculator
+                  </Button>
+
+                  {/* Mobile Dialog */}
+                  <div className="md:hidden">
+                    <Dialog open={showCalculator} onOpenChange={setShowCalculator}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:border-blue-400 dark:text-blue-400"
+                        >
+                          <Calculator className="w-4 h-4 mr-2" />
+                          Calculator
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl h-[80vh] p-0 dark:bg-gray-900 dark:border-gray-800">
+                        <DialogHeader className="p-4 border-b dark:border-gray-800">
+                          <DialogTitle className="dark:text-gray-100">Desmos Graphing Calculator</DialogTitle>
+                        </DialogHeader>
+                        <iframe
+                          src="https://www.desmos.com/calculator"
+                          className="w-full h-full"
+                          title="Desmos Calculator"
+                        />
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </>
               )}
             </div>
             <div className="flex justify-center items-center gap-2 sm:gap-4 flex-1 sm:flex-none">
@@ -428,14 +468,14 @@ export function PracticeQuiz({
                 <Button
                   onClick={handleSubmitAnswer}
                   disabled={!selectedAnswer}
-                  className="bg-blue-600 hover:bg-blue-700 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10"
+                  className="bg-blue-600 hover:bg-blue-700 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10 text-white"
                 >
                   Submit
                 </Button>
               ) : (
                 <Button
                   onClick={handleNextQuestion}
-                  className="bg-blue-600 hover:bg-blue-700 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10"
+                  className="bg-blue-600 hover:bg-blue-700 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10 text-white"
                 >
                   {currentQuestionIndex === orderedQuestions.length - 1
                     ? "Finish"
@@ -448,7 +488,7 @@ export function PracticeQuiz({
                 onClick={onExit}
                 variant="outline"
                 size="sm"
-                className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm"
+                className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm dark:border-red-400 dark:text-red-400"
               >
                 Exit
               </Button>
@@ -460,7 +500,7 @@ export function PracticeQuiz({
       {/* Results Summary (Conditionally Rendered) */}
       {showResults && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <Card className="w-full max-w-md dark:bg-gray-900 dark:border-gray-700">
+          <Card className="w-full max-w-md dark:bg-gray-900 dark:border-gray-800">
             <CardHeader>
               <CardTitle className="text-center dark:text-gray-100">Quiz Complete!</CardTitle>
             </CardHeader>
@@ -476,7 +516,7 @@ export function PracticeQuiz({
               <Button
                 onClick={handleReview}
                 size="lg"
-                className="bg-blue-600 hover:bg-blue-700 w-full text-lg py-6"
+                className="bg-blue-600 hover:bg-blue-700 w-full text-lg py-6 text-white"
               >
                 Review Answers
               </Button>

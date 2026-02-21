@@ -137,9 +137,9 @@ export function PracticeQuizQuestionCard({
   const isCorrect = selectedAnswer === correctAnswerLabel;
 
   return (
-    <Card className="dark:bg-gray-900 dark:border-gray-700">
+    <Card className="dark:bg-gray-900 dark:border-gray-800">
       <CardHeader className="pb-1 pt-2">
-        <div className="flex items-center justify-between border-b dark:border-gray-700 pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-gray-50 dark:bg-gray-800 min-h-[48px]">
+        <div className="flex items-center justify-between border-b dark:border-gray-800 pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-gray-50 dark:bg-gray-800 min-h-[48px]">
           <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
             Question {questionNumber} of {totalQuestions}
           </div>
@@ -150,7 +150,7 @@ export function PracticeQuizQuestionCard({
                 className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                   isBookmarked
                     ? 'bg-yellow-100 text-yellow-700 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-400 dark:border-yellow-600'
-                    : 'bg-white text-gray-500 border border-gray-300 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400'
+                    : 'bg-white text-gray-500 border border-gray-300 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-400'
                 }`}
               >
                 <BookmarkCheck className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
@@ -160,14 +160,14 @@ export function PracticeQuizQuestionCard({
             <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
               <DialogTrigger asChild>
                 <button
-                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-white text-gray-500 border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-white text-gray-500 border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-colors"
                   title="Report an issue with this question"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
                   Report
                 </button>
               </DialogTrigger>
-              <DialogContent className="dark:bg-gray-900 dark:border-gray-700">
+              <DialogContent className="dark:bg-gray-900 dark:border-gray-800">
                 <DialogHeader>
                   <DialogTitle className="dark:text-white">Report Question</DialogTitle>
                   <DialogDescription className="dark:text-gray-400">
@@ -233,7 +233,7 @@ export function PracticeQuizQuestionCard({
 
               // Determine background and border colors
               let bgColor = "bg-white dark:bg-gray-900";
-              let borderColor = "border-gray-200 dark:border-gray-700";
+              let borderColor = "border-gray-200 dark:border-gray-800";
 
               if (cheatMode && isCorrectAnswer && !isAnswerSubmitted) {
                 bgColor = "bg-green-50 dark:bg-green-900/30";
@@ -260,7 +260,7 @@ export function PracticeQuizQuestionCard({
                   key={label}
                   className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-3 rounded border transition-all cursor-pointer min-h-[48px]
                     ${bgColor} ${borderColor}
-                    ${!isAnswerSubmitted && !isUserAnswer ? "hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600" : ""}
+                    ${!isAnswerSubmitted && !isUserAnswer ? "hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-700" : ""}
                   `}
                   onClick={() => !isAnswerSubmitted && onAnswerSelect(label)}
                 >
