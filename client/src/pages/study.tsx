@@ -276,38 +276,49 @@ export default function Study() {
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
-          <Button
-            onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-            className="md:col-span-2 bg-[#36b37e] hover:bg-[#2fa371] h-14 text-lg font-bold shadow-md hover:shadow-lg transition-all"
-          >
-            <BookOpen className="mr-3 h-6 w-6" />
-            Take Full-Length Practice Test
-          </Button>
-          <Button
-            onClick={() => router.push(`/analytics?subject=${subjectId}`)}
-            variant="outline"
-            className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-khan-green text-gray-700 dark:text-gray-300 font-bold"
-          >
-            <BarChart3 className="mr-2 h-5 w-5" />
-            Detailed Analytics
-          </Button>
-          <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
+        <div className="space-y-4 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Button
-              onClick={() => router.push(`/review?subject=${subjectId}`)}
-              variant="outline"
-              className="h-14 md:h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-purple-400 text-gray-700 dark:text-gray-300 font-bold"
+              onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
+              className="bg-[#36b37e] hover:bg-[#2fa371] h-14 text-lg font-bold shadow-md hover:shadow-lg transition-all"
             >
-              <RotateCcw className="mr-2 h-5 w-5" />
-              Review
+              <BookOpen className="mr-3 h-6 w-6" />
+              MCQ Full-Length Test
             </Button>
+            <Button
+              onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
+              variant="outline"
+              className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-khan-green text-gray-700 dark:text-gray-300 font-bold"
+            >
+              <Clock className="mr-2 h-5 w-5" />
+              Full-Length Test History
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button
               onClick={() => router.push(`/bookmarks?subject=${subjectId}`)}
               variant="outline"
-              className="h-14 md:h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-yellow-400 text-gray-700 dark:text-gray-300 font-bold"
+              className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-yellow-400 text-gray-700 dark:text-gray-300 font-bold"
             >
               <Bookmark className="mr-2 h-5 w-5 fill-current text-yellow-500" />
-              Saved
+              Saved Questions
+            </Button>
+            <Button
+              onClick={() => router.push(`/review?subject=${subjectId}`)}
+              variant="outline"
+              className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-purple-400 text-gray-700 dark:text-gray-300 font-bold"
+            >
+              <RotateCcw className="mr-2 h-5 w-5" />
+              Review Questions
+            </Button>
+            <Button
+              onClick={() => router.push(`/analytics?subject=${subjectId}`)}
+              variant="outline"
+              className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-khan-green text-gray-700 dark:text-gray-300 font-bold"
+            >
+              <BarChart3 className="mr-2 h-5 w-5" />
+              Analytics
             </Button>
           </div>
         </div>

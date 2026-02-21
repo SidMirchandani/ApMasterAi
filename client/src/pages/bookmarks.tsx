@@ -100,13 +100,17 @@ export default function BookmarksPage() {
             altText="Undo remove"
             onClick={async () => {
               try {
+                // Call toggle again to re-add the bookmark
                 await apiRequest("POST", "/api/user/bookmarks/toggle", {
                   questionId: removedQ.questionId,
                   subjectId: removedQ.subjectId,
                 });
-                queryClient.invalidateQueries({ queryKey: ["bookmarks"], exact: false });
+                // Invalidate to refresh the list
+                await queryClient.invalidateQueries({ queryKey: ["bookmarks"], exact: false });
+                toast({ title: "Bookmark restored" });
               } catch (e) {
-                console.log("Could not undo");
+                console.error("Could not undo", e);
+                toast({ title: "Failed to restore bookmark", variant: "destructive" });
               }
             }}
           >
