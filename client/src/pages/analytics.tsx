@@ -18,16 +18,15 @@ import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Area,
-  AreaChart,
+  Cell,
 } from "recharts";
 
 interface UnitStats {
@@ -333,48 +332,43 @@ export default function AnalyticsPage() {
                     </div>
                   </div>
 
-                  <div className="h-64">
+                  <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                          </linearGradient>
-                          <linearGradient id="accuracyGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
+                      <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:opacity-10" />
                         <XAxis
                           dataKey="dateLabel"
-                          tick={{ fontSize: 11, fill: "#9ca3af" }}
+                          tick={{ fontSize: 12, fill: "#9ca3af" }}
                           axisLine={{ stroke: "#e5e7eb" }}
+                          tickLine={false}
                         />
                         <YAxis
                           yAxisId="score"
                           domain={[0, 5]}
-                          ticks={[1, 2, 3, 4, 5]}
-                          tick={{ fontSize: 11, fill: "#9ca3af" }}
-                          axisLine={{ stroke: "#e5e7eb" }}
-                          label={{ value: "AP Score", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "#9ca3af" }, offset: 20 }}
+                          ticks={[0, 1, 2, 3, 4, 5]}
+                          tick={{ fontSize: 12, fill: "#9ca3af" }}
+                          axisLine={false}
+                          tickLine={false}
+                          label={{ value: "AP Score", angle: -90, position: "insideLeft", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
                         />
                         <YAxis
                           yAxisId="accuracy"
                           orientation="right"
                           domain={[0, 100]}
-                          tick={{ fontSize: 11, fill: "#9ca3af" }}
-                          axisLine={{ stroke: "#e5e7eb" }}
-                          label={{ value: "Accuracy %", angle: 90, position: "insideRight", style: { fontSize: 11, fill: "#9ca3af" }, offset: 20 }}
+                          tick={{ fontSize: 12, fill: "#9ca3af" }}
+                          axisLine={false}
+                          tickLine={false}
+                          label={{ value: "Accuracy %", angle: 90, position: "insideRight", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
                         />
                         <Tooltip
+                          cursor={{ fill: 'transparent' }}
                           contentStyle={{
-                            backgroundColor: "rgba(255,255,255,0.95)",
+                            backgroundColor: "rgba(255,255,255,0.98)",
                             border: "1px solid #e5e7eb",
-                            borderRadius: "8px",
+                            borderRadius: "12px",
                             fontSize: "13px",
-                            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                            padding: "12px"
                           }}
                           formatter={(value: any, name: string) => {
                             if (name === "predictedScore") return [value, "AP Score"];
@@ -383,44 +377,31 @@ export default function AnalyticsPage() {
                           }}
                           labelFormatter={(label, payload) => {
                             const entry = payload[0]?.payload;
-                            return entry ? `Update: ${label} (${entry.fullDate})` : `Update: ${label}`;
+                            return entry ? `Progress: ${label} (${entry.fullDate})` : `Progress: ${label}`;
                           }}
                         />
-                        <ReferenceLine yAxisId="score" y={3} stroke="#eab308" strokeDasharray="5 5" strokeOpacity={0.5} />
-                        <Area
-                          yAxisId="accuracy"
-                          type="monotone"
-                          dataKey="accuracy"
-                          stroke="#3b82f6"
-                          fill="url(#accuracyGradient)"
-                          strokeWidth={2}
-                          dot={{ r: 3, fill: "#3b82f6" }}
-                          activeDot={{ r: 5 }}
-                        />
-                        <Line
+                        <ReferenceLine yAxisId="score" y={3} stroke="#eab308" strokeDasharray="5 5" strokeWidth={2} label={{ position: 'right', value: '3', fill: '#eab308', fontSize: 10 }} />
+                        
+                        <Bar
                           yAxisId="score"
-                          type="stepAfter"
                           dataKey="predictedScore"
-                          stroke="#8b5cf6"
-                          strokeWidth={3}
-                          dot={(props: any) => {
-                            const { cx, cy, payload } = props;
-                            const color = scoreColors[payload.predictedScore] || "#6b7280";
-                            return (
-                              <circle
-                                key={`dot-${props.index}`}
-                                cx={cx}
-                                cy={cy}
-                                r={6}
-                                fill={color}
-                                stroke="white"
-                                strokeWidth={2}
-                              />
-                            );
-                          }}
-                          activeDot={{ r: 8 }}
+                          radius={[6, 6, 0, 0]}
+                          barSize={32}
+                        >
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-score-${index}`} fill={scoreColors[entry.predictedScore] || "#8b5cf6"} />
+                          ))}
+                        </Bar>
+
+                        <Bar
+                          yAxisId="accuracy"
+                          dataKey="accuracy"
+                          radius={[6, 6, 0, 0]}
+                          barSize={32}
+                          fill="#3b82f6"
+                          fillOpacity={0.6}
                         />
-                      </AreaChart>
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
 
