@@ -142,7 +142,7 @@ export default function AnalyticsPage() {
 
     return sortedHistory.map((entry, index) => ({
       ...entry,
-      dateLabel: index === 0 ? "Initial" : `+${index * 10} q's`,
+      dateLabel: `Update ${index + 1}`,
       fullDate: formatDate(entry.date),
     }));
   })();
@@ -341,6 +341,7 @@ export default function AnalyticsPage() {
                           tick={{ fontSize: 12, fill: "#9ca3af" }}
                           axisLine={{ stroke: "#e5e7eb" }}
                           tickLine={false}
+                          padding={{ left: 20, right: 20 }}
                         />
                         <YAxis
                           yAxisId="score"
