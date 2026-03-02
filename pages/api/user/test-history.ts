@@ -30,7 +30,8 @@ export default async function handler(
       score: test.score,
       percentage: test.percentage,
       totalQuestions: test.totalQuestions,
-      subjectId: test.subjectId
+      subjectId: test.subjectId,
+      sectionBreakdown: test.sectionBreakdown || {}
     }));
 
     return res.status(200).json({ success: true, data: testHistory });

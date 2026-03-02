@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  CalendarDays,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -28,23 +27,6 @@ import {
   ReferenceLine,
 } from "recharts";
 
-interface UnitStats {
-  correct: number;
-  incorrect: number;
-  total: number;
-  avgTimeSec: number;
-}
-
-interface AnalyticsData {
-  totalAttempted: number;
-  totalCorrect: number;
-  totalIncorrect: number;
-  totalTimeSpentSec: number;
-  dueForReview: number;
-  accuracy?: number;
-  byUnit: { [unitId: string]: UnitStats };
-}
-
 interface TestHistoryEntry {
   testNumber: number;
   id: string;
@@ -53,6 +35,15 @@ interface TestHistoryEntry {
   percentage: number;
   totalQuestions: number;
   subjectId: string;
+  sectionBreakdown?: {
+    [key: string]: {
+      name: string;
+      unitNumber: number;
+      correct: number;
+      total: number;
+      percentage: number;
+    };
+  };
 }
 
 function predictAPScore(accuracy: number): { score: number; label: string; color: string } {
@@ -74,23 +65,7 @@ export default function AnalyticsPage() {
     }
   }, [loading, isAuthenticated, router]);
 
-  const { data: analyticsResponse, isLoading } = useQuery<{
-    success: boolean;
-    data: AnalyticsData;
-  }>({
-    queryKey: ["analytics", subjectId || "all"],
-    queryFn: async () => {
-      const url = subjectId
-        ? `/api/user/analytics?subjectId=${subjectId}`
-        : "/api/user/analytics";
-      const res = await apiRequest("GET", url);
-      if (!res.ok) throw new Error("Failed to fetch analytics");
-      return res.json();
-    },
-    enabled: isAuthenticated && !!user,
-  });
-
-  const { data: testHistoryResponse } = useQuery<{
+  const { data: testHistoryResponse, isLoading } = useQuery<{
     success: boolean;
     data: TestHistoryEntry[];
   }>({
@@ -106,21 +81,40 @@ export default function AnalyticsPage() {
     enabled: isAuthenticated && !!user,
   });
 
-  const stats = analyticsResponse?.data;
   const testHistory = testHistoryResponse?.data || [];
-  const accuracy = stats?.accuracy ?? (stats && stats.totalAttempted > 0
-    ? Math.round((stats.totalCorrect / stats.totalAttempted) * 100)
-    : 0);
-  const hasEnoughForPrediction = (stats?.totalAttempted || 0) >= 25;
-  const predicted = predictAPScore(accuracy);
+  
+  // Calculate average test percentage for predicted AP score
+  const avgTestPercentage = testHistory.length > 0
+    ? Math.round(testHistory.reduce((sum, test) => sum + test.percentage, 0) / testHistory.length)
+    : 0;
+  
+  const hasEnoughForPrediction = testHistory.length >= 1;
+  const predicted = predictAPScore(avgTestPercentage);
 
-  const unitEntries = stats?.byUnit
-    ? Object.entries(stats.byUnit).sort((a, b) => {
-        const accA = a[1].total > 0 ? a[1].correct / a[1].total : 0;
-        const accB = b[1].total > 0 ? b[1].correct / b[1].total : 0;
-        return accA - accB;
-      })
-    : [];
+  // Calculate unit performance from test data
+  const unitPerformanceMap: { [unitName: string]: { correct: number; total: number } } = {};
+  
+  testHistory.forEach(test => {
+    if (test.sectionBreakdown) {
+      Object.entries(test.sectionBreakdown).forEach(([code, section]) => {
+        const unitName = section.name;
+        if (!unitPerformanceMap[unitName]) {
+          unitPerformanceMap[unitName] = { correct: 0, total: 0 };
+        }
+        unitPerformanceMap[unitName].correct += section.correct;
+        unitPerformanceMap[unitName].total += section.total;
+      });
+    }
+  });
+
+  const unitEntries = Object.entries(unitPerformanceMap)
+    .map(([unitName, stats]) => ({
+      name: unitName,
+      correct: stats.correct,
+      total: stats.total,
+      percentage: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+    }))
+    .sort((a, b) => a.percentage - b.percentage);
 
   const testChartData = testHistory.map((test) => ({
     testLabel: `Test ${test.testNumber}`,
@@ -157,18 +151,18 @@ export default function AnalyticsPage() {
           )}
         </div>
 
-        {!stats || stats.totalAttempted === 0 ? (
+        {testHistory.length === 0 ? (
           <div className="text-center py-10">
             <BarChart3 className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">No data yet</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">No test data yet</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              Start practicing questions to see your performance analytics
+              Complete a full-length practice test to see your performance analytics
             </p>
             <Button
               onClick={() => router.push("/dashboard")}
               className="bg-khan-green hover:bg-khan-green-light text-white"
             >
-              Start Practicing
+              Start a Test
             </Button>
           </div>
         ) : (
@@ -177,29 +171,33 @@ export default function AnalyticsPage() {
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardContent className="p-4 text-center">
                   <Target className="mx-auto h-8 w-8 text-blue-500 mb-2" />
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{accuracy}%</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Accuracy</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{avgTestPercentage}%</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Avg Test Score</p>
                 </CardContent>
               </Card>
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardContent className="p-4 text-center">
                   <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2" />
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalCorrect}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Correct</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {testHistory.reduce((sum, t) => sum + t.score, 0)}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Total Correct</p>
                 </CardContent>
               </Card>
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardContent className="p-4 text-center">
                   <XCircle className="mx-auto h-8 w-8 text-red-500 mb-2" />
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalIncorrect}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Incorrect</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {testHistory.reduce((sum, t) => sum + (t.totalQuestions - t.score), 0)}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Total Incorrect</p>
                 </CardContent>
               </Card>
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardContent className="p-4 text-center">
-                  <CalendarDays className="mx-auto h-8 w-8 text-purple-500 mb-2" />
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.dueForReview}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Due for Review</p>
+                  <BarChart3 className="mx-auto h-8 w-8 text-purple-500 mb-2" />
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{testHistory.length}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Tests Completed</p>
                 </CardContent>
               </Card>
             </div>
@@ -223,11 +221,11 @@ export default function AnalyticsPage() {
                     <div className="flex-1">
                       <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{predicted.label}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Based on <span className="font-semibold text-gray-700 dark:text-gray-300">{stats.totalAttempted}</span> questions with <span className="font-semibold" style={{ color: predicted.color }}>{accuracy}%</span> accuracy
+                        Based on <span className="font-semibold text-gray-700 dark:text-gray-300">{testHistory.length}</span> {testHistory.length === 1 ? 'test' : 'tests'} with <span className="font-semibold" style={{ color: predicted.color }}>{avgTestPercentage}%</span> average score
                       </p>
                       <div className="mt-3 flex items-center gap-2">
-                        <Progress value={accuracy} className="h-3 flex-1" />
-                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{accuracy}%</span>
+                        <Progress value={avgTestPercentage} className="h-3 flex-1" />
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{avgTestPercentage}%</span>
                       </div>
                       <div className="flex justify-between mt-1 text-[10px] text-gray-400">
                         <span>20%</span>
@@ -256,13 +254,8 @@ export default function AnalyticsPage() {
                     <div className="flex-1">
                       <p className="text-lg font-bold text-gray-700 dark:text-gray-300">Not enough data yet</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Answer at least <span className="font-semibold text-gray-700 dark:text-gray-300">25 questions</span> to get your predicted AP score.
-                        You've answered <span className="font-semibold text-gray-700 dark:text-gray-300">{stats.totalAttempted}</span> so far — <span className="font-semibold text-khan-green">{25 - stats.totalAttempted} more to go!</span>
+                        Complete at least <span className="font-semibold text-gray-700 dark:text-gray-300">1 full-length test</span> to get your predicted AP score. Head to your dashboard to start a test!
                       </p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <Progress value={(stats.totalAttempted / 25) * 100} className="h-3 flex-1" />
-                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{stats.totalAttempted}/25</span>
-                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -450,29 +443,26 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {unitEntries.map(([unitId, unitStats]) => {
-                      const unitAcc = unitStats.total > 0
-                        ? Math.round((unitStats.correct / unitStats.total) * 100)
-                        : 0;
-                      const isWeak = unitAcc < 50;
+                    {unitEntries.map((unit) => {
+                      const isWeak = unit.percentage < 50;
                       return (
-                        <div key={unitId} className="flex items-center gap-4">
-                          <div className="w-24 flex-shrink-0">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{unitId}</p>
+                        <div key={unit.name} className="flex items-center gap-4">
+                          <div className="w-40 flex-shrink-0">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{unit.name}</p>
                           </div>
                           <div className="flex-1">
                             <Progress
-                              value={unitAcc}
+                              value={unit.percentage}
                               className={`h-3 ${isWeak ? "[&>div]:bg-red-500" : "[&>div]:bg-green-500"}`}
                             />
                           </div>
                           <div className="w-16 text-right">
                             <span className={`text-sm font-bold ${isWeak ? "text-red-500" : "text-green-600 dark:text-green-400"}`}>
-                              {unitAcc}%
+                              {unit.percentage}%
                             </span>
                           </div>
                           <div className="w-20 text-right text-xs text-gray-500 dark:text-gray-400">
-                            {unitStats.correct}/{unitStats.total}
+                            {unit.correct}/{unit.total}
                           </div>
                         </div>
                       );
