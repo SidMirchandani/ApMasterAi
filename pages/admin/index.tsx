@@ -8,6 +8,7 @@ import {
   GoogleAuthProvider,
   signOut,
   User,
+  browserPopupRedirectResolver,
 } from "firebase/auth";
 import toast, { Toaster } from "react-hot-toast";
 import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square } from "lucide-react";
@@ -528,11 +529,15 @@ export default function AdminPage() {
       case "fix-prompts":
         endpoint = "/api/fixPromptsChoices";
         break;
+      case "fix-units":
+        endpoint = "/api/admin/fix-unit-assignment";
+        break;
     }
 
     const actionLabel = selectedAction === "process" ? "processing (fix + explain)"
       : selectedAction === "explanations" ? "explanation generation"
-      : "prompt fixing";
+      : selectedAction === "fix-prompts" ? "prompt fixing"
+      : "unit assignment fix";
 
     setExplanationProgress({
       current: 0,
@@ -553,7 +558,9 @@ export default function AdminPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ questionIds, model: selectedModel }),
+        body: JSON.stringify(
+          selectedAction === "fix-units" ? { questionIds } : { questionIds, model: selectedModel }
+        ),
         signal: controller.signal,
       });
 
@@ -674,7 +681,7 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent>
             <Button
-              onClick={() => signInWithPopup(auth, googleProvider)}
+              onClick={() => signInWithPopup(auth, googleProvider, browserPopupRedirectResolver)}
               className="w-full bg-khan-green hover:bg-khan-green-light text-white"
             >
               Sign in with Google
@@ -1054,6 +1061,7 @@ export default function AdminPage() {
                     <SelectItem value="process">Process Questions (All-in-One)</SelectItem>
                     <SelectItem value="explanations">Generate Explanations Only</SelectItem>
                     <SelectItem value="fix-prompts">Fix Prompts & Choices Only</SelectItem>
+                    <SelectItem value="fix-units">Fix Unit Assignment</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={selectedModel} onValueChange={setSelectedModel}>

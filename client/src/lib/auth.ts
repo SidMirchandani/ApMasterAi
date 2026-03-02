@@ -2,10 +2,13 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut,
   User,
   UserCredential,
+  browserPopupRedirectResolver,
 } from "firebase/auth";
 import { auth, isFirebaseEnabled } from "./firebase";
 
@@ -73,21 +76,40 @@ export const loginWithEmail = async ({
   }
 };
 
-// Sign in with Google
-export const signInWithGoogle = async (): Promise<UserCredential> => {
+// Sign in with Google — tries popup first; if blocked, uses redirect
+export const signInWithGoogle = async (): Promise<UserCredential | void> => {
   if (!isFirebaseEnabled || !auth) {
     throw new Error(
       "Authentication is not configured. Please contact support.",
     );
   }
 
+  const provider = new GoogleAuthProvider();
+
   try {
-    const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
-    return userCredential;
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Failed to sign in with Google";
-    throw new Error(errorMessage);
+    return await signInWithPopup(auth, provider, browserPopupRedirectResolver);
+  } catch (err: unknown) {
+    const code = err && typeof err === "object" && "code" in err ? (err as { code: string }).code : "";
+    const isPopupBlocked =
+      code === "auth/popup-blocked" ||
+      code === "auth/cancelled-popup-request" ||
+      code === "auth/popup-closed-by-user";
+
+    if (isPopupBlocked) {
+      await signInWithRedirect(auth, provider);
+      return; // Page will redirect; result handled by getGoogleRedirectResult on return
+    }
+    throw err;
+  }
+};
+
+// Call on login/signup page load to handle return from Google redirect
+export const getGoogleRedirectResult = async (): Promise<UserCredential | null> => {
+  if (!auth) return null;
+  try {
+    return await getRedirectResult(auth);
+  } catch {
+    return null;
   }
 };
 

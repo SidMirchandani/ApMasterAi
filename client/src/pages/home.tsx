@@ -2,6 +2,7 @@ import Navigation from "@/components/ui/navigation";
 import { Hero, HeroStats } from "@/components/sections/hero";
 import { Features } from "@/components/sections/features";
 import { FAQ } from "@/components/sections/faq";
+import Footer from "@/components/sections/footer";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/auth-context";
 import { useEffect } from "react";
@@ -18,26 +19,30 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-khan-gray-medium">Loading...</p>
+          <div className="relative w-10 h-10 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-2 border-emerald-200 dark:border-emerald-800" />
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-500 animate-spin" />
+          </div>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Loading...</p>
         </div>
       </div>
     );
   }
 
   if (isAuthenticated) {
-    return null; // Will redirect to dashboard
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-slate-950">
       <Navigation />
       <Hero />
       <HeroStats />
       <Features />
       <FAQ />
+      <Footer />
     </div>
   );
 }

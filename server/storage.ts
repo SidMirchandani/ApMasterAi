@@ -186,8 +186,23 @@ export class Storage {
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
-      const docRef = db.collection('users').doc();
-      const user: Omit<User, 'id'> = {
+      const usersRef = db.collection('users');
+
+      // Use firebaseUid as doc ID to align with profile API format
+      const docRef = usersRef.doc(firebaseUid);
+      const existing = await docRef.get();
+      if (existing.exists) {
+        const data = existing.data();
+        return {
+          id: firebaseUid,
+          firebaseUid,
+          email: data?.email ?? email,
+          username: data?.displayName ?? username ?? firebaseUid,
+          createdAt: data?.createdAt ? new Date(data.createdAt) : new Date(),
+        } as User;
+      }
+
+      const user: Omit<User, 'id'> & { firebaseUid: string } = {
         firebaseUid,
         email,
         username,
@@ -197,7 +212,7 @@ export class Storage {
       await docRef.set(user);
 
       return {
-        id: docRef.id,
+        id: firebaseUid,
         ...user,
       };
     });
@@ -220,17 +235,31 @@ export class Storage {
       if (!db) throw new Error("Firestore not available");
 
       const usersRef = db.collection('users');
-      const snapshot = await usersRef.where('firebaseUid', '==', firebaseUid).limit(1).get();
 
-      if (snapshot.empty) {
-        return null;
+      // First check: users created by profile API use doc ID = firebaseUid
+      const profileDoc = await usersRef.doc(firebaseUid).get();
+      if (profileDoc.exists) {
+        const data = profileDoc.data();
+        return {
+          id: firebaseUid,
+          firebaseUid,
+          email: data?.email ?? `${firebaseUid}@firebase.user`,
+          username: data?.displayName ?? firebaseUid,
+          createdAt: data?.createdAt ? new Date(data.createdAt) : new Date(),
+        } as User;
       }
 
-      const doc = snapshot.docs[0];
-      return {
-        id: doc.id,
-        ...doc.data(),
-      } as User;
+      // Second check: users created by storage have firebaseUid field
+      const snapshot = await usersRef.where('firebaseUid', '==', firebaseUid).limit(1).get();
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        return {
+          id: doc.id,
+          ...doc.data(),
+        } as User;
+      }
+
+      return null;
     });
   }
 
@@ -673,6 +702,36 @@ export class Storage {
     }
 
     return testDoc.data();
+  }
+
+  async getAllFullLengthTests(userId: string, subjectId?: string): Promise<any[]> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    let query: admin.firestore.Query = subjectsRef.where("userId", "==", userId);
+    
+    if (subjectId) {
+      query = query.where("subjectId", "==", subjectId);
+    }
+
+    const snapshot = await query.get();
+    const allTests: any[] = [];
+
+    for (const doc of snapshot.docs) {
+      const testsSnapshot = await doc.ref.collection("fullLengthTests").orderBy("date", "asc").get();
+      testsSnapshot.docs.forEach(testDoc => {
+        const testData = testDoc.data();
+        allTests.push({
+          ...testData,
+          subjectId: doc.data().subjectId
+        });
+      });
+    }
+
+    allTests.sort((a, b) => a.date.toMillis() - b.date.toMillis());
+    return allTests;
   }
 
   async saveExamState(

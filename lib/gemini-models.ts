@@ -1,3 +1,23 @@
+/**
+ * Returns Gemini API client options. Uses GEMINI_API_KEY when set (direct Google API);
+ * otherwise falls back to AI_INTEGRATIONS_* (e.g. Replit/modelfarm).
+ */
+export function getGeminiClientOptions(): {
+  apiKey: string;
+  httpOptions?: { apiVersion?: string; baseUrl?: string };
+} {
+  const directKey = process.env.GEMINI_API_KEY?.trim();
+  if (directKey) {
+    return { apiKey: directKey };
+  }
+  return {
+    apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY || "",
+    httpOptions: {
+      apiVersion: "",
+      baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+    },
+  };
+}
 
 /**
  * Helper function to get the correct Gemini model name based on user selection

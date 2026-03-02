@@ -1,5 +1,5 @@
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
-import { db } from "./firebaseConfig";
+import { db } from "./firebase";
 import { getAuthHeaders } from "./queryClient"; // Import from queryClient where it's actually defined
 import { UserSubject } from '../../../shared/schema'; // UserSubject interface is defined in shared/schema.ts
 

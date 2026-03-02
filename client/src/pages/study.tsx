@@ -1,18 +1,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
   BookOpen,
-  Clock,
   Target,
   CheckCircle,
   ArrowLeft,
@@ -22,12 +13,17 @@ import {
   Bookmark,
   BarChart3,
   CalendarDays,
+  Clock,
+  Play,
+  ChevronRight,
+  Star,
+  Flame,
+  Lock,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
-import { apSubjects } from "@/lib/ap-subjects";
 import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/lib/hooks/useMobile";
 import { getUnitsForSubject } from "@/subjects";
@@ -54,16 +50,6 @@ interface StudySubject {
   };
 }
 
-interface Unit {
-  id: string;
-  title: string;
-  description: string;
-  examWeight: string;
-  progress: number;
-}
-
-
-
 export default function Study() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -78,16 +64,11 @@ export default function Study() {
     data: subjectsResponse,
     isLoading: subjectsLoading,
     refetch,
-  } = useQuery<{
-    success: boolean;
-    data: StudySubject[];
-  }>({
+  } = useQuery<{ success: boolean; data: StudySubject[] }>({
     queryKey: ["subjects"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/user/subjects");
-      if (!response.ok) {
-        throw new Error("Failed to fetch subjects");
-      }
+      if (!response.ok) throw new Error("Failed to fetch subjects");
       return response.json();
     },
     enabled: isAuthenticated && !!user,
@@ -95,22 +76,16 @@ export default function Study() {
 
   const subjects: StudySubject[] = subjectsResponse?.data || [];
   const currentSubject: StudySubject | undefined = subjects.find(
-    (s) => s.subjectId === subjectId,
+    (s) => s.subjectId === subjectId
   );
-  const units = currentSubject
-    ? getUnitsForSubject(currentSubject.subjectId)
-    : [];
+  const units = currentSubject ? getUnitsForSubject(currentSubject.subjectId) : [];
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push("/login");
-    }
+    if (!loading && !isAuthenticated) router.push("/login");
   }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
-    if (!subjectId) {
-      router.push("/dashboard");
-    }
+    if (!subjectId) router.push("/dashboard");
   }, [subjectId, router]);
 
   const getProgressLevel = (score: number, hasAttempted: boolean): string => {
@@ -121,65 +96,21 @@ export default function Study() {
   };
 
   const getUnitData = (unitId: string) => {
-    const unitProgress = currentSubject?.unitProgress || {};
-    return unitProgress[unitId];
-  };
-
-  const getProgressBadgeColor = (level: string): string => {
-    switch (level) {
-      case "Mastered":
-        return "bg-green-600 text-white";
-      case "Proficient":
-        return "bg-blue-500 text-white";
-      case "In Progress":
-        return "bg-orange-500 text-white";
-      default:
-        return "bg-gray-300 text-gray-700";
-    }
-  };
-
-  const handleDeleteCourse = async (courseId: string) => {
-    const confirmDelete = prompt(
-      `Type "DELETE" to confirm deletion of this course. This action is irreversible.`,
-    );
-    if (confirmDelete === "DELETE") {
-      const secondConfirm = confirm(
-        "Are you absolutely sure you want to permanently delete this course? This cannot be undone.",
-      );
-      if (secondConfirm) {
-        try {
-          await apiRequest("DELETE", `/api/user/subjects/${courseId}`);
-          refetch();
-          router.push("/dashboard");
-        } catch (error) {
-          console.error("Failed to delete course:", error);
-          alert(
-            "An error occurred while deleting the course. Please try again.",
-          );
-        }
-      }
-    }
-  };
-
-  const handleArchiveCourse = async (courseId: string) => {
-    try {
-      await apiRequest("PATCH", `/api/user/subjects/${courseId}`, {
-        archived: true,
-      });
-      refetch();
-    } catch (error) {
-      console.error("Failed to archive course:", error);
-      alert("An error occurred while archiving the course. Please try again.");
-    }
+    return (currentSubject?.unitProgress || {})[unitId];
   };
 
   if (loading || subjectsLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-950">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <Navigation />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
-          <span className="ml-3 text-gray-500 dark:text-gray-400">Loading...</span>
+          <div className="text-center">
+            <div className="relative w-12 h-12 mx-auto mb-4">
+              <div className="absolute inset-0 rounded-full border-2 border-emerald-200 dark:border-emerald-800" />
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-500 animate-spin" />
+            </div>
+            <span className="text-slate-500 dark:text-slate-400 font-medium">Loading...</span>
+          </div>
         </div>
       </div>
     );
@@ -187,19 +118,22 @@ export default function Study() {
 
   if (!currentSubject) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-950">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              Subject Not Found
+        <div className="container mx-auto px-4 py-12 max-w-xl">
+          <div className="text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <HelpCircle className="h-8 w-8 text-slate-400" />
+            </div>
+            <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-2">
+              Subject not found
             </h1>
-            <p className="text-gray-600 mb-8">
+            <p className="text-slate-500 dark:text-slate-400 mb-6">
               The requested subject was not found in your dashboard.
             </p>
             <Button
               onClick={() => router.push("/dashboard")}
-              data-testid="button-back-to-dashboard"
+              className="bg-emerald-500 hover:bg-emerald-600 rounded-xl"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dashboard
@@ -213,53 +147,85 @@ export default function Study() {
   const topicsMastered = units.filter((unit) => {
     const unitData = currentSubject.unitProgress?.[unit.id];
     const score = unitData?.highestScore || unitData?.mcqScore || 0;
-    const hasAttempted =
-      unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0);
-    return getProgressLevel(score, hasAttempted) === "Mastered";
+    const hasAttempted = unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0);
+    return getProgressLevel(score, !!hasAttempted) === "Mastered";
   }).length;
   const totalTopics = units.length;
+  const masteryPct = totalTopics > 0 ? Math.round((topicsMastered / totalTopics) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950">
       <Navigation />
 
-      {/* Header Section */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="container mx-auto px-4 py-4 max-w-6xl">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+      {/* Hero header */}
+      <div className="relative bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 overflow-hidden">
+        {/* Subtle gradient bg */}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent dark:from-emerald-500/5 dark:to-transparent pointer-events-none" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="container mx-auto px-4 py-6 max-w-6xl relative z-10">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => router.push("/dashboard")}
-            className="text-gray-500 hover:text-khan-green -ml-2 mb-2"
+            className="text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 -ml-2 mb-4 rounded-lg group"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
             Back to Dashboard
           </Button>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-black text-[#2d3b45] dark:text-gray-100 tracking-tight">
+
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 dark:text-white tracking-tight mb-1">
                 {currentSubject.name}
               </h1>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+              <p className="text-slate-500 dark:text-slate-400 text-sm max-w-2xl leading-relaxed">
                 {currentSubject.description}
               </p>
+
+              {/* Mastery progress bar */}
+              <div className="mt-4 max-w-xs">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                    Overall Mastery
+                  </span>
+                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                    {masteryPct}%
+                  </span>
+                </div>
+                <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-700"
+                    style={{ width: `${masteryPct}%` }}
+                  />
+                </div>
+              </div>
             </div>
-            
+
+            {/* Stat badges */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-khan-green" />
+              <div className="px-4 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20 flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                  <Trophy className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
                 <div>
-                  <p className="text-[9px] uppercase font-bold text-gray-400 tracking-widest leading-none">Mastery</p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                  <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider leading-none">
+                    Mastery
+                  </p>
+                  <p className="text-base font-black text-slate-900 dark:text-white leading-tight mt-0.5">
                     {topicsMastered}/{totalTopics}
                   </p>
                 </div>
               </div>
-              <div className="px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-khan-blue" />
+              <div className="px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-violet-50 dark:bg-violet-500/10 rounded-xl flex items-center justify-center">
+                  <CalendarDays className="h-4 w-4 text-violet-500" />
+                </div>
                 <div>
-                  <p className="text-[9px] uppercase font-bold text-gray-400 tracking-widest leading-none">Exam Date</p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                  <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider leading-none">
+                    Exam Date
+                  </p>
+                  <p className="text-base font-black text-slate-900 dark:text-white leading-tight mt-0.5">
                     {formatDate(currentSubject.examDate)}
                   </p>
                 </div>
@@ -270,130 +236,263 @@ export default function Study() {
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+
         {/* Quick Actions */}
-        <div className="space-y-4 mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button
+        <div className="mb-12">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
+            Quick Actions
+          </h2>
+
+          {/* Primary actions row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* Full-Length Test — primary CTA */}
+            <button
               onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-              className="bg-[#36b37e] hover:bg-[#2fa371] h-14 text-lg font-bold shadow-md hover:shadow-lg transition-all"
+              className="group relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(16,185,129,0.35)] active:translate-y-0"
             >
-              <BookOpen className="mr-3 h-6 w-6" />
-              MCQ Full-Length Test
-            </Button>
-            <Button
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative z-10 flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Play className="w-6 h-6 text-white fill-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-base leading-tight">MCQ Full-Length Test</p>
+                  <p className="text-white/70 text-xs mt-0.5">Simulate real exam conditions</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-white/60 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+              </div>
+            </button>
+
+            {/* Test History */}
+            <button
               onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
-              variant="outline"
-              className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-khan-green text-gray-700 dark:text-gray-300 font-bold"
+              className="group relative overflow-hidden rounded-2xl p-5 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
             >
-              <Clock className="mr-2 h-5 w-5" />
-              Full-Length Test History
-            </Button>
+              <div className="relative z-10 flex items-center gap-4">
+                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 transition-colors">
+                  <Clock className="w-5 h-5 text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight">Full-Length Test History</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Review past test results</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+              </div>
+            </button>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button
-              onClick={() => router.push(`/bookmarks?subject=${subjectId}`)}
-              variant="outline"
-              className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-yellow-400 text-gray-700 dark:text-gray-300 font-bold"
-            >
-              <Bookmark className="mr-2 h-5 w-5 fill-current text-yellow-500" />
-              Saved Questions
-            </Button>
-            <Button
-              onClick={() => router.push(`/review?subject=${subjectId}`)}
-              variant="outline"
-              className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-purple-400 text-gray-700 dark:text-gray-300 font-bold"
-            >
-              <RotateCcw className="mr-2 h-5 w-5" />
-              Review Questions
-            </Button>
-            <Button
-              onClick={() => router.push(`/analytics?subject=${subjectId}`)}
-              variant="outline"
-              className="h-14 border-2 border-gray-200 dark:border-gray-700 hover:border-khan-green text-gray-700 dark:text-gray-300 font-bold"
-            >
-              <BarChart3 className="mr-2 h-5 w-5" />
-              Analytics
-            </Button>
+
+          {/* Secondary actions row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              {
+                icon: Bookmark,
+                label: "Saved Questions",
+                desc: "Your bookmarked questions",
+                href: `/bookmarks?subject=${subjectId}`,
+                iconClass: "text-amber-600 dark:text-amber-400",
+                iconBg: "bg-amber-50 dark:bg-amber-500/10 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20",
+                borderHover: "hover:border-amber-200 dark:hover:border-amber-800/60",
+              },
+              {
+                icon: RotateCcw,
+                label: "Review Questions",
+                desc: "Questions you got wrong",
+                href: `/review?subject=${subjectId}`,
+                iconClass: "text-violet-600 dark:text-violet-400",
+                iconBg: "bg-violet-50 dark:bg-violet-500/10 group-hover:bg-violet-100 dark:group-hover:bg-violet-500/20",
+                borderHover: "hover:border-violet-200 dark:hover:border-violet-800/60",
+              },
+              {
+                icon: BarChart3,
+                label: "Analytics",
+                desc: "Detailed performance data",
+                href: `/analytics?subject=${subjectId}`,
+                iconClass: "text-emerald-600 dark:text-emerald-400",
+                iconBg: "bg-emerald-50 dark:bg-emerald-500/10 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20",
+                borderHover: "hover:border-emerald-200 dark:hover:border-emerald-800/60",
+              },
+            ].map((action) => (
+              <button
+                key={action.label}
+                onClick={() => router.push(action.href)}
+                className={`group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 ${action.borderHover} text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 ${action.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 transition-colors`}>
+                    <action.icon className={`w-5 h-5 ${action.iconClass}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{action.label}</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{action.desc}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Units Grid */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black text-[#2d3b45] dark:text-gray-100 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-khan-green flex items-center justify-center">
-                <Target className="h-5 w-5 text-white" />
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-[0_4px_12px_rgba(16,185,129,0.25)]">
+                <Target className="h-4 w-4 text-white" />
               </div>
-              Course Content
-            </h2>
-            <div className="flex items-center gap-2 text-sm font-bold text-gray-400 uppercase tracking-widest">
-              <span>{totalTopics} Units Total</span>
+              <div>
+                <h2 className="text-xl font-display font-bold text-slate-900 dark:text-white">
+                  Course Content
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                  {totalTopics} units · {topicsMastered} mastered
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             {units.map((unit, index) => {
               const unitData = getUnitData(unit.id);
               const score = unitData?.highestScore || 0;
-              const hasAttempted = unitData && unitData.scores?.length > 0;
+              const hasAttempted = !!(unitData && unitData.scores?.length > 0);
               const level = getProgressLevel(score, hasAttempted);
               const isMastered = level === "Mastered";
+              const isProficient = level === "Proficient";
+              const isInProgress = level === "In Progress";
+
+              const statusConfig = {
+                Mastered: {
+                  badge: "bg-emerald-500 text-white",
+                  numBg: "bg-emerald-500 text-white",
+                  barColor: "from-emerald-500 to-teal-500",
+                  icon: Star,
+                },
+                Proficient: {
+                  badge: "bg-blue-500 text-white",
+                  numBg: "bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400",
+                  barColor: "from-blue-400 to-cyan-500",
+                  icon: CheckCircle,
+                },
+                "In Progress": {
+                  badge: "bg-amber-500 text-white",
+                  numBg: "bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400",
+                  barColor: "from-amber-400 to-orange-400",
+                  icon: Flame,
+                },
+                "Not Started": {
+                  badge: "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400",
+                  numBg: "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500",
+                  barColor: "from-slate-300 to-slate-400",
+                  icon: Lock,
+                },
+              }[level] || {
+                badge: "bg-slate-200 text-slate-600",
+                numBg: "bg-slate-100 text-slate-400",
+                barColor: "from-slate-300 to-slate-400",
+                icon: BookOpen,
+              };
 
               return (
-                <Card
+                <div
                   key={unit.id}
-                  className="group border border-gray-200 dark:border-gray-800 dark:bg-gray-900/50 hover:border-khan-green dark:hover:border-khan-green transition-all duration-300 overflow-hidden"
+                  className={`group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border transition-all duration-300 ${
+                    isMastered
+                      ? "border-emerald-200/60 dark:border-emerald-800/40 hover:border-emerald-300 dark:hover:border-emerald-700/60"
+                      : "border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600"
+                  } hover:shadow-lg hover:-translate-y-0.5`}
                 >
-                  <CardContent className="p-0">
-                    <div className="flex flex-col md:flex-row">
-                      <div className="p-6 flex-1">
-                        <div className="flex items-start gap-4">
-                          <div className={`shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-black text-xl transition-colors ${
-                            isMastered ? 'bg-khan-green text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-                          }`}>
-                            {index + 1}
+                  {/* Left colored accent */}
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${statusConfig.barColor} opacity-${isMastered ? "100" : "40"} group-hover:opacity-100 transition-opacity duration-300`}
+                  />
+
+                  <div className="flex flex-col md:flex-row pl-4">
+                    {/* Main content */}
+                    <div className="p-5 flex-1 min-w-0">
+                      <div className="flex items-start gap-4">
+                        {/* Unit number */}
+                        <div
+                          className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center font-black text-lg ${statusConfig.numBg} transition-colors`}
+                        >
+                          {index + 1}
+                        </div>
+
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          {/* Title + badge */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
+                              {unit.title}
+                            </h3>
+                            {hasAttempted && (
+                              <Badge className={`${statusConfig.badge} border-none px-2 py-0.5 text-[10px] font-bold h-5 leading-none rounded-full`}>
+                                {level}
+                              </Badge>
+                            )}
                           </div>
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-3">
-                              <h3 className="text-xl font-bold text-[#2d3b45] dark:text-gray-100">
-                                {unit.title}
-                              </h3>
-                              {isMastered && (
-                                <Badge className="bg-yellow-400 hover:bg-yellow-500 text-black font-black px-2 py-0 h-6 flex items-center gap-1 border-none shadow-sm">
-                                  👑 Mastered
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-gray-500 dark:text-gray-400 leading-relaxed text-sm max-w-3xl">
-                              {unit.description}
-                            </p>
-                            <div className="flex items-center gap-4 pt-2">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
-                                <BookOpen className="w-3.5 h-3.5" />
-                                Weight: {unit.examWeight}
+
+                          {/* Description */}
+                          <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-xs max-w-2xl">
+                            {unit.description}
+                          </p>
+
+                          {/* Meta row */}
+                          <div className="flex items-center gap-4 pt-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                              <BookOpen className="w-3 h-3" />
+                              Exam Weight: {unit.examWeight}
+                            </span>
+                            {hasAttempted && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                <Target className="w-3 h-3" />
+                                Best Score: {score}%
                               </span>
-                              {!isMastered && hasAttempted && (
-                                <span className="text-[10px] font-black uppercase tracking-widest text-khan-blue flex items-center gap-1.5">
-                                  <Target className="w-3.5 h-3.5" />
-                                  Best Score: {score}%
-                                </span>
-                              )}
-                            </div>
+                            )}
                           </div>
+
+                          {/* Score progress bar */}
+                          {hasAttempted && (
+                            <div className="pt-1 max-w-xs">
+                              <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full bg-gradient-to-r ${statusConfig.barColor} rounded-full transition-all duration-700`}
+                                  style={{ width: `${score}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="px-6 pb-6 md:pb-0 md:w-64 flex items-center bg-gray-50/50 dark:bg-gray-800/30 border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800">
-                        <Button
-                          onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)}
-                          className="w-full bg-white dark:bg-gray-800 hover:bg-khan-green hover:text-white text-[#2d3b45] dark:text-gray-100 border-2 border-gray-200 dark:border-gray-700 hover:border-khan-green font-bold h-12 transition-all group-hover:shadow-md"
-                        >
-                          Practice Unit
-                        </Button>
-                      </div>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    {/* CTA */}
+                    <div className="px-5 pb-5 md:pb-0 md:w-52 flex items-center">
+                      <Button
+                        onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)}
+                        className={`w-full h-11 font-bold rounded-xl transition-all duration-200 text-sm ${
+                          isMastered
+                            ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_16px_rgba(16,185,129,0.35)]"
+                            : "bg-white dark:bg-slate-800 hover:bg-emerald-500 hover:text-white text-slate-900 dark:text-white border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-500 group-hover:shadow-md"
+                        }`}
+                      >
+                        {isMastered ? (
+                          <>
+                            <Star className="w-4 h-4 mr-2 fill-current" />
+                            Revisit
+                          </>
+                        ) : hasAttempted ? (
+                          <>
+                            <RotateCcw className="w-4 h-4 mr-2" />
+                            Keep Practicing
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4 mr-2" />
+                            Start Unit
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </div>

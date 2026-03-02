@@ -45,11 +45,14 @@ interface AnalyticsData {
   byUnit: { [unitId: string]: UnitStats };
 }
 
-interface ScoreHistoryEntry {
-  date: string;
-  accuracy: number;
-  predictedScore: number;
-  totalAttempted: number;
+interface TestHistoryEntry {
+  testNumber: number;
+  id: string;
+  date: any;
+  score: number;
+  percentage: number;
+  totalQuestions: number;
+  subjectId: string;
 }
 
 function predictAPScore(accuracy: number): { score: number; label: string; color: string } {
@@ -59,19 +62,6 @@ function predictAPScore(accuracy: number): { score: number; label: string; color
   if (accuracy >= 40) return { score: 2, label: "Possibly qualified", color: "#f97316" };
   return { score: 1, label: "Needs improvement", color: "#ef4444" };
 }
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-const scoreColors: Record<number, string> = {
-  5: "#10b981",
-  4: "#22c55e",
-  3: "#eab308",
-  2: "#f97316",
-  1: "#ef4444",
-};
 
 export default function AnalyticsPage() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -100,24 +90,24 @@ export default function AnalyticsPage() {
     enabled: isAuthenticated && !!user,
   });
 
-  const { data: historyResponse } = useQuery<{
+  const { data: testHistoryResponse } = useQuery<{
     success: boolean;
-    data: ScoreHistoryEntry[];
+    data: TestHistoryEntry[];
   }>({
-    queryKey: ["scoreHistory", subjectId || "all"],
+    queryKey: ["testHistory", subjectId || "all"],
     queryFn: async () => {
       const url = subjectId
-        ? `/api/user/score-history?subjectId=${subjectId}`
-        : "/api/user/score-history";
+        ? `/api/user/test-history?subjectId=${subjectId}`
+        : "/api/user/test-history";
       const res = await apiRequest("GET", url);
-      if (!res.ok) throw new Error("Failed to fetch score history");
+      if (!res.ok) throw new Error("Failed to fetch test history");
       return res.json();
     },
     enabled: isAuthenticated && !!user,
   });
 
   const stats = analyticsResponse?.data;
-  const scoreHistory = historyResponse?.data || [];
+  const testHistory = testHistoryResponse?.data || [];
   const accuracy = stats?.accuracy ?? (stats && stats.totalAttempted > 0
     ? Math.round((stats.totalCorrect / stats.totalAttempted) * 100)
     : 0);
@@ -132,84 +122,14 @@ export default function AnalyticsPage() {
       })
     : [];
 
-  const chartData = (() => {
-    const totalAttempted = stats?.totalAttempted || 0;
-    const numPoints = Math.floor(totalAttempted / 25);
-    if (numPoints <= 0) return [];
-
-    const currentScore = predicted.score;
-
-    const generatePath = (n: number, target: number): number[] => {
-      if (n <= 0) return [];
-      if (n === 1) return [target];
-      if (n === 2) return [2, target];
-
-      const path: number[] = [2, 2];
-      let current = 2;
-      const stepsRemaining = n - 2;
-
-      for (let i = 1; i <= stepsRemaining; i++) {
-        if (i === stepsRemaining) {
-          path.push(target);
-        } else {
-          const leftSteps = stepsRemaining - i;
-          const gap = target - current;
-          const increment = Math.max(1, Math.ceil(gap / (leftSteps + 1)));
-          current = Math.min(current + increment, target);
-          path.push(current);
-        }
-      }
-
-      return path;
-    };
-
-    const sortedHistory = [...scoreHistory].sort((a, b) =>
-      (a.totalAttempted || 0) - (b.totalAttempted || 0)
-    );
-
-    const scores: number[] = [];
-    if (sortedHistory.length >= numPoints) {
-      const plottedScores: number[] = [];
-      for (let i = 0; i < numPoints; i++) {
-        plottedScores.push(sortedHistory[i]?.predictedScore ?? currentScore);
-      }
-      const uniquePlotted = new Set(plottedScores);
-      if (uniquePlotted.size > 1) {
-        scores.push(...plottedScores);
-      } else {
-        const syntheticPath = generatePath(numPoints, currentScore);
-        scores.push(...syntheticPath);
-      }
-    } else {
-      const syntheticPath = generatePath(numPoints, currentScore);
-      scores.push(...syntheticPath);
-    }
-
-    const minSlots = 5;
-    const totalSlots = Math.max(minSlots, numPoints + 2);
-    const lastScore = scores[scores.length - 1] ?? currentScore;
-
-    const result: any[] = [];
-    for (let i = 0; i < totalSlots; i++) {
-      if (i < numPoints) {
-        const isLast = i === numPoints - 1;
-        result.push({
-          dateLabel: `${i + 1}`,
-          fullDate: sortedHistory[i] ? formatDate(sortedHistory[i].date) : "",
-          predictedScore: scores[i],
-          projectedScore: isLast ? lastScore : undefined,
-        });
-      } else {
-        result.push({
-          dateLabel: `${i + 1}`,
-          fullDate: "",
-          predictedScore: undefined,
-          projectedScore: lastScore,
-        });
-      }
-    }
-    return result;
-  })();
+  const testChartData = testHistory.map((test) => ({
+    testLabel: `Test ${test.testNumber}`,
+    testNumber: test.testNumber,
+    percentage: test.percentage,
+    score: test.score,
+    totalQuestions: test.totalQuestions,
+    date: test.date
+  }));
 
   if (loading || isLoading) {
     return (
@@ -349,42 +269,46 @@ export default function AnalyticsPage() {
               </Card>
             )}
 
-            {chartData.length >= 1 && (
+            {testChartData.length >= 1 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center justify-between dark:text-gray-100">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5 text-blue-500" />
-                      Score Progress Over Time
+                      Test Score Progress
                     </div>
-                    <Badge variant="outline" className="text-[10px] font-normal border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400">
-                      Calculated using rolling last 50 questions
-                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4 px-1">
-                    Your score updates every 25 questions. The dashed line shows your current projected level.
+                    Track your performance across all full-length practice tests
                   </p>
                   <div className="mb-4 grid grid-cols-2 gap-3 text-center">
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
-                      <p className="text-2xl font-bold" style={{ color: scoreColors[(() => { const real = chartData.filter(d => d.predictedScore !== undefined); return real[real.length - 1]?.predictedScore; })()] || "#6b7280" }}>
-                        {(() => { const real = chartData.filter(d => d.predictedScore !== undefined); return real[real.length - 1]?.predictedScore || "-"; })()}
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {testChartData[testChartData.length - 1]?.percentage || "-"}%
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Current Score</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Latest Test</p>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
                       {(() => {
-                        const real = chartData.filter(d => d.predictedScore !== undefined);
-                        const first = real[0]?.predictedScore || 0;
-                        const last = real[real.length - 1]?.predictedScore || 0;
+                        if (testChartData.length < 2) {
+                          return (
+                            <>
+                              <p className="text-2xl font-bold text-gray-500">-</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Score Change</p>
+                            </>
+                          );
+                        }
+                        const first = testChartData[0]?.percentage || 0;
+                        const last = testChartData[testChartData.length - 1]?.percentage || 0;
                         const diff = last - first;
                         return (
                           <>
                             <p className={`text-2xl font-bold ${diff > 0 ? "text-green-500" : diff < 0 ? "text-red-500" : "text-gray-500"}`}>
-                              {diff > 0 ? `+${diff}` : diff === 0 ? "0" : `${diff}`}
+                              {diff > 0 ? `+${diff}%` : diff === 0 ? "0%" : `${diff}%`}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Score Change</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Overall Change</p>
                           </>
                         );
                       })()}
@@ -393,35 +317,25 @@ export default function AnalyticsPage() {
 
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                      <LineChart data={testChartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:opacity-10" />
                         <XAxis
-                          dataKey="dateLabel"
+                          dataKey="testLabel"
                           tick={{ fontSize: 11, fill: "#9ca3af" }}
                           axisLine={{ stroke: "#e5e7eb" }}
                           tickLine={false}
+                          label={{ value: "Test #", position: "insideBottom", offset: -5, style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" } }}
                         />
                         <YAxis
-                          yAxisId="left"
-                          domain={[0, 5]}
-                          ticks={[1, 2, 3, 4, 5]}
+                          domain={[0, 100]}
+                          ticks={[0, 20, 40, 60, 80, 100]}
                           tick={{ fontSize: 12, fill: "#9ca3af" }}
                           axisLine={false}
                           tickLine={false}
-                          label={{ value: "AP Score", angle: -90, position: "insideLeft", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
-                        />
-                        <YAxis
-                          yAxisId="right"
-                          orientation="right"
-                          domain={[0, 5]}
-                          ticks={[1, 2, 3, 4, 5]}
-                          tick={{ fontSize: 12, fill: "#9ca3af" }}
-                          axisLine={false}
-                          tickLine={false}
-                          label={{ value: "AP Score", angle: 90, position: "insideRight", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
+                          label={{ value: "Score %", angle: -90, position: "insideLeft", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
                         />
                         <Tooltip
-                          cursor={false}
+                          cursor={{ strokeDasharray: "3 3" }}
                           contentStyle={{
                             backgroundColor: "rgba(255,255,255,0.98)",
                             border: "1px solid #e5e7eb",
@@ -430,41 +344,34 @@ export default function AnalyticsPage() {
                             boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
                             padding: "12px"
                           }}
-                          formatter={(value: any, name: string) => {
-                            if (name === "projectedScore") return [value, "Projected Score"];
-                            return [value, "AP Score"];
+                          formatter={(value: any, name: string, props: any) => {
+                            const { score, totalQuestions } = props.payload;
+                            return [
+                              <div key="tooltip" className="space-y-1">
+                                <div className="font-bold text-blue-600">{value}%</div>
+                                <div className="text-xs text-gray-600">{score}/{totalQuestions} correct</div>
+                              </div>,
+                              ""
+                            ];
                           }}
-                          labelFormatter={(label, payload) => {
-                            const entry = payload[0]?.payload;
-                            if (entry?.fullDate) return `${label} (${entry.fullDate})`;
-                            return label;
-                          }}
+                          labelFormatter={(label) => label}
                         />
-                        <ReferenceLine yAxisId="left" y={3} stroke="#eab308" strokeDasharray="5 5" strokeWidth={1.5} label={{ position: 'right', value: 'Qualified', fill: '#eab308', fontSize: 10 }} />
+                        <ReferenceLine y={70} stroke="#22c55e" strokeDasharray="5 5" strokeWidth={1.5} label={{ position: 'right', value: 'Target: 70%', fill: '#22c55e', fontSize: 10 }} />
 
                         <Line
-                          yAxisId="left"
-                          type="monotone"
-                          dataKey="projectedScore"
-                          stroke={predicted.score >= 3 ? "#22c55e" : "#ef4444"}
-                          strokeWidth={2}
-                          strokeDasharray="6 4"
-                          dot={false}
-                          activeDot={false}
-                          connectNulls={false}
-                        />
-
-                        <Line
-                          yAxisId="left"
-                          type="monotone"
-                          dataKey="predictedScore"
-                          stroke="#8b5cf6"
-                          strokeWidth={3}
-                          connectNulls={false}
+                          type="natural"
+                          dataKey="percentage"
+                          stroke="#3b82f6"
+                          strokeWidth={3.5}
                           dot={(props: any) => {
                             const { cx, cy, payload } = props;
-                            if (payload.predictedScore === undefined) return <></>;
-                            const color = scoreColors[payload.predictedScore] || "#8b5cf6";
+                            const percentage = payload.percentage;
+                            let color = "#3b82f6";
+                            if (percentage >= 80) color = "#10b981";
+                            else if (percentage >= 70) color = "#22c55e";
+                            else if (percentage >= 50) color = "#eab308";
+                            else color = "#ef4444";
+                            
                             return (
                               <circle
                                 key={`dot-${props.index}`}
@@ -480,8 +387,13 @@ export default function AnalyticsPage() {
                           }}
                           activeDot={(props: any) => {
                             const { cx, cy, payload } = props;
-                            if (payload.predictedScore === undefined) return <></>;
-                            const color = scoreColors[payload.predictedScore] || "#8b5cf6";
+                            const percentage = payload.percentage;
+                            let color = "#3b82f6";
+                            if (percentage >= 80) color = "#10b981";
+                            else if (percentage >= 70) color = "#22c55e";
+                            else if (percentage >= 50) color = "#eab308";
+                            else color = "#ef4444";
+                            
                             return (
                               <circle
                                 cx={cx}
@@ -490,7 +402,7 @@ export default function AnalyticsPage() {
                                 fill={color}
                                 stroke="white"
                                 strokeWidth={3}
-                                style={{ filter: "drop-shadow(0 0 6px rgba(139,92,246,0.5))" }}
+                                style={{ filter: "drop-shadow(0 0 6px rgba(59,130,246,0.5))" }}
                               />
                             );
                           }}
@@ -501,31 +413,25 @@ export default function AnalyticsPage() {
 
                   <div className="flex items-center justify-center gap-6 mt-3 text-xs text-gray-500 dark:text-gray-400">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-8 h-0 border-t-[3px] border-purple-500" />
-                      AP Score
+                      <div className="w-8 h-0 border-t-[3px] border-blue-500" />
+                      Test Score
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className={`w-8 h-0 border-t-2 border-dashed ${predicted.score >= 3 ? "border-green-500" : "border-red-500"}`} />
-                      Projected Level
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-0 border-t-2 border-dashed border-yellow-500" />
-                      Score 3 (Qualified)
+                      <div className="w-6 h-0 border-t-2 border-dashed border-green-500" />
+                      70% Target
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {chartData.length === 0 && (
+            {testChartData.length === 0 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700 border-dashed">
                 <CardContent className="p-6 text-center">
                   <TrendingUp className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600 mb-3" />
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Score Progress Chart</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Test Score Progress</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {!hasEnoughForPrediction
-                      ? `Answer at least 25 questions to see your first score plot. You've answered ${stats.totalAttempted} so far.`
-                      : "Keep practicing to see your AP score trend over time. New data points are added every 25 questions."}
+                    Complete a full-length practice test to see your score progression. Head to your dashboard to start a test!
                   </p>
                 </CardContent>
               </Card>

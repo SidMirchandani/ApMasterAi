@@ -94,24 +94,24 @@ export function QuizHeader({
   };
 
   return (
-    <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-50">
+    <div className="border-b border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Desktop: single row */}
         <div className="hidden md:flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h1 className="text-lg font-display font-semibold text-slate-900 dark:text-white">
                 {title}
               </h1>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-gray-600 hover:text-gray-900">
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg">
                     Directions <ChevronDown className="ml-1 h-3 w-3" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[600px] sm:w-[700px] overflow-y-auto">
+                <SheetContent side="left" className="w-[600px] sm:w-[700px] overflow-y-auto rounded-r-2xl border-slate-200 dark:border-slate-700">
                   <SheetHeader>
-                    <SheetTitle className="text-xl font-bold">Please read the below directions carefully.</SheetTitle>
+                    <SheetTitle className="text-xl font-display font-bold text-slate-900 dark:text-white">Please read the directions carefully.</SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 space-y-4 text-sm">
                     {examDirections ? (
@@ -198,7 +198,7 @@ export function QuizHeader({
           </div>
 
           <div className="flex items-center gap-4">
-            <div className={`flex items-center gap-2 text-sm font-medium ${isLowTime ? 'text-orange-600' : ''}`}>
+            <div className={`flex items-center gap-2 text-sm font-semibold ${isLowTime ? "text-amber-600 dark:text-amber-400" : "text-slate-600 dark:text-slate-400"}`}>
               <Clock className="h-5 w-5" />
               <span className="hidden sm:inline">
                 {timeRemaining !== undefined ? formatCountdown(timeRemaining) : formatTime(timeElapsed)}
@@ -237,14 +237,13 @@ export function QuizHeader({
 
         {/* Mobile: two rows */}
         <div className="md:hidden py-2">
-          {/* First row: Title and Directions */}
           <div className="flex flex-col items-center">
-            <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            <h1 className="text-base font-display font-semibold text-slate-900 dark:text-white">
               {getShortTitle(title)}
             </h1>
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-5 px-2 text-xs text-gray-600 hover:text-gray-900">
+                <Button variant="ghost" size="sm" className="h-5 px-2 text-xs text-slate-500 hover:text-emerald-600 rounded-lg">
                   Directions <ChevronDown className="ml-1 h-3 w-3" />
                 </Button>
               </SheetTrigger>
@@ -335,9 +334,8 @@ export function QuizHeader({
             </Sheet>
           </div>
 
-          {/* Second row: Timer and tools */}
           <div className="flex justify-between items-center h-10 mt-1">
-            <div className={`flex items-center gap-2 text-sm font-medium ${isLowTime ? 'text-orange-600' : ''}`}>
+            <div className={`flex items-center gap-2 text-sm font-semibold ${isLowTime ? "text-amber-600" : "text-slate-600 dark:text-slate-400"}`}>
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">
                 {timeRemaining !== undefined ? formatCountdown(timeRemaining) : formatTime(timeElapsed)}

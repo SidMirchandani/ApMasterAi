@@ -24,15 +24,18 @@ export default async function handler(
 
     const { displayName, email, photoURL } = req.body;
 
-    if (!displayName || !email) {
+    if (!email) {
       return res.status(400).json({
         success: false,
-        message: "Display name and email are required",
+        message: "Email is required",
       });
     }
 
+    // Use displayName or fall back to email prefix for Google users
+    const displayNameValue = displayName?.trim() || email.split("@")[0] || "User";
+
     // Split display name into first and last name
-    const nameParts = displayName.trim().split(" ");
+    const nameParts = displayNameValue.trim().split(" ");
     const firstName = nameParts[0] || "";
     const lastName = nameParts.slice(1).join(" ") || "";
 
@@ -48,6 +51,7 @@ export default async function handler(
       firstName,
       lastName,
       photoURL: photoURL || null,
+      firebaseUid: userId,
       updatedAt: new Date().toISOString(),
     };
 
@@ -68,7 +72,7 @@ export default async function handler(
         userId,
         firstName,
         lastName,
-        displayName,
+        displayName: displayNameValue,
         email,
       },
     });

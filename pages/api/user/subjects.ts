@@ -9,12 +9,12 @@ const insertUserSubjectSchema = z.object({
   userId: z.string(),
   subjectId: z.string(),
   name: z.string(),
-  description: z.string().optional(),
+  description: z.string().optional().default(""),
   units: z.number().min(1).max(20),
-  difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+  difficulty: z.enum(["Easy", "Medium", "Hard"]).optional().default("Medium"),
   examDate: z.string(),
-  progress: z.number().min(0).max(100).default(0),
-  masteryLevel: z.number().min(0).max(100).default(0),
+  progress: z.number().min(0).max(100).optional().default(0),
+  masteryLevel: z.number().min(0).max(100).optional().default(0),
 });
 
 async function getOrCreateUser(firebaseUid: string): Promise<string> {

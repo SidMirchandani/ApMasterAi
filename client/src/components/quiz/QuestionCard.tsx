@@ -152,20 +152,20 @@ export function QuestionCard({
   const shouldShowCorrectness = isAnswerSubmitted || isFullLength;
 
   return (
-    <Card className={`${isFlagged ? "border-red-500 border-2" : ""} dark:bg-gray-900 dark:border-gray-700`}>
+    <Card className={`rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm ${isFlagged ? "ring-2 ring-rose-400 dark:ring-rose-500" : ""}`}>
       <CardHeader className="pb-1 pt-2">
-        <div className="flex items-center justify-between border-b dark:border-gray-700 pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-gray-50 dark:bg-gray-800 min-h-[48px]">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-slate-50 dark:bg-slate-800/50 min-h-[48px] rounded-t-2xl">
           <div className="flex items-center gap-2">
             {!hidePracticeQuizElements && (
-              <div className="bg-black text-white px-2 py-0.5 font-bold text-xs rounded">
+              <div className="bg-slate-900 dark:bg-slate-700 text-white px-2.5 py-0.5 font-bold text-xs rounded-lg">
                 {questionNumber}
               </div>
             )}
             {isFullLength && (
               <button
                 onClick={onToggleFlag}
-                className={`flex items-center gap-1 text-xs font-medium ${
-                  isFlagged ? "text-black dark:text-white" : "text-gray-600 dark:text-gray-400"
+                className={`flex items-center gap-1 text-xs font-medium rounded-lg px-1.5 py-0.5 transition-colors ${
+                  isFlagged ? "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
                 }`}
               >
                 <Flag className={`h-3 w-3 ${isFlagged ? "fill-current" : ""}`} />
@@ -177,7 +177,7 @@ export function QuestionCard({
             {onToggleBookmark && (
               <button
                 onClick={onToggleBookmark}
-                className={`p-1 rounded transition-colors ${isBookmarked ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
+                className={`p-1 rounded-lg transition-colors ${isBookmarked ? "text-amber-500" : "text-slate-400 hover:text-amber-500"}`}
                 title={isBookmarked ? "Remove bookmark" : "Bookmark this question"}
               >
                 <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
@@ -186,7 +186,7 @@ export function QuestionCard({
             <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
               <DialogTrigger asChild>
                 <button
-                  className="p-1 rounded text-gray-400 hover:text-red-500 transition-colors"
+                  className="p-1 rounded-lg text-slate-400 hover:text-rose-500 transition-colors"
                   title="Report an issue with this question"
                 >
                   <AlertTriangle className="w-4 h-4" />
@@ -239,7 +239,7 @@ export function QuestionCard({
               </DialogContent>
             </Dialog>
             {!hidePracticeQuizElements && (
-              <button className="px-2 py-0.5 text-xs font-semibold border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300">
+              <button className="px-2 py-0.5 text-xs font-semibold border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors">
                 ABC
               </button>
             )}
@@ -250,7 +250,7 @@ export function QuestionCard({
       <CardContent className="space-y-2 p-0 pt-2 pb-2 px-3">
         {/* Question Counter for Practice Quizzes */}
         {hidePracticeQuizElements && totalQuestions && (
-          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
             Question {questionNumber} of {totalQuestions}
           </div>
         )}
@@ -269,8 +269,8 @@ export function QuestionCard({
               const isCrossedOut = crossedOut.has(label);
 
               // Determine the background and border color for this choice
-              let bgColor = "bg-white dark:bg-gray-800";
-              let borderColor = "border-gray-200 dark:border-gray-600";
+              let bgColor = "bg-white dark:bg-slate-800";
+              let borderColor = "border-slate-200 dark:border-slate-600";
               let opacity = "opacity-100";
 
               if (isCrossedOut && !isAnswerSubmitted && !isReviewMode) {
@@ -313,14 +313,14 @@ export function QuestionCard({
                   key={label}
                   className={`flex items-center gap-2 p-3 rounded border transition-all cursor-pointer min-h-[48px] relative group/choice
                     ${bgColor} ${borderColor} ${opacity}
-                    ${!shouldShowCorrectness && !isUserAnswer ? "hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-500" : ""}
+                    ${!shouldShowCorrectness && !isUserAnswer ? "hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500" : ""}
                   `}
                   onClick={() => !isAnswerSubmitted && onAnswerSelect(label)}
                 >
                   <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center font-semibold text-xs ${
                     isUserAnswer
                       ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/40'
-                      : 'border-gray-400 bg-white dark:bg-gray-700 dark:border-gray-500'
+                      : "border-slate-400 bg-white dark:bg-slate-700 dark:border-slate-500"
                   }`}>
                     {label}
                   </div>
@@ -338,7 +338,7 @@ export function QuestionCard({
                           return next;
                         });
                       }}
-                      className="opacity-0 group-hover/choice:opacity-100 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 transition-opacity"
+                      className="opacity-0 group-hover/choice:opacity-100 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-opacity"
                       title="Cross out"
                     >
                       <XCircle className="w-4 h-4" />

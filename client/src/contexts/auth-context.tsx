@@ -114,8 +114,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 domain: window.location.hostname
               });
 
-              // Save user profile when they log in
-              if (firebaseUser && firebaseUser.displayName) {
+              // Save user profile when they log in (Google, email, etc.)
+              if (firebaseUser && firebaseUser.email) {
                 await saveUserProfile(firebaseUser);
               }
             } catch (error) {

@@ -4,12 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BookOpen,
-  Clock,
   Trash2,
   Plus,
   Calendar,
   AlertTriangle,
   TrendingUp,
+  Target,
+  ChevronDown,
+  Sparkles,
+  Trophy,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -28,7 +31,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 // =====================
@@ -53,32 +55,13 @@ interface DashboardSubject {
 // HELPERS
 // =====================
 const getUnitStatus = (unitData: any) => {
-  console.log('📊 [getUnitStatus] Called with:', {
-    hasData: !!unitData,
-    unitData: unitData,
-    highestScore: unitData?.highestScore,
-    mcqScore: unitData?.mcqScore,
-    scores: unitData?.scores
-  });
-
   if (!unitData) {
-    console.log('⚪ [getUnitStatus] No data -> Not Started');
-    return { bg: "bg-gray-200 dark:bg-gray-800", status: "Not Started", score: 0 };
+    return { bg: "bg-slate-200 dark:bg-slate-700", status: "Not Started", score: 0 };
   }
-
   const score = unitData.highestScore ?? unitData.mcqScore ?? 0;
-  console.log('🎯 [getUnitStatus] Calculated score:', score);
-  
-  if (score >= 80) {
-    console.log('🟢 [getUnitStatus] Mastered (score >= 80)');
-    return { bg: "bg-green-600", status: "Mastered", score };
-  }
-  if (score >= 60) {
-    console.log('🟢 [getUnitStatus] Proficient (score >= 60)');
-    return { bg: "bg-green-400", status: "Proficient", score };
-  }
-  console.log('🟠 [getUnitStatus] In Progress (score < 60)');
-  return { bg: "bg-orange-400", status: "In Progress", score };
+  if (score >= 80) return { bg: "bg-emerald-500", status: "Mastered", score };
+  if (score >= 60) return { bg: "bg-blue-400", status: "Proficient", score };
+  return { bg: "bg-amber-400", status: "In Progress", score };
 };
 
 // =====================
@@ -90,16 +73,11 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [subjectToRemove, setSubjectToRemove] =
-    useState<DashboardSubject | null>(null);
-  const [subjectToArchive, setSubjectToArchive] =
-    useState<DashboardSubject | null>(null);
+  const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
+  const [subjectToArchive, setSubjectToArchive] = useState<DashboardSubject | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
 
-  // =====================
-  // FETCH USER PROFILE
-  // =====================
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile"],
     queryFn: async () => {
@@ -112,9 +90,6 @@ export default function Dashboard() {
     gcTime: Infinity,
   });
 
-  // =====================
-  // FETCH SUBJECTS
-  // =====================
   const {
     data: subjectsResponse,
     isLoading: subjectsLoading,
@@ -136,7 +111,7 @@ export default function Dashboard() {
 
   const subjects: DashboardSubject[] = useMemo(
     () => subjectsResponse?.data || [],
-    [subjectsResponse?.data],
+    [subjectsResponse?.data]
   );
 
   const activeSubjects = subjects.filter((s) => !s.archived);
@@ -146,34 +121,27 @@ export default function Dashboard() {
     if (subjectsError && !subjectsLoading) {
       toast({
         title: "Error loading subjects",
-        description: subjectsError.message,
+        description: (subjectsError as Error).message,
         variant: "destructive",
       });
     }
   }, [subjectsError, subjectsLoading]);
 
-  // =====================
-  // ARCHIVE MUTATION
-  // =====================
   const archiveMutation = useMutation({
     mutationFn: async ({ id, archive }: any) => {
-      const res = await apiRequest("PUT", `/api/user/subjects/${id}`, {
-        archived: archive,
-      });
+      const res = await apiRequest("PUT", `/api/user/subjects/${id}`, { archived: archive });
       if (!res.ok) throw new Error("Failed archive");
       return res.json();
     },
     onMutate: async ({ id, archive }) => {
       await queryClient.cancelQueries({ queryKey: ["subjects"] });
       const prev = queryClient.getQueryData(["subjects"]);
-
       queryClient.setQueryData(["subjects"], (old: any) => ({
         ...old,
         data: old.data.map((s: any) =>
-          String(s.id) === String(id) ? { ...s, archived: archive } : s,
+          String(s.id) === String(id) ? { ...s, archived: archive } : s
         ),
       }));
-
       return { prev };
     },
     onError: (_, __, ctx) => {
@@ -181,16 +149,10 @@ export default function Dashboard() {
       toast({ title: "Error archiving", variant: "destructive" });
     },
     onSuccess: (_, { archive }) => {
-      toast({
-        title: archive ? "Archived" : "Restored",
-        description: archive ? "Moved to archive" : "Restored",
-      });
+      toast({ title: archive ? "Archived" : "Restored" });
     },
   });
 
-  // =====================
-  // DELETE MUTATION
-  // =====================
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest("DELETE", `/api/user/subjects/${id}`);
@@ -200,12 +162,10 @@ export default function Dashboard() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ["subjects"] });
       const prev = queryClient.getQueryData(["subjects"]);
-
       queryClient.setQueryData(["subjects"], (old: any) => ({
         ...old,
         data: old.data.filter((s: any) => String(s.id) !== String(id)),
       }));
-
       return { prev };
     },
     onError: (_, __, ctx) => {
@@ -220,51 +180,69 @@ export default function Dashboard() {
     },
   });
 
-  // =====================
-  // NAVIGATION
-  // =====================
-  if (loading) return <CenteredLoader text="Loading..." />;
-
+  if (loading) return <CenteredLoader />;
   if (!isAuthenticated) return null;
+  if (subjectsError && !subjectsLoading) return <ErrorScreen refetch={refetchSubjects} />;
 
-  if (subjectsError && !subjectsLoading)
-    return <ErrorScreen refetch={refetchSubjects} />;
+  const greeting = (() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  })();
 
-  // =====================
-  // MAIN UI
-  // =====================
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 relative">
       <BackgroundDecor />
       <Navigation />
 
-      <main className="py-5 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
-        <Header name={userProfile?.data?.firstName} />
+      <main className="py-8 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-10">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-1 uppercase tracking-widest">
+                {greeting}
+              </p>
+              <h1 className="text-3xl sm:text-4xl font-display font-bold text-slate-900 dark:text-white tracking-tight">
+                {userProfile?.data?.firstName
+                  ? `Welcome back, ${userProfile.data.firstName} 👋`
+                  : "Welcome back 👋"}
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 font-medium mt-1.5">
+                Continue your personalized AP preparation journey.
+              </p>
+            </div>
+            {activeSubjects.length > 0 && (
+              <Button
+                onClick={() => router.push("/learn")}
+                className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl font-semibold shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] transition-all px-5 h-11 flex-shrink-0"
+              >
+                <Plus className="mr-2 w-4 h-4" /> Add Course
+              </Button>
+            )}
+          </div>
+        </div>
 
         {subjectsLoading || !subjectsResponse ? (
-          <CenteredLoader text="Loading your subjects..." />
+          <CenteredLoader />
         ) : subjects.length === 0 ? (
           <EmptyState router={router} />
         ) : (
           <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold tracking-tight text-[#2d3b45] dark:text-gray-100">My Subjects</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Manage and track your AP exam preparation.</p>
+                <h2 className="text-lg font-display font-bold tracking-tight text-slate-900 dark:text-white">
+                  My Subjects
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                  {activeSubjects.length} course{activeSubjects.length !== 1 ? "s" : ""} enrolled
+                </p>
               </div>
-              <Button
-                onClick={() => router.push("/learn")}
-                variant="outline"
-                className="w-full sm:w-auto border-[#36b37e] text-[#36b37e] hover:bg-[#36b37e] hover:text-white transition-all shadow-sm"
-              >
-                <Plus className="mr-2 w-4 h-4" /> Add Courses
-              </Button>
+              {subjectsFetching && <RefreshingState />}
             </div>
 
-            {subjectsFetching && <RefreshingState />}
-
-            {/* Active subjects */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 pb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {activeSubjects.map((subject) => (
                 <SubjectCard
                   key={subject.id}
@@ -274,22 +252,17 @@ export default function Dashboard() {
                     setSubjectToRemove(subject);
                     setShowRemoveDialog(true);
                   }}
-                  onStudy={() =>
-                    router.push(`/study?subject=${subject.subjectId}`)
-                  }
+                  onStudy={() => router.push(`/study?subject=${subject.subjectId}`)}
                 />
               ))}
             </div>
 
-            {/* Archived Section */}
             {archivedSubjects.length > 0 && (
               <ArchivedSection
                 subjects={archivedSubjects}
                 isOpen={isArchiveExpanded}
                 toggle={() => setIsArchiveExpanded((v) => !v)}
-                onRestore={(s) =>
-                  archiveMutation.mutate({ id: s.id, archive: false })
-                }
+                onRestore={(s) => archiveMutation.mutate({ id: s.id, archive: false })}
               />
             )}
           </div>
@@ -298,19 +271,18 @@ export default function Dashboard() {
 
       {/* Delete dialog */}
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="rounded-2xl max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Subject?</AlertDialogTitle>
+            <AlertDialogTitle>Delete subject?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <b>{subjectToRemove?.name}</b>?
-              This cannot be undone.
+              Are you sure you want to delete <b>{subjectToRemove?.name}</b>? This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate(String(subjectToRemove?.id))}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-rose-600 hover:bg-rose-700 rounded-xl"
             >
               Delete
             </AlertDialogAction>
@@ -319,28 +291,22 @@ export default function Dashboard() {
       </AlertDialog>
 
       {/* Archive dialog */}
-      <AlertDialog
-        open={!!subjectToArchive}
-        onOpenChange={(v) => !v && setSubjectToArchive(null)}
-      >
-        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+      <AlertDialog open={!!subjectToArchive} onOpenChange={(v) => !v && setSubjectToArchive(null)}>
+        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="rounded-2xl max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Archive Subject?</AlertDialogTitle>
+            <AlertDialogTitle>Archive subject?</AlertDialogTitle>
             <AlertDialogDescription>
-              Move <b>{subjectToArchive?.name}</b> to archive?
+              Move <b>{subjectToArchive?.name}</b> to archive? You can restore it later.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                archiveMutation.mutate({
-                  id: subjectToArchive?.id,
-                  archive: true,
-                });
+                archiveMutation.mutate({ id: subjectToArchive?.id, archive: true });
                 setSubjectToArchive(null);
               }}
-              className="bg-khan-blue hover:bg-khan-blue/90"
+              className="bg-emerald-500 hover:bg-emerald-600 rounded-xl"
             >
               Archive
             </AlertDialogAction>
@@ -352,70 +318,69 @@ export default function Dashboard() {
 }
 
 // ======================================================================================
-// SUBCOMPONENTS — compact, readable, no logic duplication
+// SUBCOMPONENTS
 // ======================================================================================
 
 const BackgroundDecor = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl" />
-    <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl" />
+    <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-400/10 rounded-full blur-3xl" />
+    <div className="absolute bottom-20 right-10 w-96 h-96 bg-violet-400/8 rounded-full blur-3xl" />
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-400/5 rounded-full blur-3xl" />
   </div>
 );
 
-const Header = ({ name }: { name?: string }) => (
-  <div className="mb-4">
-    <h1 className="text-xl sm:text-2xl font-bold text-[#2d3b45] dark:text-gray-100 mb-0.5">
-      Welcome back{name ? `, ${name}` : ""}!
-    </h1>
-    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Continue your personalized AP preparation journey.</p>
-  </div>
-);
-
-const CenteredLoader = ({ text }: { text: string }) => (
-  <div className="flex items-center justify-center py-16 bg-background">
+const CenteredLoader = () => (
+  <div className="flex items-center justify-center py-24">
     <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green mx-auto mb-4" />
-      <p className="text-foreground">{text}</p>
+      <div className="relative w-12 h-12 mx-auto mb-4">
+        <div className="absolute inset-0 rounded-full border-2 border-emerald-200 dark:border-emerald-800" />
+        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-500 animate-spin" />
+      </div>
+      <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">Loading...</p>
     </div>
   </div>
 );
 
 const EmptyState = ({ router }: { router: any }) => (
-  <div className="text-center py-16">
-    <BookOpen className="mx-auto h-24 w-24 text-gray-300 mb-6" />
-    <h2 className="text-2xl font-bold mb-4">No subjects added yet</h2>
-    <p className="text-gray-500 mb-8">Add AP subjects to start</p>
+  <div className="text-center py-24 px-4">
+    <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-500/20 dark:to-emerald-500/10 flex items-center justify-center border border-emerald-200/60 dark:border-emerald-800/60">
+      <Sparkles className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
+    </div>
+    <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-2">
+      No subjects yet
+    </h2>
+    <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-sm mx-auto font-medium">
+      Add AP subjects to start practicing and tracking your progress.
+    </p>
     <Button
       onClick={() => router.push("/learn")}
-      className="bg-khan-green text-white px-6"
+      className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-8 h-12 rounded-xl font-semibold shadow-[0_4px_14px_rgba(16,185,129,0.25)]"
     >
-      <Plus className="mr-2 w-5 h-5" /> Courses
+      <Plus className="mr-2 w-5 h-5" /> Browse Courses
     </Button>
   </div>
 );
 
 const RefreshingState = () => (
-  <div className="mb-4 text-center">
-    <div className="inline-flex items-center text-sm text-gray-500">
-      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-khan-green mr-2" />
-      Refreshing...
-    </div>
+  <div className="inline-flex items-center text-sm text-slate-500 dark:text-slate-400 gap-2">
+    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-emerald-200 border-t-emerald-500" />
+    Refreshing…
   </div>
 );
 
 const ErrorScreen = ({ refetch }: { refetch: () => void }) => (
-  <div className="min-h-screen bg-khan-background">
+  <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
     <Navigation />
-    <div className="py-12 px-4">
-      <Alert className="mb-8 border-red-300 bg-red-50">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription className="text-red-600 flex justify-between items-center">
+    <div className="py-12 px-4 max-w-xl mx-auto">
+      <Alert className="border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-500/10 rounded-2xl">
+        <AlertTriangle className="h-4 w-4 text-rose-600" />
+        <AlertDescription className="text-rose-700 dark:text-rose-300 flex flex-wrap justify-between items-center gap-3">
           Failed to load your subjects.
           <Button
             variant="outline"
             size="sm"
             onClick={refetch}
-            className="border-red-600 text-red-600"
+            className="border-rose-500 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg"
           >
             Try Again
           </Button>
@@ -436,49 +401,43 @@ const ArchivedSection = ({
   toggle: () => void;
   onRestore: (s: DashboardSubject) => void;
 }) => (
-  <div className="mt-8">
+  <div className="mt-6">
     <button
       onClick={toggle}
-      className="flex justify-between w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+      className="flex justify-between items-center w-full p-4 bg-slate-100/80 dark:bg-slate-800/80 rounded-2xl hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200/50 dark:border-slate-700/50 transition-colors"
     >
-      <h3 className="text-lg font-semibold">
-        Archived Subjects ({subjects.length})
-      </h3>
-      <svg
-        className={`w-5 h-5 transition-transform ${isOpen ? "rotate-180" : ""}`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M19 9l-7 7-7-7"
-        />
-      </svg>
+      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+        Archived ({subjects.length})
+      </span>
+      <ChevronDown
+        className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+      />
     </button>
 
     {isOpen && (
-      <div className="mt-4 space-y-4">
+      <div className="mt-3 space-y-3">
         {subjects.map((s) => (
           <Card
             key={s.id}
-            className="bg-gray-50 border-2 border-gray-200 w-full opacity-75"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl opacity-80 hover:opacity-100 transition-opacity"
           >
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>{s.name}</CardTitle>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">
+                    {s.name}
+                  </CardTitle>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{s.description}</p>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => onRestore(s)}
-                  className="border-[#36b37e] text-[#36b37e] hover:bg-[#36b37e] hover:text-white transition-colors"
+                  className="border-emerald-500 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl shrink-0"
                 >
                   Restore
                 </Button>
               </div>
-              <p className="text-gray-600">{s.description}</p>
             </CardHeader>
           </Card>
         ))}
@@ -487,12 +446,12 @@ const ArchivedSection = ({
   </div>
 );
 
-const scoreColorMap: Record<number, string> = {
-  5: "#10b981",
-  4: "#22c55e",
-  3: "#eab308",
-  2: "#f97316",
-  1: "#ef4444",
+const scoreColorMap: Record<number, { text: string; bg: string; border: string; gradient: string }> = {
+  5: { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10", border: "border-emerald-200 dark:border-emerald-800", gradient: "from-emerald-500 to-teal-500" },
+  4: { text: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-500/10", border: "border-green-200 dark:border-green-800", gradient: "from-green-500 to-emerald-500" },
+  3: { text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10", border: "border-amber-200 dark:border-amber-800", gradient: "from-amber-500 to-yellow-500" },
+  2: { text: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10", border: "border-orange-200 dark:border-orange-800", gradient: "from-orange-500 to-amber-500" },
+  1: { text: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-500/10", border: "border-rose-200 dark:border-rose-800", gradient: "from-rose-500 to-pink-500" },
 };
 
 const SubjectCard = ({
@@ -512,7 +471,7 @@ const SubjectCard = ({
 
   const { data: analyticsResponse } = useQuery<{
     success: boolean;
-    data: { totalAttempted: number; totalCorrect: number };
+    data: { totalAttempted: number; totalCorrect: number; accuracy?: number };
   }>({
     queryKey: ["/api/user/analytics", subject.subjectId],
     queryFn: async () => {
@@ -524,116 +483,121 @@ const SubjectCard = ({
   });
 
   const analyticsStats = analyticsResponse?.data;
-  const subjectAccuracy = analyticsStats && analyticsStats.totalAttempted >= 25
-    ? (analyticsStats.accuracy ?? Math.round((analyticsStats.totalCorrect / analyticsStats.totalAttempted) * 100))
-    : null;
-  const predictedScore = subjectAccuracy !== null
-    ? (subjectAccuracy >= 85 ? 5 : subjectAccuracy >= 70 ? 4 : subjectAccuracy >= 55 ? 3 : subjectAccuracy >= 40 ? 2 : 1)
-    : null;
+  const subjectAccuracy =
+    analyticsStats && analyticsStats.totalAttempted >= 25
+      ? (analyticsStats.accuracy ?? Math.round((analyticsStats.totalCorrect / analyticsStats.totalAttempted) * 100))
+      : null;
+  const predictedScore =
+    subjectAccuracy !== null
+      ? subjectAccuracy >= 85 ? 5 : subjectAccuracy >= 70 ? 4 : subjectAccuracy >= 55 ? 3 : subjectAccuracy >= 40 ? 2 : 1
+      : null;
+
+  const scoreColors = predictedScore ? scoreColorMap[predictedScore] : null;
+  const masteredCount = units.filter((u: any) => {
+    const ud = unitProgress[u.id];
+    const score = ud?.highestScore ?? ud?.mcqScore ?? 0;
+    return score >= 80;
+  }).length;
 
   return (
-    <Card className="flex flex-col h-full overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-900 rounded-xl">
-      <CardHeader className="pb-3 pt-4 px-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
-        <div className="flex justify-between items-start gap-4">
-          <div className="space-y-1">
-            <CardTitle className="text-lg font-bold text-[#2d3b45] dark:text-gray-100 tracking-tight leading-tight">
+    <Card className="group flex flex-col h-full overflow-hidden border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all duration-300 bg-white dark:bg-slate-900 rounded-2xl hover:-translate-y-0.5">
+      <div
+        className={`h-1 w-full bg-gradient-to-r ${
+          scoreColors ? scoreColors.gradient : "from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600"
+        } opacity-60 group-hover:opacity-100 transition-opacity duration-300`}
+      />
+      <CardHeader className="pb-3 pt-5 px-5 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex justify-between items-start gap-3">
+          <div className="space-y-1.5 min-w-0">
+            <CardTitle className="text-lg font-display font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
               {subject.name}
             </CardTitle>
-            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
+                <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
                 {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
               </span>
-              <span>•</span>
+              <span className="text-slate-300 dark:text-slate-600">·</span>
               <span className="flex items-center gap-1">
-                <BookOpen className="w-3 h-3" />
+                <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
                 {subject.units} Units
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-400 hover:text-khan-blue hover:bg-gray-100 dark:hover:bg-gray-800 h-8 w-8 p-0"
-              onClick={onArchive}
-              title="Archive"
-            >
-              <BookOpen className="w-4 h-4" />
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 w-8 p-0 rounded-lg" onClick={onArchive} title="Archive">
+              <BookOpen className="w-3.5 h-3.5" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-400 hover:text-destructive hover:bg-destructive/5 h-8 w-8 p-0"
-              onClick={onDelete}
-              title="Delete"
-            >
-              <Trash2 className="w-4 h-4" />
+            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 h-8 w-8 p-0 rounded-lg" onClick={onDelete} title="Delete">
+              <Trash2 className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
       </CardHeader>
-
-      <CardContent className="flex-1 py-4 px-5 flex flex-col justify-between space-y-4">
-        <div className="space-y-4">
-          {/* Progress Overview */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50">
-              <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-1">Predicted Score</p>
-              <div className="flex items-baseline gap-1">
-                {predictedScore !== null ? (
-                  <span className="text-2xl font-black" style={{ color: scoreColorMap[predictedScore] }}>
-                    {predictedScore}
-                  </span>
-                ) : (
-                  <span className="text-lg font-bold text-gray-400 italic">N/A</span>
-                )}
-                <TrendingUp className="w-3 h-3 text-gray-400" />
-              </div>
-            </div>
-            
-            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50">
-              <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-1">Unit Mastery</p>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {units.slice(0, 10).map((u: any, i: number) => {
-                  const unitData = unitProgress[u.id];
-                  const stat = getUnitStatus(unitData);
-                  const isMastered = stat.status === "Mastered";
-                  
-                  return (
-                    <div
-                      key={u.id}
-                      className={`w-5 h-5 rounded-sm ${stat.bg} border border-black/5 flex items-center justify-center shadow-xs transition-transform hover:scale-110 cursor-help`}
-                      title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
-                    >
-                      {isMastered && (
-                        <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3">
-                          <path d="M2 8L5 4L8 7L12 2L16 7L19 4L22 8L19 19H5L2 8Z" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5"/>
-                        </svg>
-                      )}
-                    </div>
-                  );
-                })}
-                {units.length > 10 && (
-                  <span className="text-[10px] text-gray-400 self-center">+{units.length - 10}</span>
-                )}
-              </div>
+      <CardContent className="flex-1 py-4 px-5 flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className={`p-3.5 rounded-xl ${scoreColors ? scoreColors.bg : "bg-slate-50 dark:bg-slate-800/50"} border ${scoreColors ? scoreColors.border : "border-slate-100 dark:border-slate-700/50"}`}>
+            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 mb-1.5 flex items-center gap-1">
+              <TrendingUp className="w-3 h-3" /> Predicted Score
+            </p>
+            <div className="flex items-baseline gap-1">
+              {predictedScore !== null ? (
+                <>
+                  <span className={`text-3xl font-black ${scoreColors?.text || "text-slate-600"}`}>{predictedScore}</span>
+                  <span className={`text-sm font-bold ${scoreColors?.text || "text-slate-400"} opacity-60`}>/5</span>
+                </>
+              ) : (
+                <span className="text-base font-bold text-slate-400 italic">—</span>
+              )}
             </div>
           </div>
-
-          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
-            {subject.description}
-          </p>
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 mb-1.5 flex items-center gap-1">
+              <Trophy className="w-3 h-3" /> Unit Mastery
+            </p>
+            <div className="flex items-baseline gap-1 mb-2">
+              <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{masteredCount}</span>
+              <span className="text-sm font-bold text-slate-400 opacity-60">/{units.length}</span>
+            </div>
+            <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-700"
+                style={{ width: units.length > 0 ? `${(masteredCount / units.length) * 100}%` : "0%" }}
+              />
+            </div>
+          </div>
         </div>
-
-        <div className="pt-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-            <span>Last session: {subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}</span>
+        <div>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Unit Progress</p>
+          <div className="flex flex-wrap gap-1.5">
+            {units.slice(0, 10).map((u: any, i: number) => {
+              const unitData = unitProgress[u.id];
+              const stat = getUnitStatus(unitData);
+              const isMastered = stat.status === "Mastered";
+              return (
+                <div
+                  key={u.id}
+                  className={`w-5 h-5 rounded-md ${stat.bg} border border-black/5 dark:border-white/5 flex items-center justify-center transition-transform hover:scale-125 cursor-help`}
+                  title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
+                >
+                  {isMastered && (
+                    <svg viewBox="0 0 24 24" fill="none" className="w-2.5 h-2.5">
+                      <path d="M2 8L5 4L8 7L12 2L16 7L19 4L22 8L19 19H5L2 8Z" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5" />
+                    </svg>
+                  )}
+                </div>
+              );
+            })}
+            {units.length > 10 && <span className="text-[10px] text-slate-400 self-center font-semibold">+{units.length - 10}</span>}
           </div>
-
-          <Button 
-            onClick={onStudy} 
-            className="w-full bg-[#36b37e] hover:bg-[#2fa371] text-white py-5 h-11 text-sm font-bold rounded-lg shadow-md hover:shadow-lg transition-all active:scale-[0.98] group"
+        </div>
+        <div className="pt-1 mt-auto flex flex-col gap-3">
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+            Last studied: <span className="text-slate-500 dark:text-slate-400">{subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}</span>
+          </div>
+          <Button
+            onClick={onStudy}
+            className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-5 h-12 text-sm font-bold rounded-xl shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] transition-all active:scale-[0.98] group"
           >
             <span>Continue Practice</span>
             <TrendingUp className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />

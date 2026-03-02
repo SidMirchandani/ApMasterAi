@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
-import { getModelName } from "../../lib/gemini-models";
+import { getModelName, getGeminiClientOptions } from "../../lib/gemini-models";
 
 export const config = {
   api: {
@@ -137,12 +137,10 @@ export default async function handler(
 
   const selectedModel = getModelName(model);
 
+  const opts = getGeminiClientOptions();
   const ai = new GoogleGenAI({
-    apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
-    httpOptions: {
-      apiVersion: "",
-      baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
-    },
+    apiKey: opts.apiKey,
+    ...(opts.httpOptions && { httpOptions: opts.httpOptions }),
   });
 
   const firebaseAdmin = getFirebaseAdmin();

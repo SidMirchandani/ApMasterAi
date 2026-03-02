@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { BookOpen, Clock, ArrowRight, Check, Search } from "lucide-react";
+import { BookOpen, Clock, ArrowRight, Check, Search, Sparkles } from "lucide-react";
 
 import {
   Card,
@@ -22,10 +22,6 @@ import { formatDate, safeDateParse } from "@/lib/date";
 
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 
-// ---------------------------------------------------
-// TYPES
-// ---------------------------------------------------
-
 interface Course {
   id: string;
   name: string;
@@ -38,19 +34,11 @@ interface Course {
   lastStudied?: string | number | Date | { seconds: number } | null;
 }
 
-// ---------------------------------------------------
-// MAIN COMPONENT
-// ---------------------------------------------------
-
 export default function Courses() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // ---------------------------------------------------
-  // FETCH ADDED SUBJECTS
-  // ---------------------------------------------------
 
   const { data: subjectsResponse } = useQuery<{
     success: boolean;
@@ -71,10 +59,6 @@ export default function Courses() {
     (subjectsResponse?.data || []).map((s: any) => s.subjectId),
   );
 
-  // ---------------------------------------------------
-  // ADD SUBJECT MUTATION
-  // ---------------------------------------------------
-
   const addSubjectMutation = useMutation({
     mutationFn: async (subject: (typeof apSubjects)[0]) => {
       const response = await apiRequest("POST", "/api/user/subjects", {
@@ -91,27 +75,29 @@ export default function Courses() {
     },
 
     onSuccess: (data, subject) => {
-      // Optimistic cache update
+      const created = data?.data;
       queryClient.setQueryData(["subjects"], (oldData: any) => {
         if (!oldData?.data) return oldData;
         return {
           ...oldData,
-          data: [
-            ...oldData.data,
-            {
-              subjectId: subject.id,
-              name: subject.name,
-              description: subject.description,
-              units: subject.units,
-              difficulty: subject.difficulty,
-              examDate: subject.examDate,
-              progress: 0,
-              masteryLevel: 4,
-            },
-          ],
+          data: created
+            ? [...oldData.data, created]
+            : [
+                ...oldData.data,
+                {
+                  id: undefined,
+                  subjectId: subject.id,
+                  name: subject.name,
+                  description: subject.description,
+                  units: subject.units,
+                  difficulty: subject.difficulty,
+                  examDate: subject.examDate,
+                  progress: 0,
+                  masteryLevel: 4,
+                },
+              ],
         };
       });
-
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
 
       toast({
@@ -121,7 +107,6 @@ export default function Courses() {
     },
   });
 
-  // Better error messaging
   useEffect(() => {
     if (addSubjectMutation.error && !addSubjectMutation.isPending) {
       const msg = addSubjectMutation.error.message;
@@ -154,18 +139,12 @@ export default function Courses() {
     );
   }, [searchQuery]);
 
-  // ---------------------------------------------------
-  // HANDLE ADD CLICK
-  // ---------------------------------------------------
-
   const handleAddToDashboard = (subject: (typeof apSubjects)[0]) => {
     if (!isAuthenticated) return router.push("/login");
 
-    // Normalize difficulty: "Very Hard" → "Hard"
     const adjustedDifficulty =
       subject.difficulty === "Very Hard" ? "Hard" : subject.difficulty;
 
-    // Parse exam date safely
     let formattedExamDate: string;
     try {
       const parsedDate = safeDateParse(subject.examDate);
@@ -187,20 +166,19 @@ export default function Courses() {
     });
   };
 
-  // ---------------------------------------------------
-  // AUTH REDIRECT
-  // ---------------------------------------------------
-
   useEffect(() => {
     if (!loading && !isAuthenticated) router.push("/login");
   }, [loading, isAuthenticated, router]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-khan-background dark:bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-khan-gray-medium dark:text-gray-400">Loading...</p>
+          <div className="relative w-10 h-10 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-2 border-emerald-200 dark:border-emerald-800" />
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-500 animate-spin" />
+          </div>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -209,102 +187,105 @@ export default function Courses() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 dark:bg-khan-green/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 dark:bg-khan-blue/10 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-400/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-violet-400/8 rounded-full blur-3xl" />
       </div>
 
       <Navigation />
 
-      <div className="py-6 px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="py-8 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-khan-gray-dark dark:text-gray-100 mb-3">
-              Choose Your <span className="text-khan-green">AP Subject</span>
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20 mb-4">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">Courses</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-3">
+              Choose Your <span className="text-gradient">AP Subject</span>
             </h1>
-            <p className="text-lg text-khan-gray-medium dark:text-gray-400 max-w-2xl mx-auto mb-4">
-              Select an AP course to begin your personalized learning journey.
+            <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-6">
+              Select an AP course to add to your dashboard and start your personalized learning journey.
             </p>
             <div className="max-w-md mx-auto relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-khan-gray-medium dark:text-gray-500" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search AP subjects..."
-                className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-khan-gray-dark dark:text-gray-100 placeholder:text-khan-gray-medium dark:placeholder:text-gray-500 focus:border-khan-green focus:outline-none focus:ring-1 focus:ring-khan-green transition-colors"
+                className="w-full pl-11 pr-4 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
               />
             </div>
           </div>
 
           {filteredSubjects.length === 0 && searchQuery.trim() && (
-            <div className="text-center py-8 text-khan-gray-medium dark:text-gray-400">
-              No subjects match "{searchQuery}". Try a different search term.
+            <div className="text-center py-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+              <p className="text-slate-500 dark:text-slate-400">
+                No subjects match &quot;{searchQuery}&quot;. Try a different search term.
+              </p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredSubjects
-              .map((subject) => {
-                const isAdded = addedSubjectIds.has(subject.id);
-                const isAdding =
-                  addSubjectMutation.isPending &&
-                  addSubjectMutation.variables?.id === subject.id;
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredSubjects.map((subject) => {
+              const isAdded = addedSubjectIds.has(subject.id);
+              const isAdding =
+                addSubjectMutation.isPending &&
+                addSubjectMutation.variables?.id === subject.id;
 
-                return (
-                  <Card
-                    key={subject.id}
-                    className="bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 hover:border-khan-green/30 dark:hover:border-khan-green/30 hover:shadow-md transition-all"
-                  >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-bold text-khan-gray-dark dark:text-gray-100">
-                        {subject.name}
-                      </CardTitle>
-                      <CardDescription className="text-khan-gray-medium dark:text-gray-400 text-sm leading-relaxed">
-                        {subject.description}
-                      </CardDescription>
-                    </CardHeader>
+              return (
+                <Card
+                  key={subject.id}
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden hover:border-emerald-200 dark:hover:border-emerald-800/50 hover:shadow-xl transition-all duration-300 group"
+                >
+                  <CardHeader className="pb-3 pt-5 px-6">
+                    <CardTitle className="text-lg font-display font-bold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                      {subject.name}
+                    </CardTitle>
+                    <CardDescription className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-2">
+                      {subject.description}
+                    </CardDescription>
+                  </CardHeader>
 
-                    <CardContent>
-                      {/* Metadata */}
-                      <div className="flex items-center justify-between text-sm text-khan-gray-medium dark:text-gray-400 mb-4">
-                        <div className="flex items-center space-x-1">
-                          <BookOpen className="w-4 h-4" />
-                          <span className="text-khan-gray-dark dark:text-gray-200 font-medium">
-                            {subject.units} Units
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock className="w-4 h-4" />
-                          <span className="text-khan-gray-dark dark:text-gray-200 font-medium">
-                            {formatDate(subject.examDate)}
-                          </span>
-                        </div>
+                  <CardContent className="px-6 pb-6">
+                    <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 mb-4">
+                      <div className="flex items-center gap-1.5">
+                        <BookOpen className="w-4 h-4 text-emerald-500" />
+                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                          {subject.units} Units
+                        </span>
                       </div>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-violet-500" />
+                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                          {formatDate(subject.examDate)}
+                        </span>
+                      </div>
+                    </div>
 
-                      {/* ACTION BUTTON */}
-                      {isAdded ? (
-                        <Button
-                          disabled
-                          className="w-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-900/30 cursor-not-allowed font-semibold"
-                        >
-                          <Check className="mr-2 w-4 h-4" />
-                          {isAdding ? "Adding..." : "Added to Dashboard"}
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => handleAddToDashboard(subject)}
-                          className="w-full bg-khan-green text-white hover:bg-khan-green-light font-semibold transition-colors"
-                        >
-                          Add to Dashboard
-                          <ArrowRight className="ml-2 w-4 h-4" />
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                    {isAdded ? (
+                      <Button
+                        disabled
+                        className="w-full rounded-xl h-11 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-2 border-emerald-200 dark:border-emerald-800/50 font-semibold cursor-default"
+                      >
+                        <Check className="mr-2 w-4 h-4" />
+                        {isAdding ? "Adding..." : "Added to Dashboard"}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => handleAddToDashboard(subject)}
+                        className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl h-11 font-semibold shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] transition-all"
+                      >
+                        Add to Dashboard
+                        <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </div>
