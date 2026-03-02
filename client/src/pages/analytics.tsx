@@ -54,6 +54,28 @@ function predictAPScore(accuracy: number): { score: number; label: string; color
   return { score: 1, label: "Needs improvement", color: "#ef4444" };
 }
 
+function TestScoreTooltip({ active, payload }: any) {
+  if (!active || !payload || !payload.length) return null;
+
+  const data = payload[0]?.payload;
+  if (!data) return null;
+
+  const percentage = data.percentage;
+  const score = data.score;
+  const totalQuestions = data.totalQuestions;
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white/95 px-3 py-2 shadow-md text-xs">
+      <div className="font-semibold text-blue-600 text-sm leading-tight">
+        {percentage}%
+      </div>
+      <div className="text-[11px] text-gray-600 leading-tight">
+        {score}/{totalQuestions} correct
+      </div>
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -329,25 +351,7 @@ export default function AnalyticsPage() {
                         />
                         <Tooltip
                           cursor={{ strokeDasharray: "3 3" }}
-                          contentStyle={{
-                            backgroundColor: "rgba(255,255,255,0.98)",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "12px",
-                            fontSize: "13px",
-                            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
-                            padding: "12px"
-                          }}
-                          formatter={(value: any, name: string, props: any) => {
-                            const { score, totalQuestions } = props.payload;
-                            return [
-                              <div key="tooltip" className="space-y-1">
-                                <div className="font-bold text-blue-600">{value}%</div>
-                                <div className="text-xs text-gray-600">{score}/{totalQuestions} correct</div>
-                              </div>,
-                              ""
-                            ];
-                          }}
-                          labelFormatter={(label) => label}
+                          content={<TestScoreTooltip />}
                         />
                         <ReferenceLine y={70} stroke="#22c55e" strokeDasharray="5 5" strokeWidth={1.5} label={{ position: 'right', value: 'Target: 70%', fill: '#22c55e', fontSize: 10 }} />
 
