@@ -5,14 +5,14 @@ export const computerSciencePrinciplesUnits: Unit[] = [
     id: "CRD",
     title: "Creative Development",
     description: "Collaboration, program development, and identifying and correcting errors",
-    examWeight: "17-22%",
+    examWeight: "10-13%",
     progress: 0,
   },
   {
     id: "DAT",
     title: "Data",
     description: "Binary numbers, data compression, and extracting information from data",
-    examWeight: "10-13%",
+    examWeight: "17-22%",
     progress: 0,
   },
   {

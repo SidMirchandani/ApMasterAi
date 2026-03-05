@@ -62,8 +62,8 @@ const SUBJECT_REGISTRY: Record<string, SubjectMeta> = {
     displayName: 'AP Computer Science Principles',
     crackApPath: 'computer-science-principles',
     units: [
-      { id: 'CRD', title: 'Creative Development', description: 'Collaboration, program design, and development', examWeight: '17-22%' },
-      { id: 'DAT', title: 'Data', description: 'Binary numbers, data compression, and extraction', examWeight: '10-13%' },
+      { id: 'CRD', title: 'Creative Development', description: 'Collaboration, program design, and development', examWeight: '10-13%' },
+      { id: 'DAT', title: 'Data', description: 'Binary numbers, data compression, and extraction', examWeight: '17-22%' },
       { id: 'AAP', title: 'Algorithms and Programming', description: 'Variables, algorithms, and programming techniques', examWeight: '30-35%' },
       { id: 'CSN', title: 'Computer Systems and Networks', description: 'Internet, routing, and network protocols', examWeight: '11-15%' },
       { id: 'IOC', title: 'Impact of Computing', description: 'Ethics, privacy, security, and societal impacts', examWeight: '21-26%' }
