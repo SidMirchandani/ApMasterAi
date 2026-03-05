@@ -28,7 +28,7 @@ const metadata = {
   description: 'European history from the Renaissance to the present',
   units: 9,
   difficulty: 'Hard',
-  examDate: 'May 7, 2026',
+  examDate: 'May 4, 2026',
   examTitle: 'AP® European History Practice Exam',
   examSections: [
     {

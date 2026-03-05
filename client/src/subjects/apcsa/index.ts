@@ -30,7 +30,7 @@ const metadata = {
   description: 'Java programming, object-oriented design, data structures, and algorithms',
   units: 10,
   difficulty: 'Hard',
-  examDate: 'May 7, 2026',
+  examDate: 'May 15, 2026',
   examTitle: 'AP® Computer Science A Practice Exam',
   examSections: [
     {

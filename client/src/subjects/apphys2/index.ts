@@ -24,7 +24,7 @@ const metadata = {
   description: 'Thermodynamics, electricity, magnetism, optics, waves, and modern physics',
   units: 7,
   difficulty: 'Very Hard',
-  examDate: 'May 14, 2026',
+  examDate: 'May 7, 2026',
   examTitle: 'AP® Physics 2 Practice Exam',
   examSections: [
     {

@@ -30,7 +30,7 @@ const metadata = {
   description: 'Limits, derivatives, integrals, parametric/polar/vector functions, and infinite series',
   units: 10,
   difficulty: 'Very Hard',
-  examDate: 'May 5, 2026',
+  examDate: 'May 11, 2026',
   examTitle: 'AP® Calculus BC Practice Exam',
   examSections: [
     {

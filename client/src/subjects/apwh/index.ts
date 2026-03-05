@@ -28,7 +28,7 @@ const metadata = {
   description: 'Global historical developments from 1200 CE to the present',
   units: 9,
   difficulty: 'Hard',
-  examDate: 'May 14, 2026',
+  examDate: 'May 7, 2026',
   examTitle: 'AP® World History: Modern Practice Exam',
   examSections: [
     {

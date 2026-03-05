@@ -28,7 +28,7 @@ const metadata = {
   description: 'Ecosystems, biodiversity, natural resources, pollution, and global environmental change',
   units: 9,
   difficulty: 'Medium',
-  examDate: 'May 5, 2026',
+  examDate: 'May 15, 2026',
   examTitle: 'AP® Environmental Science Practice Exam',
   examSections: [
     {

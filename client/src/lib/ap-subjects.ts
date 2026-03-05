@@ -16,7 +16,7 @@ export const apSubjects = [
     description: "Supply and demand, market structures, factor markets, and market failures",
     units: 6,
     difficulty: "Medium",
-    examDate: "May 12, 2026",
+    examDate: "May 4, 2026",
     isActive: true,
   },
   {
@@ -52,7 +52,7 @@ export const apSubjects = [
     description: "Biological bases, cognition, development, social psychology, and mental and physical health",
     units: 5,
     difficulty: "Medium",
-    examDate: "May 6, 2026",
+    examDate: "May 12, 2026",
     isActive: true,
   },
   {
@@ -61,7 +61,7 @@ export const apSubjects = [
     description: "Cell biology, genetics, evolution, ecology, and biological systems",
     units: 8,
     difficulty: "Hard",
-    examDate: "May 11, 2026",
+    examDate: "May 4, 2026",
     isActive: true,
   },
   {
@@ -70,7 +70,7 @@ export const apSubjects = [
     description: "Limits, derivatives, integrals, and the Fundamental Theorem of Calculus",
     units: 8,
     difficulty: "Hard",
-    examDate: "May 5, 2026",
+    examDate: "May 11, 2026",
     isActive: true,
   },
   {
@@ -79,7 +79,7 @@ export const apSubjects = [
     description: "All Calculus AB topics plus parametric, polar, vector functions, and infinite series",
     units: 10,
     difficulty: "Very Hard",
-    examDate: "May 5, 2026",
+    examDate: "May 11, 2026",
     isActive: true,
   },
   {
@@ -88,7 +88,7 @@ export const apSubjects = [
     description: "Object-oriented programming in Java, data structures, algorithms, and recursion",
     units: 10,
     difficulty: "Hard",
-    examDate: "May 7, 2026",
+    examDate: "May 15, 2026",
     isActive: true,
   },
   {
@@ -106,7 +106,7 @@ export const apSubjects = [
     description: "Global history from 1200 CE to the present with emphasis on cross-cultural interactions",
     units: 9,
     difficulty: "Hard",
-    examDate: "May 14, 2026",
+    examDate: "May 7, 2026",
     isActive: true,
   },
   {
@@ -115,7 +115,7 @@ export const apSubjects = [
     description: "European history from 1450 to the present including political, economic, and cultural developments",
     units: 9,
     difficulty: "Hard",
-    examDate: "May 7, 2026",
+    examDate: "May 4, 2026",
     isActive: true,
   },
   {
@@ -142,7 +142,7 @@ export const apSubjects = [
     description: "Data analysis, probability, statistical inference, and experimental design",
     units: 9,
     difficulty: "Hard",
-    examDate: "May 12, 2026",
+    examDate: "May 7, 2026",
     isActive: true,
   },
   {
@@ -151,7 +151,7 @@ export const apSubjects = [
     description: "Kinematics, dynamics, energy, momentum, rotational motion, and simple harmonic motion",
     units: 7,
     difficulty: "Very Hard",
-    examDate: "May 14, 2026",
+    examDate: "May 6, 2026",
     isActive: true,
   },
   {
@@ -160,7 +160,7 @@ export const apSubjects = [
     description: "Fluids, thermodynamics, electricity, magnetism, optics, and modern physics",
     units: 7,
     difficulty: "Very Hard",
-    examDate: "May 14, 2026",
+    examDate: "May 7, 2026",
     isActive: true,
   },
   {
@@ -169,7 +169,7 @@ export const apSubjects = [
     description: "Ecosystems, biodiversity, pollution, energy resources, and global change",
     units: 9,
     difficulty: "Medium",
-    examDate: "May 5, 2026",
+    examDate: "May 15, 2026",
     isActive: true,
   },
   {

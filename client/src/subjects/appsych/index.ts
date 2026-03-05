@@ -20,7 +20,7 @@ const metadata = {
   description: 'Biological bases, cognition, development, social psychology, and mental and physical health',
   units: 5,
   difficulty: 'Medium',
-  examDate: 'May 6, 2026',
+  examDate: 'May 12, 2026',
   examTitle: 'AP® Psychology Practice Exam',
   examSections: [
     {

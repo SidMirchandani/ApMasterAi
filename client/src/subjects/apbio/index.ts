@@ -26,7 +26,7 @@ const metadata = {
   description: 'Cell biology, genetics, evolution, and ecology',
   units: 8,
   difficulty: 'Hard',
-  examDate: 'May 11, 2026',
+  examDate: 'May 4, 2026',
   examTitle: 'AP® Biology Practice Exam',
   examSections: [
     {

@@ -28,7 +28,7 @@ const metadata = {
   description: 'Data analysis, probability, statistical inference, and experimental design',
   units: 9,
   difficulty: 'Hard',
-  examDate: 'May 12, 2026',
+  examDate: 'May 7, 2026',
   examTitle: 'AP® Statistics Practice Exam',
   examSections: [
     {

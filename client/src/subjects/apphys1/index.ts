@@ -26,7 +26,7 @@ const metadata = {
   description: 'Kinematics, forces, energy, momentum, rotational dynamics, oscillations, and fluids',
   units: 8,
   difficulty: 'Very Hard',
-  examDate: 'May 14, 2026',
+  examDate: 'May 6, 2026',
   examTitle: 'AP® Physics 1 Practice Exam',
   examSections: [
     {
