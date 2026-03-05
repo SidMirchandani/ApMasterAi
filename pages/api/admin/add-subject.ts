@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
-import { getSubjectConfig, getAllSubjectCodes } from "../../../server/subjects-helper";
+import { getSubjectConfig, getAllSubjectCodes, assignSectionAPCSA } from "../../../server/subjects-helper";
 import * as cheerio from "cheerio";
 
 export const config = {
@@ -222,7 +222,21 @@ async function scrapeQuestion(
       if (match) correctAnswer = match[1];
     }
 
-    const sectionCode = assignSection(promptBlocks, choices, sectionKeywords);
+    const sectionCode =
+      subjectCode === "APCSA"
+        ? (() => {
+            let text = "";
+            for (const blk of promptBlocks) {
+              if (blk.type === "text") text += " " + blk.value;
+            }
+            for (const key of Object.keys(choices)) {
+              for (const blk of choices[key]) {
+                if (blk.type === "text") text += " " + blk.value;
+              }
+            }
+            return assignSectionAPCSA(text, sectionKeywords);
+          })()
+        : assignSection(promptBlocks, choices, sectionKeywords);
 
     return {
       success: true,

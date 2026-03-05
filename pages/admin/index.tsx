@@ -419,7 +419,7 @@ export default function AdminPage() {
       APBIO: ["CL", "CSF", "CE", "CCC", "HER", "GER", "NS", "ECO"],
       APCALCAB: ["LIM", "DDF", "DCI", "CAD", "AAD", "IAC", "DE", "AI"],
       APCALCBC: ["LIM", "DDF", "DCI", "CAD", "AAD", "IAC", "DE", "AI", "PPV", "ISS"],
-      APCSA: ["PT", "UO", "BEI", "ITR", "WC", "ARR", "AL", "TDA", "INH", "REC"],
+      APCSA: ["U1", "U2", "U3", "U4"],
       APUSH: ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9"],
       APWH: ["GT", "NE", "LBE", "TI", "REV", "COI", "GC", "CWD", "GLO"],
       APEURO: ["RE", "AR", "AC", "SPP", "CRR", "IND", "NPP", "GCF", "CCE"],

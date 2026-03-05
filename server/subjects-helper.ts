@@ -225,28 +225,16 @@ const SUBJECT_REGISTRY: Record<string, SubjectMeta> = {
     displayName: 'AP Computer Science A',
     crackApPath: 'computer-science-a',
     units: [
-      { id: 'PT', title: 'Primitive Types', description: 'Variables, data types, and expressions', examWeight: '2.5-5%' },
-      { id: 'UO', title: 'Using Objects', description: 'String class, wrapper classes, Math class', examWeight: '5-7.5%' },
-      { id: 'BEI', title: 'Boolean Expressions and if Statements', description: 'Conditional logic and control flow', examWeight: '15-17.5%' },
-      { id: 'ITR', title: 'Iteration', description: 'For loops, while loops, and nested loops', examWeight: '17.5-22.5%' },
-      { id: 'WC', title: 'Writing Classes', description: 'Class design, constructors, and methods', examWeight: '5-7.5%' },
-      { id: 'ARR', title: 'Array', description: 'Array creation, traversal, and algorithms', examWeight: '10-15%' },
-      { id: 'AL', title: 'ArrayList', description: 'ArrayList methods and traversal', examWeight: '2.5-7.5%' },
-      { id: 'TDA', title: '2D Array', description: 'Two-dimensional arrays and nested loops', examWeight: '7.5-10%' },
-      { id: 'INH', title: 'Inheritance', description: 'Subclasses, polymorphism, and Object class', examWeight: '5-10%' },
-      { id: 'REC', title: 'Recursion', description: 'Recursive methods and algorithms', examWeight: '5-7.5%' }
+      { id: 'U1', title: 'Using Objects and Methods', description: 'Primitive types, Math class, String methods, wrapper classes', examWeight: '15–25%' },
+      { id: 'U2', title: 'Selection and Iteration', description: 'Conditionals, loops, boolean expressions, De Morgan\'s Laws', examWeight: '25–35%' },
+      { id: 'U3', title: 'Class Creation', description: 'Classes, constructors, encapsulation, inheritance, polymorphism', examWeight: '10–18%' },
+      { id: 'U4', title: 'Data Collections', description: 'Arrays, ArrayList, 2D arrays, recursion, searching and sorting', examWeight: '30–40%' },
     ],
     sectionKeywords: {
-      PT: ["int", "double", "boolean", "variable", "data type", "casting", "arithmetic", "operator"],
-      UO: ["string", "object", "method", "constructor", "wrapper class", "math class", "null"],
-      BEI: ["if", "else", "boolean", "condition", "comparison", "logical operator", "de morgan"],
-      ITR: ["for loop", "while loop", "iteration", "nested loop", "loop", "sentinel"],
-      WC: ["class", "constructor", "method", "instance variable", "accessor", "mutator", "this"],
-      ARR: ["array", "index", "traversal", "element", "length", "sorting", "searching"],
-      AL: ["arraylist", "add", "remove", "size", "get", "set", "wrapper"],
-      TDA: ["2d array", "row", "column", "nested loop", "matrix", "two-dimensional"],
-      INH: ["inheritance", "subclass", "superclass", "extends", "polymorphism", "override", "abstract"],
-      REC: ["recursion", "recursive", "base case", "call stack", "fibonacci", "binary search"],
+      U1: ['int', 'double', 'boolean', 'char', 'final', 'arithmeticexception', 'overflow', 'casting', '(int)', '(double)', 'math.abs', 'math.pow', 'math.sqrt', 'math.random', 'math.pi', 'math.e', 'system.out.print', 'system.out.println', 'escape sequences', '\\n', '\\"', '\\\\', 'length()', 'substring', 'indexof', 'equals', 'compareto', 'tostring', 'touppercase', 'tolowercase', 'concat', 'wrapper classes', 'integer', 'max_value', 'min_value', 'autoboxing', 'unboxing', 'object reference', 'null', 'parameters', 'arguments', 'method signature', 'return type', 'void'],
+      U2: ['if', 'else', 'else if', 'nested if', 'boolean expressions', 'relational operators', '==', '!=', '<', '>', '<=', '>=', 'logical operators', '&&', '||', '!', 'de morgan', 'short-circuit evaluation', 'truth tables', 'while', 'for', 'for-each', 'enhanced for loop', 'nested loops', 'iteration', 'infinite loop', 'loop control variable', 'off-by-one error', 'increment', 'decrement', '++', '--', '+=', '-=', '*=', '/=', '%='],
+      U3: ['class', 'public', 'private', 'protected', 'static', 'instance variables', 'fields', 'attributes', 'constructors', 'default constructor', 'overloaded constructors', 'super()', 'super.', 'this', 'this.', 'accessor methods', 'getters', 'mutator methods', 'setters', 'encapsulation', 'information hiding', 'inheritance', 'extends', 'is-a relationship', 'superclass', 'subclass', 'method overriding', 'polymorphism', 'compile-time', 'run-time', 'classcastexception'],
+      U4: ['array', '[]', 'initializer list', 'array index', 'arrayindexoutofboundsexception', 'length property', 'traversal', 'linear search', 'binary search', 'selection sort', 'insertion sort', 'merge sort', 'arraylist', 'list interface', 'import java.util.arraylist', 'add(obj)', 'add(index, obj)', 'get(index)', 'set(index, obj)', 'remove(index)', 'size()', 'nested collections', '2d array', '[][]', 'row-major', 'column-major', 'nested traversal', 'recursion', 'recursive call', 'base case', 'stack overflow'],
     },
   },
   'APUSH': {
@@ -525,6 +513,96 @@ const LEGACY_ID_MAP: Record<string, string> = {
   'environmental-science': 'APES',
   'human-geography': 'APHUG',
 };
+
+/** AP CSA Unit 3 (Class Creation): extends/super force U3 */
+const APCSA_UNIT3_CODES = ['U3'];
+/** AP CSA Unit 4 (Data Collections): checked with priority over Units 1–2 */
+const APCSA_UNIT4_CODES = ['U4'];
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Case-insensitive match: whole-word for identifier-like keywords, substring for symbols/snippets */
+function matchesKeyword(text: string, kw: string): boolean {
+  const lower = text.toLowerCase();
+  const k = kw.toLowerCase();
+  if (/^[a-zA-Z0-9_]+$/.test(kw)) {
+    return new RegExp('\\b' + escapeRegex(k) + '\\b', 'i').test(text);
+  }
+  return lower.includes(k);
+}
+
+function scoreSection(text: string, keywords: string[]): number {
+  let n = 0;
+  for (const kw of keywords) {
+    if (matchesKeyword(text, kw)) n++;
+  }
+  return n;
+}
+
+/**
+ * Assigns AP CSA section with priority: (1) extends/super → Unit 3 (WC/INH),
+ * (2) Unit 4 keywords present → best of ARR/AL/TDA/REC, (3) else best overall score.
+ */
+export function assignSectionAPCSA(
+  text: string,
+  sectionKeywords: Record<string, string[]>
+): string {
+  const t = (text || '').toLowerCase();
+  const hasExtendsOrSuper =
+    /\bextends\b/i.test(text) ||
+    /\bsuper\b/i.test(text) ||
+    t.includes('super()') ||
+    t.includes('super.');
+
+  if (hasExtendsOrSuper) {
+    let best = APCSA_UNIT3_CODES[0];
+    let bestScore = 0;
+    for (const code of APCSA_UNIT3_CODES) {
+      const keywords = sectionKeywords[code];
+      if (!keywords) continue;
+      const score = scoreSection(text, keywords);
+      if (score > bestScore) {
+        bestScore = score;
+        best = code;
+      }
+    }
+    return best;
+  }
+
+  let unit4Score = 0;
+  for (const code of APCSA_UNIT4_CODES) {
+    const keywords = sectionKeywords[code];
+    if (!keywords) continue;
+    unit4Score += scoreSection(text, keywords);
+  }
+  if (unit4Score > 0) {
+    let best = APCSA_UNIT4_CODES[0];
+    let bestScore = 0;
+    for (const code of APCSA_UNIT4_CODES) {
+      const keywords = sectionKeywords[code];
+      if (!keywords) continue;
+      const score = scoreSection(text, keywords);
+      if (score > bestScore) {
+        bestScore = score;
+        best = code;
+      }
+    }
+    return best;
+  }
+
+  let bestCode = Object.keys(sectionKeywords)[0];
+  let bestScore = 0;
+  for (const code of Object.keys(sectionKeywords)) {
+    const score = scoreSection(text, sectionKeywords[code] || []);
+    if (score > bestScore) {
+      bestScore = score;
+      bestCode = code;
+    }
+  }
+  return bestCode;
+}
 
 export function getApiCodeForSubject(subjectId: string): string | null {
   const upperSubjectId = subjectId.toUpperCase();

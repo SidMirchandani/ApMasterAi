@@ -50,8 +50,30 @@ const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
     "DEV": 20,     // Development and Learning: 15-25% (avg 20%)
     "SOC": 20,     // Social Psychology and Personality: 15-25% (avg 20%)
     "MPH": 20,     // Mental and Physical Health: 15-25% (avg 20%)
-  }
+  },
+  // AP CSA 2026: 4 units, midpoints of official ranges (sum 99)
+  "APCSA": {
+    "U1": 20,      // Unit 1 Using Objects and Methods: 15–25% (mid 20%)
+    "U2": 30,      // Unit 2 Selection and Iteration: 25–35% (mid 30%)
+    "U3": 14,      // Unit 3 Class Creation: 10–18% (mid 14%)
+    "U4": 35,      // Unit 4 Data Collections: 30–40% (mid 35%)
+  },
 };
+
+// Legacy AP CSA section codes mapped to 2026 unit IDs (for backward compatibility)
+const APCSA_SECTION_QUERY_MAP: Record<string, string[]> = {
+  U1: ["U1", "PT", "UO"],
+  U2: ["U2", "BEI", "ITR"],
+  U3: ["U3", "WC", "INH"],
+  U4: ["U4", "ARR", "AL", "TDA", "REC"],
+};
+
+function canonicalSectionForAPCSA(sectionCode: string): string {
+  for (const [unit, codes] of Object.entries(APCSA_SECTION_QUERY_MAP)) {
+    if (codes.includes(sectionCode)) return unit;
+  }
+  return sectionCode;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -101,10 +123,21 @@ export default async function handler(
 
         if (sectionQuestionCount > 0) {
           // Fetch ALL questions for this section (no limit)
-          const sectionSnapshot = await questionsRef
-            .where('subject_code', '==', subject as string)
-            .where('section_code', '==', sectionCode)
-            .get();
+          // APCSA: include legacy section codes (PT, UO, BEI, etc.) so old questions are included
+          const sectionCodesToQuery =
+            (subject as string) === "APCSA" && APCSA_SECTION_QUERY_MAP[sectionCode]
+              ? APCSA_SECTION_QUERY_MAP[sectionCode]
+              : [sectionCode];
+          const sectionSnapshot =
+            sectionCodesToQuery.length === 1
+              ? await questionsRef
+                  .where("subject_code", "==", subject as string)
+                  .where("section_code", "==", sectionCode)
+                  .get()
+              : await questionsRef
+                  .where("subject_code", "==", subject as string)
+                  .where("section_code", "in", sectionCodesToQuery)
+                  .get();
 
           const sectionQuestions = sectionSnapshot.docs.map(doc => ({
             id: doc.id,
@@ -124,12 +157,15 @@ export default async function handler(
       // Final shuffle of all selected questions
       const finalQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
 
+      const isAPCSA = (subject as string) === "APCSA";
       console.log("✅ Returning proportional questions:", {
         requested: questionLimit,
         returning: finalQuestions.length,
         breakdown: Object.entries(weights).map(([section, weight]) => ({
           section,
-          count: finalQuestions.filter(q => q.section_code === section).length,
+          count: isAPCSA
+            ? finalQuestions.filter(q => canonicalSectionForAPCSA(q.section_code) === section).length
+            : finalQuestions.filter(q => q.section_code === section).length,
           weight: `${weight}%`
         }))
       });
@@ -158,11 +194,19 @@ export default async function handler(
     let query = questionsRef.where('subject_code', '==', subject as string);
 
     if (section) {
+      const sectionCodesToQuery =
+        (subject as string) === "APCSA" && APCSA_SECTION_QUERY_MAP[section as string]
+          ? APCSA_SECTION_QUERY_MAP[section as string]
+          : [section as string];
       console.log("📍 [API/questions] Adding section filter:", {
         field: 'section_code',
-        value: section
+        value: sectionCodesToQuery.length === 1 ? section : sectionCodesToQuery
       });
-      query = query.where('section_code', '==', section as string);
+      if (sectionCodesToQuery.length === 1) {
+        query = query.where('section_code', '==', section as string);
+      } else {
+        query = query.where('section_code', 'in', sectionCodesToQuery);
+      }
     }
 
     const snapshot = await query

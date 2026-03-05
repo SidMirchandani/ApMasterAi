@@ -86,7 +86,7 @@ export const apSubjects = [
     id: "computer-science-a",
     name: "AP Computer Science A",
     description: "Object-oriented programming in Java, data structures, algorithms, and recursion",
-    units: 10,
+    units: 4,
     difficulty: "Hard",
     examDate: "May 15, 2026",
     isActive: true,
