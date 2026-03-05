@@ -26,7 +26,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/lib/hooks/useMobile";
-import { getUnitsForSubject } from "@/subjects";
+import { getUnitsForSubject, getSubjectByCode } from "@/subjects";
 
 interface StudySubject {
   id: number;
@@ -78,6 +78,7 @@ export default function Study() {
   const currentSubject: StudySubject | undefined = subjects.find(
     (s) => s.subjectId === subjectId
   );
+  const subjectMeta = currentSubject ? getSubjectByCode(currentSubject.subjectId) : null;
   const units = currentSubject ? getUnitsForSubject(currentSubject.subjectId) : [];
 
   useEffect(() => {
@@ -226,7 +227,7 @@ export default function Study() {
                     Exam Date
                   </p>
                   <p className="text-base font-black text-slate-900 dark:text-white leading-tight mt-0.5">
-                    {formatDate(currentSubject.examDate)}
+                    {formatDate(subjectMeta?.metadata?.examDate ?? currentSubject.examDate)}
                   </p>
                 </div>
               </div>
