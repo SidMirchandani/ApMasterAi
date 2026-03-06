@@ -72,7 +72,8 @@ export default function AdminPage() {
   // Filters
   const [subject, setSubject] = useState("");
   const [section, setSection] = useState("");
-  
+  const [showOnlyMissingExplanation, setShowOnlyMissingExplanation] = useState(false);
+
   const allApSubjectsRef = [
     { code: "APMACRO", label: "AP Macroeconomics" },
     { code: "APMICRO", label: "AP Microeconomics" },
@@ -98,6 +99,10 @@ export default function AdminPage() {
   const availableSubjects = allApSubjectsRef.map(s => s.code);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
 
+  const displayedItems = useMemo(() => {
+    if (!showOnlyMissingExplanation) return items;
+    return items.filter(q => !q.explanation || q.explanation.trim() === "");
+  }, [items, showOnlyMissingExplanation]);
 
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
@@ -643,10 +648,11 @@ export default function AdminPage() {
   }
 
   function toggleSelectAll() {
-    if (selectedQuestions.size === items.length) {
+    const allDisplayedSelected = displayedItems.length > 0 && displayedItems.every(q => selectedQuestions.has(q.id));
+    if (allDisplayedSelected) {
       setSelectedQuestions(new Set());
     } else {
-      setSelectedQuestions(new Set(items.map(q => q.id)));
+      setSelectedQuestions(new Set(displayedItems.map(q => q.id)));
     }
   }
 
@@ -1039,6 +1045,16 @@ export default function AdminPage() {
                 Search
               </Button>
             </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="missing-explanation-only"
+                checked={showOnlyMissingExplanation}
+                onCheckedChange={(v) => setShowOnlyMissingExplanation(!!v)}
+              />
+              <Label htmlFor="missing-explanation-only" className="text-sm font-medium cursor-pointer dark:text-gray-300">
+                Only show questions without explanation
+              </Label>
+            </div>
           </CardContent>
         </Card>
 
@@ -1047,8 +1063,12 @@ export default function AdminPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="dark:text-white">Questions ({items.length})</CardTitle>
+                <CardTitle className="dark:text-white">
+                  Questions ({displayedItems.length}
+                  {showOnlyMissingExplanation && items.length > 0 && ` of ${items.length}`})
+                </CardTitle>
                 <CardDescription>
+                  {showOnlyMissingExplanation && items.length > 0 && displayedItems.length < items.length && "Showing questions without explanation. "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
               </div>
@@ -1129,7 +1149,7 @@ export default function AdminPage() {
                   <tr>
                     <th className="p-2 text-center">
                       <Checkbox
-                        checked={items.length > 0 && selectedQuestions.size === items.length}
+                        checked={displayedItems.length > 0 && displayedItems.every(q => selectedQuestions.has(q.id))}
                         onCheckedChange={toggleSelectAll}
                       />
                     </th>
@@ -1143,7 +1163,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((q) => (
+                  {displayedItems.map((q) => (
                     <Row
                       key={q.id}
                       q={q}
@@ -1155,9 +1175,11 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
-              {items.length === 0 && (
+              {displayedItems.length === 0 && (
                 <div className="p-8 text-center text-khan-gray-medium dark:text-gray-400">
-                  No questions found. Upload a CSV or adjust filters.
+                  {showOnlyMissingExplanation && items.length > 0
+                    ? "No questions without explanation in this set."
+                    : "No questions found. Upload a CSV or adjust filters."}
                 </div>
               )}
             </div>
