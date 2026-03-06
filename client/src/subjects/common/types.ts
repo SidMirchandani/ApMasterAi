@@ -19,6 +19,8 @@ export interface SubjectMetadata {
   difficulty: string;
   examDate: string;
   examTitle?: string;
+  /** Number of MCQ options (4 = A-D, 5 = A-E). Default 5. */
+  mcqOptionCount?: number;
   examSections?: Array<{
     title: string;
     details: string;

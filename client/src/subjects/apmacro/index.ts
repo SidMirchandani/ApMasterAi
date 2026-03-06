@@ -23,6 +23,7 @@ const metadata = {
   units: 6,
   difficulty: 'Medium',
   examDate: 'May 8, 2026',
+  mcqOptionCount: 5,
   examTitle: 'AP® Macroeconomics Practice Exam',
   examSections: [
     {

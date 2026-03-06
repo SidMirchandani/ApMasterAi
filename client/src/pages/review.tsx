@@ -10,6 +10,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
+import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 
 interface DueQuestion {
   questionId: string;
@@ -90,8 +92,9 @@ export default function ReviewPage() {
     if (!currentQuestion || !selectedAnswer) return;
     setIsSubmitted(true);
 
+    const subject = currentQuestion.subjectId ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId) : undefined;
     const correctLetter = currentQuestion.answerIndex !== undefined
-      ? String.fromCharCode(65 + currentQuestion.answerIndex)
+      ? getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, subject?.metadata?.mcqOptionCount)
       : null;
     const isCorrect = selectedAnswer === correctLetter;
 
@@ -234,8 +237,9 @@ export default function ReviewPage() {
 
                 {currentQuestion.choices && (() => {
                   const choicesArr = getChoicesArray(currentQuestion.choices);
+                  const subj = currentQuestion.subjectId ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId) : undefined;
                   const correctLetter = currentQuestion.answerIndex !== undefined
-                    ? String.fromCharCode(65 + currentQuestion.answerIndex)
+                    ? getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, subj?.metadata?.mcqOptionCount)
                     : null;
 
                   return (
@@ -279,24 +283,32 @@ export default function ReviewPage() {
                   );
                 })()}
 
-                {isSubmitted && (
+                {isSubmitted && (() => {
+                  const subj = currentQuestion?.subjectId ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId) : undefined;
+                  const displayCorrect = currentQuestion?.answerIndex !== undefined ? getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, subj?.metadata?.mcqOptionCount) : '?';
+                  return (
                   <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
-                    selectedAnswer === (currentQuestion.answerIndex !== undefined ? String.fromCharCode(65 + currentQuestion.answerIndex) : '')
+                    selectedAnswer === displayCorrect
                       ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
                       : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
                   }`}>
-                    {selectedAnswer === (currentQuestion.answerIndex !== undefined ? String.fromCharCode(65 + currentQuestion.answerIndex) : '')
+                    {selectedAnswer === displayCorrect
                       ? "Correct!"
-                      : `Incorrect. The correct answer is ${currentQuestion.answerIndex !== undefined ? String.fromCharCode(65 + currentQuestion.answerIndex) : '?'}.`}
+                      : `Incorrect. The correct answer is ${displayCorrect}.`}
                   </div>
-                )}
+                  );
+                })()}
 
-                {isSubmitted && currentQuestion.explanation && (
+                {isSubmitted && currentQuestion.explanation && (() => {
+                  const subj = currentQuestion.subjectId ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId) : undefined;
+                  const displayExpl = getDisplayExplanation(currentQuestion.explanation, { answerIndex: currentQuestion.answerIndex ?? 0 }, subj?.metadata?.mcqOptionCount);
+                  return (
                   <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">Explanation</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{currentQuestion.explanation}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{displayExpl}</p>
                   </div>
-                )}
+                  );
+                })()}
               </CardContent>
             </Card>
 

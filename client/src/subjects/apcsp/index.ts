@@ -20,6 +20,7 @@ const metadata = {
   units: 5,
   difficulty: 'Medium',
   examDate: 'May 14, 2026',
+  mcqOptionCount: 4,
   examTitle: 'AP® Computer Science Principles Practice Exam',
   examSections: [
     {

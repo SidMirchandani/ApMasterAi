@@ -5,6 +5,7 @@ import { Flag } from "lucide-react";
 import { QuestionCard } from "./QuestionCard";
 import { QuizHeader } from "./QuizHeader";
 import { QuizBottomBar } from "./QuizBottomBar";
+import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
@@ -33,7 +34,7 @@ interface QuizReviewPageProps {
   questions: Question[];
   userAnswers: { [key: number]: string };
   flaggedQuestions: Set<number>;
-  subjectId: string;
+  subjectId?: string;
   onBack: () => void;
   onSubmit?: (
     updatedAnswers: { [key: number]: string },
@@ -51,6 +52,8 @@ export function QuizReviewPage({
   onSubmit,
   isSubmitting,
 }: QuizReviewPageProps) {
+  const subject = subjectId ? getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId) : undefined;
+  const mcqOptionCount = subject?.metadata?.mcqOptionCount;
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const [localAnswers, setLocalAnswers] = useState(userAnswers);
   const [localFlagged, setLocalFlagged] = useState(flaggedQuestions);
@@ -97,10 +100,9 @@ export function QuizReviewPage({
           title={
             selectedQuestion === null
               ? "Review Your Answers"
-              : `AP® ${subjectId
-                  .split("-")
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(" ")} Practice Exam`
+              : subjectId
+                ? `AP® ${subjectId.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")} Practice Exam`
+                : "Review Your Answers"
           }
           timeElapsed={0}
           timerHidden
@@ -207,8 +209,8 @@ export function QuizReviewPage({
               onToggleFlag={() => handleToggleFlag(selectedQuestion)}
               isFullLength
               isReviewMode
-              renderImage={renderImage}
               isAnswerSubmitted={false}
+              mcqOptionCount={mcqOptionCount}
             />
           </div>
         </div>

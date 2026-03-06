@@ -29,6 +29,7 @@ const metadata = {
   units: 9,
   difficulty: 'Hard',
   examDate: 'May 7, 2026',
+  mcqOptionCount: 5,
   examTitle: 'AP® Statistics Practice Exam',
   examSections: [
     {

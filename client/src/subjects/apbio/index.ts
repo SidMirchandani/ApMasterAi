@@ -27,11 +27,12 @@ const metadata = {
   units: 8,
   difficulty: 'Hard',
   examDate: 'May 4, 2026',
+  mcqOptionCount: 5,
   examTitle: 'AP® Biology Practice Exam',
   examSections: [
     {
       title: 'Section I: Multiple Choice',
-      details: '60 Questions | 1 Hour 30 Minutes | 50% of Exam Score',
+      details: '60 Questions | 90 Minutes | 50% of Exam Score',
       description: 'Questions assess understanding of biological concepts and scientific practices'
     }
   ],

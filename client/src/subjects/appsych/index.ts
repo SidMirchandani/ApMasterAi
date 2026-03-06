@@ -21,6 +21,7 @@ const metadata = {
   units: 5,
   difficulty: 'Medium',
   examDate: 'May 12, 2026',
+  mcqOptionCount: 4,
   examTitle: 'AP® Psychology Practice Exam',
   examSections: [
     {

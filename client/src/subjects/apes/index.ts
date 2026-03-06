@@ -29,6 +29,7 @@ const metadata = {
   units: 9,
   difficulty: 'Medium',
   examDate: 'May 15, 2026',
+  mcqOptionCount: 4,
   examTitle: 'AP® Environmental Science Practice Exam',
   examSections: [
     {

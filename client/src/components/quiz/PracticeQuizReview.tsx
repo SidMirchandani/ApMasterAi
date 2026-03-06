@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,8 @@ import { X, CheckCircle, XCircle } from "lucide-react";
 import { BlockRenderer } from "./BlockRenderer";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
+import { getDisplayChoicesAndCorrect, getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
@@ -34,13 +35,17 @@ interface PracticeQuizReviewProps {
   questions: Question[];
   userAnswers: { [key: number]: string };
   onClose: () => void;
+  subjectId?: string;
 }
 
 export function PracticeQuizReview({
   questions,
   userAnswers,
   onClose,
+  subjectId,
 }: PracticeQuizReviewProps) {
+  const subject = subjectId ? getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId) : undefined;
+  const mcqOptionCount = subject?.metadata?.mcqOptionCount;
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
 
   const toggleQuestion = (index: number) => {
@@ -58,7 +63,7 @@ export function PracticeQuizReview({
   const calculateScore = () => {
     let correct = 0;
     questions.forEach((q, i) => {
-      const correctLabel = String.fromCharCode(65 + q.answerIndex);
+      const correctLabel = getDisplayCorrectLabel(q, mcqOptionCount);
       if (userAnswers[i] === correctLabel) {
         correct++;
       }
@@ -104,22 +109,10 @@ export function PracticeQuizReview({
         <div className="space-y-4">
           {questions.map((question, index) => {
             const userAnswer = userAnswers[index];
-            const correctLabel = String.fromCharCode(65 + question.answerIndex);
+            const { choiceLabels, getChoiceBlocks, displayCorrectLabel } = getDisplayChoicesAndCorrect(question, mcqOptionCount);
+            const correctLabel = displayCorrectLabel;
             const isCorrect = userAnswer === correctLabel;
             const isExpanded = expandedQuestions.has(index);
-
-            const allChoices = Object.keys(question.choices) as Array<"A" | "B" | "C" | "D" | "E">;
-            const choices = allChoices.filter((label) => {
-              if (label !== "E") return true;
-              const choiceBlocks = question.choices[label];
-              if (!choiceBlocks || choiceBlocks.length === 0) return false;
-              if (choiceBlocks.length === 1 && 
-                  choiceBlocks[0].type === "text" && 
-                  (!choiceBlocks[0].value || choiceBlocks[0].value.trim() === "")) {
-                return false;
-              }
-              return true;
-            });
 
             return (
               <Card key={index} className={`${isCorrect ? 'border-green-500' : 'border-red-500'} border-2`}>
@@ -165,7 +158,7 @@ export function PracticeQuizReview({
 
                     {/* Answer Choices */}
                     <div className="space-y-3 mb-6">
-                      {choices.map((label) => {
+                      {choiceLabels.map((label) => {
                         const isUserAnswer = userAnswer === label;
                         const isCorrectAnswer = label === correctLabel;
 
@@ -198,7 +191,7 @@ export function PracticeQuizReview({
                               {label}
                             </div>
                             <div className={`flex-1 pt-1.5 ${textColor}`}>
-                              <BlockRenderer blocks={question.choices[label]} />
+                              <BlockRenderer blocks={getChoiceBlocks(label) ?? []} />
                               {isCorrectAnswer && (
                                 <div className="mt-2 text-sm font-semibold text-green-600">
                                   ✓ Correct Answer
@@ -221,7 +214,7 @@ export function PracticeQuizReview({
                         <div className="font-semibold text-blue-900 mb-2">Explanation:</div>
                         <div className="text-sm text-blue-900 prose prose-sm max-w-none">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {question.explanation}
+                            {getDisplayExplanation(question.explanation, question, mcqOptionCount)}
                           </ReactMarkdown>
                         </div>
                       </div>

@@ -10,7 +10,8 @@ import { useRouter } from "next/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
-import { getSubjectByLegacyId } from '@/subjects';
+import { getSubjectByLegacyId, getSubjectByCode } from '@/subjects';
+import { getDisplayCorrectLabel, getStoredAnswerForSubmit } from '@/lib/mcqDisplay';
 
 interface Question {
   id: string;
@@ -45,6 +46,8 @@ interface FullLengthQuizProps {
 export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit, savedState, examConfig }: FullLengthQuizProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
+  const mcqOptionCount = subject?.metadata?.mcqOptionCount;
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(savedState?.currentQuestionIndex || 0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>(savedState?.userAnswers || {});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set(savedState?.flaggedQuestions || []));
@@ -203,13 +206,21 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     try {
       const correctCount = questions.reduce((count, question, index) => {
         const userAnswer = userAnswers[index];
-        const correctLabel = String.fromCharCode(65 + question.answerIndex);
-        return userAnswer === correctLabel ? count + 1 : count;
+        const displayCorrectLabel = getDisplayCorrectLabel(question, mcqOptionCount);
+        return userAnswer === displayCorrectLabel ? count + 1 : count;
       }, 0);
 
       const percentage = Math.round((correctCount / questions.length) * 100);
 
       const formattedQuestions = normalizeQuestions(questions);
+
+      // Map display answers to stored (E) for 4-option subjects when we showed E as D
+      const storedUserAnswers: { [key: number]: string } = {};
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        const displaySel = userAnswers[i];
+        storedUserAnswers[i] = getStoredAnswerForSubmit(displaySel ?? "", q, mcqOptionCount);
+      }
 
       const response = await apiRequest(
         "POST",
@@ -219,7 +230,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           percentage: percentage,
           totalQuestions: questions.length,
           questions: formattedQuestions,
-          userAnswers: userAnswers
+          userAnswers: storedUserAnswers
         }
       );
 
@@ -314,8 +325,8 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
             onAnswerSelect={handleAnswerSelect}
             onToggleFlag={toggleFlag}
             isFullLength={true}
-            renderImage={renderImage}
             cheatMode={cheatMode}
+            mcqOptionCount={mcqOptionCount}
           />
         </div>
       </div>

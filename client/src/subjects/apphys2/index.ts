@@ -25,6 +25,7 @@ const metadata = {
   units: 7,
   difficulty: 'Very Hard',
   examDate: 'May 7, 2026',
+  mcqOptionCount: 4,
   examTitle: 'AP® Physics 2 Practice Exam',
   examSections: [
     {

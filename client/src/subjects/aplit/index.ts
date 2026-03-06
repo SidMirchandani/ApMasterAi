@@ -29,11 +29,12 @@ const metadata = {
   units: 9,
   difficulty: 'Hard',
   examDate: 'May 6, 2026',
+  mcqOptionCount: 4,
   examTitle: 'AP® English Literature and Composition Practice Exam',
   examSections: [
     {
       title: 'Section I: Multiple Choice',
-      details: '55 Questions | 1 Hour | 45% of Exam Score',
+      details: '45 Questions | 60 Minutes | 45% of Exam Score',
       description: 'Questions assess close reading and analysis of prose fiction and poetry passages'
     }
   ],

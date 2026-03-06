@@ -29,6 +29,7 @@ const metadata = {
   units: 9,
   difficulty: 'Hard',
   examDate: 'May 8, 2026',
+  mcqOptionCount: 4,
   examTitle: 'AP® U.S. History Practice Exam',
   examSections: [
     {

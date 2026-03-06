@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
+import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
+import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 import { Loader2, Calculator } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -85,6 +87,8 @@ export function PracticeQuiz({
   const router = useRouter();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
+  const mcqOptionCount = subject?.metadata?.mcqOptionCount;
 
   const isCalculatorAllowed = CALCULATOR_SUBJECTS.includes(subjectId);
 
@@ -222,7 +226,7 @@ export function PracticeQuiz({
       [currentQuestionIndex]: selectedAnswer,
     }));
 
-    const correctLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
+    const correctLabel = getDisplayCorrectLabel(currentQuestion, mcqOptionCount);
     const isCorrect = selectedAnswer === correctLabel;
     if (isCorrect) setScore((s) => s + 1);
 
@@ -253,7 +257,7 @@ export function PracticeQuiz({
       Object.entries(finalUserAnswers).forEach(([index, answer]) => {
         const question = orderedQuestions[parseInt(index)];
         if (question && question.id.split("_")[1] === unit) {
-          const correctLabel = String.fromCharCode(65 + question.answerIndex);
+          const correctLabel = getDisplayCorrectLabel(question, mcqOptionCount);
           if (answer === correctLabel) correctCount++;
         }
       });
@@ -320,6 +324,7 @@ export function PracticeQuiz({
         questions={orderedQuestions}
         userAnswers={finalUserAnswers}
         onClose={handleCloseReview}
+        subjectId={subjectId}
       />
     );
   }
@@ -361,6 +366,7 @@ export function PracticeQuiz({
               cheatMode={cheatMode}
               isBookmarked={bookmarkedIds.has(currentQuestion?.id)}
               onToggleBookmark={() => handleToggleBookmark(currentQuestion)}
+              mcqOptionCount={mcqOptionCount}
             />
 
             {isAnswerSubmitted && (
@@ -377,7 +383,7 @@ export function PracticeQuiz({
                   ) : currentExplanation ? (
                     <div className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {currentExplanation}
+                        {getDisplayExplanation(currentExplanation, currentQuestion, mcqOptionCount)}
                       </ReactMarkdown>
                     </div>
                   ) : null}

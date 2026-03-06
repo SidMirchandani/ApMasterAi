@@ -27,11 +27,12 @@ const metadata = {
   units: 8,
   difficulty: 'Very Hard',
   examDate: 'May 6, 2026',
+  mcqOptionCount: 4,
   examTitle: 'AP® Physics 1 Practice Exam',
   examSections: [
     {
       title: 'Section I: Multiple Choice',
-      details: '40 Questions | 1 Hour 30 Minutes | 50% of Exam Score',
+      details: '40 Questions | 80 Minutes | 50% of Exam Score',
       description: 'Questions assess understanding of physics principles and problem-solving skills'
     }
   ],

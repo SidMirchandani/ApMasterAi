@@ -21,11 +21,12 @@ const metadata = {
   units: 5,
   difficulty: 'Medium',
   examDate: 'May 13, 2026',
+  mcqOptionCount: 4,
   examTitle: 'AP® English Language and Composition Practice Exam',
   examSections: [
     {
       title: 'Section I: Multiple Choice',
-      details: '45 Questions | 1 Hour | 45% of Exam Score',
+      details: '45 Questions | 60 Minutes | 45% of Exam Score',
       description: 'Questions assess reading comprehension and rhetorical analysis of nonfiction texts'
     }
   ],

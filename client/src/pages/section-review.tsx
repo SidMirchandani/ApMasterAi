@@ -13,7 +13,8 @@ import remarkGfm from "remark-gfm";
 import { BlockRenderer } from "@/components/quiz/BlockRenderer";
 import { QuizBottomBar } from "@/components/quiz/QuizBottomBar";
 import { ReviewQuestionPalette } from "@/components/quiz/ReviewQuestionPalette";
-import { getSectionInfo } from "@/subjects";
+import { getSectionInfo, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
+import { getDisplayChoicesAndCorrect, getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
@@ -133,26 +134,17 @@ export default function SectionReview() {
   const currentQuestion = questions[currentQuestionIndex];
   if (!currentQuestion) return null;
 
-  const correctAnswerLabel = String.fromCharCode(65 + currentQuestion.answerIndex);
+  const subject = typeof subjectId === "string" ? getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId) : undefined;
+  const mcqOptionCount = subject?.metadata?.mcqOptionCount;
+  const { choiceLabels, getChoiceBlocks, displayCorrectLabel } = getDisplayChoicesAndCorrect(currentQuestion, mcqOptionCount);
+  const correctAnswerLabel = displayCorrectLabel;
   const userAnswer = userAnswers[
     currentQuestion.originalTestIndex !== undefined
       ? currentQuestion.originalTestIndex
       : currentQuestionIndex
   ];
   const isCorrect = userAnswer === correctAnswerLabel;
-
-  const allChoices = Object.keys(currentQuestion.choices) as Array<"A" | "B" | "C" | "D" | "E">;
-  const choices = allChoices.filter((label) => {
-    if (label !== "E") return true;
-    const choiceBlocks = currentQuestion.choices[label];
-    if (!choiceBlocks || choiceBlocks.length === 0) return false;
-    if (choiceBlocks.length === 1 && 
-        choiceBlocks[0].type === "text" && 
-        (!choiceBlocks[0].value || choiceBlocks[0].value.trim() === "")) {
-      return false;
-    }
-    return true;
-  });
+  const choices = choiceLabels;
 
   const displayNumber = currentQuestion.originalTestIndex !== undefined
     ? currentQuestion.originalTestIndex + 1
@@ -165,10 +157,11 @@ export default function SectionReview() {
     return acc;
   }, {} as { [key: number]: string });
 
-  // Create correct answers map
+  // Create correct answers map (display labels for 4-option E→D swap)
+  const subjectForMap = typeof subjectId === "string" ? getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId) : undefined;
+  const mcqCountForMap = subjectForMap?.metadata?.mcqOptionCount;
   const correctAnswers = questions.reduce((acc, q, idx) => {
-    const correctLabel = String.fromCharCode(65 + q.answerIndex);
-    acc[idx] = correctLabel;
+    acc[idx] = getDisplayCorrectLabel(q, mcqCountForMap);
     return acc;
   }, {} as { [key: number]: string });
 
@@ -211,6 +204,7 @@ export default function SectionReview() {
                 {choices.map((label) => {
                   const isUserAnswer = userAnswer === label;
                   const isCorrectAnswer = label === correctAnswerLabel;
+                  const choiceBlocks = getChoiceBlocks(label as "A" | "B" | "C" | "D" | "E");
 
                   let bgColor = "bg-white";
                   let borderColor = "border-gray-200";
@@ -241,7 +235,7 @@ export default function SectionReview() {
                         {label}
                       </div>
                       <div className={`flex-1 pt-0.5 text-sm ${textColor}`}>
-                        <BlockRenderer blocks={currentQuestion.choices[label]} />
+                        <BlockRenderer blocks={choiceBlocks ?? []} />
                         {isCorrectAnswer && (
                           <div className="mt-1.5 text-xs font-semibold text-green-600 flex items-center gap-1">
                             <CheckCircle className="h-3.5 w-3.5" />
@@ -280,7 +274,7 @@ export default function SectionReview() {
                   <CardContent className="pt-0 pb-3">
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {currentQuestion.explanation}
+                        {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
                       </ReactMarkdown>
                     </div>
                   </CardContent>
@@ -289,8 +283,8 @@ export default function SectionReview() {
               {currentQuestion.explanation && (
                 <ExplanationChat
                   questionPrompt={currentQuestion.prompt_blocks}
-                  explanation={currentQuestion.explanation}
-                  correctAnswer={currentQuestion.choices[String.fromCharCode(65 + currentQuestion.answerIndex) as "A" | "B" | "C" | "D" | "E"]}
+                  explanation={getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
+                  correctAnswer={getChoiceBlocks(correctAnswerLabel as "A" | "B" | "C" | "D" | "E") ?? []}
                   choices={currentQuestion.choices}
                 />
               )}

@@ -41,14 +41,18 @@ interface QuizHeaderProps {
   subjectId?: string;
 }
 
-// Define time limits for different exams (in minutes)
+// Define time limits for different exams in minutes (2026 Digital/Hybrid)
 const EXAM_TIME_LIMITS: { [key: string]: number } = {
   "AP Macro": 70,
   "AP Micro": 70,
-  "AP Psych": 70,
+  "AP Psych": 90,
   "AP Gov": 80,
   "AP Chem": 90,
   "APCSP": 120,
+  "AP Lang": 60,
+  "AP Lit": 60,
+  "AP Biology": 90,
+  "AP Physics 1": 80,
 };
 
 export function QuizHeader({

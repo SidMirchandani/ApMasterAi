@@ -29,6 +29,7 @@ const metadata = {
   units: 9,
   difficulty: 'Hard',
   examDate: 'May 5, 2026',
+  mcqOptionCount: 5,
   examTitle: 'AP® Chemistry Practice Exam',
   examSections: [
     {

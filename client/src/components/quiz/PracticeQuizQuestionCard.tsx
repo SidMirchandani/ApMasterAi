@@ -24,6 +24,7 @@ import {
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { getDisplayChoicesAndCorrect } from "@/lib/mcqDisplay";
 
 type Block =
   | { type: "text"; value: string }
@@ -61,6 +62,8 @@ interface PracticeQuizQuestionCardProps {
   cheatMode?: boolean;
   isBookmarked?: boolean;
   onToggleBookmark?: () => void;
+  /** 4 = A-D only (2026 Digital); 5 = A-E. Used for E→D swap when stored correct is E. */
+  mcqOptionCount?: number;
 }
 
 export function PracticeQuizQuestionCard({
@@ -73,6 +76,7 @@ export function PracticeQuizQuestionCard({
   cheatMode = false,
   isBookmarked = false,
   onToggleBookmark,
+  mcqOptionCount,
 }: PracticeQuizQuestionCardProps) {
   const [crossedOut, setCrossedOut] = useState<Set<string>>(new Set());
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
@@ -84,6 +88,8 @@ export function PracticeQuizQuestionCard({
   if (!question) {
     return null;
   }
+
+  const { choiceLabels, getChoiceBlocks, displayCorrectLabel } = getDisplayChoicesAndCorrect(question, mcqOptionCount);
 
   const handleReportSubmit = async () => {
     if (!reportReason) return;
@@ -115,21 +121,7 @@ export function PracticeQuizQuestionCard({
     }
   };
 
-  const allChoices = Object.keys(question.choices) as Array<"A" | "B" | "C" | "D" | "E">;
-  const choices = allChoices.filter((label) => {
-    if (label !== "E") return true;
-    const choiceBlocks = question.choices[label];
-    if (!choiceBlocks || choiceBlocks.length === 0) return false;
-    if (choiceBlocks.length === 1 &&
-        choiceBlocks[0].type === "text" &&
-        (!choiceBlocks[0].value || choiceBlocks[0].value.trim() === "")) {
-      return false;
-    }
-    return true;
-  });
-
-  const correctAnswerLabel = String.fromCharCode(65 + question.answerIndex);
-  const isCorrect = selectedAnswer === correctAnswerLabel;
+  const isCorrect = selectedAnswer === displayCorrectLabel;
 
   return (
     <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
@@ -219,9 +211,9 @@ export function PracticeQuizQuestionCard({
         </div>
 
         <div className="space-y-3">
-          {choices.map((label) => {
+          {choiceLabels.map((label) => {
             const isUserAnswer = selectedAnswer === label;
-            const isCorrectAnswer = label === correctAnswerLabel;
+            const isCorrectAnswer = label === displayCorrectLabel;
             const isCrossedOut = crossedOut.has(label);
 
             let borderColor = "border-gray-200 dark:border-gray-800";
@@ -274,7 +266,7 @@ export function PracticeQuizQuestionCard({
                   {label}
                 </div>
                 <div className={`flex-1 text-base leading-relaxed ${textColor} ${isCrossedOut && !isAnswerSubmitted ? 'line-through decoration-2' : ''}`}>
-                  <BlockRenderer blocks={question.choices[label]} />
+                  <BlockRenderer blocks={getChoiceBlocks(label) ?? []} />
                 </div>
                 {!isAnswerSubmitted && (
                   <button

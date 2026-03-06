@@ -10,6 +10,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
+import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 
 interface BookmarkedQuestion {
   id: string;
@@ -251,7 +253,8 @@ export default function BookmarksPage() {
 
                 {(() => {
                   const choicesArr = getChoicesArray(currentQuestion.choices);
-                  const correctLetter = String.fromCharCode(65 + currentQuestion.answerIndex);
+                  const subject = currentQuestion.subjectId ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId) : undefined;
+                  const correctLetter = getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, subject?.metadata?.mcqOptionCount);
 
                   return (
                     <div className="space-y-3">
@@ -294,24 +297,32 @@ export default function BookmarksPage() {
                   );
                 })()}
 
-                {isRevealed && currentQuestion.explanation && (
+                {isRevealed && currentQuestion.explanation && (() => {
+                  const subject = currentQuestion.subjectId ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId) : undefined;
+                  const displayExpl = getDisplayExplanation(currentQuestion.explanation, currentQuestion, subject?.metadata?.mcqOptionCount);
+                  return (
                   <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">Explanation</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{currentQuestion.explanation}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{displayExpl}</p>
                   </div>
-                )}
+                  );
+                })()}
 
-                {isSubmitted && (
+                {isSubmitted && (() => {
+                  const subject = currentQuestion.subjectId ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId) : undefined;
+                  const displayCorrect = getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, subject?.metadata?.mcqOptionCount);
+                  return (
                   <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${
-                    selectedAnswer === String.fromCharCode(65 + currentQuestion.answerIndex)
+                    selectedAnswer === displayCorrect
                       ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
                       : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
                   }`}>
-                    {selectedAnswer === String.fromCharCode(65 + currentQuestion.answerIndex)
+                    {selectedAnswer === displayCorrect
                       ? "Correct!"
-                      : `Incorrect. The correct answer is ${String.fromCharCode(65 + currentQuestion.answerIndex)}.`}
+                      : `Incorrect. The correct answer is ${displayCorrect}.`}
                   </div>
-                )}
+                  );
+                })()}
               </CardContent>
             </Card>
 

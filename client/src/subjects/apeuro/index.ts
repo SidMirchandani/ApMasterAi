@@ -29,6 +29,7 @@ const metadata = {
   units: 9,
   difficulty: 'Hard',
   examDate: 'May 4, 2026',
+  mcqOptionCount: 4,
   examTitle: 'AP® European History Practice Exam',
   examSections: [
     {

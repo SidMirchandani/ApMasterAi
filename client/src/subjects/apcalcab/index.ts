@@ -27,6 +27,7 @@ const metadata = {
   units: 8,
   difficulty: 'Hard',
   examDate: 'May 11, 2026',
+  mcqOptionCount: 5,
   examTitle: 'AP® Calculus AB Practice Exam',
   examSections: [
     {
