@@ -35,12 +35,12 @@ import { getApiCodeForSubject, getSectionCodeForUnit } from "@/subjects";
 // Exam configurations: questions and time per test (2026 Digital/Hybrid standards)
 const EXAM_CONFIGS: { [key: string]: { questions: number; timeMinutes: number } } = {
   APLANG: { questions: 45, timeMinutes: 60 },
-  APLIT: { questions: 45, timeMinutes: 60 },
+  APLIT: { questions: 55, timeMinutes: 60 },
   APPSYCH: { questions: 75, timeMinutes: 90 },
-  APCSA: { questions: 40, timeMinutes: 90 },
+  APCSA: { questions: 42, timeMinutes: 90 },
   APCSP: { questions: 70, timeMinutes: 120 },
   APPHYS1: { questions: 40, timeMinutes: 80 },
-  APPHYS2: { questions: 40, timeMinutes: 90 },
+  APPHYS2: { questions: 40, timeMinutes: 80 },
   APES: { questions: 80, timeMinutes: 90 },
   APUSH: { questions: 55, timeMinutes: 55 },
   APWH: { questions: 55, timeMinutes: 55 },
@@ -52,7 +52,7 @@ const EXAM_CONFIGS: { [key: string]: { questions: number; timeMinutes: number } 
   APCHEM: { questions: 60, timeMinutes: 90 },
   APMACRO: { questions: 60, timeMinutes: 70 },
   APMICRO: { questions: 60, timeMinutes: 70 },
-  APGOV: { questions: 55, timeMinutes: 80 },
+  APGOV: { questions: 55, timeMinutes: 55 },
   APHUG: { questions: 60, timeMinutes: 60 },
 };
 

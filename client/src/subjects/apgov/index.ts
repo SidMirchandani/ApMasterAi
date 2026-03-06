@@ -21,6 +21,7 @@ const metadata = {
   units: 5,
   difficulty: 'Medium',
   examDate: 'May 5, 2026',
+  mcqOptionCount: 5,
   examTitle: 'AP® U.S. Government and Politics Practice Exam',
   examSections: [
     {

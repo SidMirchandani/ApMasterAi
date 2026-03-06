@@ -41,18 +41,28 @@ interface QuizHeaderProps {
   subjectId?: string;
 }
 
-// Define time limits for different exams in minutes (2026 Digital/Hybrid)
+// Define time limits for different exams in minutes (2026 official MCQ specs; kept in sync with quiz.tsx EXAM_CONFIGS)
 const EXAM_TIME_LIMITS: { [key: string]: number } = {
   "AP Macro": 70,
   "AP Micro": 70,
   "AP Psych": 90,
-  "AP Gov": 80,
+  "AP Gov": 55,
   "AP Chem": 90,
   "APCSP": 120,
   "AP Lang": 60,
   "AP Lit": 60,
   "AP Biology": 90,
   "AP Physics 1": 80,
+  "AP Physics 2": 80,
+  "AP Computer Science A": 90,
+  "AP Environmental Science": 90,
+  "AP U.S. History": 55,
+  "AP World History: Modern": 55,
+  "AP European History": 55,
+  "AP Calculus AB": 105,
+  "AP Calculus BC": 105,
+  "AP Statistics": 90,
+  "AP Human Geography": 60,
 };
 
 export function QuizHeader({
