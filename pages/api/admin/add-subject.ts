@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getSubjectConfig, getAllSubjectCodes, assignSectionAPCSA } from "../../../server/subjects-helper";
+import { uploadExternalImagesInQuestion } from "../../../server/upload-image-from-url";
 import * as cheerio from "cheerio";
 
 export const config = {
@@ -373,6 +374,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         continue;
       }
 
+      const { prompt_blocks, choices } = await uploadExternalImagesInQuestion({
+        subject_code: data.subject_code,
+        question_id: qid,
+        prompt_blocks: data.prompt_blocks,
+        choices: data.choices,
+      });
+
       const answerIndex = ["A", "B", "C", "D", "E"].indexOf(data.correct_answer || "");
       const docId = `${data.subject_code}_${data.section_code}_Q${qid}`;
 
@@ -380,8 +388,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         subject_code: data.subject_code,
         section_code: data.section_code,
         question_id: qid,
-        prompt_blocks: data.prompt_blocks,
-        choices: data.choices,
+        prompt_blocks,
+        choices,
         answerIndex: answerIndex >= 0 ? answerIndex : 0,
         mode: "SECTION",
         test_slug: "",

@@ -151,6 +151,17 @@ export default function AdminPage() {
     message: string;
   } | null>(null);
 
+  const [migratingExternalImages, setMigratingExternalImages] = useState(false);
+  const migrateExternalAbortRef = useRef<AbortController | null>(null);
+  const [migrateExternalProgress, setMigrateExternalProgress] = useState<{
+    current: number;
+    total: number;
+    questions_processed: number;
+    images_migrated: number;
+    failed: number;
+    message: string;
+  } | null>(null);
+
   const availableToAdd = allApSubjectsRef.filter(s => !subjectStatus[s.code]?.hasQuestions);
   const alreadyAdded = allApSubjectsRef.filter(s => subjectStatus[s.code]?.hasQuestions);
 
@@ -304,6 +315,7 @@ export default function AdminPage() {
   async function startImageMigration() {
     if (!token) return;
     setMigratingImages(true);
+    setMigrateExternalProgress(null);
     setMigrateProgress({ current: 0, total: 0, made_public: 0, failed: 0, message: "Starting migration..." });
 
     const controller = new AbortController();
@@ -387,6 +399,104 @@ export default function AdminPage() {
   function stopImageMigration() {
     migrateAbortRef.current?.abort();
     setMigratingImages(false);
+    toast("Migration cancelled");
+  }
+
+  async function startExternalImageMigration() {
+    if (!token) return;
+    setMigratingExternalImages(true);
+    setMigrateProgress(null);
+    setMigrateExternalProgress({
+      current: 0,
+      total: 0,
+      questions_processed: 0,
+      images_migrated: 0,
+      failed: 0,
+      message: "Starting...",
+    });
+
+    const controller = new AbortController();
+    migrateExternalAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/migrate-external-images", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectCode: migrateSubjectCode && migrateSubjectCode !== "all" ? migrateSubjectCode : undefined,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error((err as any).error || "Failed to start migration");
+        setMigratingExternalImages(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        toast.error("No response stream");
+        setMigratingExternalImages(false);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "progress") {
+              setMigrateExternalProgress({
+                current: event.current ?? 0,
+                total: event.total ?? 0,
+                questions_processed: event.questions_processed ?? 0,
+                images_migrated: event.images_migrated ?? 0,
+                failed: event.failed ?? 0,
+                message: event.message ?? "",
+              });
+            }
+            if (event.type === "complete") {
+              toast.success(event.message);
+              setMigrateExternalProgress({
+                current: event.current ?? event.total ?? 0,
+                total: event.total ?? 0,
+                questions_processed: event.questions_processed ?? 0,
+                images_migrated: event.images_migrated ?? 0,
+                failed: event.failed ?? 0,
+                message: event.message ?? "",
+              });
+            }
+            if (event.type === "error") {
+              toast.error(event.message);
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Migration failed: " + err.message);
+      }
+    } finally {
+      setMigratingExternalImages(false);
+      migrateExternalAbortRef.current = null;
+    }
+  }
+
+  function stopExternalImageMigration() {
+    migrateExternalAbortRef.current?.abort();
+    setMigratingExternalImages(false);
     toast("Migration cancelled");
   }
 
@@ -946,14 +1056,18 @@ export default function AdminPage() {
               Migrate Firebase Storage Images
             </CardTitle>
             <CardDescription className="dark:text-gray-400">
-              Make Firebase Storage images publicly accessible so they load without the proxy
+              Make Firebase Storage images publicly accessible so they load without the proxy. Or migrate external images (e.g. CrackAP) into Firebase Storage so all subjects store images like APMICRO.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3 items-end">
               <div className="flex-1">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Subject (optional)</label>
-                <Select value={migrateSubjectCode} onValueChange={setMigrateSubjectCode} disabled={migratingImages}>
+                <Select
+                  value={migrateSubjectCode}
+                  onValueChange={setMigrateSubjectCode}
+                  disabled={migratingImages || migratingExternalImages}
+                >
                   <SelectTrigger className="bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
                     <SelectValue placeholder="All subjects with Firebase images" />
                   </SelectTrigger>
@@ -971,15 +1085,32 @@ export default function AdminPage() {
               {migratingImages ? (
                 <Button onClick={stopImageMigration} variant="destructive" className="min-w-[160px]">
                   <Square className="w-4 h-4 mr-2" />
-                  Stop Migration
+                  Stop
                 </Button>
               ) : (
                 <Button
                   onClick={startImageMigration}
                   className="bg-orange-500 hover:bg-orange-600 text-white min-w-[160px]"
+                  disabled={migratingExternalImages}
                 >
                   <Zap className="w-4 h-4 mr-2" />
                   Make Images Public
+                </Button>
+              )}
+              {migratingExternalImages ? (
+                <Button onClick={stopExternalImageMigration} variant="destructive" className="min-w-[200px]">
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop
+                </Button>
+              ) : (
+                <Button
+                  onClick={startExternalImageMigration}
+                  variant="secondary"
+                  className="min-w-[200px] border border-orange-400 text-orange-700 dark:text-orange-300 dark:border-orange-500"
+                  disabled={migratingImages}
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Migrate External to Firebase
                 </Button>
               )}
             </div>
@@ -999,6 +1130,37 @@ export default function AdminPage() {
                 <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
                   <span className="text-green-600 font-medium">Made Public: {migrateProgress.made_public}</span>
                   <span className="text-red-600">Failed: {migrateProgress.failed}</span>
+                </div>
+              </div>
+            )}
+
+            {migrateExternalProgress && (
+              <div className="space-y-3 pt-2 border-t border-orange-200 dark:border-orange-800">
+                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                  <span>{migrateExternalProgress.message}</span>
+                  {migrateExternalProgress.total > 0 && (
+                    <span>
+                      {Math.round(
+                        (migrateExternalProgress.current / Math.max(migrateExternalProgress.total, 1)) * 100
+                      )}
+                      %
+                    </span>
+                  )}
+                </div>
+                <Progress
+                  value={
+                    migrateExternalProgress.total > 0
+                      ? (migrateExternalProgress.current / Math.max(migrateExternalProgress.total, 1)) * 100
+                      : 0
+                  }
+                  className="h-2"
+                />
+                <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-green-600 font-medium">
+                    Migrated: {migrateExternalProgress.images_migrated}
+                  </span>
+                  <span>Questions: {migrateExternalProgress.questions_processed}</span>
+                  <span className="text-red-600">Failed: {migrateExternalProgress.failed}</span>
                 </div>
               </div>
             )}
