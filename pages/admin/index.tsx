@@ -65,6 +65,8 @@ export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  /** Admin access: derived from API (subject-status). No client-side admin list. */
+  const [adminStatus, setAdminStatus] = useState<"pending" | "allowed" | "forbidden">("pending");
 
   // Data
   const [items, setItems] = useState<Question[]>([]);
@@ -160,12 +162,18 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/subject-status", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
+      if (res.status === 403) {
+        setAdminStatus("forbidden");
+      } else if (res.ok) {
+        setAdminStatus("allowed");
         const data = await res.json();
         setSubjectStatus(data.data || {});
+      } else {
+        setAdminStatus("forbidden");
       }
     } catch (err) {
       console.error("Failed to fetch subject status:", err);
+      setAdminStatus("forbidden");
     } finally {
       setLoadingStatus(false);
     }
@@ -389,6 +397,9 @@ export default function AdminPage() {
       if (u) {
         const t = await u.getIdToken();
         setToken(t);
+      } else {
+        setToken("");
+        setAdminStatus("pending");
       }
       setLoading(false);
     });
@@ -441,18 +452,8 @@ export default function AdminPage() {
     setSection("all"); // Reset section when subject changes
   }, [subject]);
 
-  const allowedEmails = useMemo(
-    () =>
-      (process.env.NEXT_PUBLIC_ADMIN_HINT || "")
-        .split(",")
-        .map((e) => e.trim().toLowerCase()),
-    [],
-  );
-  const isAllowed = useMemo(() => {
-    if (!user?.email) return false;
-    if (!process.env.NEXT_PUBLIC_ADMIN_HINT) return true;
-    return allowedEmails.includes(user.email.toLowerCase());
-  }, [user, allowedEmails]);
+  /** Admin access is determined by API (subject-status); no client-exposed admin list. */
+  const isAllowed = adminStatus === "allowed";
 
   async function fetchFiltered() {
     if (!token) return;
@@ -703,6 +704,17 @@ export default function AdminPage() {
     );
   }
 
+  if (adminStatus === "pending") {
+    return (
+      <div className="min-h-screen bg-khan-background dark:bg-gray-900 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-khan-gray-dark dark:text-gray-300">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span>Checking access...</span>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAllowed) {
     return (
       <div className="min-h-screen bg-khan-background dark:bg-gray-900 flex items-center justify-center px-4">
@@ -719,9 +731,9 @@ export default function AdminPage() {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Authentication Failed</strong>
+                <strong>Access denied</strong>
                 <br />
-                You are not authorized to access the admin dashboard. Your account ({user.email}) does not have admin privileges.
+                You are not authorized to access the admin dashboard. Contact your administrator to request access.
               </AlertDescription>
             </Alert>
             <div className="flex flex-col gap-2">

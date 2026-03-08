@@ -1,46 +1,54 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertWaitlistEmailSchema, insertUserSubjectSchema } from "@shared/schema";
 import { z } from "zod";
 import { DatabaseRetryHandler, ensureDatabaseHealth } from "./db-retry-handler";
+import { verifyFirebaseToken } from "./firebase-admin";
 
-// Enhanced middleware to handle Firebase user authentication with database retry
-async function getOrCreateUser(firebaseUid: string): Promise<number> {
+declare global {
+  namespace Express {
+    interface Response {
+      locals: { firebaseUid?: string };
+    }
+  }
+}
+
+/** Verify Bearer token and set res.locals.firebaseUid. Use for all protected /api/user/* and /api/questions/report. */
+async function requireFirebaseAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ success: false, message: "Authentication required" });
+    return;
+  }
+  const token = authHeader.slice(7);
+  try {
+    const decoded = await verifyFirebaseToken(token);
+    res.locals = res.locals || {};
+    res.locals.firebaseUid = decoded.uid;
+    next();
+  } catch {
+    res.status(401).json({ success: false, message: "Invalid authentication token" });
+  }
+}
+
+/** Get or create user by Firebase UID; returns user id (string). Placeholder password is not used for login (Firebase only). */
+async function getOrCreateUser(firebaseUid: string): Promise<string> {
   return DatabaseRetryHandler.withRetry(async () => {
     await ensureDatabaseHealth();
-    
-    // Try to find user by username (using firebase UID as username)
-    let user = await storage.getUserByUsername(firebaseUid);
-    
+    let user = await storage.getUserByFirebaseUid(firebaseUid);
     if (!user) {
-      // Create new user with Firebase UID as username
-      user = await storage.createUser({
-        username: firebaseUid,
-        password: 'firebase_auth' // Placeholder since we use Firebase
-      });
-      console.log('Created new user for Firebase UID:', firebaseUid);
+      user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid);
     }
-    
     return user.id;
   });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // User subjects endpoints
-  app.get("/api/user/subjects", async (req, res) => {
+  // User subjects endpoints (auth: Bearer token verified by requireFirebaseAuth)
+  app.get("/api/user/subjects", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      console.log("GET /api/user/subjects - Firebase UID:", firebaseUid);
-      
-      if (!firebaseUid) {
-        console.log("No Firebase UID provided in headers");
-        return res.status(401).json({ 
-          success: false, 
-          message: "Authentication required" 
-        });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const userId = await getOrCreateUser(firebaseUid);
       const subjects = await storage.getUserSubjects(userId);
       
@@ -57,20 +65,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/user/subjects", async (req, res) => {
+  app.post("/api/user/subjects", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      console.log("POST /api/user/subjects - Firebase UID:", firebaseUid);
-      console.log("Request body:", req.body);
-      
-      if (!firebaseUid) {
-        console.log("No Firebase UID provided in headers");
-        return res.status(401).json({ 
-          success: false, 
-          message: "Authentication required" 
-        });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const userId = await getOrCreateUser(firebaseUid);
       
       // Check if user already has this subject
@@ -110,17 +107,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/user/subjects/:subjectId", async (req, res) => {
+  app.delete("/api/user/subjects/:subjectId", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      
-      if (!firebaseUid) {
-        return res.status(401).json({ 
-          success: false, 
-          message: "Authentication required" 
-        });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const userId = await getOrCreateUser(firebaseUid);
       await storage.removeUserSubject(userId, req.params.subjectId);
       
@@ -136,26 +125,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/user/subjects/:subjectId/mastery", async (req, res) => {
+  app.patch("/api/user/subjects/:subjectId/mastery", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      
-      if (!firebaseUid) {
-        return res.status(401).json({ 
-          success: false, 
-          message: "Authentication required" 
-        });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const { masteryLevel } = req.body;
-      
       if (!masteryLevel || masteryLevel < 3 || masteryLevel > 5) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Mastery level must be 3, 4, or 5" 
+        return res.status(400).json({
+          success: false,
+          message: "Mastery level must be 3, 4, or 5",
         });
       }
-
       const userId = await getOrCreateUser(firebaseUid);
       const updatedSubject = await storage.updateSubjectMasteryLevel(userId, req.params.subjectId, masteryLevel);
       
@@ -229,13 +208,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =====================
   // BOOKMARK ROUTES
   // =====================
-  app.post("/api/user/bookmarks/toggle", async (req, res) => {
+  app.post("/api/user/bookmarks/toggle", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      if (!firebaseUid) {
-        return res.status(401).json({ success: false, message: "Authentication required" });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const { questionId, subjectId, unitId, prompt, choices, answerIndex, explanation, sectionCode } = req.body;
       if (!questionId || !subjectId) {
         return res.status(400).json({ success: false, message: "questionId and subjectId are required" });
@@ -254,13 +229,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/user/bookmarks", async (req, res) => {
+  app.get("/api/user/bookmarks", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      if (!firebaseUid) {
-        return res.status(401).json({ success: false, message: "Authentication required" });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const subjectId = req.query.subjectId as string | undefined;
       const bookmarks = await storage.getBookmarks(firebaseUid, subjectId);
       res.json({ success: true, data: bookmarks });
@@ -270,13 +241,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/user/bookmarks/ids", async (req, res) => {
+  app.get("/api/user/bookmarks/ids", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      if (!firebaseUid) {
-        return res.status(401).json({ success: false, message: "Authentication required" });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const subjectId = req.query.subjectId as string | undefined;
       const ids = await storage.getBookmarkedQuestionIds(firebaseUid, subjectId);
       res.json({ success: true, data: ids });
@@ -289,13 +256,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =====================
   // SPACED REPETITION ROUTES
   // =====================
-  app.post("/api/user/questions/track", async (req, res) => {
+  app.post("/api/user/questions/track", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      if (!firebaseUid) {
-        return res.status(401).json({ success: false, message: "Authentication required" });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const { questionId, subjectId, unitId, correct, timeSpentSec, sectionCode, prompt, choices, answerIndex, explanation } = req.body;
       if (!questionId || !subjectId) {
         return res.status(400).json({ success: false, message: "questionId and subjectId are required" });
@@ -314,13 +277,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/user/questions/due", async (req, res) => {
+  app.get("/api/user/questions/due", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      if (!firebaseUid) {
-        return res.status(401).json({ success: false, message: "Authentication required" });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const subjectId = req.query.subjectId as string | undefined;
       const limit = parseInt(req.query.limit as string) || 20;
       const dueReviews = await storage.getDueReviews(firebaseUid, subjectId, limit);
@@ -334,13 +293,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =====================
   // ANALYTICS ROUTE
   // =====================
-  app.get("/api/user/analytics", async (req, res) => {
+  app.get("/api/user/analytics", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      if (!firebaseUid) {
-        return res.status(401).json({ success: false, message: "Authentication required" });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const subjectId = req.query.subjectId as string | undefined;
       const stats = await storage.getQuestionStats(firebaseUid, subjectId);
       res.json({ success: true, data: stats });
@@ -350,19 +305,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/questions/report", async (req, res) => {
+  app.post("/api/questions/report", requireFirebaseAuth, async (req, res) => {
     try {
-      const firebaseUid = req.headers['x-user-id'] as string;
-      if (!firebaseUid) {
-        return res.status(401).json({ success: false, message: "Authentication required" });
-      }
-
+      const firebaseUid = res.locals.firebaseUid!;
       const { questionId, subjectId, reason, details } = req.body;
       if (!questionId || !subjectId || !reason) {
         return res.status(400).json({ success: false, message: "Missing required fields" });
       }
-
-      // Check if user exists, if not create one (consistent with other routes)
       const userId = await getOrCreateUser(firebaseUid);
 
       const report = await storage.createQuestionReport({

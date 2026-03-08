@@ -4,12 +4,8 @@ import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../server/fireba
 
 function isAllowed(email?: string | null) {
   // Try multiple possible env var names for Replit compatibility
-  const adminEmails = process.env.ADMIN_EMAILS || process.env.NEXT_PUBLIC_ADMIN_EMAILS || "";
-  console.log("Raw ADMIN_EMAILS value:", adminEmails);
-  
+  const adminEmails = process.env.ADMIN_EMAILS || "";
   const allow = adminEmails.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
-  console.log("Allowed emails:", allow);
-  
   return !!email && allow.includes(email.toLowerCase());
 }
 
@@ -22,14 +18,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!token) return res.status(401).json({ error: "Missing token" });
 
     const decoded = await verifyFirebaseToken(token);
-    console.log("Decoded user email:", decoded.email);
-    console.log("ADMIN_EMAILS env:", process.env.ADMIN_EMAILS);
-    
+
     if (!isAllowed(decoded.email)) {
-      return res.status(403).json({ 
-        error: "Not an admin", 
-        email: decoded.email,
-        hint: "Add your email to ADMIN_EMAILS environment variable"
+      return res.status(403).json({
+        error: "Not an admin",
+        hint: "Contact your administrator to request access.",
       });
     }
 

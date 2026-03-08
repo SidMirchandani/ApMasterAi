@@ -17,7 +17,7 @@ const FIREBASE_STORAGE_PREFIXES = [
 const BUCKET_NAME = "gen-lang-client-0260042933.firebasestorage.app";
 
 function isAllowed(email?: string | null) {
-  const adminEmails = process.env.ADMIN_EMAILS || process.env.NEXT_PUBLIC_ADMIN_EMAILS || "";
+  const adminEmails = process.env.ADMIN_EMAILS || "";
   const allow = adminEmails.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
   return !!email && allow.includes(email.toLowerCase());
 }

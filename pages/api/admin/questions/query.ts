@@ -42,9 +42,6 @@ export default async function handler(
     if (subject) q = q.where("subject_code", "==", subject);
     if (section) q = q.where("section_code", "==", section);
 
-    console.log("Query params:", subject, section);
-    console.log("Token decoded email:", decoded.email);
-
     const snap = await q.get();
     console.log("Docs found:", snap.size);
 
