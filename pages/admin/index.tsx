@@ -111,7 +111,6 @@ export default function AdminPage() {
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(
     new Set(),
   );
-  const [selectedModel, setSelectedModel] = useState<string>("2.5");
   const [selectedAction, setSelectedAction] = useState<string>("process");
   const [cheatMode, setCheatMode] = useState(false);
   const aiActionAbortRef = useRef<AbortController | null>(null);
@@ -565,7 +564,7 @@ export default function AdminPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(
-          selectedAction === "fix-units" ? { questionIds } : { questionIds, model: selectedModel }
+          selectedAction === "fix-units" ? { questionIds } : { questionIds, model: "2.5lite" }
         ),
         signal: controller.signal,
       });
@@ -1094,15 +1093,6 @@ export default function AdminPage() {
                     <SelectItem value="explanations">Generate Explanations Only</SelectItem>
                     <SelectItem value="fix-prompts">Fix Prompts & Choices Only</SelectItem>
                     <SelectItem value="fix-units">Fix Unit Assignment</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="w-[200px] bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
-                    <SelectValue placeholder="Select Model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2.5">Gemini 2.5 Flash (Default)</SelectItem>
-                    <SelectItem value="2.5pro">Gemini 2.5 Pro</SelectItem>
                   </SelectContent>
                 </Select>
                 {generatingExplanations ? (
