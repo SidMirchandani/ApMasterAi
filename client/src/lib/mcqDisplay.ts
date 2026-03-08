@@ -121,6 +121,20 @@ function normalizeBacktickLatex(text: string): string {
 }
 
 /**
+ * Remove or fix math that can crash remark-math/rehype-katex (e.g. "Cannot set
+ * properties of undefined (setting 'value')" from empty or malformed delimiters).
+ */
+function sanitizeMathDelimiters(text: string): string {
+  return (
+    text
+      // Empty display math $$...$$ with nothing or only whitespace
+      .replace(/\$\$\s*\$\$/g, " ")
+      // Empty inline math $ $ with nothing or only whitespace
+      .replace(/\$\s*\$/g, " ")
+  );
+}
+
+/**
  * When we display E as D (4-option, stored correct=E), rewrite the explanation text
  * so that references to the correct answer "E" are shown as "D" for consistency.
  * Also normalizes backtick-wrapped LaTeX to $...$ for proper math rendering.
@@ -155,5 +169,5 @@ export function getDisplayExplanation(
       text = text.replace(regex, replacement);
     }
   }
-  return normalizeBacktickLatex(text);
+  return sanitizeMathDelimiters(normalizeBacktickLatex(text));
 }
