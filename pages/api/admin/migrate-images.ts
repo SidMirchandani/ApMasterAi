@@ -120,7 +120,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   };
 
   try {
-    sendEvent({ type: "progress", message: "Scanning questions for Firebase Storage images...", current: 0, total: 0, made_public: 0, failed: 0 });
+    sendEvent({ type: "progress", message: "Scanning questions for Firebase Storage images...", current: 0, total: 0, made_public: 0, failed: 0, skipped: 0 });
 
     let query = firestore.collection("questions") as FirebaseFirestore.Query;
     if (subjectCode) {
@@ -152,15 +152,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const uniquePaths = [...new Set(allPaths.map(p => p.path))];
     const total = uniquePaths.length;
 
-    sendEvent({ type: "progress", message: `Found ${total} Firebase Storage images across ${snapshot.size} questions`, current: 0, total, made_public: 0, failed: 0 });
+    sendEvent({ type: "progress", message: `Found ${total} Firebase Storage images across ${snapshot.size} questions`, current: 0, total, made_public: 0, failed: 0, skipped: 0 });
 
     if (total === 0) {
-      sendEvent({ type: "complete", message: subjectCode ? `No Firebase Storage images found for ${subjectCode}` : "No Firebase Storage images found", total: 0, made_public: 0, failed: 0 });
+      sendEvent({ type: "complete", message: subjectCode ? `No Firebase Storage images found for ${subjectCode}` : "No Firebase Storage images found", total: 0, made_public: 0, failed: 0, skipped: 0 });
       return res.end();
     }
 
     let madePublic = 0;
     let failed = 0;
+    let skipped = 0;
     const BATCH_SIZE = 10;
 
     for (let i = 0; i < uniquePaths.length; i += BATCH_SIZE) {
@@ -170,14 +171,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const results = await Promise.allSettled(
         batch.map(async (filePath) => {
           const file = bucket.file(filePath);
+          const alreadyPublic = await file.isPublic();
+          if (alreadyPublic) return { skipped: true };
           await file.makePublic();
-          return filePath;
+          return { skipped: false };
         })
       );
 
       for (const result of results) {
         if (result.status === "fulfilled") {
-          madePublic++;
+          if (result.value.skipped) skipped++;
+          else madePublic++;
         } else {
           failed++;
           console.error("Failed to make public:", result.reason?.message);
@@ -186,20 +190,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       sendEvent({
         type: "progress",
-        message: `Making images public... ${madePublic + failed}/${total}`,
-        current: madePublic + failed,
+        message: `Making images public... ${madePublic + failed + skipped}/${total}`,
+        current: madePublic + failed + skipped,
         total,
         made_public: madePublic,
         failed,
+        skipped,
       });
     }
 
     sendEvent({
       type: "complete",
-      message: `Done! Made ${madePublic} images public (${failed} failed) across ${snapshot.size} questions`,
+      message: `Done! Made ${madePublic} images public (${skipped} already public, ${failed} failed) across ${snapshot.size} questions`,
       total,
       made_public: madePublic,
       failed,
+      skipped,
     });
   } catch (error: any) {
     console.error("Migration error:", error);

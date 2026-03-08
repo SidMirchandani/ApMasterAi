@@ -148,6 +148,7 @@ export default function AdminPage() {
     total: number;
     made_public: number;
     failed: number;
+    skipped: number;
     message: string;
   } | null>(null);
 
@@ -316,7 +317,7 @@ export default function AdminPage() {
     if (!token) return;
     setMigratingImages(true);
     setMigrateExternalProgress(null);
-    setMigrateProgress({ current: 0, total: 0, made_public: 0, failed: 0, message: "Starting migration..." });
+    setMigrateProgress({ current: 0, total: 0, made_public: 0, failed: 0, skipped: 0, message: "Starting migration..." });
 
     const controller = new AbortController();
     migrateAbortRef.current = controller;
@@ -367,6 +368,7 @@ export default function AdminPage() {
                 total: event.total || 0,
                 made_public: event.made_public || 0,
                 failed: event.failed || 0,
+                skipped: event.skipped || 0,
                 message: event.message || "",
               });
             }
@@ -377,6 +379,7 @@ export default function AdminPage() {
                 total: event.total || 0,
                 made_public: event.made_public || 0,
                 failed: event.failed || 0,
+                skipped: event.skipped || 0,
                 message: event.message || "",
               });
             }
@@ -1073,12 +1076,14 @@ export default function AdminPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Subjects</SelectItem>
-                    <SelectItem value="APCSP">AP Computer Science Principles</SelectItem>
-                    <SelectItem value="APMICRO">AP Microeconomics</SelectItem>
-                    <SelectItem value="APMACRO">AP Macroeconomics</SelectItem>
-                    <SelectItem value="APCHEM">AP Chemistry</SelectItem>
-                    <SelectItem value="APGOV">AP U.S. Government</SelectItem>
-                    <SelectItem value="APPSYCH">AP Psychology</SelectItem>
+                    {allApSubjectsRef
+                      .slice()
+                      .sort((a, b) => a.label.localeCompare(b.label))
+                      .map((s) => (
+                        <SelectItem key={s.code} value={s.code}>
+                          {s.label}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -1129,6 +1134,7 @@ export default function AdminPage() {
                 />
                 <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
                   <span className="text-green-600 font-medium">Made Public: {migrateProgress.made_public}</span>
+                  <span className="text-gray-500">Skipped (already public): {migrateProgress.skipped}</span>
                   <span className="text-red-600">Failed: {migrateProgress.failed}</span>
                 </div>
               </div>
