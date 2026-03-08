@@ -8,8 +8,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
 import { BlockRenderer } from "@/components/quiz/BlockRenderer";
 import { QuizBottomBar } from "@/components/quiz/QuizBottomBar";
 import { ReviewQuestionPalette } from "@/components/quiz/ReviewQuestionPalette";
@@ -272,11 +271,9 @@ export default function SectionReview() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0 pb-3">
-                    <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
-                      </ReactMarkdown>
-                    </div>
+                    <ExplanationMarkdown className="text-sm text-gray-700 prose prose-sm max-w-none dark:text-gray-300 dark:prose-invert">
+                      {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
+                    </ExplanationMarkdown>
                   </CardContent>
                 </Card>
               )}

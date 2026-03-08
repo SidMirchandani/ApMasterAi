@@ -5,8 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Loader2, MessageSquare } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -117,11 +116,9 @@ export function ExplanationChat({
                 <p className="font-semibold text-xs mb-1">
                   {msg.role === "user" ? "You" : "AI Tutor"}
                 </p>
-                <div className="text-gray-700 prose prose-sm max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.content}
-                  </ReactMarkdown>
-                </div>
+                <ExplanationMarkdown className="text-gray-700 prose prose-sm max-w-none">
+                  {msg.content}
+                </ExplanationMarkdown>
               </div>
             ))}
             <div ref={messagesEndRef} />

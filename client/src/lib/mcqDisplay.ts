@@ -107,9 +107,23 @@ export function getStoredAnswerForSubmit(
   return displaySelection;
 }
 
+/** Heuristic: content looks like LaTeX (e.g. \int, \frac, \sqrt). */
+function looksLikeLatex(content: string): boolean {
+  const t = content.trim();
+  return t.startsWith("\\") || /\\[a-zA-Z]+|\\[{}^_]|\^{|_\{/.test(content);
+}
+
+/** Convert backtick-wrapped LaTeX to $...$ so remark-math can render it. */
+function normalizeBacktickLatex(text: string): string {
+  return text.replace(/`([^`]+)`/g, (_, inner) =>
+    looksLikeLatex(inner) ? `$${inner}$` : `\`${inner}\``
+  );
+}
+
 /**
  * When we display E as D (4-option, stored correct=E), rewrite the explanation text
  * so that references to the correct answer "E" are shown as "D" for consistency.
+ * Also normalizes backtick-wrapped LaTeX to $...$ for proper math rendering.
  */
 export function getDisplayExplanation(
   explanation: string | undefined | null,
@@ -118,27 +132,28 @@ export function getDisplayExplanation(
 ): string {
   if (explanation == null || typeof explanation !== "string") return explanation ?? "";
   const optionCount = mcqOptionCount ?? 5;
-  if (optionCount !== 4 || question.answerIndex !== 4) return explanation;
 
   let text = explanation;
-  // Phrases where E is the correct answer (case-insensitive, preserve original case of non-E part)
-  const replacements: [RegExp, string][] = [
-    [/\b(the\s+)?correct\s+answer\s+is\s+E\b/gi, "$1correct answer is D"],
-    [/\banswer\s+is\s+E\b/gi, "answer is D"],
-    [/\bAnswer:\s*E\b/gi, "Answer: D"],
-    [/\boption\s+E\s+is\s+correct\b/gi, "option D is correct"],
-    [/\bchoice\s+E\b/gi, "choice D"],
-    [/\bOption\s+E\b/g, "Option D"],
-    [/\bE\s+is\s+correct\b/gi, "D is correct"],
-    [/\bE\s+is\s+the\s+correct\b/gi, "D is the correct"],
-    [/\bis\s+E\./gi, "is D."],
-    [/\bis\s+E\s/gi, "is D "],
-    [/\bE\s+is\s+the\s+right\b/gi, "D is the right"],
-    [/\bE\)/g, "D)"],
-    [/\bE\./g, "D."],
-  ];
-  for (const [regex, replacement] of replacements) {
-    text = text.replace(regex, replacement);
+  if (optionCount === 4 && question.answerIndex === 4) {
+    // Phrases where E is the correct answer (case-insensitive, preserve original case of non-E part)
+    const replacements: [RegExp, string][] = [
+      [/\b(the\s+)?correct\s+answer\s+is\s+E\b/gi, "$1correct answer is D"],
+      [/\banswer\s+is\s+E\b/gi, "answer is D"],
+      [/\bAnswer:\s*E\b/gi, "Answer: D"],
+      [/\boption\s+E\s+is\s+correct\b/gi, "option D is correct"],
+      [/\bchoice\s+E\b/gi, "choice D"],
+      [/\bOption\s+E\b/g, "Option D"],
+      [/\bE\s+is\s+correct\b/gi, "D is correct"],
+      [/\bE\s+is\s+the\s+correct\b/gi, "D is the correct"],
+      [/\bis\s+E\./gi, "is D."],
+      [/\bis\s+E\s/gi, "is D "],
+      [/\bE\s+is\s+the\s+right\b/gi, "D is the right"],
+      [/\bE\)/g, "D)"],
+      [/\bE\./g, "D."],
+    ];
+    for (const [regex, replacement] of replacements) {
+      text = text.replace(regex, replacement);
+    }
   }
-  return text;
+  return normalizeBacktickLatex(text);
 }

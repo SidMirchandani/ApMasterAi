@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, CheckCircle, XCircle } from "lucide-react";
 import { BlockRenderer } from "./BlockRenderer";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayChoicesAndCorrect, getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 
@@ -212,11 +211,9 @@ export function PracticeQuizReview({
                     {question.explanation && (
                       <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
                         <div className="font-semibold text-blue-900 mb-2">Explanation:</div>
-                        <div className="text-sm text-blue-900 prose prose-sm max-w-none">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {getDisplayExplanation(question.explanation, question, mcqOptionCount)}
-                          </ReactMarkdown>
-                        </div>
+                        <ExplanationMarkdown className="text-sm text-blue-900 prose prose-sm max-w-none">
+                          {getDisplayExplanation(question.explanation, question, mcqOptionCount)}
+                        </ExplanationMarkdown>
                       </div>
                     )}
                   </CardContent>

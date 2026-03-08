@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
+import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
 
 interface BookmarkedQuestion {
   id: string;
@@ -303,7 +304,7 @@ export default function BookmarksPage() {
                   return (
                   <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">Explanation</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{displayExpl}</p>
+                    <ExplanationMarkdown>{displayExpl}</ExplanationMarkdown>
                   </div>
                   );
                 })()}

@@ -8,8 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 import { Loader2, Calculator } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { CheckCircle, XCircle, LogOut } from "lucide-react";
@@ -381,11 +380,9 @@ export function PracticeQuiz({
                       <span className="text-sm">Generating explanation...</span>
                     </div>
                   ) : currentExplanation ? (
-                    <div className="text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {getDisplayExplanation(currentExplanation, currentQuestion, mcqOptionCount)}
-                      </ReactMarkdown>
-                    </div>
+                    <ExplanationMarkdown>
+                      {getDisplayExplanation(currentExplanation, currentQuestion, mcqOptionCount)}
+                    </ExplanationMarkdown>
                   ) : null}
                 </CardContent>
               </Card>
