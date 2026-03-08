@@ -196,15 +196,8 @@ export default async function handler(
 
     const question = doc.data();
 
-    const hasExplanation = question.explanation && question.explanation.trim() !== '';
-    const isPromptFixed = question.tags && question.tags.includes("prompt_fixed");
-
-    if (hasExplanation && isPromptFixed) {
-      return "skipped";
-    }
-
-    const needsFix = !isPromptFixed;
-    const needsExplanation = !hasExplanation;
+    const needsFix = true;
+    const needsExplanation = true;
 
     const promptParts: any[] = [];
 
@@ -239,7 +232,8 @@ Do NOT change words, rephrase, fix grammar, or add content.`);
 
     if (needsExplanation) {
       tasks.push(`TASK - GENERATE EXPLANATION:
-Generate a concise explanation (100-150 words). Structure: **Concept**: 1-2 sentences on what this tests. **Why ${correctLabel} is correct**: Why this answer is right. **Why other choices are wrong**: Brief reason each incorrect choice fails. Use \\n for newlines within the explanation string.`);
+Generate a concise explanation (100-150 words). Structure: **Concept**: 1-2 sentences on what this tests. **Why ${correctLabel} is correct**: Why this answer is right. **Why other choices are wrong**: Brief reason each incorrect choice fails. Use \\n for newlines within the explanation string.
+For math and equations use LaTeX inside single dollar signs, e.g. $P(t) = 1200 - 1000e^{-0.16t}$ or $\\frac{dP}{dt}$. Do not use backticks for math.`);
       jsonFields.push(`"explanation": "your concise explanation with \\n for newlines"`);
     }
 

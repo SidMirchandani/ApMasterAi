@@ -3,7 +3,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
 
 const defaultClassName =
   "text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none";
@@ -13,7 +12,10 @@ interface ExplanationMarkdownProps {
   className?: string;
 }
 
-/** Catches math-render errors (e.g. malformed LaTeX) and shows fallback without math. */
+/**
+ * Error boundary so a single malformed formula does not crash the whole page.
+ * Renders markdown without math as fallback.
+ */
 class MathErrorBoundary extends Component<
   { children: ReactNode; fallback: ReactNode },
   { hasError: boolean }
@@ -34,29 +36,49 @@ class MathErrorBoundary extends Component<
   }
 }
 
+/** Remove empty math delimiters $ $ and $$ $$ to avoid parser crashes. */
+function sanitizeMathDelimiters(text: string): string {
+  return String(text)
+    .replace(/\$\$\s*\$\$/g, " ")
+    .replace(/\$\s*\$/g, " ");
+}
+
 /**
- * Renders markdown with GFM and LaTeX (KaTeX). Math plugins are only used after
- * mount to avoid SSR/client exceptions. If the math pipeline throws (e.g. malformed
- * LaTeX causing "Cannot set properties of undefined"), we fall back to markdown-only.
+ * Normalize backslashes so KaTeX sees single backslashes.
+ * DB/JSON often stores \\frac; we need \frac for KaTeX.
+ */
+function normalizeLatexBackslashes(text: string): string {
+  return String(text).replace(/\\\\/g, "\\");
+}
+
+/**
+ * Reusable markdown + LaTeX renderer for explanations.
+ * Uses react-markdown with remark-gfm, remark-math (v6+), and rehype-katex (v7+).
+ * Math runs only after mount to avoid SSR/hydration issues.
  */
 export function ExplanationMarkdown({ children, className = defaultClassName }: ExplanationMarkdownProps) {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const raw = typeof children === "string" ? children : "";
+  const sanitized = normalizeLatexBackslashes(sanitizeMathDelimiters(raw));
 
   const fallback = (
     <div className={className}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{sanitized}</ReactMarkdown>
     </div>
   );
+
+  const remarkPlugins = mounted ? [remarkGfm, remarkMath] : [remarkGfm];
+  const rehypePlugins = mounted ? [rehypeKatex] : [];
 
   return (
     <MathErrorBoundary fallback={fallback}>
       <div className={className}>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, ...(mounted ? [remarkMath] : [])]}
-          rehypePlugins={mounted ? [rehypeKatex] : []}
-        >
-          {children}
+        <ReactMarkdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins}>
+          {sanitized}
         </ReactMarkdown>
       </div>
     </MathErrorBoundary>

@@ -169,5 +169,13 @@ export function getDisplayExplanation(
       text = text.replace(regex, replacement);
     }
   }
-  return sanitizeMathDelimiters(normalizeBacktickLatex(text));
+  const out = sanitizeMathDelimiters(normalizeBacktickLatex(text));
+  // #region agent log
+  if (typeof fetch !== "undefined") {
+    const hasUnpaired = (out.match(/\$/g) || []).length % 2 !== 0;
+    const hasEmptyInline = /\$\s*\$/.test(out);
+    fetch("http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "7d56c0" }, body: JSON.stringify({ sessionId: "7d56c0", hypothesisId: "H2", location: "mcqDisplay.ts:getDisplayExplanation", message: "explanation after sanitize", data: { len: out.length, hasUnpairedDollar: hasUnpaired, hasEmptyInline, snippet: out.slice(0, 120) }, timestamp: Date.now() }) }).catch(() => {});
+  }
+  // #endregion
+  return out;
 }

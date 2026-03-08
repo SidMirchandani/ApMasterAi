@@ -159,23 +159,6 @@ export default async function handler(
       }
 
       const question = doc.data();
-      
-      if (question.explanation && question.explanation.trim() !== '') {
-        console.log(
-          `Skipping Question ${i + 1}/${total} (ID: ${questionId}) - explanation already exists`,
-        );
-        skipped++;
-        sendEvent({
-          type: "progress",
-          current: i + 1,
-          total,
-          updated,
-          skipped,
-          failed,
-          message: `Q${i + 1}/${total}: already has explanation, skipped`,
-        });
-        continue;
-      }
 
       sendEvent({
         type: "progress",
@@ -258,6 +241,8 @@ export default async function handler(
 
 Keep the ENTIRE explanation to about 100-150 words maximum. Be clear, concise, and student-friendly.
 
+For math and equations use LaTeX inside single dollar signs, e.g. $P(t) = 1200 - 1000e^{-0.16t}$ or $\\frac{dP}{dt}$. Do not use backticks for math.
+
 Your explanation:`
       });
 
@@ -323,7 +308,7 @@ Your explanation:`
     }
   }
 
-  console.log(`✅ Completed: Generated ${updated}/${total} explanations (${skipped} skipped, ${failed} failed)`);
+  console.log(`✅ Completed: Generated ${updated}/${total} explanations (${skipped} not found, ${failed} failed)`);
 
   sendEvent({
     type: "complete",
@@ -331,7 +316,7 @@ Your explanation:`
     updated,
     skipped,
     failed,
-    message: `Done! Generated ${updated} explanations. ${skipped} skipped (already had one), ${failed} failed.`,
+    message: `Done! Generated ${updated} explanations. ${skipped} skipped (not found), ${failed} failed.`,
   });
 
   res.end();

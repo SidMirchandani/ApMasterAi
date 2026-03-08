@@ -204,12 +204,6 @@ export default async function handler(
 
       const question = doc.data();
 
-      if (question.tags && question.tags.includes("prompt_fixed")) {
-        skipped++;
-        sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Q${i + 1}/${total}: already fixed, skipped` });
-        continue;
-      }
-
       sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Fixing Q${i + 1}/${total}...` });
 
       let promptText = `Fix ONLY formatting issues in this AP question text. DO NOT change any words or add new content.

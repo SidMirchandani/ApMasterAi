@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
-import { Loader2, Calculator } from "lucide-react";
+import { Calculator } from "lucide-react";
 import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
@@ -70,10 +70,6 @@ export function PracticeQuiz({
     new Set(),
   );
   const [timerHidden, setTimerHidden] = useState(false);
-  const [generatedExplanations, setGeneratedExplanations] = useState<
-    Map<number, string>
-  >(new Map());
-  const [isGeneratingExplanation, setIsGeneratingExplanation] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [finalUserAnswers, setFinalUserAnswers] = useState<{
@@ -161,54 +157,6 @@ export function PracticeQuiz({
 
   const orderedQuestions = isFullLength ? [...questions].reverse() : questions;
   const currentQuestion = orderedQuestions[currentQuestionIndex];
-  const currentExplanation =
-    generatedExplanations.get(currentQuestionIndex) ||
-    currentQuestion?.explanation;
-
-  useEffect(() => {
-    const generateExplanationIfNeeded = async () => {
-      if (!currentQuestion || !isAnswerSubmitted) return;
-
-      const hasExplanation =
-        currentQuestion.explanation &&
-        currentQuestion.explanation.trim() !== "";
-      const alreadyGenerated = generatedExplanations.has(currentQuestionIndex);
-
-      if (!hasExplanation && !alreadyGenerated && !isGeneratingExplanation) {
-        setIsGeneratingExplanation(true);
-        try {
-          const response = await apiRequest(
-            "POST",
-            "/api/generateExplanationOnTheGo",
-            {
-              questionPrompt: currentQuestion.prompt,
-              choices: currentQuestion.choices,
-              correctAnswerIndex: currentQuestion.answerIndex,
-            },
-          );
-
-          if (response.ok) {
-            const data = await response.json();
-            setGeneratedExplanations((prev) =>
-              new Map(prev).set(currentQuestionIndex, data.explanation),
-            );
-          }
-        } catch (error) {
-          console.error("Error generating explanation:", error);
-        } finally {
-          setIsGeneratingExplanation(false);
-        }
-      }
-    };
-
-    generateExplanationIfNeeded();
-  }, [
-    currentQuestion,
-    currentQuestionIndex,
-    isAnswerSubmitted,
-    generatedExplanations,
-    isGeneratingExplanation,
-  ]);
 
   const handleAnswerSelect = (answer: string) => {
     if (!isAnswerSubmitted) {
@@ -368,22 +316,15 @@ export function PracticeQuiz({
               mcqOptionCount={mcqOptionCount}
             />
 
-            {isAnswerSubmitted && (
+            {isAnswerSubmitted && currentQuestion?.explanation && (
               <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
                 <CardHeader className="pb-2 pt-3">
                   <CardTitle className="text-sm text-blue-800 dark:text-blue-300">Explanation</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 pb-3">
-                  {isGeneratingExplanation ? (
-                    <div className="flex items-center justify-center py-4 text-gray-600 dark:text-gray-400">
-                      <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400 mr-2" />
-                      <span className="text-sm">Generating explanation...</span>
-                    </div>
-                  ) : currentExplanation ? (
-                    <ExplanationMarkdown>
-                      {getDisplayExplanation(currentExplanation, currentQuestion, mcqOptionCount)}
-                    </ExplanationMarkdown>
-                  ) : null}
+                  <ExplanationMarkdown>
+                    {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
+                  </ExplanationMarkdown>
                 </CardContent>
               </Card>
             )}

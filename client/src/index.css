@@ -667,3 +667,15 @@ html, body {
 .shadow-glow-sm { box-shadow: 0 4px 14px rgba(16, 185, 129, 0.2); }
 .shadow-glow    { box-shadow: 0 8px 25px rgba(16, 185, 129, 0.25); }
 .shadow-glow-lg { box-shadow: 0 12px 40px rgba(16, 185, 129, 0.3); }
+
+/* ── KaTeX: larger inline math and readable limits/subscripts ── */
+.prose .katex {
+  font-size: 1.15em;
+}
+/* Scriptscript (integral limits, bracket eval [·]₀¹): prevent tiny squashed limits */
+.prose .katex .sizing.reset-size3.size1,
+.prose .katex .fontsize-ensurer.reset-size3.size1,
+.prose .katex .sizing.reset-size4.size1,
+.prose .katex .fontsize-ensurer.reset-size4.size1 {
+  font-size: 0.8em !important;
+}
