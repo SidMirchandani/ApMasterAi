@@ -132,8 +132,6 @@ export default async function handler(
     message: `Starting explanation generation for ${total} questions...`,
   });
 
-  const BASE_DELAY_MS = 2000;
-
   for (let i = 0; i < questionIds.length; i++) {
     const questionId = questionIds[i];
 
@@ -323,8 +321,6 @@ Your explanation:`
           : `Q${i + 1}: Failed — ${(error.message || "").substring(0, 80)}`,
       });
     }
-
-    await new Promise((resolve) => setTimeout(resolve, BASE_DELAY_MS));
   }
 
   console.log(`✅ Completed: Generated ${updated}/${total} explanations (${skipped} skipped, ${failed} failed)`);

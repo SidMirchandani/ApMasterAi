@@ -186,7 +186,6 @@ export default async function handler(
   });
 
   const BATCH_SIZE = 5;
-  const BATCH_DELAY_MS = 300;
 
   async function processOneQuestion(questionId: string, idx: number): Promise<"updated" | "skipped"> {
     const doc = await questionsRef.doc(questionId).get();
@@ -411,10 +410,6 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no code fences, no extra tex
     }
 
     sendEvent({ type: "progress", current: processed, total, updated, skipped, failed, message: `Batch done — ${updated} updated, ${skipped} skipped, ${failed} failed (${processed}/${total})` });
-
-    if (batchEnd < questionIds.length) {
-      await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
-    }
   }
 
   console.log(`Completed: Processed ${updated}/${total} questions (${skipped} skipped, ${failed} failed)`);
