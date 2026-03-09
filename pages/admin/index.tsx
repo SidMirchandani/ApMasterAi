@@ -106,6 +106,63 @@ export default function AdminPage() {
     return items.filter(q => !q.explanation || q.explanation.trim() === "");
   }, [items, showOnlyMissingExplanation]);
 
+  // Per-column search filters (search within current results)
+  const [columnSearch, setColumnSearch] = useState({
+    subject: "",
+    section: "",
+    prompt: "",
+    choices: "",
+    ans: "",
+    explanation: "",
+  });
+
+  function getPromptSearchText(q: Question): string {
+    if (q.prompt_blocks && Array.isArray(q.prompt_blocks)) {
+      return q.prompt_blocks
+        .filter((b): b is Block => b.type === "text")
+        .map(b => (b as { value: string }).value)
+        .join(" ");
+    }
+    return q.prompt || "";
+  }
+
+  function getChoicesSearchText(q: Question): string {
+    if (q.choices && typeof q.choices === "object") {
+      return (["A", "B", "C", "D", "E"] as const)
+        .map(letter => {
+          const blocks = q.choices?.[letter];
+          if (!blocks) return "";
+          return blocks
+            .filter((b): b is Block => b.type === "text")
+            .map(b => (b as { value: string }).value)
+            .join(" ");
+        })
+        .join(" ");
+    }
+    return "";
+  }
+
+  const filteredDisplayItems = useMemo(() => {
+    let list = displayedItems;
+    const s = columnSearch.subject.trim().toLowerCase();
+    const sec = columnSearch.section.trim().toLowerCase();
+    const p = columnSearch.prompt.trim().toLowerCase();
+    const c = columnSearch.choices.trim().toLowerCase();
+    const a = columnSearch.ans.trim().toUpperCase();
+    const e = columnSearch.explanation.trim().toLowerCase();
+    if (s) list = list.filter(q => (q.subject_code || "").toLowerCase().includes(s));
+    if (sec) list = list.filter(q => (q.section_code || "").toLowerCase().includes(sec));
+    if (p) list = list.filter(q => getPromptSearchText(q).toLowerCase().includes(p));
+    if (c) list = list.filter(q => getChoicesSearchText(q).toLowerCase().includes(c));
+    if (a) list = list.filter(q => String.fromCharCode(65 + (q.answerIndex ?? 0)) === a || (q.correct_answer || "").toUpperCase() === a);
+    if (e) list = list.filter(q => (q.explanation || "").toLowerCase().includes(e));
+    return list;
+  }, [displayedItems, columnSearch]);
+
+  function setColumnSearchField(field: keyof typeof columnSearch, value: string) {
+    setColumnSearch(prev => ({ ...prev, [field]: value }));
+  }
+
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(
@@ -761,11 +818,11 @@ export default function AdminPage() {
   }
 
   function toggleSelectAll() {
-    const allDisplayedSelected = displayedItems.length > 0 && displayedItems.every(q => selectedQuestions.has(q.id));
+    const allDisplayedSelected = filteredDisplayItems.length > 0 && filteredDisplayItems.every(q => selectedQuestions.has(q.id));
     if (allDisplayedSelected) {
       setSelectedQuestions(new Set());
     } else {
-      setSelectedQuestions(new Set(displayedItems.map(q => q.id)));
+      setSelectedQuestions(new Set(filteredDisplayItems.map(q => q.id)));
     }
   }
 
@@ -1243,11 +1300,12 @@ export default function AdminPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="dark:text-white">
-                  Questions ({displayedItems.length}
-                  {showOnlyMissingExplanation && items.length > 0 && ` of ${items.length}`})
+                  Questions ({filteredDisplayItems.length}
+                  {showOnlyMissingExplanation && items.length > 0 ? ` of ${displayedItems.length}` : ""})
                 </CardTitle>
                 <CardDescription>
                   {showOnlyMissingExplanation && items.length > 0 && displayedItems.length < items.length && "Showing questions without explanation. "}
+                  {Object.values(columnSearch).some(v => v.trim() !== "") && "Column search active. "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
               </div>
@@ -1319,7 +1377,7 @@ export default function AdminPage() {
                   <tr>
                     <th className="p-2 text-center">
                       <Checkbox
-                        checked={displayedItems.length > 0 && displayedItems.every(q => selectedQuestions.has(q.id))}
+                        checked={filteredDisplayItems.length > 0 && filteredDisplayItems.every(q => selectedQuestions.has(q.id))}
                         onCheckedChange={toggleSelectAll}
                       />
                     </th>
@@ -1331,9 +1389,61 @@ export default function AdminPage() {
                     <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Explanation</th>
                     <th className="p-2 text-center font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Actions</th>
                   </tr>
+                  <tr className="bg-gray-100 dark:bg-gray-600/50 border-b dark:border-gray-600">
+                    <th className="p-1" />
+                    <th className="p-1">
+                      <Input
+                        placeholder="Search..."
+                        value={columnSearch.subject}
+                        onChange={(e) => setColumnSearchField("subject", e.target.value)}
+                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </th>
+                    <th className="p-1">
+                      <Input
+                        placeholder="Search..."
+                        value={columnSearch.section}
+                        onChange={(e) => setColumnSearchField("section", e.target.value)}
+                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </th>
+                    <th className="p-1">
+                      <Input
+                        placeholder="Search..."
+                        value={columnSearch.prompt}
+                        onChange={(e) => setColumnSearchField("prompt", e.target.value)}
+                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </th>
+                    <th className="p-1">
+                      <Input
+                        placeholder="Search..."
+                        value={columnSearch.choices}
+                        onChange={(e) => setColumnSearchField("choices", e.target.value)}
+                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </th>
+                    <th className="p-1">
+                      <Input
+                        placeholder="A-E"
+                        value={columnSearch.ans}
+                        onChange={(e) => setColumnSearchField("ans", e.target.value.toUpperCase().slice(0, 1))}
+                        className="h-8 w-12 text-xs text-center bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </th>
+                    <th className="p-1">
+                      <Input
+                        placeholder="Search..."
+                        value={columnSearch.explanation}
+                        onChange={(e) => setColumnSearchField("explanation", e.target.value)}
+                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </th>
+                    <th className="p-1" />
+                  </tr>
                 </thead>
                 <tbody>
-                  {displayedItems.map((q) => (
+                  {filteredDisplayItems.map((q) => (
                     <Row
                       key={q.id}
                       q={q}
@@ -1345,11 +1455,13 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
-              {displayedItems.length === 0 && (
+              {filteredDisplayItems.length === 0 && (
                 <div className="p-8 text-center text-khan-gray-medium dark:text-gray-400">
-                  {showOnlyMissingExplanation && items.length > 0
-                    ? "No questions without explanation in this set."
-                    : "No questions found. Upload a CSV or adjust filters."}
+                  {displayedItems.length === 0
+                    ? showOnlyMissingExplanation && items.length > 0
+                      ? "No questions without explanation in this set."
+                      : "No questions found. Upload a CSV or adjust filters."
+                    : "No questions match the column search. Clear the search fields above."}
                 </div>
               )}
             </div>

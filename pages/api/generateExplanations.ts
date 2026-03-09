@@ -160,6 +160,20 @@ export default async function handler(
 
       const question = doc.data();
 
+      if (question?.explanation && String(question.explanation).trim() !== "") {
+        skipped++;
+        sendEvent({
+          type: "progress",
+          current: i + 1,
+          total,
+          updated,
+          skipped,
+          failed,
+          message: `Q${i + 1}/${total}: already has explanation, skipped`,
+        });
+        continue;
+      }
+
       sendEvent({
         type: "progress",
         current: i + 1,
