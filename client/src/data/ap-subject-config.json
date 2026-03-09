@@ -1,0 +1,182 @@
+[
+  {
+    "subject_code": "APMACRO",
+    "subject_name": "AP Macroeconomics",
+    "max_composite_points": 90,
+    "mcq_weight": 0.67,
+    "frq_weight": 0.33,
+    "frq_penalty_modifier": 0.85,
+    "curve_thresholds": { "5": 72, "4": 59, "3": 47, "2": 35 }
+  },
+  {
+    "subject_code": "APMICRO",
+    "subject_name": "AP Microeconomics",
+    "max_composite_points": 90,
+    "mcq_weight": 0.67,
+    "frq_weight": 0.33,
+    "frq_penalty_modifier": 0.85,
+    "curve_thresholds": { "5": 74, "4": 60, "3": 48, "2": 36 }
+  },
+  {
+    "subject_code": "APCSP",
+    "subject_name": "AP Computer Science Principles",
+    "max_composite_points": 100,
+    "mcq_weight": 0.70,
+    "frq_weight": 0.30,
+    "frq_penalty_modifier": 0.85,
+    "curve_thresholds": { "5": 78, "4": 64, "3": 48, "2": 36 }
+  },
+  {
+    "subject_code": "APCHEM",
+    "subject_name": "AP Chemistry",
+    "max_composite_points": 100,
+    "mcq_weight": 0.50,
+    "frq_weight": 0.50,
+    "frq_penalty_modifier": 0.80,
+    "curve_thresholds": { "5": 72, "4": 58, "3": 42, "2": 27 }
+  },
+  {
+    "subject_code": "APGOV",
+    "subject_name": "AP U.S. Government and Politics",
+    "max_composite_points": 120,
+    "mcq_weight": 0.50,
+    "frq_weight": 0.50,
+    "frq_penalty_modifier": 0.75,
+    "curve_thresholds": { "5": 88, "4": 72, "3": 54, "2": 36 }
+  },
+  {
+    "subject_code": "APPSYCH",
+    "subject_name": "AP Psychology",
+    "max_composite_points": 150,
+    "mcq_weight": 0.67,
+    "frq_weight": 0.33,
+    "frq_penalty_modifier": 0.85,
+    "curve_thresholds": { "5": 113, "4": 93, "3": 77, "2": 65 }
+  },
+  {
+    "subject_code": "APBIO",
+    "subject_name": "AP Biology",
+    "max_composite_points": 120,
+    "mcq_weight": 0.50,
+    "frq_weight": 0.50,
+    "frq_penalty_modifier": 0.80,
+    "curve_thresholds": { "5": 92, "4": 73, "3": 54, "2": 38 }
+  },
+  {
+    "subject_code": "APCALCAB",
+    "subject_name": "AP Calculus AB",
+    "max_composite_points": 108,
+    "mcq_weight": 0.50,
+    "frq_weight": 0.50,
+    "frq_penalty_modifier": 0.85,
+    "curve_thresholds": { "5": 68, "4": 54, "3": 42, "2": 33 }
+  },
+  {
+    "subject_code": "APCALCBC",
+    "subject_name": "AP Calculus BC",
+    "max_composite_points": 108,
+    "mcq_weight": 0.50,
+    "frq_weight": 0.50,
+    "frq_penalty_modifier": 0.85,
+    "curve_thresholds": { "5": 68, "4": 56, "3": 44, "2": 35 }
+  },
+  {
+    "subject_code": "APCSA",
+    "subject_name": "AP Computer Science A",
+    "max_composite_points": 80,
+    "mcq_weight": 0.50,
+    "frq_weight": 0.50,
+    "frq_penalty_modifier": 0.85,
+    "curve_thresholds": { "5": 62, "4": 47, "3": 37, "2": 27 }
+  },
+  {
+    "subject_code": "APUSH",
+    "subject_name": "AP U.S. History",
+    "max_composite_points": 130,
+    "mcq_weight": 0.40,
+    "frq_weight": 0.60,
+    "frq_penalty_modifier": 0.75,
+    "curve_thresholds": { "5": 92, "4": 76, "3": 60, "2": 45 }
+  },
+  {
+    "subject_code": "APWH",
+    "subject_name": "AP World History: Modern",
+    "max_composite_points": 130,
+    "mcq_weight": 0.40,
+    "frq_weight": 0.60,
+    "frq_penalty_modifier": 0.75,
+    "curve_thresholds": { "5": 92, "4": 75, "3": 58, "2": 43 }
+  },
+  {
+    "subject_code": "APEURO",
+    "subject_name": "AP European History",
+    "max_composite_points": 130,
+    "mcq_weight": 0.40,
+    "frq_weight": 0.60,
+    "frq_penalty_modifier": 0.75,
+    "curve_thresholds": { "5": 90, "4": 74, "3": 57, "2": 43 }
+  },
+  {
+    "subject_code": "APLANG",
+    "subject_name": "AP English Language and Composition",
+    "max_composite_points": 100,
+    "mcq_weight": 0.45,
+    "frq_weight": 0.55,
+    "frq_penalty_modifier": 0.75,
+    "curve_thresholds": { "5": 79, "4": 69, "3": 59, "2": 42 }
+  },
+  {
+    "subject_code": "APLIT",
+    "subject_name": "AP English Literature and Composition",
+    "max_composite_points": 100,
+    "mcq_weight": 0.45,
+    "frq_weight": 0.55,
+    "frq_penalty_modifier": 0.75,
+    "curve_thresholds": { "5": 77, "4": 66, "3": 52, "2": 38 }
+  },
+  {
+    "subject_code": "APSTATS",
+    "subject_name": "AP Statistics",
+    "max_composite_points": 100,
+    "mcq_weight": 0.50,
+    "frq_weight": 0.50,
+    "frq_penalty_modifier": 0.85,
+    "curve_thresholds": { "5": 70, "4": 57, "3": 44, "2": 32 }
+  },
+  {
+    "subject_code": "APPHYS1",
+    "subject_name": "AP Physics 1: Algebra-Based",
+    "max_composite_points": 90,
+    "mcq_weight": 0.50,
+    "frq_weight": 0.50,
+    "frq_penalty_modifier": 0.80,
+    "curve_thresholds": { "5": 65, "4": 52, "3": 41, "2": 30 }
+  },
+  {
+    "subject_code": "APPHYS2",
+    "subject_name": "AP Physics 2: Algebra-Based",
+    "max_composite_points": 90,
+    "mcq_weight": 0.50,
+    "frq_weight": 0.50,
+    "frq_penalty_modifier": 0.80,
+    "curve_thresholds": { "5": 66, "4": 54, "3": 42, "2": 31 }
+  },
+  {
+    "subject_code": "APES",
+    "subject_name": "AP Environmental Science",
+    "max_composite_points": 150,
+    "mcq_weight": 0.60,
+    "frq_weight": 0.40,
+    "frq_penalty_modifier": 0.80,
+    "curve_thresholds": { "5": 108, "4": 87, "3": 68, "2": 55 }
+  },
+  {
+    "subject_code": "APHUG",
+    "subject_name": "AP Human Geography",
+    "max_composite_points": 120,
+    "mcq_weight": 0.50,
+    "frq_weight": 0.50,
+    "frq_penalty_modifier": 0.75,
+    "curve_thresholds": { "5": 84, "4": 68, "3": 54, "2": 40 }
+  }
+]

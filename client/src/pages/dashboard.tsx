@@ -12,7 +12,6 @@ import {
   Target,
   ChevronDown,
   Sparkles,
-  Trophy,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -21,7 +20,8 @@ import { apiRequest } from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { getSubjectByCode } from "@/subjects";
+import { getSubjectByCode, getApiCodeForSubject } from "@/subjects";
+import { getPredictedAPScoreFromTests } from "@/lib/ap-score-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -469,35 +469,24 @@ const SubjectCard = ({
   const units = subjectMeta?.units || [];
   const unitProgress = subject.unitProgress || {};
 
-  const { data: analyticsResponse } = useQuery<{
-    success: boolean;
-    data: { totalAttempted: number; totalCorrect: number; accuracy?: number };
-  }>({
-    queryKey: ["/api/user/analytics", subject.subjectId],
+  const { data: testHistoryResponse } = useQuery<{ success: boolean; data: { percentage: number }[] }>({
+    queryKey: ["testHistory", subject.subjectId],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/user/analytics?subjectId=${subject.subjectId}`);
+      const res = await apiRequest("GET", `/api/user/test-history?subjectId=${subject.subjectId}`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
     staleTime: 60000,
   });
-
-  const analyticsStats = analyticsResponse?.data;
-  const subjectAccuracy =
-    analyticsStats && analyticsStats.totalAttempted >= 25
-      ? (analyticsStats.accuracy ?? Math.round((analyticsStats.totalCorrect / analyticsStats.totalAttempted) * 100))
-      : null;
-  const predictedScore =
-    subjectAccuracy !== null
-      ? subjectAccuracy >= 85 ? 5 : subjectAccuracy >= 70 ? 4 : subjectAccuracy >= 55 ? 3 : subjectAccuracy >= 40 ? 2 : 1
-      : null;
-
-  const scoreColors = predictedScore ? scoreColorMap[predictedScore] : null;
-  const masteredCount = units.filter((u: any) => {
-    const ud = unitProgress[u.id];
-    const score = ud?.highestScore ?? ud?.mcqScore ?? 0;
-    return score >= 80;
-  }).length;
+  const testHistory = testHistoryResponse?.data || [];
+  const avgTestPercentage =
+    testHistory.length > 0
+      ? Math.round(testHistory.reduce((sum, t) => sum + t.percentage, 0) / testHistory.length)
+      : 0;
+  const hasEnoughForPrediction = testHistory.length >= 1;
+  const subjectCode = getApiCodeForSubject(subject.subjectId);
+  const predicted = hasEnoughForPrediction ? getPredictedAPScoreFromTests(avgTestPercentage, subjectCode) : null;
+  const scoreColors = predicted ? scoreColorMap[predicted.score] : null;
 
   return (
     <Card className="group flex flex-col h-full overflow-hidden border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all duration-300 bg-white dark:bg-slate-900 rounded-2xl hover:-translate-y-0.5">
@@ -535,41 +524,21 @@ const SubjectCard = ({
         </div>
       </CardHeader>
       <CardContent className="flex-1 py-4 px-5 flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className={`p-3.5 rounded-xl ${scoreColors ? scoreColors.bg : "bg-slate-50 dark:bg-slate-800/50"} border ${scoreColors ? scoreColors.border : "border-slate-100 dark:border-slate-700/50"}`}>
-            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 mb-1.5 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> Predicted Score
-            </p>
-            <div className="flex items-baseline gap-1">
-              {predictedScore !== null ? (
-                <>
-                  <span className={`text-3xl font-black ${scoreColors?.text || "text-slate-600"}`}>{predictedScore}</span>
-                  <span className={`text-sm font-bold ${scoreColors?.text || "text-slate-400"} opacity-60`}>/5</span>
-                </>
-              ) : (
-                <span className="text-base font-bold text-slate-400 italic">—</span>
-              )}
+        <div className="flex items-stretch gap-3 flex-wrap">
+          <div
+            className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center flex-shrink-0"
+            title="Predicted AP Score"
+          >
+            <div
+              className="flex items-center justify-center w-14 h-14 rounded-full text-white text-2xl font-bold shadow-md"
+              style={{ backgroundColor: predicted ? predicted.color : "#94a3b8" }}
+            >
+              {predicted !== null ? predicted.score : "?"}
             </div>
           </div>
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
-            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 mb-1.5 flex items-center gap-1">
-              <Trophy className="w-3 h-3" /> Unit Mastery
-            </p>
-            <div className="flex items-baseline gap-1 mb-2">
-              <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{masteredCount}</span>
-              <span className="text-sm font-bold text-slate-400 opacity-60">/{units.length}</span>
-            </div>
-            <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-700"
-                style={{ width: units.length > 0 ? `${(masteredCount / units.length) * 100}%` : "0%" }}
-              />
-            </div>
-          </div>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Unit Progress</p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex-1 min-w-0 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1.5">Unit Progress</p>
+            <div className="flex flex-wrap gap-1.5">
             {units.slice(0, 10).map((u: any, i: number) => {
               const unitData = unitProgress[u.id];
               const stat = getUnitStatus(unitData);
@@ -589,6 +558,7 @@ const SubjectCard = ({
               );
             })}
             {units.length > 10 && <span className="text-[10px] text-slate-400 self-center font-semibold">+{units.length - 10}</span>}
+            </div>
           </div>
         </div>
         <div className="pt-1 mt-auto flex flex-col gap-3">

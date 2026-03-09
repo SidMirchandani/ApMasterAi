@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   BarChart3,
-  Target,
   TrendingUp,
   AlertTriangle,
   CheckCircle,
@@ -26,6 +25,8 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import { getApiCodeForSubject } from "@/subjects";
+import { getPredictedAPScoreFromTests } from "@/lib/ap-score-utils";
 
 interface TestHistoryEntry {
   testNumber: number;
@@ -44,14 +45,6 @@ interface TestHistoryEntry {
       percentage: number;
     };
   };
-}
-
-function predictAPScore(accuracy: number): { score: number; label: string; color: string } {
-  if (accuracy >= 85) return { score: 5, label: "Extremely well qualified", color: "#10b981" };
-  if (accuracy >= 70) return { score: 4, label: "Well qualified", color: "#22c55e" };
-  if (accuracy >= 55) return { score: 3, label: "Qualified", color: "#eab308" };
-  if (accuracy >= 40) return { score: 2, label: "Possibly qualified", color: "#f97316" };
-  return { score: 1, label: "Needs improvement", color: "#ef4444" };
 }
 
 function TestScoreTooltip({ active, payload }: any) {
@@ -111,7 +104,8 @@ export default function AnalyticsPage() {
     : 0;
   
   const hasEnoughForPrediction = testHistory.length >= 1;
-  const predicted = predictAPScore(avgTestPercentage);
+  const subjectCode = subjectId ? getApiCodeForSubject(subjectId) : undefined;
+  const predicted = getPredictedAPScoreFromTests(avgTestPercentage, subjectCode);
 
   // Calculate unit performance from test data
   const unitPerformanceMap: { [unitName: string]: { correct: number; total: number } } = {};
@@ -192,9 +186,15 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardContent className="p-4 text-center">
-                  <Target className="mx-auto h-8 w-8 text-blue-500 mb-2" />
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{avgTestPercentage}%</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Avg Test Score</p>
+                  <div
+                    className="mx-auto w-14 h-14 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-md mb-2"
+                    style={{ backgroundColor: subjectId && hasEnoughForPrediction ? predicted.color : "#9ca3af" }}
+                  >
+                    {subjectId && hasEnoughForPrediction ? predicted.score : "?"}
+                  </div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                    Predicted AP Score
+                  </p>
                 </CardContent>
               </Card>
               <Card className="dark:bg-gray-900 dark:border-gray-700">
@@ -223,66 +223,6 @@ export default function AnalyticsPage() {
                 </CardContent>
               </Card>
             </div>
-
-            {hasEnoughForPrediction ? (
-              <Card className="border-2 dark:bg-gray-900 overflow-hidden" style={{ borderColor: predicted.color }}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
-                    <TrendingUp className="h-5 w-5" style={{ color: predicted.color }} />
-                    Predicted AP Score
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-6">
-                    <div
-                      className="flex items-center justify-center w-24 h-24 rounded-full text-white text-4xl font-bold shadow-lg"
-                      style={{ backgroundColor: predicted.color }}
-                    >
-                      {predicted.score}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{predicted.label}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Based on <span className="font-semibold text-gray-700 dark:text-gray-300">{testHistory.length}</span> {testHistory.length === 1 ? 'test' : 'tests'} with <span className="font-semibold" style={{ color: predicted.color }}>{avgTestPercentage}%</span> average score
-                      </p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <Progress value={avgTestPercentage} className="h-3 flex-1" />
-                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{avgTestPercentage}%</span>
-                      </div>
-                      <div className="flex justify-between mt-1 text-[10px] text-gray-400">
-                        <span>20%</span>
-                        <span>40%</span>
-                        <span>60%</span>
-                        <span>80%</span>
-                        <span>100%</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-2 border-dashed border-gray-300 dark:border-gray-600 dark:bg-gray-900 overflow-hidden">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
-                    <TrendingUp className="h-5 w-5 text-gray-400" />
-                    Predicted AP Score
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center justify-center w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 text-4xl font-bold">
-                      ?
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-lg font-bold text-gray-700 dark:text-gray-300">Not enough data yet</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Complete at least <span className="font-semibold text-gray-700 dark:text-gray-300">1 full-length test</span> to get your predicted AP score. Head to your dashboard to start a test!
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {testChartData.length >= 1 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700">

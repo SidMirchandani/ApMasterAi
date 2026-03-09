@@ -26,7 +26,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/lib/hooks/useMobile";
-import { getUnitsForSubject, getSubjectByCode } from "@/subjects";
+import { getUnitsForSubject, getSubjectByCode, getApiCodeForSubject } from "@/subjects";
+import { getPredictedAPScoreFromTests } from "@/lib/ap-score-utils";
 
 interface StudySubject {
   id: number;
@@ -80,6 +81,25 @@ export default function Study() {
   );
   const subjectMeta = currentSubject ? getSubjectByCode(currentSubject.subjectId) : null;
   const units = currentSubject ? getUnitsForSubject(currentSubject.subjectId) : [];
+
+  const { data: testHistoryResponse } = useQuery<{ success: boolean; data: { percentage: number }[] }>({
+    queryKey: ["testHistory", subjectId],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/user/test-history?subjectId=${subjectId}`);
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!subjectId && isAuthenticated && !!user,
+    staleTime: 60000,
+  });
+  const testHistory = testHistoryResponse?.data || [];
+  const avgTestPercentage =
+    testHistory.length > 0
+      ? Math.round(testHistory.reduce((sum, t) => sum + t.percentage, 0) / testHistory.length)
+      : 0;
+  const hasEnoughForPrediction = testHistory.length >= 1;
+  const subjectCode = subjectId ? getApiCodeForSubject(subjectId) : undefined;
+  const predicted = hasEnoughForPrediction ? getPredictedAPScoreFromTests(avgTestPercentage, subjectCode) : null;
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.push("/login");
@@ -152,7 +172,6 @@ export default function Study() {
     return getProgressLevel(score, !!hasAttempted) === "Mastered";
   }).length;
   const totalTopics = units.length;
-  const masteryPct = totalTopics > 0 ? Math.round((topicsMastered / totalTopics) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950">
@@ -184,38 +203,19 @@ export default function Study() {
                 {currentSubject.description}
               </p>
 
-              {/* Mastery progress bar */}
-              <div className="mt-4 max-w-xs">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                    Overall Mastery
-                  </span>
-                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                    {masteryPct}%
-                  </span>
-                </div>
-                <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-700"
-                    style={{ width: `${masteryPct}%` }}
-                  />
-                </div>
-              </div>
             </div>
 
             {/* Stat badges */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="px-4 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20 flex items-center gap-2.5">
-                <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                  <Trophy className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider leading-none">
-                    Mastery
-                  </p>
-                  <p className="text-base font-black text-slate-900 dark:text-white leading-tight mt-0.5">
-                    {topicsMastered}/{totalTopics}
-                  </p>
+            <div className="flex items-stretch gap-3 flex-shrink-0">
+              <div
+                className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center flex-shrink-0 min-h-0"
+                title="Predicted AP Score"
+              >
+                <div
+                  className="flex items-center justify-center w-14 h-14 rounded-full text-white text-2xl font-bold shadow-md"
+                  style={{ backgroundColor: predicted ? predicted.color : "#94a3b8" }}
+                >
+                  {predicted ? predicted.score : "?"}
                 </div>
               </div>
               <div className="px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex items-center gap-2.5">

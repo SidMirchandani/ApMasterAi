@@ -1,14 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { storage } from "../../../server/storage";
-
-function predictAPScore(accuracy: number): number {
-  if (accuracy >= 85) return 5;
-  if (accuracy >= 70) return 4;
-  if (accuracy >= 55) return 3;
-  if (accuracy >= 40) return 2;
-  return 1;
-}
+import { getApiCodeForSubject } from "../../../server/subjects-helper";
+import { percentageToAPScore } from "../../../server/ap-subject-config";
 
 export default async function handler(
   req: NextApiRequest,
@@ -32,7 +26,9 @@ export default async function handler(
     const stats = await storage.getQuestionStats(userId, subjectId);
 
     if (stats.totalAttempted >= 25 && subjectId) {
-      const predicted = predictAPScore(stats.accuracy);
+      const subjectCode = getApiCodeForSubject(subjectId);
+      const curvePredicted = subjectCode ? percentageToAPScore(stats.accuracy, subjectCode) : null;
+      const predicted = curvePredicted ?? (stats.accuracy >= 85 ? 5 : stats.accuracy >= 70 ? 4 : stats.accuracy >= 55 ? 3 : stats.accuracy >= 40 ? 2 : 1);
       try {
         await storage.backfillScoreSnapshots(userId, subjectId, stats.accuracy, predicted, stats.totalAttempted);
       } catch (e) {
