@@ -19,6 +19,7 @@ import {
   Star,
   Flame,
   Lock,
+  Sparkles,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -27,7 +28,7 @@ import { apiRequest } from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/lib/hooks/useMobile";
 import { getUnitsForSubject, getSubjectByCode, getApiCodeForSubject } from "@/subjects";
-import { getPredictedAPScoreFromTests } from "@/lib/ap-score-utils";
+import { getPredictedAPScoreFromTests, computeProjectedPercentage, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 
 interface StudySubject {
@@ -83,7 +84,14 @@ export default function Study() {
   const subjectMeta = currentSubject ? getSubjectByCode(currentSubject.subjectId) : null;
   const units = currentSubject ? getUnitsForSubject(currentSubject.subjectId) : [];
 
-  const { data: testHistoryResponse } = useQuery<{ success: boolean; data: { percentage: number }[] }>({
+  const { data: testHistoryResponse } = useQuery<{
+    success: boolean;
+    data: {
+      percentage: number;
+      type?: "full-length" | "diagnostic";
+      sectionBreakdown?: Record<string, { correct: number; total: number }>;
+    }[];
+  }>({
     queryKey: ["testHistory", subjectId],
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/user/test-history?subjectId=${subjectId}`);
@@ -94,13 +102,28 @@ export default function Study() {
     staleTime: 60000,
   });
   const testHistory = testHistoryResponse?.data || [];
-  const avgTestPercentage =
-    testHistory.length > 0
-      ? Math.round(testHistory.reduce((sum, t) => sum + t.percentage, 0) / testHistory.length)
-      : 0;
-  const hasEnoughForPrediction = testHistory.length >= 1;
+  const hasCompletedDiagnostic = testHistory.some((t) => t.type === "diagnostic");
+
+  const { data: unitProgressResponse } = useQuery<{ success: boolean; data: any }>({
+    queryKey: ["unitProgress", subjectId],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/user/subjects/${subjectId}/unit-progress`);
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!subjectId && isAuthenticated && !!user,
+    staleTime: 60000,
+  });
+  const unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }> =
+    unitProgressResponse?.data || {};
+
   const subjectCode = subjectId ? getApiCodeForSubject(subjectId) : undefined;
-  const predicted = hasEnoughForPrediction ? getPredictedAPScoreFromTests(avgTestPercentage, subjectCode) : null;
+  const targets = getTargetPercentagesForSubject(subjectCode);
+  const { projectedPercentage, hasEnoughForPrediction } = computeProjectedPercentage({
+    unitProgressMap,
+    testHistory,
+  });
+  const predicted = hasEnoughForPrediction ? getPredictedAPScoreFromTests(projectedPercentage, subjectCode) : null;
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.push("/login");
@@ -109,13 +132,6 @@ export default function Study() {
   useEffect(() => {
     if (!subjectId) router.push("/dashboard");
   }, [subjectId, router]);
-
-  const getProgressLevel = (score: number, hasAttempted: boolean): string => {
-    if (!hasAttempted) return "Not Started";
-    if (score >= 80) return "Mastered";
-    if (score >= 60) return "Proficient";
-    return "In Progress";
-  };
 
   const getUnitData = (unitId: string) => {
     return (currentSubject?.unitProgress || {})[unitId];
@@ -168,9 +184,9 @@ export default function Study() {
 
   const topicsMastered = units.filter((unit) => {
     const unitData = currentSubject.unitProgress?.[unit.id];
-    const score = unitData?.highestScore || unitData?.mcqScore || 0;
-    const hasAttempted = unitData && (unitData.scores?.length > 0 || unitData.mcqScore > 0);
-    return getProgressLevel(score, !!hasAttempted) === "Mastered";
+    const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
+    const tierResult = getUnitTierFromScore(score, targets);
+    return tierResult.tier === "5";
   }).length;
   const totalTopics = units.length;
 
@@ -246,92 +262,215 @@ export default function Study() {
             Quick Actions
           </h2>
 
-          {/* Primary actions row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {/* Full-Length Test — primary CTA */}
-            <button
-              onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-              className="group relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(16,185,129,0.35)] active:translate-y-0"
-            >
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative z-10 flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Play className="w-6 h-6 text-white fill-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-base leading-tight">MCQ Full-Length Test</p>
-                  <p className="text-white/70 text-xs mt-0.5">Simulate real exam conditions</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-white/60 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-              </div>
-            </button>
+          {!hasCompletedDiagnostic ? (
+            /* ── LAYOUT A: Onboarding State ── */
+            <div className="space-y-4">
 
-            {/* Test History */}
-            <button
-              onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
-              className="group relative overflow-hidden rounded-2xl p-5 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <div className="relative z-10 flex items-center gap-4">
-                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 transition-colors">
-                  <Clock className="w-5 h-5 text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight">Full-Length Test History</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Review past test results</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-              </div>
-            </button>
-          </div>
-
-          {/* Secondary actions row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                icon: Bookmark,
-                label: "Saved Questions",
-                desc: "Your bookmarked questions",
-                href: `/bookmarks?subject=${subjectId}`,
-                iconClass: "text-amber-600 dark:text-amber-400",
-                iconBg: "bg-amber-50 dark:bg-amber-500/10 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20",
-                borderHover: "hover:border-amber-200 dark:hover:border-amber-800/60",
-              },
-              {
-                icon: RotateCcw,
-                label: "Review Questions",
-                desc: "Questions you got wrong",
-                href: `/review?subject=${subjectId}`,
-                iconClass: "text-violet-600 dark:text-violet-400",
-                iconBg: "bg-violet-50 dark:bg-violet-500/10 group-hover:bg-violet-100 dark:group-hover:bg-violet-500/20",
-                borderHover: "hover:border-violet-200 dark:hover:border-violet-800/60",
-              },
-              {
-                icon: BarChart3,
-                label: "Analytics",
-                desc: "Detailed performance data",
-                href: `/analytics?subject=${subjectId}`,
-                iconClass: "text-emerald-600 dark:text-emerald-400",
-                iconBg: "bg-emerald-50 dark:bg-emerald-500/10 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20",
-                borderHover: "hover:border-emerald-200 dark:hover:border-emerald-800/60",
-              },
-            ].map((action) => (
+              {/* Row 1 — Hero Diagnostic CTA (full width) */}
               <button
-                key={action.label}
-                onClick={() => router.push(action.href)}
-                className={`group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 ${action.borderHover} text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}
+                onClick={() => router.push(`/diagnostic?subject=${subjectId}`)}
+                className="group relative overflow-hidden rounded-2xl p-6 w-full bg-red-600 text-white text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(220,38,38,0.4)] active:translate-y-0"
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 ${action.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 transition-colors`}>
-                    <action.icon className={`w-5 h-5 ${action.iconClass}`} />
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative z-10 flex items-center gap-4">
+                  <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-7 h-7 text-white" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{action.label}</p>
-                    <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{action.desc}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-lg leading-tight">Quick Diagnostic Test</p>
+                    <p className="text-white/75 text-sm mt-1">25 adaptive questions · Get your projected AP score</p>
                   </div>
+                  <ChevronRight className="w-6 h-6 text-white/60 group-hover:translate-x-1 transition-transform flex-shrink-0" />
                 </div>
               </button>
-            ))}
-          </div>
+
+              {/* Row 2 — Secondary/Locked cards (2 columns) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* MCQ Full-Length Test — secondary/discouraged */}
+                <button
+                  onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
+                  className="group relative overflow-hidden rounded-2xl p-5 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-left transition-all duration-200 opacity-60 hover:opacity-80"
+                >
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Play className="w-5 h-5 text-slate-400 dark:text-slate-500 fill-current" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-slate-500 dark:text-slate-400 leading-tight">MCQ Full-Length Test</p>
+                      <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">Complete diagnostic first</p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Analytics — locked */}
+                <button
+                  disabled
+                  className="group relative overflow-hidden rounded-2xl p-5 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-left opacity-50 cursor-not-allowed"
+                >
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Lock className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-slate-500 dark:text-slate-400 leading-tight">Analytics</p>
+                      <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">Take diagnostic to unlock</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Row 3 — Standard utility cards (3 columns) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  {
+                    icon: Bookmark,
+                    label: "Saved Questions",
+                    desc: "Your bookmarked questions",
+                    href: `/bookmarks?subject=${subjectId}`,
+                    iconClass: "text-amber-600 dark:text-amber-400",
+                    iconBg: "bg-amber-50 dark:bg-amber-500/10 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20",
+                    borderHover: "hover:border-amber-200 dark:hover:border-amber-800/60",
+                  },
+                  {
+                    icon: RotateCcw,
+                    label: "Review Questions",
+                    desc: "Questions you got wrong",
+                    href: `/review?subject=${subjectId}`,
+                    iconClass: "text-violet-600 dark:text-violet-400",
+                    iconBg: "bg-violet-50 dark:bg-violet-500/10 group-hover:bg-violet-100 dark:group-hover:bg-violet-500/20",
+                    borderHover: "hover:border-violet-200 dark:hover:border-violet-800/60",
+                  },
+                  {
+                    icon: Clock,
+                    label: "Test History",
+                    desc: "Diagnostic & full-length results",
+                    href: `/full-length-history?subject=${subjectId}`,
+                    iconClass: "text-blue-600 dark:text-blue-400",
+                    iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
+                    borderHover: "hover:border-blue-200 dark:hover:border-blue-800/60",
+                  },
+                ].map((action) => (
+                  <button
+                    key={action.label}
+                    onClick={() => router.push(action.href)}
+                    className={`group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 ${action.borderHover} text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 ${action.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 transition-colors`}>
+                        <action.icon className={`w-5 h-5 ${action.iconClass}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{action.label}</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{action.desc}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+            </div>
+          ) : (
+            /* ── LAYOUT B: Core Study Loop ── */
+            <div className="space-y-4">
+
+              {/* Row 1 — Primary action pair (2 columns) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* MCQ Full-Length Test — elevated primary CTA */}
+                <button
+                  onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
+                  className="group relative overflow-hidden rounded-2xl p-5 bg-emerald-500 text-white text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(16,185,129,0.35)] active:translate-y-0"
+                >
+                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Play className="w-6 h-6 text-white fill-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-base leading-tight">MCQ Full-Length Test</p>
+                      <p className="text-white/75 text-xs mt-0.5">Simulate real exam conditions</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-white/60 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                  </div>
+                </button>
+
+                {/* Analytics — highlighted secondary CTA */}
+                <button
+                  onClick={() => router.push(`/analytics?subject=${subjectId}`)}
+                  className="group relative overflow-hidden rounded-2xl p-5 bg-white dark:bg-slate-900 border-2 border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-300 dark:hover:border-emerald-700 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+                >
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                      <BarChart3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight">Analytics</p>
+                      <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Detailed performance data</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                  </div>
+                </button>
+              </div>
+
+              {/* Row 2 — Utility cards (2 cols on mobile → 4 cols on desktop) */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  {
+                    icon: Clock,
+                    label: "Test History",
+                    desc: "All your results",
+                    href: `/full-length-history?subject=${subjectId}`,
+                    iconClass: "text-blue-600 dark:text-blue-400",
+                    iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
+                    borderHover: "hover:border-blue-200 dark:hover:border-blue-800/60",
+                  },
+                  {
+                    icon: RotateCcw,
+                    label: "Review Questions",
+                    desc: "Questions you got wrong",
+                    href: `/review?subject=${subjectId}`,
+                    iconClass: "text-violet-600 dark:text-violet-400",
+                    iconBg: "bg-violet-50 dark:bg-violet-500/10 group-hover:bg-violet-100 dark:group-hover:bg-violet-500/20",
+                    borderHover: "hover:border-violet-200 dark:hover:border-violet-800/60",
+                  },
+                  {
+                    icon: Bookmark,
+                    label: "Saved Questions",
+                    desc: "Your bookmarks",
+                    href: `/bookmarks?subject=${subjectId}`,
+                    iconClass: "text-amber-600 dark:text-amber-400",
+                    iconBg: "bg-amber-50 dark:bg-amber-500/10 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20",
+                    borderHover: "hover:border-amber-200 dark:hover:border-amber-800/60",
+                  },
+                  {
+                    icon: Sparkles,
+                    label: "Retake Diagnostic",
+                    desc: "Re-baseline your score",
+                    href: `/diagnostic?subject=${subjectId}`,
+                    iconClass: "text-rose-600 dark:text-rose-400",
+                    iconBg: "bg-rose-50 dark:bg-rose-500/10 group-hover:bg-rose-100 dark:group-hover:bg-rose-500/20",
+                    borderHover: "hover:border-rose-200 dark:hover:border-rose-800/60",
+                  },
+                ].map((action) => (
+                  <button
+                    key={action.label}
+                    onClick={() => router.push(action.href)}
+                    className={`group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 ${action.borderHover} text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 ${action.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 transition-colors`}>
+                        <action.icon className={`w-5 h-5 ${action.iconClass}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{action.label}</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{action.desc}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+            </div>
+          )}
         </div>
 
         {/* Units Grid */}
@@ -355,12 +494,11 @@ export default function Study() {
           <div className="grid grid-cols-1 gap-3">
             {units.map((unit, index) => {
               const unitData = getUnitData(unit.id);
-              const score = unitData?.highestScore || 0;
-              const hasAttempted = !!(unitData && unitData.scores?.length > 0);
-              const level = getProgressLevel(score, hasAttempted);
-              const isMastered = level === "Mastered";
-              const isProficient = level === "Proficient";
-              const isInProgress = level === "In Progress";
+              const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
+              const tierResult = getUnitTierFromScore(score, targets);
+              const level = tierResult.label;
+              const hasAttempted = score > 0;
+              const isMastered = tierResult.tier === "5";
 
               const statusConfig = {
                 Mastered: {
@@ -370,9 +508,9 @@ export default function Study() {
                   icon: Star,
                 },
                 Proficient: {
-                  badge: "bg-blue-500 text-white",
-                  numBg: "bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400",
-                  barColor: "from-blue-400 to-cyan-500",
+                  badge: "bg-green-500 text-white",
+                  numBg: "bg-green-50 dark:bg-green-500/20 text-green-600 dark:text-green-400",
+                  barColor: "from-green-400 to-emerald-500",
                   icon: CheckCircle,
                 },
                 "In Progress": {
@@ -381,13 +519,25 @@ export default function Study() {
                   barColor: "from-amber-400 to-orange-400",
                   icon: Flame,
                 },
+                "Needs Practice": {
+                  badge: "bg-orange-500 text-white",
+                  numBg: "bg-orange-50 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400",
+                  barColor: "from-orange-400 to-amber-400",
+                  icon: Flame,
+                },
+                Weak: {
+                  badge: "bg-red-500 text-white",
+                  numBg: "bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400",
+                  barColor: "from-red-400 to-orange-400",
+                  icon: Flame,
+                },
                 "Not Started": {
                   badge: "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400",
                   numBg: "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500",
                   barColor: "from-slate-300 to-slate-400",
                   icon: Lock,
                 },
-              }[level] || {
+              }[level] ?? {
                 badge: "bg-slate-200 text-slate-600",
                 numBg: "bg-slate-100 text-slate-400",
                 barColor: "from-slate-300 to-slate-400",
@@ -444,7 +594,7 @@ export default function Study() {
                               Exam Weight: {unit.examWeight}
                             </span>
                             {hasAttempted && (
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                              <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${tierResult.textClass}`}>
                                 <Target className="w-3 h-3" />
                                 Best Score: {score}%
                               </span>

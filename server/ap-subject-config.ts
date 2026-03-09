@@ -382,3 +382,53 @@ export const DIAGNOSTIC_UNIT_WEIGHTS: Record<string, Record<string, number>> = {
 export function getDiagnosticWeightsForSubject(subjectCode: string): Record<string, number> | null {
   return DIAGNOSTIC_UNIT_WEIGHTS[subjectCode] ?? null;
 }
+
+/**
+ * Exact question counts per unit/section for the 25-question adaptive diagnostic.
+ * Derived from DIAGNOSTIC_UNIT_WEIGHTS using proportional rounding to sum = 25.
+ * Per-subject spec from product: APCSA [5,8,4,8], APCALCAB [3,3,3,3,3,3,4,3],
+ * APCALCBC [2,2,2,2,2,2,3,3,4,3], APUSH [3,3,3,3,3,3,3,3,3], APPSYCH [5,5,5,5,5].
+ */
+export const DIAGNOSTIC_UNIT_DISTRIBUTIONS: Record<string, Record<string, number>> = {
+  APCSA:     { U1: 5,  U2: 8,  U3: 4,  U4: 8 },
+  APCALCAB:  { LIM: 3, DDF: 3, DCI: 3, CAD: 3, AAD: 3, IAC: 3, DE: 4, AI: 3 },
+  APCALCBC:  { LIM: 2, DDF: 2, DCI: 2, CAD: 2, AAD: 2, IAC: 2, DE: 3, AI: 3, PPV: 4, ISS: 3 },
+  APUSH:     { P1: 3,  P2: 3,  P3: 3,  P4: 3,  P5: 3,  P6: 3,  P7: 3,  P8: 3,  P9: 3 },
+  APPSYCH:   { BIO: 5, COG: 5, DEV: 5, SOC: 5, MPH: 5 },
+  APLANG:    { CRE: 6, SS: 6, RS: 6, OC: 4, ARG: 3 },
+  APBIO:     { CL: 3, CSF: 3, CE: 4, CCC: 3, HER: 3, GER: 3, NS: 4, ECO: 2 },
+  APCHEM:    { ASP: 2, MIS: 2, IMF: 5, RXN: 2, KIN: 2, THERMO: 2, EQM: 2, ACB: 4, ATD: 4 },
+  APCSP:     { CRD: 3, DAT: 5, AAP: 8, CSN: 4, IOC: 5 },
+  APMACRO:   { BEC: 2, EIBC: 4, NIPD: 5, FS: 5, LRCSP: 6, OEITF: 3 },
+  APMICRO:   { BEC: 3, SD: 5, PC: 6, IMP: 5, FM: 3, MF: 3 },
+  APGOV:     { FAD: 5, IAB: 7, CLCR: 4, APIB: 3, PP: 6 },
+  APWH:      { GT: 3, NE: 3, LBE: 3, TI: 3, REV: 4, COI: 3, GC: 2, CWD: 2, GLO: 2 },
+  APWORLD:   { GT: 3, NE: 3, LBE: 3, TI: 3, REV: 4, COI: 3, GC: 2, CWD: 2, GLO: 2 },
+  APPHYS1:   { KIN: 3, FTD: 5, WEP: 5, LMO: 3, TRD: 3, EMR: 2, OSC: 2, FLU: 2 },
+  APPHYS2:   { THD: 4, EFP: 4, EC: 4, MEI: 3, GPO: 4, WPO: 3, MOD: 3 },
+};
+
+/**
+ * Returns exact per-section question counts for a 25-question adaptive diagnostic.
+ * Falls back to proportionally scaling DIAGNOSTIC_UNIT_WEIGHTS if subject not in distribution map.
+ */
+export function getDiagnosticDistributionForSubject(subjectCode: string): Record<string, number> | null {
+  if (DIAGNOSTIC_UNIT_DISTRIBUTIONS[subjectCode]) {
+    return DIAGNOSTIC_UNIT_DISTRIBUTIONS[subjectCode];
+  }
+  // Fallback: proportionally scale existing weights to sum=25
+  const weights = DIAGNOSTIC_UNIT_WEIGHTS[subjectCode];
+  if (!weights) return null;
+  const totalWeight = Object.values(weights).reduce((s, w) => s + w, 0);
+  const entries = Object.entries(weights);
+  const counts: Record<string, number> = {};
+  let remaining = 25;
+  entries.forEach(([code, weight], i) => {
+    const n = i === entries.length - 1
+      ? remaining
+      : Math.max(1, Math.round((weight / totalWeight) * 25));
+    counts[code] = n;
+    remaining -= n;
+  });
+  return counts;
+}

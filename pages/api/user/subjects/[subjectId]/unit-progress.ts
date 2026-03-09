@@ -20,7 +20,6 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   try {
-    // Verify Firebase token
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({ success: false, message: "Unauthorized" });

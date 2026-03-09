@@ -21,9 +21,23 @@ export default async function handler(
     const userId = decodedToken.uid;
 
     const subjectId = req.query.subjectId as string | undefined;
-    const tests = await storage.getAllFullLengthTests(userId, subjectId);
-    
-    const testHistory = tests.map((test, index) => ({
+
+    // Fetch both full-length and diagnostic tests in parallel
+    const [fullLengthTests, diagnosticTests] = await Promise.all([
+      storage.getAllFullLengthTests(userId, subjectId),
+      storage.getAllDiagnosticTests(userId, subjectId),
+    ]);
+
+    const combined = [
+      ...fullLengthTests.map((t) => ({ ...t, type: t.type || "full-length" })),
+      ...diagnosticTests.map((t) => ({ ...t, type: "diagnostic" })),
+    ].sort((a, b) => {
+      const aMs = a.date?.toMillis ? a.date.toMillis() : new Date(a.date).getTime();
+      const bMs = b.date?.toMillis ? b.date.toMillis() : new Date(b.date).getTime();
+      return aMs - bMs;
+    });
+
+    const testHistory = combined.map((test, index) => ({
       testNumber: index + 1,
       id: test.id,
       date: test.date,
@@ -31,7 +45,8 @@ export default async function handler(
       percentage: test.percentage,
       totalQuestions: test.totalQuestions,
       subjectId: test.subjectId,
-      sectionBreakdown: test.sectionBreakdown || {}
+      type: test.type,
+      sectionBreakdown: test.sectionBreakdown || {},
     }));
 
     return res.status(200).json({ success: true, data: testHistory });

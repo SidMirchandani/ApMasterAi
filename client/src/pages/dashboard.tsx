@@ -21,7 +21,7 @@ import { formatDate } from "@/lib/date";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { getSubjectByCode, getApiCodeForSubject } from "@/subjects";
-import { getPredictedAPScoreFromTests } from "@/lib/ap-score-utils";
+import { getPredictedAPScoreFromTests, computeProjectedPercentage, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 import {
   AlertDialog,
@@ -51,19 +51,6 @@ interface DashboardSubject {
   archived?: boolean;
   unitProgress?: any;
 }
-
-// =====================
-// HELPERS
-// =====================
-const getUnitStatus = (unitData: any) => {
-  if (!unitData) {
-    return { bg: "bg-slate-200 dark:bg-slate-700", status: "Not Started", score: 0 };
-  }
-  const score = unitData.highestScore ?? unitData.mcqScore ?? 0;
-  if (score >= 80) return { bg: "bg-emerald-500", status: "Mastered", score };
-  if (score >= 60) return { bg: "bg-blue-400", status: "Proficient", score };
-  return { bg: "bg-amber-400", status: "In Progress", score };
-};
 
 // =====================
 // MAIN DASHBOARD COMPONENT
@@ -470,7 +457,10 @@ const SubjectCard = ({
   const units = subjectMeta?.units || [];
   const unitProgress = subject.unitProgress || {};
 
-  const { data: testHistoryResponse } = useQuery<{ success: boolean; data: { percentage: number }[] }>({
+  const { data: testHistoryResponse } = useQuery<{
+    success: boolean;
+    data: { percentage: number; sectionBreakdown?: Record<string, { correct: number; total: number }> }[];
+  }>({
     queryKey: ["testHistory", subject.subjectId],
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/user/test-history?subjectId=${subject.subjectId}`);
@@ -480,13 +470,26 @@ const SubjectCard = ({
     staleTime: 60000,
   });
   const testHistory = testHistoryResponse?.data || [];
-  const avgTestPercentage =
-    testHistory.length > 0
-      ? Math.round(testHistory.reduce((sum, t) => sum + t.percentage, 0) / testHistory.length)
-      : 0;
-  const hasEnoughForPrediction = testHistory.length >= 1;
+
+  const { data: unitProgressResponse } = useQuery<{ success: boolean; data: any }>({
+    queryKey: ["unitProgress", subject.subjectId],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/user/subjects/${subject.subjectId}/unit-progress`);
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+  const unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }> =
+    unitProgressResponse?.data || {};
+
   const subjectCode = getApiCodeForSubject(subject.subjectId);
-  const predicted = hasEnoughForPrediction ? getPredictedAPScoreFromTests(avgTestPercentage, subjectCode) : null;
+  const targets = getTargetPercentagesForSubject(subjectCode);
+  const { projectedPercentage, hasEnoughForPrediction } = computeProjectedPercentage({
+    unitProgressMap,
+    testHistory,
+  });
+  const predicted = hasEnoughForPrediction ? getPredictedAPScoreFromTests(projectedPercentage, subjectCode) : null;
   const scoreColors = predicted ? scoreColorMap[predicted.score] : null;
 
   return (
@@ -543,13 +546,14 @@ const SubjectCard = ({
             <div className="flex flex-wrap gap-1.5">
             {units.slice(0, 10).map((u: any, i: number) => {
               const unitData = unitProgress[u.id];
-              const stat = getUnitStatus(unitData);
-              const isMastered = stat.status === "Mastered";
+              const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
+              const stat = getUnitTierFromScore(score, targets);
+              const isMastered = stat.tier === "5";
               return (
                 <div
                   key={u.id}
                   className={`w-5 h-5 rounded-md ${stat.bg} border border-black/5 dark:border-white/5 flex items-center justify-center transition-transform hover:scale-125 cursor-help`}
-                  title={`Unit ${i + 1}: ${stat.status}${stat.score ? ` (${stat.score}%)` : ""}`}
+                  title={`Unit ${i + 1}: ${stat.label}${score > 0 ? ` (${score}%)` : ""}`}
                 >
                   {isMastered && (
                     <svg viewBox="0 0 24 24" fill="none" className="w-2.5 h-2.5">

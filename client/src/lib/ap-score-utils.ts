@@ -140,11 +140,110 @@ export function getPredictedAPScoreFromTests(
   return weightedResult ?? fallbackAPScore(avgTestPercentage);
 }
 
+/**
+ * Computes the projected percentage used for AP score prediction.
+ *
+ * Uses the Analytics-page methodology: take the best per-unit score
+ * (max of stored unitProgress scores and aggregated test sectionBreakdown),
+ * then average those bests across all units that have any data.
+ * Falls back to a simple average of full-test percentages when no
+ * per-unit data exists.
+ */
+export function computeProjectedPercentage(params: {
+  unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }>;
+  testHistory: Array<{
+    percentage: number;
+    sectionBreakdown?: Record<string, { correct: number; total: number }>;
+  }>;
+}): { projectedPercentage: number; hasEnoughForPrediction: boolean } {
+  const { unitProgressMap, testHistory } = params;
+
+  // Build per-unit best score: max of diagnostic/unitProgress and test sectionBreakdown
+  const unitBestMap: Record<string, number> = {};
+  Object.entries(unitProgressMap).forEach(([code, prog]) => {
+    unitBestMap[code] = Math.max(
+      unitBestMap[code] ?? 0,
+      prog.highestScore ?? prog.mcqScore ?? 0
+    );
+  });
+
+  const unitPerformanceMap: Record<string, { correct: number; total: number }> = {};
+  testHistory.forEach((test) => {
+    if (test.sectionBreakdown) {
+      Object.entries(test.sectionBreakdown).forEach(([code, section]) => {
+        if (!unitPerformanceMap[code]) {
+          unitPerformanceMap[code] = { correct: 0, total: 0 };
+        }
+        unitPerformanceMap[code].correct += section.correct;
+        unitPerformanceMap[code].total += section.total;
+      });
+    }
+  });
+  Object.entries(unitPerformanceMap).forEach(([code, stats]) => {
+    const pct = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+    unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, pct);
+  });
+
+  const unitBestValues = Object.values(unitBestMap).filter((v) => v > 0);
+  const hasEnoughForPrediction = unitBestValues.length > 0 || testHistory.length >= 1;
+  const projectedPercentage =
+    unitBestValues.length > 0
+      ? Math.round(unitBestValues.reduce((s, v) => s + v, 0) / unitBestValues.length)
+      : testHistory.length > 0
+      ? Math.round(
+          testHistory.reduce((sum, t) => sum + t.percentage, 0) / testHistory.length
+        )
+      : 0;
+
+  return { projectedPercentage, hasEnoughForPrediction };
+}
+
 export interface TargetPercentages {
   target2: number;
   target3: number;
   target4: number;
   target5: number;
+}
+
+export type UnitTier = "5" | "4" | "3" | "2" | "1" | "none";
+
+export interface UnitTierResult {
+  tier: UnitTier;
+  label: string;
+  bg: string;
+  textClass: string;
+}
+
+const UNIT_TIER_STYLES: Record<Exclude<UnitTier, "none">, { label: string; bg: string; textClass: string }> = {
+  "5": { label: "Mastered", bg: "bg-emerald-500", textClass: "text-emerald-600 dark:text-emerald-400" },
+  "4": { label: "Proficient", bg: "bg-green-500", textClass: "text-green-600 dark:text-green-400" },
+  "3": { label: "In Progress", bg: "bg-amber-500", textClass: "text-amber-600 dark:text-amber-400" },
+  "2": { label: "Needs Practice", bg: "bg-orange-500", textClass: "text-orange-600 dark:text-orange-400" },
+  "1": { label: "Weak", bg: "bg-red-500", textClass: "text-red-500" },
+};
+
+/**
+ * Maps a unit percentage to the same tier and colors used on the Analytics "Performance by Unit" section.
+ * Use subject-specific targets from getTargetPercentagesForSubject so Dashboard and Study match Analytics.
+ */
+export function getUnitTierFromScore(
+  score: number,
+  targets: TargetPercentages
+): UnitTierResult {
+  if (score <= 0) {
+    return {
+      tier: "none",
+      label: "Not Started",
+      bg: "bg-slate-200 dark:bg-slate-700",
+      textClass: "text-slate-500 dark:text-slate-400",
+    };
+  }
+  const { target2, target3, target4, target5 } = targets;
+  if (score >= target5) return { tier: "5", ...UNIT_TIER_STYLES["5"] };
+  if (score >= target4) return { tier: "4", ...UNIT_TIER_STYLES["4"] };
+  if (score >= target3) return { tier: "3", ...UNIT_TIER_STYLES["3"] };
+  if (score >= target2) return { tier: "2", ...UNIT_TIER_STYLES["2"] };
+  return { tier: "1", ...UNIT_TIER_STYLES["1"] };
 }
 
 /**

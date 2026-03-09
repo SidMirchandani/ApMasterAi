@@ -99,19 +99,30 @@ export default function AnalyticsPage() {
 
   const testHistory = testHistoryResponse?.data || [];
   
-  // Calculate average test percentage for predicted AP score
-  const avgTestPercentage = testHistory.length > 0
-    ? Math.round(testHistory.reduce((sum, test) => sum + test.percentage, 0) / testHistory.length)
-    : 0;
-  
-  const hasEnoughForPrediction = testHistory.length >= 1;
   const subjectCode = subjectId ? getApiCodeForSubject(subjectId) : undefined;
-  const predicted = getPredictedAPScoreFromTests(avgTestPercentage, subjectCode);
   const { target2, target3, target4, target5 } = getTargetPercentagesForSubject(subjectCode);
 
-  // Calculate unit performance from test data (key by section code for stable aggregation)
+  // --- Fetch unitProgress (includes diagnostic per-unit scores) ---
+  const { data: unitProgressResponse } = useQuery<{ success: boolean; data: any }>({
+    queryKey: ["unitProgress", subjectId],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/user/subjects/${subjectId}/unit-progress`);
+      if (!res.ok) throw new Error("Failed to fetch unit progress");
+      return res.json();
+    },
+    enabled: isAuthenticated && !!user && !!subjectId,
+  });
+  const unitProgressMap: Record<string, { highestScore: number; mcqScore?: number }> =
+    unitProgressResponse?.data || {};
+
+  // --- Per-unit best percentage (max of diagnostic unitProgress and test history sectionBreakdown) ---
+  const unitBestMap: Record<string, number> = {};
+  // Seed from unitProgress (which includes diagnostic saves)
+  Object.entries(unitProgressMap).forEach(([code, prog]) => {
+    unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, prog.highestScore ?? prog.mcqScore ?? 0);
+  });
+  // Also incorporate sectionBreakdown aggregated from test history
   const unitPerformanceMap: { [sectionCode: string]: { correct: number; total: number } } = {};
-  
   testHistory.forEach(test => {
     if (test.sectionBreakdown) {
       Object.entries(test.sectionBreakdown).forEach(([code, section]) => {
@@ -123,22 +134,42 @@ export default function AnalyticsPage() {
       });
     }
   });
+  Object.entries(unitPerformanceMap).forEach(([code, stats]) => {
+    const pct = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+    unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, pct);
+  });
 
-  // Resolve full unit names from subject config (fallback to code if no subject or unknown section)
-  const unitEntries = Object.entries(unitPerformanceMap)
-    .map(([code, stats]) => {
+  // Projected score: average of per-unit best percentages (only units with any data)
+  const unitBestValues = Object.values(unitBestMap).filter((v) => v > 0);
+  const hasEnoughForPrediction = unitBestValues.length > 0 || testHistory.length >= 1;
+  const projectedPercentage =
+    unitBestValues.length > 0
+      ? Math.round(unitBestValues.reduce((s, v) => s + v, 0) / unitBestValues.length)
+      : testHistory.length > 0
+      ? Math.round(testHistory.reduce((sum, test) => sum + test.percentage, 0) / testHistory.length)
+      : 0;
+  const predicted = getPredictedAPScoreFromTests(projectedPercentage, subjectCode);
+
+  // Merge unit codes from both unitBestMap and unitPerformanceMap for complete unit list
+  const allUnitCodes = new Set([...Object.keys(unitBestMap), ...Object.keys(unitPerformanceMap)]);
+  const unitEntries = Array.from(allUnitCodes)
+    .map((code) => {
       const sectionInfo = subjectId ? getSectionByCode(subjectId, code) : undefined;
       const displayName = sectionInfo?.name ?? code;
       const unitNumber = sectionInfo?.unitNumber;
+      const stats = unitPerformanceMap[code];
+      const testPct = stats?.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+      const bestPct = unitBestMap[code] ?? testPct;
       return {
         code,
         name: displayName,
         unitNumber,
-        correct: stats.correct,
-        total: stats.total,
-        percentage: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+        correct: stats?.correct ?? 0,
+        total: stats?.total ?? 0,
+        percentage: bestPct,
       };
     })
+    .filter((e) => e.percentage > 0 || e.total > 0)
     .sort((a, b) => a.percentage - b.percentage);
 
   const testChartData = testHistory.map((test) => ({
@@ -177,18 +208,23 @@ export default function AnalyticsPage() {
         </div>
 
         {testHistory.length === 0 ? (
-          <div className="text-center py-10">
-            <BarChart3 className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">No test data yet</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              Complete a full-length practice test to see your performance analytics
+          <div className="text-center py-14 px-4">
+            <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center border border-red-200 dark:border-red-800/50">
+              <BarChart3 className="h-8 w-8 text-red-500" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Unlock Your Projected AP Score</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto text-sm leading-relaxed">
+              Take our 25-question adaptive diagnostic to see your projected 1–5 score and identify your weakest units.
             </p>
             <Button
-              onClick={() => router.push("/dashboard")}
-              className="bg-khan-green hover:bg-khan-green-light text-white"
+              onClick={() => router.push(subjectId ? `/diagnostic?subject=${subjectId}` : "/diagnostic")}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 h-11 rounded-xl shadow-[0_4px_14px_rgba(220,38,38,0.3)]"
             >
-              Start a Test
+              Take Quick Diagnostic Test
             </Button>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+              Projected score is a statistical estimate based on MCQ performance.
+            </p>
           </div>
         ) : (
           <div className="space-y-4">

@@ -734,6 +734,174 @@ export class Storage {
     return allTests;
   }
 
+  async saveDiagnosticTest(
+    userId: string,
+    subjectId: string,
+    score: number,
+    percentage: number,
+    totalQuestions: number,
+    questions: any[],
+    userAnswers: { [key: number]: string },
+    sectionBreakdown: { [key: string]: { name: string; unitNumber: number; correct: number; total: number; percentage: number } },
+    projectedScore: number
+  ): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const testId = `diag_${Date.now()}`;
+    const timestamp = new Date();
+
+    const testData = {
+      id: testId,
+      type: "diagnostic",
+      date: timestamp,
+      score,
+      percentage,
+      totalQuestions,
+      questions,
+      userAnswers,
+      sectionBreakdown,
+      projectedScore,
+    };
+
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      const unitProgress = data.unitProgress || {};
+
+      // Update per-unit highest score from diagnostic sectionBreakdown
+      Object.entries(sectionBreakdown).forEach(([sectionCode, section]) => {
+        const existing = unitProgress[sectionCode] || { status: "not-started", highestScore: 0, scores: [] };
+        const newHighest = Math.max(section.percentage, existing.highestScore || 0);
+        unitProgress[sectionCode] = {
+          ...existing,
+          mcqScore: newHighest,
+          highestScore: newHighest,
+          status: calculateUnitStatus(newHighest),
+          lastPracticed: admin.firestore.FieldValue.serverTimestamp(),
+        };
+      });
+
+      await doc.ref.update({
+        unitProgress,
+        lastStudied: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // Store diagnostic in its own subcollection
+      await doc.ref.collection("diagnosticTests").doc(testId).set(testData);
+
+      // Also clear any in-progress diagnostic state
+      await doc.ref.update({
+        diagnosticProgress: admin.firestore.FieldValue.delete(),
+      });
+    }
+
+    return testData;
+  }
+
+  async getAllDiagnosticTests(userId: string, subjectId?: string): Promise<any[]> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    let query: admin.firestore.Query = subjectsRef.where("userId", "==", userId);
+    if (subjectId) {
+      query = query.where("subjectId", "==", subjectId);
+    }
+
+    const snapshot = await query.get();
+    const allTests: any[] = [];
+
+    for (const doc of snapshot.docs) {
+      const testsSnapshot = await doc.ref.collection("diagnosticTests").orderBy("date", "asc").get();
+      testsSnapshot.docs.forEach((testDoc) => {
+        allTests.push({
+          ...testDoc.data(),
+          subjectId: doc.data().subjectId,
+          type: "diagnostic",
+        });
+      });
+    }
+
+    allTests.sort((a, b) => {
+      const aMs = a.date?.toMillis ? a.date.toMillis() : new Date(a.date).getTime();
+      const bMs = b.date?.toMillis ? b.date.toMillis() : new Date(b.date).getTime();
+      return aMs - bMs;
+    });
+    return allTests;
+  }
+
+  async saveDiagnosticProgress(
+    userId: string,
+    subjectId: string,
+    progress: {
+      questionIndex: number;
+      userAnswers: { [key: number]: string };
+      unitDifficultyState: { [sectionCode: string]: string };
+      questions: any[];
+    }
+  ): Promise<void> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (!snapshot.empty) {
+      await snapshot.docs[0].ref.update({
+        diagnosticProgress: {
+          ...progress,
+          savedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+      });
+    }
+  }
+
+  async getDiagnosticProgress(userId: string, subjectId: string): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].data().diagnosticProgress || null;
+  }
+
+  async clearDiagnosticProgress(userId: string, subjectId: string): Promise<void> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (!snapshot.empty) {
+      await snapshot.docs[0].ref.update({
+        diagnosticProgress: admin.firestore.FieldValue.delete(),
+      });
+    }
+  }
+
   async saveExamState(
     userId: string,
     subjectId: string,
