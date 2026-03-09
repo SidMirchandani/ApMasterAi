@@ -42,6 +42,7 @@ interface Question {
   explanation?: string;
   prompt?: string;
   subjectId?: string;
+  difficulty?: "easy" | "medium" | "hard";
   image_urls?: {
     question?: string[];
     A?: string[];
@@ -127,8 +128,23 @@ export function PracticeQuizQuestionCard({
     <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
       <CardHeader className="p-0">
         <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3 bg-gray-50/50 dark:bg-gray-800/50">
-          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Question {questionNumber} of {totalQuestions}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Question {questionNumber} of {totalQuestions}
+            </span>
+            {question.difficulty && ["easy", "medium", "hard"].includes(question.difficulty) && (
+              <span
+                className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
+                  question.difficulty === "easy"
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                    : question.difficulty === "medium"
+                    ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
+                    : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                }`}
+              >
+                {question.difficulty}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {onToggleBookmark && (

@@ -21,7 +21,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { BlockRenderer } from "@/components/quiz/BlockRenderer";
-import { getDisplayChoicesAndCorrect } from "@/lib/mcqDisplay";
+import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
+import { getDisplayChoicesAndCorrect, getDisplayExplanation } from "@/lib/mcqDisplay";
 import { normalizeQuestion } from "@/lib/normalizeQuestion";
 import { apiRequest } from "@/lib/api";
 import { getApiCodeForSubject } from "@/subjects";
@@ -129,6 +130,12 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
   const [isCalculating, setIsCalculating] = useState(false);
   const [result, setResult] = useState<DiagnosticResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cheatMode, setCheatMode] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("adminCheatMode");
+    setCheatMode(saved === "true");
+  }, []);
 
   // Pool is stored in a ref — immutable after load, never triggers re-render
   const poolRef = useRef<QuestionPool | null>(null);
@@ -446,9 +453,13 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
                 "w-full text-left rounded-xl border-2 p-3.5 flex items-start gap-3 transition-all duration-150 ";
 
               if (!showFeedback) {
-                base += isSelected
-                  ? "border-red-500 bg-red-50 dark:bg-red-500/10"
-                  : "border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700 hover:bg-red-50/50 dark:hover:bg-red-500/5 cursor-pointer";
+                if (cheatMode && isCorrect) {
+                  base += "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10";
+                } else if (isSelected) {
+                  base += "border-red-500 bg-red-50 dark:bg-red-500/10";
+                } else {
+                  base += "border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700 hover:bg-red-50/50 dark:hover:bg-red-500/5 cursor-pointer";
+                }
               } else {
                 if (isCorrect) {
                   base += "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10";
@@ -472,6 +483,8 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
                         ? "bg-emerald-500 border-emerald-500 text-white"
                         : showFeedback && isSelected && !isCorrect
                         ? "bg-red-500 border-red-500 text-white"
+                        : !showFeedback && cheatMode && isCorrect
+                        ? "bg-emerald-500 border-emerald-500 text-white"
                         : isSelected
                         ? "bg-red-500 border-red-500 text-white"
                         : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400"
@@ -503,7 +516,15 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
                 {selectedAnswer === correctLabel ? "Correct! " : `Incorrect. The answer is ${correctLabel}. `}
               </span>
               {(currentQuestion as any).explanation && (
-                <span className="opacity-80">{(currentQuestion as any).explanation}</span>
+                <span className="opacity-80 block mt-1">
+                  <ExplanationMarkdown className="text-sm text-inherit prose prose-sm dark:prose-invert max-w-none">
+                    {getDisplayExplanation(
+                      (currentQuestion as any).explanation,
+                      currentQuestion as any,
+                      (currentQuestion as any).mcqOptionCount
+                    )}
+                  </ExplanationMarkdown>
+                </span>
               )}
             </div>
           )}

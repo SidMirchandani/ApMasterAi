@@ -1,4 +1,5 @@
 import React from 'react';
+import { RichTextContent } from '@/components/ui/RichTextContent';
 
 type Block =
   | { type: "text"; value: string }
@@ -32,9 +33,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, className 
           const text = block.value || (block as any).content || "";
           if (!text) return null;
           return (
-            <p key={index} className="text-gray-900 dark:text-white leading-relaxed">
+            <RichTextContent key={index} className="text-gray-900 dark:text-white leading-relaxed prose prose-sm dark:prose-invert max-w-none">
               {text}
-            </p>
+            </RichTextContent>
           );
         } else if (block.type === "image") {
           const imgSrc = getImageUrl(block.url);

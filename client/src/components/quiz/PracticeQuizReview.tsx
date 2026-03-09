@@ -209,9 +209,15 @@ export function PracticeQuizReview({
 
                     {/* Explanation */}
                     {question.explanation && (
-                      <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                        <div className="font-semibold text-blue-900 mb-2">Explanation:</div>
-                        <ExplanationMarkdown className="text-sm text-blue-900 prose prose-sm max-w-none">
+                      <div className={`p-4 rounded-lg border-2 ${
+                        isCorrect
+                          ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800"
+                          : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                      }`}>
+                        <div className={`font-semibold mb-2 ${isCorrect ? "text-emerald-900 dark:text-emerald-300" : "text-red-900 dark:text-red-300"}`}>
+                          {isCorrect ? "Correct — Explanation:" : "Incorrect — Explanation:"}
+                        </div>
+                        <ExplanationMarkdown className={`text-sm prose prose-sm max-w-none ${isCorrect ? "text-emerald-900 dark:text-emerald-200" : "text-red-900 dark:text-red-200"}`}>
                           {getDisplayExplanation(question.explanation, question, mcqOptionCount)}
                         </ExplanationMarkdown>
                       </div>

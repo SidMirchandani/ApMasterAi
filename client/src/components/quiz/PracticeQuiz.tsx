@@ -33,6 +33,7 @@ interface Question {
   subject_code?: string;
   section_code?: string;
   prompt_blocks: any[];
+  difficulty?: "easy" | "medium" | "hard";
   image_urls?: {
     question?: string[];
     A?: string[];
@@ -316,18 +317,27 @@ export function PracticeQuiz({
               mcqOptionCount={mcqOptionCount}
             />
 
-            {isAnswerSubmitted && currentQuestion?.explanation && (
-              <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-                <CardHeader className="pb-2 pt-3">
-                  <CardTitle className="text-sm text-blue-800 dark:text-blue-300">Explanation</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 pb-3">
-                  <ExplanationMarkdown>
-                    {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
-                  </ExplanationMarkdown>
-                </CardContent>
-              </Card>
-            )}
+            {isAnswerSubmitted && currentQuestion?.explanation && (() => {
+              const explanationCorrect = selectedAnswer === getDisplayCorrectLabel(currentQuestion, mcqOptionCount);
+              return (
+                <Card className={
+                  explanationCorrect
+                    ? "border-emerald-500 dark:border-emerald-600 bg-emerald-50/50 dark:bg-emerald-900/20"
+                    : "border-red-500 dark:border-red-600 bg-red-50/50 dark:bg-red-900/20"
+                }>
+                  <CardHeader className="pb-2 pt-3">
+                    <CardTitle className={`text-sm ${explanationCorrect ? "text-emerald-800 dark:text-emerald-300" : "text-red-800 dark:text-red-300"}`}>
+                      {explanationCorrect ? "Correct — Explanation" : "Incorrect — Explanation"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 pb-3">
+                    <ExplanationMarkdown>
+                      {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
+                    </ExplanationMarkdown>
+                  </CardContent>
+                </Card>
+              );
+            })()}
           </div>
         </div>
       </div>

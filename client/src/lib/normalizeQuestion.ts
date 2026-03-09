@@ -42,10 +42,28 @@ function ensureBlockFormat(blocks: any): Block[] {
   });
 }
 
+/** Canonical difficulty for display (e.g. diagnostic and unit quiz). Uses question.difficulty or tags "difficulty:easy|medium|hard", default "medium". */
+function getDifficulty(q: { difficulty?: string | null; tags?: string[] }): "easy" | "medium" | "hard" {
+  const raw =
+    (q.difficulty && typeof q.difficulty === "string" ? q.difficulty : "") ||
+    (q.tags || []).find((t) => typeof t === "string" && t.startsWith("difficulty:"))
+      ?.toString()
+      .replace(/^difficulty:/, "")
+      .trim()
+      .toLowerCase() ||
+    "";
+  if (raw === "easy") return "easy";
+  if (raw === "hard") return "hard";
+  return "medium";
+}
+
 export function normalizeQuestion(question: any): any {
   if (!question) return question;
 
   const result = { ...question };
+
+  // Ensure canonical difficulty for UI (diagnostic and unit quiz badges)
+  result.difficulty = getDifficulty(question);
 
   if (!result.prompt_blocks || !Array.isArray(result.prompt_blocks) || result.prompt_blocks.length === 0) {
     if (result.prompt && typeof result.prompt === "string") {
