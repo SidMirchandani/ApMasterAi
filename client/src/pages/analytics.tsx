@@ -26,7 +26,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { getApiCodeForSubject } from "@/subjects";
-import { getPredictedAPScoreFromTests } from "@/lib/ap-score-utils";
+import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject } from "@/lib/ap-score-utils";
 
 interface TestHistoryEntry {
   testNumber: number;
@@ -106,6 +106,7 @@ export default function AnalyticsPage() {
   const hasEnoughForPrediction = testHistory.length >= 1;
   const subjectCode = subjectId ? getApiCodeForSubject(subjectId) : undefined;
   const predicted = getPredictedAPScoreFromTests(avgTestPercentage, subjectCode);
+  const { target2, target3, target4, target5 } = getTargetPercentagesForSubject(subjectCode);
 
   // Calculate unit performance from test data
   const unitPerformanceMap: { [unitName: string]: { correct: number; total: number } } = {};
@@ -293,7 +294,20 @@ export default function AnalyticsPage() {
                           cursor={{ strokeDasharray: "3 3" }}
                           content={<TestScoreTooltip />}
                         />
-                        <ReferenceLine y={70} stroke="#22c55e" strokeDasharray="5 5" strokeWidth={1.5} label={{ position: 'right', value: 'Target: 70%', fill: '#22c55e', fontSize: 10 }} />
+                        <ReferenceLine
+                          y={target4}
+                          stroke="#22c55e"
+                          strokeDasharray="5 5"
+                          strokeWidth={1.5}
+                          label={{ position: "right", value: "4", fill: "#22c55e", fontSize: 10 }}
+                        />
+                        <ReferenceLine
+                          y={target5}
+                          stroke="#10b981"
+                          strokeDasharray="5 5"
+                          strokeWidth={2.5}
+                          label={{ position: "right", value: "5", fill: "#10b981", fontSize: 10 }}
+                        />
 
                         <Line
                           type="natural"
@@ -354,8 +368,12 @@ export default function AnalyticsPage() {
                       Test Score
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-0 border-t-2 border-dashed border-green-500" />
-                      70% Target
+                      <div className="w-6 h-0 border-t-2 border-dashed border-green-500" style={{ borderColor: "#22c55e" }} />
+                      Target: 4 ({Math.round(target4)}%)
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-6 h-0 border-t-2 border-dashed border-emerald-500" style={{ borderColor: "#10b981" }} />
+                      Target: 5 ({Math.round(target5)}%)
                     </div>
                   </div>
                 </CardContent>
@@ -388,20 +406,77 @@ export default function AnalyticsPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {unitEntries.map((unit) => {
-                      const isWeak = unit.percentage < 50;
+                      const pct = unit.percentage;
+                      // Fill color = color of the level exceeded (5→emerald, 4→green, 3→amber, 2→orange, 1→red)
+                      const fillClass =
+                        pct >= target5
+                          ? "[&>div]:bg-emerald-500"
+                          : pct >= target4
+                            ? "[&>div]:bg-green-500"
+                            : pct >= target3
+                              ? "[&>div]:bg-amber-500"
+                              : pct >= target2
+                                ? "[&>div]:bg-orange-500"
+                                : "[&>div]:bg-red-500";
+                      const textClass =
+                        pct >= target5
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : pct >= target4
+                            ? "text-green-600 dark:text-green-400"
+                            : pct >= target3
+                              ? "text-amber-600 dark:text-amber-400"
+                              : pct >= target2
+                                ? "text-orange-600 dark:text-orange-400"
+                                : "text-red-500";
                       return (
                         <div key={unit.name} className="flex items-center gap-4">
                           <div className="w-40 flex-shrink-0">
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{unit.name}</p>
                           </div>
-                          <div className="flex-1">
+                          <div className="flex-1 relative h-3">
+                            {/* Zoned track: under 2, 2–3, 3–4 (lighter), 4–5 (darker), above 5 */}
+                            <div className="absolute inset-0 flex rounded-full overflow-hidden pointer-events-none">
+                              <div style={{ width: `${target2}%` }} className="bg-red-100 dark:bg-red-900/30" aria-hidden />
+                              <div style={{ width: `${target3 - target2}%` }} className="bg-orange-100 dark:bg-orange-900/30" aria-hidden />
+                              <div style={{ width: `${target4 - target3}%` }} className="bg-amber-100 dark:bg-amber-900/30" aria-hidden />
+                              <div style={{ width: `${target5 - target4}%` }} className="bg-green-100 dark:bg-green-800/30" aria-hidden />
+                              <div className="flex-1 bg-emerald-200 dark:bg-emerald-900/30" aria-hidden />
+                            </div>
+                            {pct < target2 && (
+                              <div
+                                className="absolute top-0 bottom-0 w-1 bg-orange-500 pointer-events-none z-10 rounded-sm"
+                                style={{ left: `${target2}%`, marginLeft: -2 }}
+                                aria-hidden
+                              />
+                            )}
+                            {pct < target3 && (
+                              <div
+                                className="absolute top-0 bottom-0 w-1 bg-amber-500 pointer-events-none z-10 rounded-sm"
+                                style={{ left: `${target3}%`, marginLeft: -2 }}
+                                aria-hidden
+                              />
+                            )}
+                            {pct < target4 && (
+                              <div
+                                className="absolute top-0 bottom-0 w-1 bg-green-500 pointer-events-none z-10 rounded-sm"
+                                style={{ left: `${target4}%`, marginLeft: -2 }}
+                                aria-hidden
+                              />
+                            )}
+                            {pct < target5 && (
+                              <div
+                                className="absolute top-0 bottom-0 w-1 bg-emerald-500 pointer-events-none z-10 rounded-sm"
+                                style={{ left: `${target5}%`, marginLeft: -2 }}
+                                aria-hidden
+                              />
+                            )}
                             <Progress
                               value={unit.percentage}
-                              className={`h-3 ${isWeak ? "[&>div]:bg-red-500" : "[&>div]:bg-green-500"}`}
+                              className={`h-3 relative z-[5] bg-transparent ${fillClass}`}
                             />
                           </div>
                           <div className="w-16 text-right">
-                            <span className={`text-sm font-bold ${isWeak ? "text-red-500" : "text-green-600 dark:text-green-400"}`}>
+                            <span className={`text-sm font-bold ${textClass}`}>
                               {unit.percentage}%
                             </span>
                           </div>

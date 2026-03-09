@@ -96,3 +96,30 @@ export function getPredictedAPScoreFromTests(
   const curveResult = percentageToAPScore(avgTestPercentage, subjectCode);
   return curveResult ?? fallbackAPScore(avgTestPercentage);
 }
+
+export interface TargetPercentages {
+  target2: number;
+  target3: number;
+  target4: number;
+  target5: number;
+}
+
+/**
+ * Returns the percentage needed for AP score 2, 3, 4, and 5 for the given subject,
+ * using curve_thresholds and max_composite_points. Rounded to 1 decimal.
+ * Fallback when subject config is not found.
+ */
+export function getTargetPercentagesForSubject(
+  subjectCode: string | undefined
+): TargetPercentages {
+  const config = findSubjectConfig(subjectCode ?? "");
+  if (!config) {
+    return { target2: 40, target3: 55, target4: 70, target5: 85 };
+  }
+  const { max_composite_points, curve_thresholds } = config;
+  const target5 = Math.round((curve_thresholds["5"] / max_composite_points) * 1000) / 10;
+  const target4 = Math.round((curve_thresholds["4"] / max_composite_points) * 1000) / 10;
+  const target3 = Math.round((curve_thresholds["3"] / max_composite_points) * 1000) / 10;
+  const target2 = Math.round((curve_thresholds["2"] / max_composite_points) * 1000) / 10;
+  return { target2, target3, target4, target5 };
+}
