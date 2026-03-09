@@ -8,6 +8,9 @@ import apSubjectConfig from "@/data/ap-subject-config.json";
 export interface APSubjectConfigEntry {
   subject_code: string;
   max_composite_points: number;
+  mcq_weight: number;
+  frq_weight: number;
+  frq_penalty_modifier: number;
   curve_thresholds: { "5": number; "4": number; "3": number; "2": number };
 }
 
@@ -38,6 +41,46 @@ const CONFIG = apSubjectConfig as APSubjectConfigEntry[];
 function findSubjectConfig(subjectCode: string): APSubjectConfigEntry | null {
   if (!subjectCode) return null;
   return CONFIG.find((c) => c.subject_code === subjectCode) ?? null;
+}
+
+/**
+ * Map composite points to AP score 1–5 using curve thresholds.
+ */
+function compositeToAPScore(
+  composite: number,
+  curve_thresholds: { "5": number; "4": number; "3": number; "2": number }
+): number {
+  if (composite >= curve_thresholds["5"]) return 5;
+  if (composite >= curve_thresholds["4"]) return 4;
+  if (composite >= curve_thresholds["3"]) return 3;
+  if (composite >= curve_thresholds["2"]) return 2;
+  return 1;
+}
+
+/**
+ * Weighted projection: treat avgPercentage as MCQ ability, project FRQ, then composite → 1–5.
+ * Uses mcq_weight, frq_weight, frq_penalty_modifier, max_composite_points, curve_thresholds.
+ * Returns null if config missing or incomplete.
+ */
+function weightedPercentageToAPScore(
+  avgPercentage: number,
+  subjectCode: string | undefined
+): APScoreResult | null {
+  const config = findSubjectConfig(subjectCode ?? "");
+  if (!config) return null;
+
+  const mcqRatio = avgPercentage / 100;
+  const projectedFrqAccuracy = mcqRatio * config.frq_penalty_modifier;
+  const mcqPoints = mcqRatio * (config.max_composite_points * config.mcq_weight);
+  const frqPoints = projectedFrqAccuracy * (config.max_composite_points * config.frq_weight);
+  const totalComposite = mcqPoints + frqPoints;
+
+  const score = compositeToAPScore(totalComposite, config.curve_thresholds);
+  return {
+    score,
+    label: getAPScoreLabel(score),
+    color: getAPScoreColor(score),
+  };
 }
 
 /**
@@ -86,15 +129,15 @@ function fallbackAPScore(accuracy: number): APScoreResult {
 }
 
 /**
- * Predicted AP score from average test percentage. Uses subject curve when available,
- * otherwise fallback bands. Use when you have at least one full-length test (same logic as Analytics).
+ * Predicted AP score from average test percentage. Uses weighted projection (MCQ + projected FRQ)
+ * and subject curve when config is available; otherwise fallback bands.
  */
 export function getPredictedAPScoreFromTests(
   avgTestPercentage: number,
   subjectCode: string | undefined
 ): APScoreResult {
-  const curveResult = percentageToAPScore(avgTestPercentage, subjectCode);
-  return curveResult ?? fallbackAPScore(avgTestPercentage);
+  const weightedResult = weightedPercentageToAPScore(avgTestPercentage, subjectCode);
+  return weightedResult ?? fallbackAPScore(avgTestPercentage);
 }
 
 export interface TargetPercentages {

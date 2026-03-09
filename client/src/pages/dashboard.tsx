@@ -22,6 +22,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { getSubjectByCode, getApiCodeForSubject } from "@/subjects";
 import { getPredictedAPScoreFromTests } from "@/lib/ap-score-utils";
+import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -526,7 +527,7 @@ const SubjectCard = ({
       <CardContent className="flex-1 py-4 px-5 flex flex-col gap-4">
         <div className="flex items-stretch gap-3 flex-wrap">
           <div
-            className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center flex-shrink-0"
+            className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center gap-1 flex-shrink-0"
             title="Predicted AP Score"
           >
             <div
@@ -535,6 +536,7 @@ const SubjectCard = ({
             >
               {predicted !== null ? predicted.score : "?"}
             </div>
+            <APScoreExplainDialog inline triggerClassName="self-start mt-0.5" />
           </div>
           <div className="flex-1 min-w-0 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
             <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1.5">Unit Progress</p>

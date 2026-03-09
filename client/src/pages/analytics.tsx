@@ -25,8 +25,9 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { getApiCodeForSubject } from "@/subjects";
+import { getApiCodeForSubject, getSectionByCode } from "@/subjects";
 import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject } from "@/lib/ap-score-utils";
+import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 
 interface TestHistoryEntry {
   testNumber: number;
@@ -108,29 +109,36 @@ export default function AnalyticsPage() {
   const predicted = getPredictedAPScoreFromTests(avgTestPercentage, subjectCode);
   const { target2, target3, target4, target5 } = getTargetPercentagesForSubject(subjectCode);
 
-  // Calculate unit performance from test data
-  const unitPerformanceMap: { [unitName: string]: { correct: number; total: number } } = {};
+  // Calculate unit performance from test data (key by section code for stable aggregation)
+  const unitPerformanceMap: { [sectionCode: string]: { correct: number; total: number } } = {};
   
   testHistory.forEach(test => {
     if (test.sectionBreakdown) {
       Object.entries(test.sectionBreakdown).forEach(([code, section]) => {
-        const unitName = section.name;
-        if (!unitPerformanceMap[unitName]) {
-          unitPerformanceMap[unitName] = { correct: 0, total: 0 };
+        if (!unitPerformanceMap[code]) {
+          unitPerformanceMap[code] = { correct: 0, total: 0 };
         }
-        unitPerformanceMap[unitName].correct += section.correct;
-        unitPerformanceMap[unitName].total += section.total;
+        unitPerformanceMap[code].correct += section.correct;
+        unitPerformanceMap[code].total += section.total;
       });
     }
   });
 
+  // Resolve full unit names from subject config (fallback to code if no subject or unknown section)
   const unitEntries = Object.entries(unitPerformanceMap)
-    .map(([unitName, stats]) => ({
-      name: unitName,
-      correct: stats.correct,
-      total: stats.total,
-      percentage: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
-    }))
+    .map(([code, stats]) => {
+      const sectionInfo = subjectId ? getSectionByCode(subjectId, code) : undefined;
+      const displayName = sectionInfo?.name ?? code;
+      const unitNumber = sectionInfo?.unitNumber;
+      return {
+        code,
+        name: displayName,
+        unitNumber,
+        correct: stats.correct,
+        total: stats.total,
+        percentage: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+      };
+    })
     .sort((a, b) => a.percentage - b.percentage);
 
   const testChartData = testHistory.map((test) => ({
@@ -193,9 +201,22 @@ export default function AnalyticsPage() {
                   >
                     {subjectId && hasEnoughForPrediction ? predicted.score : "?"}
                   </div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                    Predicted AP Score
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex flex-wrap justify-center items-center gap-x-1 gap-y-0">
+                    <span>Predicted</span>
+                    <span className="relative pr-5">
+                      AP Score
+                      <span className="absolute right-0 top-1/2 -translate-y-1/2 leading-none">
+                        <APScoreExplainDialog inline triggerClassName="ml-0.5" />
+                      </span>
+                    </span>
                   </p>
+                </CardContent>
+              </Card>
+              <Card className="dark:bg-gray-900 dark:border-gray-700">
+                <CardContent className="p-4 text-center">
+                  <BarChart3 className="mx-auto h-8 w-8 text-purple-500 mb-2" />
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{testHistory.length}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Tests Completed</p>
                 </CardContent>
               </Card>
               <Card className="dark:bg-gray-900 dark:border-gray-700">
@@ -214,13 +235,6 @@ export default function AnalyticsPage() {
                     {testHistory.reduce((sum, t) => sum + (t.totalQuestions - t.score), 0)}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Total Incorrect</p>
-                </CardContent>
-              </Card>
-              <Card className="dark:bg-gray-900 dark:border-gray-700">
-                <CardContent className="p-4 text-center">
-                  <BarChart3 className="mx-auto h-8 w-8 text-purple-500 mb-2" />
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{testHistory.length}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Tests Completed</p>
                 </CardContent>
               </Card>
             </div>
@@ -429,11 +443,13 @@ export default function AnalyticsPage() {
                                 ? "text-orange-600 dark:text-orange-400"
                                 : "text-red-500";
                       return (
-                        <div key={unit.name} className="flex items-center gap-4">
-                          <div className="w-40 flex-shrink-0">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{unit.name}</p>
+                        <div key={unit.code} className="flex items-center gap-3">
+                          <div className="w-56 sm:w-64 flex-shrink-0">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate" title={unit.name}>
+                              {unit.unitNumber != null ? `U${unit.unitNumber}: ` : ""}{unit.name}
+                            </p>
                           </div>
-                          <div className="flex-1 relative h-3">
+                          <div className="flex-1 min-w-0 relative h-3">
                             {/* Zoned track: under 2, 2–3, 3–4 (lighter), 4–5 (darker), above 5 */}
                             <div className="absolute inset-0 flex rounded-full overflow-hidden pointer-events-none">
                               <div style={{ width: `${target2}%` }} className="bg-red-100 dark:bg-red-900/30" aria-hidden />
@@ -475,12 +491,12 @@ export default function AnalyticsPage() {
                               className={`h-3 relative z-[5] bg-transparent ${fillClass}`}
                             />
                           </div>
-                          <div className="w-16 text-right">
+                          <div className="w-12 flex-shrink-0 text-right">
                             <span className={`text-sm font-bold ${textClass}`}>
                               {unit.percentage}%
                             </span>
                           </div>
-                          <div className="w-20 text-right text-xs text-gray-500 dark:text-gray-400">
+                          <div className="w-14 flex-shrink-0 text-right text-xs text-gray-500 dark:text-gray-400">
                             {unit.correct}/{unit.total}
                           </div>
                         </div>

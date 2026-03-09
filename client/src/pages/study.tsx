@@ -28,6 +28,7 @@ import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/lib/hooks/useMobile";
 import { getUnitsForSubject, getSubjectByCode, getApiCodeForSubject } from "@/subjects";
 import { getPredictedAPScoreFromTests } from "@/lib/ap-score-utils";
+import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 
 interface StudySubject {
   id: number;
@@ -208,7 +209,7 @@ export default function Study() {
             {/* Stat badges */}
             <div className="flex items-stretch gap-3 flex-shrink-0">
               <div
-                className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center flex-shrink-0 min-h-0"
+                className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center gap-1 flex-shrink-0 min-h-0"
                 title="Predicted AP Score"
               >
                 <div
@@ -217,6 +218,7 @@ export default function Study() {
                 >
                   {predicted ? predicted.score : "?"}
                 </div>
+                <APScoreExplainDialog inline triggerClassName="self-start mt-0.5" />
               </div>
               <div className="px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex items-center gap-2.5">
                 <div className="w-9 h-9 bg-violet-50 dark:bg-violet-500/10 rounded-xl flex items-center justify-center">
