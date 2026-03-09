@@ -707,12 +707,16 @@ export default function AdminPage() {
       case "fix-units":
         endpoint = "/api/admin/fix-unit-assignment";
         break;
+      case "grade-difficulty":
+        endpoint = "/api/admin/auto-tag-difficulty";
+        break;
     }
 
     const actionLabel = selectedAction === "process" ? "processing (fix + explain)"
       : selectedAction === "explanations" ? "explanation generation"
       : selectedAction === "fix-prompts" ? "prompt fixing"
-      : "unit assignment fix";
+      : selectedAction === "fix-units" ? "unit assignment fix"
+      : "difficulty tagging";
 
     setExplanationProgress({
       current: 0,
@@ -1319,6 +1323,7 @@ export default function AdminPage() {
                     <SelectItem value="explanations">Generate Explanations Only</SelectItem>
                     <SelectItem value="fix-prompts">Fix Prompts & Choices Only</SelectItem>
                     <SelectItem value="fix-units">Fix Unit Assignment</SelectItem>
+                    <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
                   </SelectContent>
                 </Select>
                 {generatingExplanations ? (
