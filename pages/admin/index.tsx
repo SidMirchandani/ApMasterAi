@@ -61,6 +61,17 @@ type Question = {
   };
 };
 
+function getDifficultyFromQuestion(q: Question): string {
+  if (q.difficulty) return q.difficulty;
+  const tag = (q.tags || []).find(t => typeof t === "string" && t.startsWith("difficulty:"));
+  return tag ? String(tag).replace(/^difficulty:/, "").trim() : "";
+}
+
+function getReasoningFromQuestion(q: Question): string {
+  const tag = (q.tags || []).find(t => typeof t === "string" && t.startsWith("reasoning:"));
+  return tag ? String(tag).replace(/^reasoning:/, "").trim() : "";
+}
+
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string>("");
@@ -114,6 +125,8 @@ export default function AdminPage() {
     choices: "",
     ans: "",
     explanation: "",
+    difficulty: "",
+    reasoning: "",
   });
 
   function getPromptSearchText(q: Question): string {
@@ -150,12 +163,16 @@ export default function AdminPage() {
     const c = columnSearch.choices.trim().toLowerCase();
     const a = columnSearch.ans.trim().toUpperCase();
     const e = columnSearch.explanation.trim().toLowerCase();
+    const diff = columnSearch.difficulty.trim().toLowerCase();
+    const reason = columnSearch.reasoning.trim().toLowerCase();
     if (s) list = list.filter(q => (q.subject_code || "").toLowerCase().includes(s));
     if (sec) list = list.filter(q => (q.section_code || "").toLowerCase().includes(sec));
     if (p) list = list.filter(q => getPromptSearchText(q).toLowerCase().includes(p));
     if (c) list = list.filter(q => getChoicesSearchText(q).toLowerCase().includes(c));
     if (a) list = list.filter(q => String.fromCharCode(65 + (q.answerIndex ?? 0)) === a || (q.correct_answer || "").toUpperCase() === a);
     if (e) list = list.filter(q => (q.explanation || "").toLowerCase().includes(e));
+    if (diff) list = list.filter(q => getDifficultyFromQuestion(q).toLowerCase().includes(diff));
+    if (reason) list = list.filter(q => getReasoningFromQuestion(q).toLowerCase().includes(reason));
     return list;
   }, [displayedItems, columnSearch]);
 
@@ -1377,6 +1394,8 @@ export default function AdminPage() {
                   <col className="w-14" />
                   <col style={{ width: '20%' }} />
                   <col className="w-20" />
+                  <col className="w-20" />
+                  <col style={{ width: '15%' }} />
                 </colgroup>
                 <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                   <tr>
@@ -1392,6 +1411,8 @@ export default function AdminPage() {
                     <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Choices</th>
                     <th className="p-2 text-center font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Ans</th>
                     <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Explanation</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Difficulty</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Reasoning</th>
                     <th className="p-2 text-center font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Actions</th>
                   </tr>
                   <tr className="bg-gray-100 dark:bg-gray-600/50 border-b dark:border-gray-600">
@@ -1441,6 +1462,22 @@ export default function AdminPage() {
                         placeholder="Search..."
                         value={columnSearch.explanation}
                         onChange={(e) => setColumnSearchField("explanation", e.target.value)}
+                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </th>
+                    <th className="p-1">
+                      <Input
+                        placeholder="Search..."
+                        value={columnSearch.difficulty}
+                        onChange={(e) => setColumnSearchField("difficulty", e.target.value)}
+                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </th>
+                    <th className="p-1">
+                      <Input
+                        placeholder="Search..."
+                        value={columnSearch.reasoning}
+                        onChange={(e) => setColumnSearchField("reasoning", e.target.value)}
                         className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
                       />
                     </th>
@@ -1698,6 +1735,12 @@ function Row({
         <td className="p-2 align-top text-xs break-words overflow-hidden">
           <div className="line-clamp-4">{q.explanation || "-"}</div>
         </td>
+        <td className="p-2 align-top text-xs break-words dark:text-gray-300">
+          {getDifficultyFromQuestion(q) || "-"}
+        </td>
+        <td className="p-2 align-top text-xs break-words overflow-hidden dark:text-gray-300">
+          <div className="line-clamp-3">{getReasoningFromQuestion(q) || "-"}</div>
+        </td>
         <td className="p-2 text-center align-top">
           <div className="flex gap-1 justify-center flex-col">
             <Button
@@ -1780,6 +1823,12 @@ function Row({
             setForm((s) => ({ ...s, explanation: e.target.value }))
           }
         />
+      </td>
+      <td className="p-2 align-top text-xs text-gray-500 dark:text-gray-400">
+        {getDifficultyFromQuestion(q) || "-"}
+      </td>
+      <td className="p-2 align-top text-xs text-gray-500 dark:text-gray-400 line-clamp-3">
+        {getReasoningFromQuestion(q) || "-"}
       </td>
       <td className="p-2 text-center">
         <div className="flex gap-2 justify-center flex-col">
