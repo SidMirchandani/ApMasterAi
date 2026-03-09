@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
+import { FieldValue } from "firebase-admin/firestore";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getModelName, getGeminiClientOptions } from "../../../lib/gemini-models";
 
@@ -279,7 +280,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         `reasoning:${parsed.reasoning}`,
       ];
       await doc.ref.update({
-        tags: firestore.FieldValue.arrayUnion(...newTags),
+        tags: FieldValue.arrayUnion(...newTags),
         updatedAt: new Date(),
       });
 
