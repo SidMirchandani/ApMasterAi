@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, CheckCircle, XCircle } from "lucide-react";
 import { BlockRenderer } from "./BlockRenderer";
-import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
+import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayChoicesAndCorrect, getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 
@@ -217,9 +217,9 @@ export function PracticeQuizReview({
                         <div className={`font-semibold mb-2 ${isCorrect ? "text-emerald-900 dark:text-emerald-300" : "text-red-900 dark:text-red-300"}`}>
                           {isCorrect ? "Correct — Explanation:" : "Incorrect — Explanation:"}
                         </div>
-                        <ExplanationMarkdown className={`text-sm prose prose-sm max-w-none ${isCorrect ? "text-emerald-900 dark:text-emerald-200" : "text-red-900 dark:text-red-200"}`}>
+                        <PrettyExplanation className={`text-sm prose prose-sm max-w-none ${isCorrect ? "text-emerald-900 dark:text-emerald-200" : "text-red-900 dark:text-red-200"}`}>
                           {getDisplayExplanation(question.explanation, question, mcqOptionCount)}
-                        </ExplanationMarkdown>
+                        </PrettyExplanation>
                       </div>
                     )}
                   </CardContent>

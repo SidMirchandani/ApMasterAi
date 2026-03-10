@@ -21,7 +21,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { BlockRenderer } from "@/components/quiz/BlockRenderer";
-import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
+import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
 import { getDisplayChoicesAndCorrect, getDisplayExplanation } from "@/lib/mcqDisplay";
 import { normalizeQuestion } from "@/lib/normalizeQuestion";
 import { apiRequest } from "@/lib/api";
@@ -517,13 +517,13 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
               </span>
               {(currentQuestion as any).explanation && (
                 <span className="opacity-80 block mt-1">
-                  <ExplanationMarkdown className="text-sm text-inherit prose prose-sm dark:prose-invert max-w-none">
+                  <PrettyExplanation className="text-sm text-inherit prose prose-sm dark:prose-invert max-w-none">
                     {getDisplayExplanation(
                       (currentQuestion as any).explanation,
                       currentQuestion as any,
                       (currentQuestion as any).mcqOptionCount
                     )}
-                  </ExplanationMarkdown>
+                  </PrettyExplanation>
                 </span>
               )}
             </div>

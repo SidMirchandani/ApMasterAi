@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import { ExplanationChat } from "@/components/ui/explanation-chat";
-import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
+import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
 import { BlockRenderer } from "@/components/quiz/BlockRenderer";
 import { QuizBottomBar } from "@/components/quiz/QuizBottomBar";
 import { ReviewQuestionPalette } from "@/components/quiz/ReviewQuestionPalette";
@@ -271,9 +271,9 @@ export default function SectionReview() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0 pb-3">
-                    <ExplanationMarkdown className="text-sm text-gray-700 prose prose-sm max-w-none dark:text-gray-300 dark:prose-invert">
+                    <PrettyExplanation className="text-sm text-gray-700 prose prose-sm max-w-none dark:text-gray-300 dark:prose-invert">
                       {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
-                    </ExplanationMarkdown>
+                    </PrettyExplanation>
                   </CardContent>
                 </Card>
               )}

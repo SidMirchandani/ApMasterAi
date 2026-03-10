@@ -8,7 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 import { Calculator } from "lucide-react";
-import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
+import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { CheckCircle, XCircle, LogOut } from "lucide-react";
@@ -331,9 +331,9 @@ export function PracticeQuiz({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0 pb-3">
-                    <ExplanationMarkdown>
+                    <PrettyExplanation>
                       {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
-                    </ExplanationMarkdown>
+                    </PrettyExplanation>
                   </CardContent>
                 </Card>
               );
