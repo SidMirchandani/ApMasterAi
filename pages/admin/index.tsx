@@ -718,6 +718,9 @@ export default function AdminPage() {
       case "explanations":
         endpoint = "/api/generateExplanations";
         break;
+      case "regen-explanations":
+        endpoint = "/api/reGenerateExplanations";
+        break;
       case "fix-prompts":
         endpoint = "/api/fixPromptsChoices";
         break;
@@ -731,6 +734,7 @@ export default function AdminPage() {
 
     const actionLabel = selectedAction === "process" ? "processing (fix + explain)"
       : selectedAction === "explanations" ? "explanation generation"
+      : selectedAction === "regen-explanations" ? "explanation regeneration"
       : selectedAction === "fix-prompts" ? "prompt fixing"
       : selectedAction === "fix-units" ? "unit assignment fix"
       : "difficulty tagging";
@@ -1338,6 +1342,7 @@ export default function AdminPage() {
                   <SelectContent>
                     <SelectItem value="process">Process Questions (All-in-One)</SelectItem>
                     <SelectItem value="explanations">Generate Explanations Only</SelectItem>
+                    <SelectItem value="regen-explanations">ReGenerate Explanations Only</SelectItem>
                     <SelectItem value="fix-prompts">Fix Prompts & Choices Only</SelectItem>
                     <SelectItem value="fix-units">Fix Unit Assignment</SelectItem>
                     <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
