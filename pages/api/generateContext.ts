@@ -59,7 +59,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { questionIds, model = "2.5" } = req.body || {};
+  const { questionIds, model = "2.5lite" } = req.body || {};
 
   if (!questionIds || !Array.isArray(questionIds) || questionIds.length === 0) {
     return res.status(400).json({ error: "questionIds array is required" });

@@ -62,7 +62,7 @@ Provide a clear, concise, and helpful response to the student's question. Focus 
 Your response:`;
 
     const result = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
     });
 

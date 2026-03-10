@@ -62,7 +62,7 @@ export default async function handler(
         const promptText = `Fix any formatting or OCR errors in this text. Return ONLY the corrected text, nothing else:\n\n${question.prompt || ""}`;
 
         const result = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-2.5-flash-lite",
           contents: promptText,
         });
 

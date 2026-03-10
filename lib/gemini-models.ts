@@ -31,7 +31,7 @@ export function getModelName(userModelSelection: string): string {
     "2.5pro": "gemini-2.5-pro",
   };
 
-  return modelMap[userModelSelection] || "gemini-2.5-flash";
+  return modelMap[userModelSelection] || "gemini-2.5-flash-lite";
 }
 
 /**

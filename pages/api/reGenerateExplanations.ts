@@ -65,7 +65,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { questionIds, model = "2.5" } = req.body || {};
+  const { questionIds, model = "2.5lite" } = req.body || {};
 
   if (
     !questionIds ||
