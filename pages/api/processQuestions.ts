@@ -232,9 +232,9 @@ Do NOT change words, rephrase, fix grammar, or add content.`);
 
     if (needsExplanation) {
       tasks.push(`TASK - GENERATE EXPLANATION:
-Generate a concise explanation (100-150 words). Structure: **Concept**: 1-2 sentences on what this tests. **Why ${correctLabel} is correct**: Why this answer is right. **Why other choices are wrong**: Brief reason each incorrect choice fails. Use \\n for newlines within the explanation string.
+Generate a concise explanation (100-150 words). Structure: **Concept**: 1-2 sentences on what this tests. **Why ${correctLabel} is correct**: Why this answer is right; include key formula and calculations if applicable, then state the conclusion. **Why other choices are wrong**: A bulleted list with one bullet per incorrect choice; each bullet must start with the letter and "is incorrect because" (e.g. "A is incorrect because ..."). Use \\n for newlines; for the bullet list use "\\n- " before each bullet.
 For math and equations use LaTeX inside single dollar signs, e.g. $P(t) = 1200 - 1000e^{-0.16t}$ or $\\frac{dP}{dt}$. Do not use backticks for math.`);
-      jsonFields.push(`"explanation": "your concise explanation with \\n for newlines"`);
+      jsonFields.push(`"explanation": "your concise explanation with \\n for newlines and \\n- for bullet lines"`);
     }
 
     let combinedPrompt = `You are an expert AP tutor. Process this AP exam question.

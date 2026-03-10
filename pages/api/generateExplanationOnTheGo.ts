@@ -40,9 +40,9 @@ export default async function handler(
 
 **Concept**: Briefly explain what this question tests (1-2 sentences).
 
-**Why ${String.fromCharCode(65 + correctAnswerIndex)} is correct**: Explain why this answer is right.
+**Why ${correctLabel} is correct**: Explain why this answer is right. Include the key formula and any calculations if applicable, then state the conclusion (e.g. "Therefore, ...").
 
-**Why other choices are wrong**: Briefly explain why each incorrect answer is wrong.
+**Why other choices are wrong**: Give a bulleted list with one bullet per incorrect choice. Each bullet must start with the letter and "is incorrect because" (e.g. "A is incorrect because ...", "B is incorrect because ..."). Use markdown bullets: start each line with "- ".
 
 Be clear, concise, and student-friendly.
 

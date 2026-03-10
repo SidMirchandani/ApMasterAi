@@ -249,9 +249,9 @@ export default async function handler(
 
 **Concept**: In 1-2 sentences, briefly explain what concept this question tests.
 
-**Why ${correctLabel} is correct**: Clearly explain why this answer is right.
+**Why ${correctLabel} is correct**: Clearly explain why this answer is right. Include the key formula and any calculations if applicable, then state the conclusion (e.g. "Therefore, ...").
 
-**Why other choices are wrong**: Briefly explain why each incorrect choice (A, B, C, D, E - except ${correctLabel}) is wrong.
+**Why other choices are wrong**: Give a bulleted list with one bullet per incorrect choice. Each bullet must start with the letter and "is incorrect because" (e.g. "A is incorrect because ...", "B is incorrect because ..."). Use markdown bullets: start each line with "- ".
 
 Keep the ENTIRE explanation to about 100-150 words maximum. Be clear, concise, and student-friendly.
 
