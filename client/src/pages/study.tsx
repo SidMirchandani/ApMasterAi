@@ -28,6 +28,7 @@ import { apiRequest } from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { useIsMobile } from "@/lib/hooks/useMobile";
 import { getUnitsForSubject, getSubjectByCode, getApiCodeForSubject } from "@/subjects";
+import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { getPredictedAPScoreFromTests, computeProjectedPercentage, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 
@@ -296,7 +297,7 @@ export default function Study() {
                       <Play className="w-5 h-5 text-slate-400 dark:text-slate-500 fill-current" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-slate-500 dark:text-slate-400 leading-tight">MCQ Full-Length Test</p>
+                      <p className="font-bold text-sm text-slate-500 dark:text-slate-400 leading-tight">{subjectId ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test` : "Full Length MCQ Test"}</p>
                       <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">Complete diagnostic first</p>
                     </div>
                   </div>
@@ -386,7 +387,7 @@ export default function Study() {
                       <Play className="w-6 h-6 text-white fill-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-base leading-tight">MCQ Full-Length Test</p>
+                      <p className="font-bold text-base leading-tight">{subjectId ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test` : "Full Length MCQ Test"}</p>
                       <p className="text-white/75 text-xs mt-0.5">Simulate real exam conditions</p>
                     </div>
                     <ChevronRight className="w-5 h-5 text-white/60 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
@@ -639,7 +640,7 @@ export default function Study() {
                         ) : (
                           <>
                             <Play className="w-4 h-4 mr-2" />
-                            Start Unit
+                            Start Quiz
                           </>
                         )}
                       </Button>

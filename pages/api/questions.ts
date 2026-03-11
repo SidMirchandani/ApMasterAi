@@ -83,7 +83,7 @@ export default async function handler(
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
 
-  const { subject, section, limit } = req.query;
+  const { subject, section, limit, ids } = req.query;
 
   if (!subject) {
     return res.status(400).json({
@@ -95,6 +95,27 @@ export default async function handler(
   try {
     const db = getDb();
     const questionLimit = limit ? parseInt(limit as string) : 25;
+
+    // Fetch specific questions by ID (e.g. for resuming a saved full-length exam)
+    if (ids && typeof ids === "string") {
+      const idList = ids.split(",").map((s) => s.trim()).filter(Boolean);
+      if (idList.length > 0) {
+        const questionsRef = db.collection("questions");
+        const snapshots = await Promise.all(
+          idList.map((id) => questionsRef.doc(id).get())
+        );
+        const questions = idList
+          .map((id, i) => {
+            const doc = snapshots[i];
+            return doc?.exists ? { id: doc.id, ...doc.data() } : null;
+          })
+          .filter(Boolean);
+        return res.status(200).json({
+          success: true,
+          data: questions,
+        });
+      }
+    }
 
     // For full-length tests without a section, use proportional distribution
     if (!section && EXAM_WEIGHTS[subject as string]) {

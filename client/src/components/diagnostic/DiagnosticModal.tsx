@@ -18,6 +18,7 @@
  * Supports resumability via /api/user/subjects/[subjectId]/diagnostic-progress.
  */
 import { useState, useEffect, useCallback, useRef } from "react";
+import { ReportQuestionDialog } from "@/components/quiz/ReportQuestionDialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { BlockRenderer } from "@/components/quiz/BlockRenderer";
@@ -143,6 +144,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [cheatMode, setCheatMode] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("adminCheatMode");
@@ -655,8 +657,16 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            {/* Right: Save & Exit */}
-            <div className="flex justify-end flex-1">
+            {/* Right: Report + Save & Exit */}
+            <div className="flex justify-end flex-1 items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowReportDialog(true)}
+                className="border-rose-300 dark:border-rose-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-xs sm:text-sm"
+              >
+                Report
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -669,6 +679,13 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
           </div>
         </div>
       </div>
+
+      <ReportQuestionDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        questionId={currentQuestion?.id}
+        subjectId={subjectId}
+      />
 
       {/* Exit Confirmation Dialog */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>

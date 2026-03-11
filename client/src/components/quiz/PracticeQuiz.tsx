@@ -11,7 +11,8 @@ import { Calculator } from "lucide-react";
 import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
-import { CheckCircle, XCircle, LogOut } from "lucide-react";
+import { ReportQuestionDialog } from "./ReportQuestionDialog";
+import { CheckCircle, XCircle, LogOut, Flag } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -79,6 +80,7 @@ export function PracticeQuiz({
   const [cheatMode, setCheatMode] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [showCalculator, setShowCalculator] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   const router = useRouter();
   const { user } = useAuth();
@@ -379,7 +381,16 @@ export function PracticeQuiz({
                 </Button>
               )}
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowReportDialog(true)}
+                className="border-rose-300 dark:border-rose-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-xs sm:text-sm"
+              >
+                <Flag className="w-3.5 h-3.5 mr-1" />
+                Report
+              </Button>
               <Button
                 onClick={onExit}
                 variant="outline"
@@ -392,6 +403,13 @@ export function PracticeQuiz({
           </div>
         </div>
       </div>
+
+      <ReportQuestionDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        questionId={currentQuestion?.id}
+        subjectId={subjectId}
+      />
 
       {showResults && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">

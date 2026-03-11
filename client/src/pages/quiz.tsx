@@ -412,29 +412,16 @@ export default function Quiz() {
 
       const savedQuestionIds: string[] | undefined = savedExamState?.questionIds;
 
-      const examConfig = EXAM_CONFIGS[subjectApiCode];
-      const questionLimit = examConfig?.questions || 60;
-      const response = await apiRequest(
-        "GET",
-        `/api/questions?subject=${subjectApiCode}&limit=${questionLimit}`,
-      );
+      // When we have saved question IDs, fetch those exact questions by ID so resume shows the same exam
+      const url =
+        savedQuestionIds?.length > 0
+          ? `/api/questions?subject=${subjectApiCode}&ids=${encodeURIComponent(savedQuestionIds.join(","))}`
+          : `/api/questions?subject=${subjectApiCode}&limit=${EXAM_CONFIGS[subjectApiCode]?.questions || 60}`;
+      const response = await apiRequest("GET", url);
       if (!response.ok) throw new Error("Failed to fetch questions");
       const data = await response.json();
       if (data.success && data.data?.length > 0) {
-        const normalized = normalizeQuestions(data.data);
-        if (savedQuestionIds && savedQuestionIds.length > 0) {
-          const questionMap = new Map(normalized.map((q: any) => [q.id, q]));
-          const ordered = savedQuestionIds
-            .map((id: string) => questionMap.get(id))
-            .filter(Boolean);
-          if (ordered.length > 0) {
-            setQuestions(ordered);
-          } else {
-            setQuestions(normalized);
-          }
-        } else {
-          setQuestions(normalized);
-        }
+        setQuestions(normalizeQuestions(data.data));
       } else {
         setError("No questions found for this subject");
       }
@@ -579,7 +566,7 @@ export default function Quiz() {
     <div className="min-h-screen bg-khan-background">
       {isFullLength ? (
         <>
-          {/* No navigation bar for full-length tests */}
+          <Navigation />
           <FullLengthQuiz
             questions={questions}
             subjectId={subjectId as string}
@@ -589,6 +576,7 @@ export default function Quiz() {
             onSaveAndExit={handleSaveAndExit}
             savedState={savedExamState}
             examConfig={getExamConfig(subjectId as string)}
+            hasAppNav
           />
         </>
       ) : (

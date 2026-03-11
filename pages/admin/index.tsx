@@ -86,6 +86,11 @@ function getReasoningFromQuestion(q: Question): string {
   return tag ? String(tag).replace(/^reasoning:/, "").trim() : "";
 }
 
+function getErrorReasonFromQuestion(q: Question): string {
+  const tag = (q.tags || []).find(t => typeof t === "string" && t.startsWith("error_reason:"));
+  return tag ? String(tag).replace(/^error_reason:/, "").trim() : "";
+}
+
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string>("");
@@ -100,6 +105,7 @@ export default function AdminPage() {
   const [subject, setSubject] = useState("");
   const [section, setSection] = useState("");
   const [showOnlyMissingExplanation, setShowOnlyMissingExplanation] = useState(false);
+  const [showOnlyErrorReports, setShowOnlyErrorReports] = useState(false);
 
   const allApSubjectsRef = AP_SUBJECT_CODES.map((code) => ({
     code,
@@ -109,9 +115,15 @@ export default function AdminPage() {
   const [availableSections, setAvailableSections] = useState<string[]>([]);
 
   const displayedItems = useMemo(() => {
-    if (!showOnlyMissingExplanation) return items;
-    return items.filter(q => !q.explanation || q.explanation.trim() === "");
-  }, [items, showOnlyMissingExplanation]);
+    let list = items;
+    if (showOnlyMissingExplanation) {
+      list = list.filter(q => !q.explanation || q.explanation.trim() === "");
+    }
+    if (showOnlyErrorReports) {
+      list = list.filter(q => (q.tags || []).includes("error_reported"));
+    }
+    return list;
+  }, [items, showOnlyMissingExplanation, showOnlyErrorReports]);
 
   // Per-column search filters (search within current results)
   const [columnSearch, setColumnSearch] = useState({
@@ -123,6 +135,7 @@ export default function AdminPage() {
     explanation: "",
     difficulty: "",
     reasoning: "",
+    error_reason: "",
   });
 
   function getPromptSearchText(q: Question): string {
@@ -161,6 +174,7 @@ export default function AdminPage() {
     const e = columnSearch.explanation.trim().toLowerCase();
     const diff = columnSearch.difficulty.trim().toLowerCase();
     const reason = columnSearch.reasoning.trim().toLowerCase();
+    const errReason = columnSearch.error_reason.trim().toLowerCase();
     if (s) list = list.filter(q => (q.subject_code || "").toLowerCase().includes(s));
     if (sec) list = list.filter(q => (q.section_code || "").toLowerCase().includes(sec));
     if (p) list = list.filter(q => getPromptSearchText(q).toLowerCase().includes(p));
@@ -169,6 +183,7 @@ export default function AdminPage() {
     if (e) list = list.filter(q => (q.explanation || "").toLowerCase().includes(e));
     if (diff) list = list.filter(q => getDifficultyFromQuestion(q).toLowerCase().includes(diff));
     if (reason) list = list.filter(q => getReasoningFromQuestion(q).toLowerCase().includes(reason));
+    if (errReason) list = list.filter(q => getErrorReasonFromQuestion(q).toLowerCase().includes(errReason));
     return list;
   }, [displayedItems, columnSearch]);
 
@@ -1282,15 +1297,27 @@ export default function AdminPage() {
                 Search
               </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="missing-explanation-only"
-                checked={showOnlyMissingExplanation}
-                onCheckedChange={(v) => setShowOnlyMissingExplanation(!!v)}
-              />
-              <Label htmlFor="missing-explanation-only" className="text-sm font-medium cursor-pointer dark:text-gray-300">
-                Only show questions without explanation
-              </Label>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="missing-explanation-only"
+                  checked={showOnlyMissingExplanation}
+                  onCheckedChange={(v) => setShowOnlyMissingExplanation(!!v)}
+                />
+                <Label htmlFor="missing-explanation-only" className="text-sm font-medium cursor-pointer dark:text-gray-300">
+                  Only show questions without explanation
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="error-reports-only"
+                  checked={showOnlyErrorReports}
+                  onCheckedChange={(v) => setShowOnlyErrorReports(!!v)}
+                />
+                <Label htmlFor="error-reports-only" className="text-sm font-medium cursor-pointer dark:text-gray-300">
+                  Only show questions with error reports
+                </Label>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1305,7 +1332,8 @@ export default function AdminPage() {
                   {showOnlyMissingExplanation && items.length > 0 ? ` of ${displayedItems.length}` : ""})
                 </CardTitle>
                 <CardDescription>
-                  {showOnlyMissingExplanation && items.length > 0 && displayedItems.length < items.length && "Showing questions without explanation. "}
+                  {showOnlyMissingExplanation && items.length > 0 && "Showing questions without explanation. "}
+                  {showOnlyErrorReports && items.length > 0 && "Showing questions with error reports. "}
                   {Object.values(columnSearch).some(v => v.trim() !== "") && "Column search active. "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
@@ -1369,13 +1397,14 @@ export default function AdminPage() {
                   <col className="w-10" />
                   <col className="w-16" />
                   <col className="w-14" />
-                  <col style={{ width: '25%' }} />
-                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '22%' }} />
+                  <col style={{ width: '18%' }} />
                   <col className="w-14" />
-                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '18%' }} />
                   <col className="w-20" />
                   <col className="w-20" />
-                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '13%' }} />
                 </colgroup>
                 <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                   <tr>
@@ -1393,6 +1422,7 @@ export default function AdminPage() {
                     <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Explanation</th>
                     <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Difficulty</th>
                     <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Reasoning</th>
+                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Error reason</th>
                     <th className="p-2 text-center font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Actions</th>
                   </tr>
                   <tr className="bg-gray-100 dark:bg-gray-600/50 border-b dark:border-gray-600">
@@ -1458,6 +1488,14 @@ export default function AdminPage() {
                         placeholder="Search..."
                         value={columnSearch.reasoning}
                         onChange={(e) => setColumnSearchField("reasoning", e.target.value)}
+                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                      />
+                    </th>
+                    <th className="p-1">
+                      <Input
+                        placeholder="Search..."
+                        value={columnSearch.error_reason}
+                        onChange={(e) => setColumnSearchField("error_reason", e.target.value)}
                         className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
                       />
                     </th>
@@ -1724,6 +1762,17 @@ function Row({
         <td className="p-2 align-top text-xs break-words overflow-hidden dark:text-gray-300">
           <div className="line-clamp-3">{getReasoningFromQuestion(q) || "-"}</div>
         </td>
+        <td className="p-2 align-top text-xs break-words overflow-hidden">
+          {(q.tags || []).includes("error_reported") ? (
+            <div className="space-y-1">
+              <div className="text-rose-600 dark:text-rose-400 font-medium line-clamp-2">
+                {getErrorReasonFromQuestion(q) || "Reported"}
+              </div>
+            </div>
+          ) : (
+            <span className="text-gray-400">-</span>
+          )}
+        </td>
         <td className="p-2 text-center align-top">
           <div className="flex gap-1 justify-center flex-col">
             <Button
@@ -1734,6 +1783,21 @@ function Row({
             >
               Edit
             </Button>
+            {(q.tags || []).includes("error_reported") && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const newTags = (q.tags || []).filter(
+                    (t) => t !== "error_reported" && !t.startsWith("error_reason:") && !t.startsWith("error_details:")
+                  );
+                  onSave(q.id, { tags: newTags });
+                }}
+                className="text-xs px-2 h-7 border-emerald-500 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+              >
+                Mark fixed
+              </Button>
+            )}
             <Button
               size="sm"
               variant="destructive"
@@ -1812,6 +1876,9 @@ function Row({
       </td>
       <td className="p-2 align-top text-xs text-gray-500 dark:text-gray-400 line-clamp-3">
         {getReasoningFromQuestion(q) || "-"}
+      </td>
+      <td className="p-2 align-top text-xs text-gray-500 dark:text-gray-400">
+        {getErrorReasonFromQuestion(q) || "-"}
       </td>
       <td className="p-2 text-center">
         <div className="flex gap-2 justify-center flex-col">

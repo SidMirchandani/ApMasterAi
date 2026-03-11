@@ -6,12 +6,14 @@ import { EnhancedQuestionPalette } from "./EnhancedQuestionPalette";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QuizReviewPage } from "./QuizReviewPage";
+import { ReportQuestionDialog } from "./ReportQuestionDialog";
 import { useRouter } from "next/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
-import { getSubjectByLegacyId, getSubjectByCode } from '@/subjects';
+import { getSubjectByLegacyId, getSubjectByCode, getApiCodeForSubject } from '@/subjects';
 import { getDisplayCorrectLabel, getStoredAnswerForSubmit } from '@/lib/mcqDisplay';
+import { getSubjectDisplayName } from '../../../../lib/subject-display-names';
 
 interface Question {
   id: string;
@@ -41,9 +43,10 @@ interface FullLengthQuizProps {
   onSaveAndExit: (state: any) => void;
   savedState?: any;
   examConfig?: { questions: number; timeMinutes: number } | null;
+  hasAppNav?: boolean;
 }
 
-export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit, savedState, examConfig }: FullLengthQuizProps) {
+export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit, savedState, examConfig, hasAppNav }: FullLengthQuizProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
@@ -73,6 +76,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   });
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [cheatMode, setCheatMode] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   useEffect(() => {
     const savedCheatMode = localStorage.getItem('adminCheatMode');
@@ -295,9 +299,9 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <div className="fixed top-0 left-0 right-0 z-50">
+      <div className={`fixed left-0 right-0 z-50 ${hasAppNav ? "top-[4.25rem]" : "top-0"}`}>
         <QuizHeader
-          title={`${subjectId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Practice Exam`}
+          title={`${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test`}
           timeElapsed={timeElapsed}
           timeRemaining={timeRemaining}
           onHideTimer={() => setTimerHidden(!timerHidden)}
@@ -315,7 +319,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto mt-16 md:mt-16 mb-14">
+      <div className={`flex-1 overflow-y-auto mb-14 ${hasAppNav ? "mt-[8.25rem]" : "mt-16 md:mt-16"}`}>
         <div className="max-w-4xl mx-auto px-4 py-3">
           <QuestionCard
             question={currentQuestion}
@@ -343,9 +347,18 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           isLastQuestion={currentQuestionIndex === questions.length - 1}
           onSubmit={handleSubmitTest}
           onReview={currentQuestionIndex === questions.length - 1 ? () => setIsReviewMode(true) : undefined}
-          subjectId={subjectId} // Pass subjectId to QuizBottomBar
+          onSaveAndExit={handleExitExam}
+          onReportError={() => setShowReportDialog(true)}
+          subjectId={subjectId}
         />
       </div>
+
+      <ReportQuestionDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        questionId={currentQuestion?.id}
+        subjectId={subjectId}
+      />
 
       <EnhancedQuestionPalette
         isOpen={showQuestionPalette}
