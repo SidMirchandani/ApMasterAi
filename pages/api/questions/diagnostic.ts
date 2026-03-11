@@ -35,12 +35,14 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== "GET") {
-    return res.status(405).json({ success: false, message: "Method not allowed" });
+    res.status(405).json({ success: false, message: "Method not allowed" });
+    return;
   }
 
   const { subject, section, difficulty, excludeIds, mode } = req.query;
   if (!subject || typeof subject !== "string") {
-    return res.status(400).json({ success: false, message: "Subject is required" });
+    res.status(400).json({ success: false, message: "Subject is required" });
+    return;
   }
 
   // --- Single next-question mode (legacy adaptive): ?subject=&section=&difficulty=&excludeIds= ---
@@ -76,29 +78,36 @@ export default async function handler(
       const matchingDiff = allQuestions.filter((q) => getDifficulty(q) === diff);
       const pool = matchingDiff.length > 0 ? matchingDiff : allQuestions;
       if (pool.length === 0) {
-        return res.status(404).json({ success: false, message: "No questions available for this section/difficulty." });
+        res.status(404).json({ success: false, message: "No questions available for this section/difficulty." });
+        return;
       }
       const picked = pool[Math.floor(Math.random() * pool.length)];
       const { _d, ...rest } = picked as any;
-      return res.status(200).json({ success: true, data: { ...rest, difficulty: getDifficulty(picked) } });
+      res.status(200).json({ success: true, data: { ...rest, difficulty: getDifficulty(picked) } });
+      return;
     } catch (error) {
       console.error("Error fetching next diagnostic question:", error);
-      return res.status(500).json({ success: false, message: "Failed to fetch question" });
+      res.status(500).json({ success: false, message: "Failed to fetch question" });
+      return;
     }
   }
 
   const distribution = getDiagnosticDistributionForSubject(subject);
   if (!distribution) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       message: `Diagnostic not configured for subject: ${subject}`,
     });
+    return;
   }
 
   // --- Pool mode: ?subject=&mode=pool ---
   // Returns all questions per section grouped by difficulty for client-side adaptive selection.
   // Pool contains enough questions to handle difficulty swaps without network calls.
   if (mode === "pool") {
+    // #region agent log
+    fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'diagnostic.ts:pool:entry',message:'pool handler entry',data:{subject},hypothesisId:'A',timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     try {
       const db = getDb();
       const questionsRef = db.collection("questions");
@@ -141,14 +150,19 @@ export default async function handler(
         pool[sectionCode] = { easy, medium, hard };
       }
 
-      return res.status(200).json({ success: true, data: { pool, distribution } });
+      // #region agent log
+      fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'diagnostic.ts:pool:send',message:'sending pool response',data:{sectionCount:Object.keys(pool).length},hypothesisId:'B',timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      res.status(200).json({ success: true, data: { pool, distribution } });
+      return;
     } catch (error) {
       console.error("Error fetching diagnostic pool:", error);
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: "Failed to fetch diagnostic question pool",
         error: error instanceof Error ? error.message : "Unknown error",
       });
+      return;
     }
   }
 
@@ -212,13 +226,15 @@ export default async function handler(
     const shuffled = selectedQuestions.sort(() => Math.random() - 0.5);
     const final = shuffled.slice(0, DIAGNOSTIC_QUESTION_COUNT);
 
-    return res.status(200).json({ success: true, data: final });
+    res.status(200).json({ success: true, data: final });
+    return;
   } catch (error) {
     console.error("Error fetching diagnostic questions:", error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: "Failed to fetch diagnostic questions",
       error: error instanceof Error ? error.message : "Unknown error",
     });
+    return;
   }
 }

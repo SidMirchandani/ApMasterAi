@@ -1,0 +1,90 @@
+import type { NextApiRequest, NextApiResponse } from "next";
+import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
+
+function isAllowed(email?: string | null) {
+  const adminEmails = process.env.ADMIN_EMAILS || "";
+  const allow = adminEmails.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  return !!email && allow.includes(email.toLowerCase());
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const token = authHeader.split("Bearer ")[1];
+  const decoded = await verifyFirebaseToken(token);
+  if (!decoded || !isAllowed(decoded.email)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  const firebaseAdmin = getFirebaseAdmin();
+  if (!firebaseAdmin) {
+    return res.status(500).json({ error: "Firebase Admin not initialized" });
+  }
+  const { firestore, auth: firebaseAuth } = firebaseAdmin;
+
+  try {
+    const emailQuery = (req.query.email as string) || "";
+    let usersSnap = await firestore.collection("users").get();
+
+    // Optional: filter by email on server
+    const users: {
+      id: string;
+      name: string | null;
+      email: string;
+      joinDate: string;
+      lastLogin: string | null;
+      totalCoursesEnrolled: number;
+      status: "active" | "banned";
+    }[] = [];
+
+    const authUids = new Map<string, { lastLogin: string | null }>();
+    try {
+      const listResult = await firebaseAuth.listUsers(1000);
+      listResult.users.forEach((u) => {
+        const lastSignIn = u.metadata?.lastSignInTime || null;
+        authUids.set(u.uid, { lastLogin: lastSignIn });
+      });
+    } catch {
+      // Auth listUsers may fail without permission; continue with Firestore only
+    }
+
+    for (const doc of usersSnap.docs) {
+      const data = doc.data();
+      const id = doc.id;
+      const email = data.email || data.username || "";
+      if (emailQuery && !email.toLowerCase().includes(emailQuery.toLowerCase())) {
+        continue;
+      }
+      const createdAt = data.createdAt?.toDate?.() || data.createdAt;
+      const joinDate = createdAt ? new Date(createdAt).toISOString() : "";
+      const authMeta = authUids.get(id) || authUids.get(data.firebaseUid);
+      const lastLogin = authMeta?.lastLogin || null;
+      const courseCountSnap = await firestore
+        .collection("user_subjects")
+        .where("userId", "==", id)
+        .count()
+        .get();
+      const totalCoursesEnrolled = courseCountSnap.data().count || 0;
+      users.push({
+        id,
+        name: data.displayName || data.username || null,
+        email: email || "(no email)",
+        joinDate,
+        lastLogin,
+        totalCoursesEnrolled,
+        status: "active",
+      });
+    }
+
+    return res.status(200).json({ success: true, data: { users } });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+}

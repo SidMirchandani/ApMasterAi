@@ -102,7 +102,15 @@ export default function Courses() {
 
       toast({
         title: "Subject added!",
-        description: `${subject.name} has been added to your dashboard.`,
+        description: (
+          <>
+            {subject.name} has been added to your{" "}
+            <Link href="/dashboard" className="font-bold text-green-600 dark:text-green-400 hover:underline">
+              Dashboard
+            </Link>
+            .
+          </>
+        ),
       });
     },
   });

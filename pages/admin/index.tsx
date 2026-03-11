@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useRouter } from "next/router";
 import { auth } from "../../lib/firebase";
 import {
   onAuthStateChanged,
@@ -28,8 +29,21 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "../../client/src/components/ui/switch";
 import { Label } from "../../client/src/components/ui/label";
+import { AdminDashboardLayout } from "../../client/src/components/admin/AdminDashboardLayout";
+import { AdminInsightsTab } from "../../client/src/components/admin/AdminInsightsTab";
+import { AdminUsersTab } from "../../client/src/components/admin/AdminUsersTab";
+import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../lib/subject-display-names";
 
 const googleProvider = new GoogleAuthProvider();
+
+const AP_SUBJECT_CODES: string[] = [
+  "APMACRO", "APMICRO", "APCSP", "APCHEM", "APGOV", "APPSYCH", "APBIO",
+  "APCALCAB", "APCALCBC", "APCSA", "APUSH", "APWH", "APEURO",
+  "APLANG", "APLIT", "APSTATS", "APPHYS1", "APPHYS2", "APES", "APHUG",
+];
+
+const VALID_TABS = ["insights", "library", "users"] as const;
+type AdminTab = (typeof VALID_TABS)[number];
 
 type Block =
   | { type: "text"; value: string }
@@ -87,28 +101,10 @@ export default function AdminPage() {
   const [section, setSection] = useState("");
   const [showOnlyMissingExplanation, setShowOnlyMissingExplanation] = useState(false);
 
-  const allApSubjectsRef = [
-    { code: "APMACRO", label: "AP Macroeconomics" },
-    { code: "APMICRO", label: "AP Microeconomics" },
-    { code: "APCSP", label: "AP Computer Science Principles" },
-    { code: "APCHEM", label: "AP Chemistry" },
-    { code: "APGOV", label: "AP U.S. Government and Politics" },
-    { code: "APPSYCH", label: "AP Psychology" },
-    { code: "APBIO", label: "AP Biology" },
-    { code: "APCALCAB", label: "AP Calculus AB" },
-    { code: "APCALCBC", label: "AP Calculus BC" },
-    { code: "APCSA", label: "AP Computer Science A" },
-    { code: "APUSH", label: "AP U.S. History" },
-    { code: "APWH", label: "AP World History: Modern" },
-    { code: "APEURO", label: "AP European History" },
-    { code: "APLANG", label: "AP English Language" },
-    { code: "APLIT", label: "AP English Literature" },
-    { code: "APSTATS", label: "AP Statistics" },
-    { code: "APPHYS1", label: "AP Physics 1" },
-    { code: "APPHYS2", label: "AP Physics 2" },
-    { code: "APES", label: "AP Environmental Science" },
-    { code: "APHUG", label: "AP Human Geography" },
-  ];
+  const allApSubjectsRef = AP_SUBJECT_CODES.map((code) => ({
+    code,
+    label: getSubjectDisplayName(code),
+  }));
   const availableSubjects = allApSubjectsRef.map(s => s.code);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
 
@@ -185,7 +181,7 @@ export default function AdminPage() {
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(
     new Set(),
   );
-  const [selectedAction, setSelectedAction] = useState<string>("process");
+  const [selectedAction, setSelectedAction] = useState<string>("explanations");
   const [cheatMode, setCheatMode] = useState(false);
   const aiActionAbortRef = useRef<AbortController | null>(null);
   const [explanationProgress, setExplanationProgress] = useState<{
@@ -641,6 +637,21 @@ export default function AdminPage() {
   /** Admin access is determined by API (subject-status); no client-exposed admin list. */
   const isAllowed = adminStatus === "allowed";
 
+  const router = useRouter();
+  const tabFromQuery = router.query.tab;
+  const tab: AdminTab =
+    typeof tabFromQuery === "string" && VALID_TABS.includes(tabFromQuery as AdminTab)
+      ? (tabFromQuery as AdminTab)
+      : "insights";
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const q = router.query.tab;
+    if (q !== "insights" && q !== "library" && q !== "users") {
+      router.replace("/admin?tab=insights", undefined, { shallow: true });
+    }
+  }, [router.isReady, router.query.tab]);
+
   async function fetchFiltered() {
     if (!token) return;
     const sectionParam = section === "all" ? "" : section;
@@ -709,12 +720,9 @@ export default function AdminPage() {
     setGeneratingExplanations(true);
     const questionIds = Array.from(selectedQuestions);
 
-    let endpoint = "/api/processQuestions";
+    let endpoint = "/api/generateExplanations";
 
     switch (selectedAction) {
-      case "process":
-        endpoint = "/api/processQuestions";
-        break;
       case "explanations":
         endpoint = "/api/generateExplanations";
         break;
@@ -732,8 +740,7 @@ export default function AdminPage() {
         break;
     }
 
-    const actionLabel = selectedAction === "process" ? "processing (fix + explain)"
-      : selectedAction === "explanations" ? "explanation generation"
+    const actionLabel = selectedAction === "explanations" ? "explanation generation"
       : selectedAction === "regen-explanations" ? "explanation regeneration"
       : selectedAction === "fix-prompts" ? "prompt fixing"
       : selectedAction === "fix-units" ? "unit assignment fix"
@@ -954,46 +961,15 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-khan-background dark:bg-gray-900">
       <Toaster position="top-right" />
-
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-khan-green rounded-lg flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-khan-gray-dark dark:text-white">APMaster Admin</h1>
-                <p className="text-sm text-khan-gray-medium dark:text-gray-400">Question Management</p>
-              </div>
-            </Link>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="cheat-mode"
-                  checked={cheatMode}
-                  onCheckedChange={handleCheatModeToggle}
-                />
-                <Label htmlFor="cheat-mode" className="text-sm font-medium cursor-pointer dark:text-gray-300">
-                  Cheat Mode
-                </Label>
-              </div>
-              <span className="text-sm text-khan-gray-medium dark:text-gray-400">{user.email}</span>
-              <Button
-                onClick={() => signOut(auth)}
-                variant="outline"
-                size="sm"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <AdminDashboardLayout
+        tab={tab}
+        userEmail={user?.email ?? null}
+        cheatMode={cheatMode}
+        onCheatModeChange={handleCheatModeToggle}
+      >
+        {tab === "insights" && <AdminInsightsTab token={token} />}
+        {tab === "library" && (
+      <div className="space-y-6">
         {/* Subjects Overview */}
         <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="pb-3">
@@ -1340,7 +1316,6 @@ export default function AdminPage() {
                     <SelectValue placeholder="Select Action" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="process">Process Questions (All-in-One)</SelectItem>
                     <SelectItem value="explanations">Generate Explanations Only</SelectItem>
                     <SelectItem value="regen-explanations">ReGenerate Explanations Only</SelectItem>
                     <SelectItem value="fix-prompts">Fix Prompts & Choices Only</SelectItem>
@@ -1515,6 +1490,9 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
+        )}
+        {tab === "users" && <AdminUsersTab token={token} />}
+      </AdminDashboardLayout>
     </div>
   );
 }
@@ -1722,7 +1700,7 @@ function Row({
             onCheckedChange={onToggleSelect}
           />
         </td>
-        <td className="p-2 align-top text-xs break-words dark:text-gray-300">{q.subject_code || "-"}</td>
+        <td className="p-2 align-top text-xs break-words dark:text-gray-300">{q.subject_code ? getSubjectDisplayName(q.subject_code) : "-"}</td>
         <td className="p-2 align-top text-xs break-words dark:text-gray-300">{q.section_code || "-"}</td>
         <td className="p-2 align-top">{renderQuestionPrompt()}</td>
         <td className="p-2 align-top">

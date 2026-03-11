@@ -13,7 +13,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
     }
 
     const token = authHeader.split(" ")[1];
@@ -22,24 +23,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { verifyFirebaseToken } = await import("../../../../../server/firebase-admin");
       decodedToken = await verifyFirebaseToken(token);
     } catch {
-      return res.status(401).json({ success: false, message: "Invalid token" });
+      res.status(401).json({ success: false, message: "Invalid token" });
+      return;
     }
 
     const userId = await getOrCreateUser(decodedToken.uid);
     const { subjectId } = req.query;
     if (!subjectId || typeof subjectId !== "string") {
-      return res.status(400).json({ success: false, message: "Valid subject ID is required" });
+      res.status(400).json({ success: false, message: "Valid subject ID is required" });
+      return;
     }
 
     if (req.method === "GET") {
+      // #region agent log
+      fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'diagnostic-progress.ts:GET:entry',message:'GET handler',data:{subjectId},hypothesisId:'A',timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       const progress = await storage.getDiagnosticProgress(userId, subjectId);
-      return res.status(200).json({ success: true, data: progress });
+      // #region agent log
+      fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'diagnostic-progress.ts:GET:send',message:'sending GET response',data:{hasProgress:!!progress},hypothesisId:'B',timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      res.status(200).json({ success: true, data: progress });
+      return;
     }
 
     if (req.method === "POST") {
       const { questionIndex, userAnswers, unitDifficultyState, questions } = req.body;
       if (typeof questionIndex !== "number" || !userAnswers || !unitDifficultyState) {
-        return res.status(400).json({ success: false, message: "Invalid progress payload" });
+        res.status(400).json({ success: false, message: "Invalid progress payload" });
+        return;
       }
       await storage.saveDiagnosticProgress(userId, subjectId, {
         questionIndex,
@@ -47,18 +58,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         unitDifficultyState,
         questions: questions || [],
       });
-      return res.status(200).json({ success: true });
+      res.status(200).json({ success: true });
+      return;
     }
 
     if (req.method === "DELETE") {
       await storage.clearDiagnosticProgress(userId, subjectId);
-      return res.status(200).json({ success: true });
+      res.status(200).json({ success: true });
+      return;
     }
 
     res.setHeader("Allow", ["GET", "POST", "DELETE"]);
-    return res.status(405).json({ success: false, message: `Method ${req.method} not allowed` });
+    res.status(405).json({ success: false, message: `Method ${req.method} not allowed` });
+    return;
   } catch (error) {
     console.error("[diagnostic-progress API] Error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ success: false, message: "Internal server error" });
+    return;
   }
 }

@@ -33,14 +33,19 @@ export default function Navigation() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const isInQuizMode = location === "/quiz" && router.query.unit;
+  const isInQuizMode =
+    (location === "/quiz" && router.query.unit) ||
+    (location === "/diagnostic" && router.query.subject);
 
   const handleDisabledClick = (e: React.MouseEvent) => {
     if (isInQuizMode) {
       e.preventDefault();
+      const isDiagnostic = location === "/diagnostic";
       toast({
-        title: "Practice Quiz in Progress",
-        description: "You cannot navigate away. Use 'Exit Quiz' to leave.",
+        title: isDiagnostic ? "Diagnostic In Progress" : "Practice Quiz in Progress",
+        description: isDiagnostic
+          ? "You cannot navigate away. Use 'Save & Exit' to leave."
+          : "You cannot navigate away. Use 'Exit Quiz' to leave.",
         duration: 3000,
       });
     }
@@ -125,6 +130,11 @@ export default function Navigation() {
       bc.push({ label: "Profile", href: "#" });
     }
 
+    if (location.startsWith("/diagnostic")) {
+      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      bc.push({ label: "Diagnostic", href: "#" });
+    }
+
     if (location === "/about") {
       bc.push({ label: "About", href: "#" });
     }
@@ -167,9 +177,9 @@ export default function Navigation() {
               </Link>
 
               {isAuthenticated && breadcrumbs.length > 0 && (
-                <div className="hidden lg:flex items-center gap-1.5 text-[13px] font-medium text-slate-400 min-w-0">
+                <div className="hidden md:flex items-center gap-1.5 text-[13px] font-medium text-slate-400 min-w-0 overflow-x-auto overflow-y-hidden flex-nowrap">
                   {breadcrumbs.map((crumb, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
+                    <div key={i} className="flex items-center gap-1.5 flex-shrink-0">
                       <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 flex-shrink-0" />
                       {crumb.href === "#" ? (
                         <span className="text-slate-500 dark:text-slate-400 whitespace-nowrap truncate max-w-[150px]">
@@ -194,10 +204,18 @@ export default function Navigation() {
             <div className="flex items-center gap-1.5">
               {!isAuthenticated && (
                 <>
-                  <Link href="/about" className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60">
+                  <Link
+                    href="/about"
+                    onClick={handleDisabledClick}
+                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
+                  >
                     About
                   </Link>
-                  <Link href="/team" className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60">
+                  <Link
+                    href="/team"
+                    onClick={handleDisabledClick}
+                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
+                  >
                     Team
                   </Link>
                 </>
@@ -205,10 +223,18 @@ export default function Navigation() {
 
               {isAuthenticated && (
                 <>
-                  <Link href="/about" className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60">
+                  <Link
+                    href="/about"
+                    onClick={handleDisabledClick}
+                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
+                  >
                     About
                   </Link>
-                  <Link href="/team" className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60">
+                  <Link
+                    href="/team"
+                    onClick={handleDisabledClick}
+                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
+                  >
                     Team
                   </Link>
                 </>
@@ -236,7 +262,7 @@ export default function Navigation() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="h-9 w-9 p-0 md:hidden rounded-xl"
+                    className={`h-9 w-9 p-0 md:hidden rounded-xl ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
                   >
                     {mobileMenuOpen ? (
                       <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -288,15 +314,15 @@ export default function Navigation() {
                         Profile
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => router.push("/about")}
-                        className="cursor-pointer rounded-xl px-3 py-2.5"
+                        onClick={() => !isInQuizMode && router.push("/about")}
+                        className={`cursor-pointer rounded-xl px-3 py-2.5 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
                       >
                         <Info className="w-4 h-4 mr-2.5 text-slate-500" />
                         About Us
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => router.push("/team")}
-                        className="cursor-pointer rounded-xl px-3 py-2.5"
+                        onClick={() => !isInQuizMode && router.push("/team")}
+                        className={`cursor-pointer rounded-xl px-3 py-2.5 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
                       >
                         <Users className="w-4 h-4 mr-2.5 text-slate-500" />
                         Our Team
@@ -334,11 +360,54 @@ export default function Navigation() {
               )}
             </div>
           </div>
+
+          {/* Mobile breadcrumb strip: always visible on small screens */}
+          {isAuthenticated && breadcrumbs.length > 0 && (
+            <div className="flex md:hidden items-center gap-1.5 text-[12px] font-medium text-slate-400 min-w-0 overflow-x-auto overflow-y-hidden flex-nowrap py-1.5 -mb-1.5">
+              {breadcrumbs.map((crumb, i) => (
+                <div key={i} className="flex items-center gap-1.5 flex-shrink-0">
+                  {i > 0 && <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-600 flex-shrink-0" />}
+                  {crumb.href === "#" ? (
+                    <span className="text-slate-500 dark:text-slate-400 whitespace-nowrap">{crumb.label}</span>
+                  ) : (
+                    <Link
+                      href={crumb.href}
+                      className="hover:text-emerald-500 transition-colors whitespace-nowrap"
+                      onClick={handleDisabledClick}
+                    >
+                      {crumb.label}
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
         </div>
 
         {/* Mobile menu dropdown */}
         {isAuthenticated && mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200/50 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl px-4 py-4 space-y-0.5 animate-slide-down">
+            {breadcrumbs.length > 1 && (
+              <div className="flex items-center gap-1.5 px-4 py-2 mb-1 text-[12px] font-medium text-slate-400 flex-wrap">
+                {breadcrumbs.map((crumb, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    {i > 0 && <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-600 flex-shrink-0" />}
+                    {crumb.href === "#" ? (
+                      <span className="text-slate-500 dark:text-slate-400">{crumb.label}</span>
+                    ) : (
+                      <Link
+                        href={crumb.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="hover:text-emerald-500 transition-colors"
+                      >
+                        {crumb.label}
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             <Link
               href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
@@ -357,16 +426,22 @@ export default function Navigation() {
             </Link>
             <Link
               href="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              onClick={(e) => {
+                if (isInQuizMode) e.preventDefault();
+                else setMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
             >
               <Info className="w-4 h-4 text-slate-500" />
               About Us
             </Link>
             <Link
               href="/team"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              onClick={(e) => {
+                if (isInQuizMode) e.preventDefault();
+                else setMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
             >
               <Users className="w-4 h-4 text-slate-500" />
               Our Team
@@ -387,8 +462,8 @@ export default function Navigation() {
           </div>
         )}
       </nav>
-      {/* Spacer to prevent content from hiding behind fixed nav */}
-      <div className="h-[4.25rem]" />
+      {/* Spacer to prevent content from hiding behind fixed nav (taller on mobile when breadcrumb strip is shown) */}
+      <div className={isAuthenticated && breadcrumbs.length > 0 ? "h-[6rem] md:h-[4.25rem]" : "h-[4.25rem]"} />
     </>
   );
 }

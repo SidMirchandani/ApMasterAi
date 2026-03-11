@@ -312,10 +312,11 @@ export class Storage {
       if (!db) throw new Error("Firestore not available");
 
       const docRef = db.collection('user_subjects').doc();
-      const subjectData: Omit<UserSubject, 'id'> = {
+      const subjectData: Omit<UserSubject, 'id'> & { createdAt?: Date } = {
         ...subject,
         dateAdded: now,
         unitProgress: {}, // Initialize unitProgress
+        createdAt: now, // For admin insights enrollment-over-time series
       };
 
       await docRef.set(subjectData);
