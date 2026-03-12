@@ -12,7 +12,9 @@ import {
   Target,
   ChevronDown,
   Sparkles,
+  Crown,
 } from "lucide-react";
+import { APScoreCircle } from "@/components/ui/APScoreCircle";
 import Navigation from "@/components/ui/navigation";
 import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
@@ -532,12 +534,11 @@ const SubjectCard = ({
             className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center gap-1 flex-shrink-0"
             title="Predicted AP Score"
           >
-            <div
-              className="flex items-center justify-center w-14 h-14 rounded-full text-white text-2xl font-bold shadow-md"
-              style={{ backgroundColor: predicted ? predicted.color : "#94a3b8" }}
-            >
-              {predicted !== null ? predicted.score : "?"}
-            </div>
+            <APScoreCircle
+              score={predicted?.score ?? null}
+              color={predicted ? predicted.color : "#94a3b8"}
+              size="sm"
+            />
             <APScoreExplainDialog inline triggerClassName="self-start mt-0.5" />
           </div>
           <div className="flex-1 min-w-0 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
@@ -555,9 +556,7 @@ const SubjectCard = ({
                   title={`Unit ${i + 1}: ${stat.label}${score > 0 ? ` (${score}%)` : ""}`}
                 >
                   {isMastered && (
-                    <svg viewBox="0 0 24 24" fill="none" className="w-2.5 h-2.5">
-                      <path d="M2 8L5 4L8 7L12 2L16 7L19 4L22 8L19 19H5L2 8Z" fill="#FFD700" stroke="#DAA520" strokeWidth="0.5" />
-                    </svg>
+                    <Crown className="w-2.5 h-2.5 fill-[#FFD700] stroke-[#FFD700]" strokeWidth={2} aria-hidden />
                   )}
                 </div>
               );

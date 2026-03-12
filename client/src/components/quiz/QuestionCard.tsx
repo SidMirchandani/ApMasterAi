@@ -125,13 +125,13 @@ export function QuestionCard({
       <CardContent className="space-y-2 p-0 pt-2 pb-2 px-3">
         {/* Question Counter for Practice Quizzes */}
         {hidePracticeQuizElements && totalQuestions && (
-          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-            Question {questionNumber} of {totalQuestions}
+<div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+          Question {questionNumber} of {totalQuestions}
           </div>
         )}
 
         {/* Question Prompt */}
-        <div className="space-y-2 min-h-0 leading-snug">
+        <div className="space-y-2 min-h-0 leading-snug text-xs">
           <BlockRenderer blocks={question.prompt_blocks || []} />
         </div>
 
@@ -210,7 +210,7 @@ export function QuestionCard({
                   }`}>
                     {label}
                   </div>
-                  <div className={`flex-1 text-sm leading-snug ${isCrossedOut && !isAnswerSubmitted && !isReviewMode ? 'line-through decoration-2' : ''}`}>
+                  <div className={`flex-1 text-xs leading-snug ${isCrossedOut && !isAnswerSubmitted && !isReviewMode ? 'line-through decoration-2' : ''}`}>
                     <BlockRenderer blocks={getChoiceBlocks(label) ?? []} />
                   </div>
                   {!isAnswerSubmitted && !isReviewMode && (

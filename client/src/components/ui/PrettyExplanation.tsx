@@ -7,7 +7,7 @@ import {
 import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
 
 const defaultClassName =
-  "text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none";
+  "text-xs text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none";
 
 interface PrettyExplanationProps {
   children: string;

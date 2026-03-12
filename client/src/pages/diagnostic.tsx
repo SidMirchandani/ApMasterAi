@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { useQueryClient } from "@tanstack/react-query";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { DiagnosticModal } from "@/components/diagnostic/DiagnosticModal";
@@ -7,6 +8,7 @@ import { DiagnosticModal } from "@/components/diagnostic/DiagnosticModal";
 export default function DiagnosticPage() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const rawSubject = router.query.subject;
   const subjectId: string | undefined = Array.isArray(rawSubject)
     ? rawSubject[0] || undefined
@@ -63,13 +65,30 @@ export default function DiagnosticPage() {
     router.push(`/study?subject=${subjectId}`);
   };
 
+  const handleComplete = async () => {
+    setDiagnosticInProgress(false);
+    if (subjectId) {
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["testHistory", subjectId] });
+      queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
+      queryClient.invalidateQueries({ queryKey: ["dueReviews", subjectId, "all"] });
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["subjects"] }),
+        queryClient.refetchQueries({ queryKey: ["testHistory", subjectId] }),
+        queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] }),
+        queryClient.refetchQueries({ queryKey: ["dueReviews", subjectId, "all"] }),
+      ]);
+    }
+    router.push(`/analytics?subject=${subjectId}`);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
       <Navigation />
       <DiagnosticModal
         subjectId={subjectId}
         onClose={handleClose}
-        onComplete={handleClose}
+        onComplete={handleComplete}
       />
     </div>
   );

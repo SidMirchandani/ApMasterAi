@@ -19,14 +19,15 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ReportQuestionDialog } from "@/components/quiz/ReportQuestionDialog";
+import { ExplanationPanel } from "@/components/quiz/ExplanationPanel";
+import { PracticeQuizQuestionCard } from "@/components/quiz/PracticeQuizQuestionCard";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { BlockRenderer } from "@/components/quiz/BlockRenderer";
 import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
 import { getDisplayChoicesAndCorrect, getDisplayExplanation } from "@/lib/mcqDisplay";
 import { normalizeQuestion } from "@/lib/normalizeQuestion";
 import { apiRequest } from "@/lib/api";
-import { getApiCodeForSubject } from "@/subjects";
+import { getApiCodeForSubject, getUnitIdForSectionCode, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getPredictedAPScoreFromTests } from "@/lib/ap-score-utils";
 import {
   AlertDialog,
@@ -42,12 +43,11 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
-  XCircle,
   Loader2,
   TrendingUp,
   AlertTriangle,
 } from "lucide-react";
+import { APScoreCircle } from "@/components/ui/APScoreCircle";
 
 const TOTAL_QUESTIONS = 25;
 type Difficulty = "easy" | "medium" | "hard";
@@ -349,12 +349,17 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
     };
   }, [saveProgress]);
 
-  // Handle answer selection
-  const handleAnswer = useCallback((label: string) => {
+  // Handle answer selection (only select; submit is explicit via handleSubmit)
+  const handleAnswerSelect = useCallback((label: string) => {
     if (showFeedback || isLoadingPool || isCalculating) return;
     setSelectedAnswer(label);
-    setShowFeedback(true);
   }, [showFeedback, isLoadingPool, isCalculating]);
+
+  // Submit answer to show feedback (same behavior as unit-wise MCQ)
+  const handleSubmit = useCallback(() => {
+    if (!selectedAnswer || showFeedback) return;
+    setShowFeedback(true);
+  }, [selectedAnswer, showFeedback]);
 
   // Handle going back to the previous question (navigation only — answers unchanged)
   const handleBack = useCallback(() => {
@@ -434,6 +439,45 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
       const data = await res.json();
       if (data.success && data.data) {
         const r = data.data;
+        // Save wrong answers per unit only when entire diagnostic is complete (not mid-way)
+        const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
+        const mcqOptionCount = subject?.metadata?.mcqOptionCount;
+        const trackPromises: Promise<unknown>[] = [];
+        questions.forEach((q, idx) => {
+          const userAnswer = answers[idx];
+          const { displayCorrectLabel } = getDisplayChoicesAndCorrect(q as any, mcqOptionCount);
+          const isCorrect = userAnswer === displayCorrectLabel;
+          if (!isCorrect && q.id) {
+            const sectionCode = q.section_code || "";
+            const unitId = getUnitIdForSectionCode(subjectId, sectionCode) || sectionCode || "unknown";
+            const promptStr =
+              (q as any).prompt && typeof (q as any).prompt === "string"
+                ? (q as any).prompt
+                : Array.isArray((q as any).prompt_blocks)
+                  ? (q as any).prompt_blocks
+                      .filter((b: any) => b?.type === "text" && b.value != null)
+                      .map((b: any) => String(b.value))
+                      .join(" ")
+                      .trim() || undefined
+                  : undefined;
+            trackPromises.push(
+              apiRequest("POST", "/api/user/questions/track", {
+                questionId: q.id,
+                subjectId,
+                unitId,
+                correct: false,
+                timeSpentSec: 0,
+                sectionCode,
+                prompt: promptStr,
+                choices: (q as any).choices,
+                answerIndex: (q as any).answerIndex,
+                explanation: (q as any).explanation,
+              })
+            );
+          }
+        });
+        await Promise.all(trackPromises);
+        apiRequest("DELETE", `/api/user/subjects/${subjectId}/diagnostic-progress`).catch(() => {});
         setResult({
           score: r.score,
           percentage: r.percentage,
@@ -441,7 +485,6 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
           sectionBreakdown: r.sectionBreakdown || {},
           testId: r.id,
         });
-        apiRequest("DELETE", `/api/user/subjects/${subjectId}/diagnostic-progress`).catch(() => {});
         if (onComplete) onComplete(r);
       } else {
         setError("Failed to save your results. Please try again.");
@@ -501,15 +544,12 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
     );
   }
 
-  const { choiceLabels, getChoiceBlocks, displayCorrectLabel } = getDisplayChoicesAndCorrect(
+  const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
+  const mcqOptionCount = subject?.metadata?.mcqOptionCount;
+  const { displayCorrectLabel: correctLabel } = getDisplayChoicesAndCorrect(
     currentQuestion as any,
-    (currentQuestion as any).mcqOptionCount
+    mcqOptionCount
   );
-  const displayChoices = choiceLabels.map((label) => ({
-    label,
-    blocks: getChoiceBlocks(label) ?? [],
-  }));
-  const correctLabel = displayCorrectLabel;
   const progressPct = Math.round((currentIndex / TOTAL_QUESTIONS) * 100);
   const sectionCode = sectionPlan[currentIndex] || currentQuestion.section_code || "";
   const currentDiff = unitDifficultyState[sectionCode] || "medium";
@@ -517,153 +557,109 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col text-gray-900 dark:text-gray-100">
       {/* Scrollable content area with bottom padding for fixed bar */}
-      <div className="flex-1 overflow-y-auto pb-20">
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 space-y-4">
-          {/* Header card */}
-          <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 px-5 pt-5 pb-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-blue-500" />
-                <span className="font-bold text-gray-900 dark:text-white text-sm">Quick Diagnostic</span>
+      <div className="flex-1 overflow-y-auto pb-14">
+        <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-stretch">
+            {/* Question: left on desktop, top on narrow screens */}
+            <div className="order-1 flex-1 min-w-0 space-y-2">
+              {/* Header card */}
+              <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 px-3 pt-3 pb-2.5 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-blue-500" />
+                    <span className="font-bold text-gray-900 dark:text-white text-xs">Quick Diagnostic</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DifficultyBadge difficulty={currentDiff} />
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                      {currentIndex + 1} / {TOTAL_QUESTIONS}
+                    </span>
+                  </div>
+                </div>
+                <Progress value={progressPct} className="h-1 bg-slate-100 dark:bg-slate-800" />
               </div>
-              <div className="flex items-center gap-2">
-                <DifficultyBadge difficulty={currentDiff} />
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                  {currentIndex + 1} / {TOTAL_QUESTIONS}
-                </span>
-              </div>
+
+              {/* Question card — same interface as unit-wise MCQ (cross-out, styling) */}
+              <PracticeQuizQuestionCard
+                question={currentQuestion as any}
+                questionNumber={currentIndex + 1}
+                totalQuestions={TOTAL_QUESTIONS}
+                selectedAnswer={selectedAnswer}
+                onAnswerSelect={handleAnswerSelect}
+                isAnswerSubmitted={showFeedback}
+                cheatMode={cheatMode}
+                mcqOptionCount={mcqOptionCount}
+              />
             </div>
-            <Progress value={progressPct} className="h-1.5 bg-slate-100 dark:bg-slate-800" />
-          </div>
-
-          {/* Question card */}
-          <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 px-5 py-5 shadow-sm">
-            <div className="mb-5 text-gray-900 dark:text-white text-sm leading-relaxed font-medium">
-              <BlockRenderer blocks={currentQuestion.prompt_blocks || [{ type: "text", value: currentQuestion.prompt || "" }]} />
-            </div>
-
-            <div className="space-y-2.5">
-              {displayChoices.map(({ label, blocks }) => {
-                const isSelected = selectedAnswer === label;
-                const isCorrect = label === correctLabel;
-                let base =
-                  "w-full text-left rounded-xl border-2 p-3.5 flex items-start gap-3 transition-all duration-150 ";
-
-                if (!showFeedback) {
-                  if (cheatMode && isCorrect) {
-                    base += "ring-2 ring-green-500 border-green-500 bg-green-50 dark:bg-green-500/10";
-                  } else if (isSelected) {
-                    base += "ring-2 ring-blue-500 border-blue-500 bg-blue-50 dark:bg-blue-500/10";
-                  } else {
-                    base += "border border-slate-200 dark:border-slate-800 hover:ring-1 hover:ring-blue-400/40 cursor-pointer";
-                  }
-                } else {
-                  if (isCorrect) {
-                    base += "ring-2 ring-green-500 border-green-500 bg-green-50 dark:bg-green-500/10";
-                  } else if (isSelected && !isCorrect) {
-                    base += "ring-2 ring-red-500 border-red-500 bg-red-50 dark:bg-red-500/10";
-                  } else {
-                    base += "border border-slate-200 dark:border-slate-800 opacity-60";
-                  }
-                }
-
-                return (
-                  <button
-                    key={label}
-                    className={base}
-                    onClick={() => handleAnswer(label)}
-                    disabled={showFeedback}
-                  >
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 border-2 transition-colors ${
-                        showFeedback && isCorrect
-                          ? "bg-green-500 border-green-500 text-white"
-                          : showFeedback && isSelected && !isCorrect
-                          ? "bg-red-500 border-red-500 text-white"
-                          : !showFeedback && cheatMode && isCorrect
-                          ? "bg-green-500 border-green-500 text-white"
-                          : isSelected
-                          ? "bg-blue-500 border-blue-500 text-white"
-                          : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400"
-                      }`}
-                    >
-                      {label}
-                    </div>
-                    <div className="flex-1 text-sm text-gray-800 dark:text-gray-200 leading-snug">
-                      <BlockRenderer blocks={blocks} />
-                    </div>
-                    {showFeedback && isCorrect && (
-                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    )}
-                    {showFeedback && isSelected && !isCorrect && (
-                      <XCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {showFeedback && (
-              <div className={`mt-4 rounded-xl p-3.5 text-sm ${
-                selectedAnswer === correctLabel
-                  ? "bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-800/50 text-green-800 dark:text-green-200"
-                  : "bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-200"
-              }`}>
-                <span className="font-semibold">
-                  {selectedAnswer === correctLabel ? "Correct! " : `Incorrect. The answer is ${correctLabel}. `}
-                </span>
-                {(currentQuestion as any).explanation && (
-                  <span className="opacity-80 block mt-1">
-                    <PrettyExplanation className="text-sm text-inherit prose prose-sm dark:prose-invert max-w-none">
-                      {getDisplayExplanation(
+            {/* Explanation: right on desktop, below on narrow screens */}
+            <div className="order-2 w-full md:w-[35%] md:min-w-0 flex flex-col">
+              <ExplanationPanel
+                hasAnswered={showFeedback}
+                isCorrect={selectedAnswer === correctLabel}
+              >
+                {showFeedback && (
+                  <>
+                    <span className="text-xs font-semibold block mb-1">
+                      {selectedAnswer === correctLabel ? "Correct! " : `Incorrect. The answer is ${correctLabel}. `}
+                    </span>
+                    {(currentQuestion as any).explanation && (
+                      <PrettyExplanation className="text-xs text-inherit prose prose-sm dark:prose-invert max-w-none">
+                        {getDisplayExplanation(
                         (currentQuestion as any).explanation,
                         currentQuestion as any,
-                        (currentQuestion as any).mcqOptionCount
+                        mcqOptionCount
                       )}
-                    </PrettyExplanation>
-                  </span>
+                      </PrettyExplanation>
+                    )}
+                  </>
                 )}
-              </div>
-            )}
+              </ExplanationPanel>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Fixed Bottom Bar */}
+      {/* Fixed Bottom Bar — aligned with quiz (max-w-6xl), Submit/Next in center */}
       <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 fixed bottom-0 left-0 right-0 z-50">
-        <div className="max-w-2xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
+        <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2.5">
           <div className="flex justify-between items-center gap-2 sm:gap-4">
-            {/* Left: Back */}
-            <div className="flex flex-1 items-center">
+            <div className="flex flex-1 items-center min-w-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleBack}
                 disabled={currentIndex === 0}
-                className="border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 disabled:opacity-30 rounded-xl"
+                className="border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 disabled:opacity-30 rounded-xl shrink-0"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Back
               </Button>
             </div>
-            {/* Center: Next / Finish */}
-            <div className="flex justify-center items-center gap-2 sm:gap-4 flex-1 sm:flex-none">
-              <Button
-                onClick={handleNext}
-                disabled={!showFeedback}
-                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-4 sm:px-8 text-sm sm:text-base h-10 text-white border-none shadow-none disabled:opacity-40 flex items-center gap-2 rounded-xl transition-all duration-150 ease-out"
-              >
-                {currentIndex + 1 >= TOTAL_QUESTIONS ? "Finish" : "Next"}
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            <div className="flex justify-center items-center flex-shrink-0">
+              {!showFeedback ? (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!selectedAnswer}
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-5 py-2 text-xs font-medium text-white border-none shadow-none rounded-xl disabled:opacity-50"
+                >
+                  Submit
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNext}
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-5 py-2 text-xs font-medium text-white border-none shadow-none rounded-xl flex items-center gap-2"
+                >
+                  {currentIndex + 1 >= TOTAL_QUESTIONS ? "Finish" : "Next"}
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            {/* Right: Report + Save & Exit */}
-            <div className="flex justify-end flex-1 items-center gap-2">
+            <div className="flex justify-end flex-1 items-center gap-2 min-w-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowReportDialog(true)}
-                className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm"
+                className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs"
               >
                 Report
               </Button>
@@ -671,7 +667,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowExitDialog(true)}
-                className="border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm"
+                className="border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs"
               >
                 Save &amp; Exit
               </Button>
@@ -750,11 +746,8 @@ function DiagnosticResults({
 
         {/* Score */}
         <div className="px-6 py-5 text-center border-b border-gray-100 dark:border-gray-800">
-          <div
-            className="mx-auto w-20 h-20 rounded-full flex items-center justify-center text-white text-4xl font-black shadow-lg mb-2"
-            style={{ backgroundColor: predicted.color }}
-          >
-            {predicted.score}
+          <div className="mx-auto mb-2 flex justify-center">
+            <APScoreCircle score={predicted.score} color={predicted.color} size="lg" className="shadow-lg font-black" />
           </div>
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Projected AP Score</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{predicted.label}</p>

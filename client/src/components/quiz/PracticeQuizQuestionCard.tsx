@@ -71,9 +71,9 @@ export function PracticeQuizQuestionCard({
   return (
     <Card className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden rounded-xl transition-all duration-150 ease-out">
       <CardHeader className="p-0">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-3 bg-slate-50/50 dark:bg-slate-800/50">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-3 py-2 bg-slate-50/50 dark:bg-slate-800/50">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Question {questionNumber} of {totalQuestions}
             </span>
             {question.difficulty && ["easy", "medium", "hard"].includes(question.difficulty) && (
@@ -108,12 +108,12 @@ export function PracticeQuizQuestionCard({
         </div>
       </CardHeader>
 
-      <CardContent className="p-6 space-y-6">
-        <div className="text-slate-900 dark:text-white leading-relaxed text-base">
+      <CardContent className="p-4 space-y-4">
+        <div className="text-slate-900 dark:text-white leading-relaxed text-xs sm:text-sm">
           <BlockRenderer blocks={question.prompt_blocks || []} />
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {choiceLabels.map((label) => {
             const isUserAnswer = selectedAnswer === label;
             const isCorrectAnswer = label === displayCorrectLabel;
@@ -161,12 +161,12 @@ export function PracticeQuizQuestionCard({
                 key={label}
                 disabled={isAnswerSubmitted}
                 onClick={() => onAnswerSelect(label)}
-                className={`w-full flex items-start gap-4 p-4 rounded-xl border transition-all duration-150 ease-out text-left relative group/choice
+                className={`w-full flex items-start gap-3 p-3 rounded-lg border transition-all duration-150 ease-out text-left relative group/choice
                   ${borderColor} ${bgColor} ${ringClass} ${opacity} ${hoverRing}
                   ${isAnswerSubmitted ? "cursor-default" : "cursor-pointer hover:shadow-sm"}
                 `}
               >
-                <div className={`flex-shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center font-bold text-sm transition-colors
+                <div className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center font-bold text-xs transition-colors
                   ${isUserAnswer
                     ? "bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500 text-white"
                     : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-300"
@@ -174,7 +174,7 @@ export function PracticeQuizQuestionCard({
                 `}>
                   {label}
                 </div>
-                <div className={`flex-1 text-base leading-relaxed ${textColor} ${isCrossedOut && !isAnswerSubmitted ? 'line-through decoration-2' : ''}`}>
+                <div className={`flex-1 text-sm leading-snug ${textColor} ${isCrossedOut && !isAnswerSubmitted ? 'line-through decoration-2' : ''}`}>
                   <BlockRenderer blocks={getChoiceBlocks(label) ?? []} />
                 </div>
                 {!isAnswerSubmitted && (

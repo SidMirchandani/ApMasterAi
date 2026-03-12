@@ -12,6 +12,7 @@ import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
+import { ExplanationPanel } from "./ExplanationPanel";
 import { CheckCircle, XCircle, LogOut, Flag } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useQueryClient } from "@tanstack/react-query";
@@ -291,89 +292,83 @@ export function PracticeQuiz({
           </div>
         )}
 
-        <div className={`flex-1 overflow-y-auto mb-16 pb-2 ${showCalculator ? 'hidden md:block' : 'block'}`}>
-          <div className="max-w-4xl mx-auto px-2 sm:px-4 py-3 space-y-2">
-            <PracticeQuizQuestionCard
-              question={currentQuestion}
-              questionNumber={currentQuestionIndex + 1}
-              totalQuestions={orderedQuestions.length}
-              selectedAnswer={selectedAnswer}
-              onAnswerSelect={handleAnswerSelect}
-              isAnswerSubmitted={isAnswerSubmitted}
-              cheatMode={cheatMode}
-              isBookmarked={bookmarkedIds.has(currentQuestion?.id)}
-              onToggleBookmark={() => handleToggleBookmark(currentQuestion)}
-              mcqOptionCount={mcqOptionCount}
-            />
-
-            {isAnswerSubmitted && currentQuestion?.explanation && (() => {
-              const explanationCorrect = selectedAnswer === getDisplayCorrectLabel(currentQuestion, mcqOptionCount);
-              return (
-                <Card className={
-                  explanationCorrect
-                    ? "ring-2 ring-green-500 border-green-500 dark:border-green-600 bg-green-50 dark:bg-green-500/10"
-                    : "ring-2 ring-red-500 border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-500/10"
-                }>
-                  <CardHeader className="pb-2 pt-3">
-                    <CardTitle className={`text-sm ${explanationCorrect ? "text-green-800 dark:text-green-300" : "text-red-800 dark:text-red-300"}`}>
-                      {explanationCorrect ? "Correct — Explanation" : "Incorrect — Explanation"}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 pb-3">
+        <div className={`flex-1 overflow-y-auto mb-14 pb-1 ${showCalculator ? 'hidden md:block' : 'block'}`}>
+          <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2">
+            <div className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-stretch">
+              {/* Question: left on desktop, top on narrow screens */}
+              <div className="order-1 flex-1 min-w-0">
+                <PracticeQuizQuestionCard
+                  question={currentQuestion}
+                  questionNumber={currentQuestionIndex + 1}
+                  totalQuestions={orderedQuestions.length}
+                  selectedAnswer={selectedAnswer}
+                  onAnswerSelect={handleAnswerSelect}
+                  isAnswerSubmitted={isAnswerSubmitted}
+                  cheatMode={cheatMode}
+                  isBookmarked={bookmarkedIds.has(currentQuestion?.id)}
+                  onToggleBookmark={() => handleToggleBookmark(currentQuestion)}
+                  mcqOptionCount={mcqOptionCount}
+                />
+              </div>
+              {/* Explanation: right on desktop, below on narrow screens */}
+              <div className="order-2 w-full md:w-[35%] md:min-w-0 flex flex-col">
+                <ExplanationPanel
+                  hasAnswered={isAnswerSubmitted}
+                  isCorrect={!!(currentQuestion && selectedAnswer === getDisplayCorrectLabel(currentQuestion, mcqOptionCount))}
+                >
+                  {isAnswerSubmitted && currentQuestion?.explanation && (
                     <PrettyExplanation>
                       {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
                     </PrettyExplanation>
-                  </CardContent>
-                </Card>
-              );
-            })()}
+                  )}
+                </ExplanationPanel>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Fixed Bottom Bar */}
+      {/* Fixed Bottom Bar — aligned with quiz content (max-w-6xl), Submit/Next in center */}
       <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 fixed bottom-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+        <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2.5">
           <div className="flex justify-between items-center gap-2 sm:gap-4">
-            <div className="flex flex-1 items-center">
+            <div className="flex flex-1 items-center min-w-0">
               {isCalculatorAllowed && (
                 <Button
                   variant={showCalculator ? "secondary" : "outline"}
                   size="sm"
                   onClick={() => setShowCalculator(!showCalculator)}
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:border-blue-500 dark:text-blue-400"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:border-blue-500 dark:text-blue-400 shrink-0"
                 >
-                  <Calculator className="w-4 h-4 mr-2" />
-                  {showCalculator ? "Hide Calculator" : "Show Calculator"}
+                  <Calculator className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{showCalculator ? "Hide Calculator" : "Show Calculator"}</span>
                 </Button>
               )}
             </div>
-            <div className="flex justify-center items-center gap-2 sm:gap-4 flex-1 sm:flex-none">
+            <div className="flex justify-center items-center flex-shrink-0">
               {!isAnswerSubmitted ? (
                 <Button
                   onClick={handleSubmitAnswer}
                   disabled={!selectedAnswer}
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10 text-white border-none shadow-none"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-5 py-2 text-xs font-medium text-white border-none shadow-none rounded-xl disabled:opacity-50"
                 >
                   Submit
                 </Button>
               ) : (
                 <Button
                   onClick={handleNextQuestion}
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-4 sm:px-8 text-sm sm:text-base h-10 sm:h-10 text-white border-none shadow-none"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-5 py-2 text-xs font-medium text-white border-none shadow-none rounded-xl"
                 >
-                  {currentQuestionIndex === orderedQuestions.length - 1
-                    ? "Finish"
-                    : "Next"}
+                  {currentQuestionIndex === orderedQuestions.length - 1 ? "Finish" : "Next"}
                 </Button>
               )}
             </div>
-            <div className="flex justify-end items-center gap-2">
+            <div className="flex justify-end items-center gap-2 flex-1 min-w-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowReportDialog(true)}
-                className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm"
+                className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs"
               >
                 <Flag className="w-3.5 h-3.5 mr-1" />
                 Report
@@ -390,7 +385,7 @@ export function PracticeQuiz({
                   }}
                   variant="outline"
                   size="sm"
-                  className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm dark:border-red-500 dark:text-red-400"
+                  className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs dark:border-red-500 dark:text-red-400"
                 >
                   Save & Exit
                 </Button>
@@ -399,7 +394,7 @@ export function PracticeQuiz({
                   onClick={onExit}
                   variant="outline"
                   size="sm"
-                  className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm dark:border-red-500 dark:text-red-400"
+                  className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs dark:border-red-500 dark:text-red-400"
                 >
                   Exit
                 </Button>
@@ -420,21 +415,21 @@ export function PracticeQuiz({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <Card className="w-full max-w-md bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
             <CardHeader>
-              <CardTitle className="text-center text-gray-900 dark:text-gray-100">Quiz Complete!</CardTitle>
+              <CardTitle className="text-center text-base text-gray-900 dark:text-gray-100">Quiz Complete!</CardTitle>
             </CardHeader>
-            <CardContent className="text-center space-y-6">
+            <CardContent className="text-center space-y-4">
               <div>
-                <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
                   {score}/{orderedQuestions.length}
                 </div>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   You got {score} question{score !== 1 ? "s" : ""} correct.
                 </p>
               </div>
               <Button
                 onClick={handleReview}
                 size="lg"
-                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 w-full text-lg py-6 text-white border-none"
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 w-full text-base py-5 text-white border-none"
               >
                 Review Answers
               </Button>

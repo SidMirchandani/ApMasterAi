@@ -1114,7 +1114,7 @@ export class Storage {
     return { bookmarked: true };
   }
 
-  async getBookmarks(userId: string, subjectId?: string): Promise<any[]> {
+  async getBookmarks(userId: string, subjectId?: string, unitId?: string): Promise<any[]> {
     await this.ensureConnection();
     const db = this.getDbInstance();
     if (!db) throw new Error("Firestore not available");
@@ -1127,7 +1127,10 @@ export class Storage {
     }
 
     const snapshot = await query.get();
-    const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    if (unitId) {
+      results = results.filter((item: any) => item.unitId === unitId);
+    }
     results.sort((a: any, b: any) => {
       const aTime = a.createdAt?._seconds || a.createdAt?.seconds || 0;
       const bTime = b.createdAt?._seconds || b.createdAt?.seconds || 0;
@@ -1241,7 +1244,13 @@ export class Storage {
       };
       if (!data.correct) {
         updateData.needsReview = true;
+      } else {
+        updateData.needsReview = false;
       }
+      if (data.prompt != null) updateData.prompt = data.prompt;
+      if (data.choices != null) updateData.choices = data.choices;
+      if (data.answerIndex !== undefined) updateData.answerIndex = data.answerIndex;
+      if (data.explanation != null) updateData.explanation = data.explanation;
       await doc.ref.update(updateData);
     }
   }
@@ -1252,7 +1261,7 @@ export class Storage {
     return intervals[Math.min(streak, intervals.length - 1)];
   }
 
-  async getDueReviews(userId: string, subjectId?: string, limit: number = 20): Promise<any[]> {
+  async getDueReviews(userId: string, subjectId?: string, limit: number = 20, unitId?: string): Promise<any[]> {
     await this.ensureConnection();
     const db = this.getDbInstance();
     if (!db) throw new Error("Firestore not available");
@@ -1265,9 +1274,15 @@ export class Storage {
     }
 
     const snapshot = await query.get();
-    const results = snapshot.docs
+    let results = snapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter((doc: any) => doc.needsReview === true || (doc.needsReview === undefined && doc.lastResult === 'incorrect'))
+      .filter((doc: any) => doc.needsReview === true || (doc.needsReview === undefined && doc.lastResult === 'incorrect'));
+
+    if (unitId) {
+      results = results.filter((doc: any) => doc.unitId === unitId);
+    }
+
+    results = results
       .sort((a: any, b: any) => {
         const aTime = a.lastAnsweredAt?.toDate ? a.lastAnsweredAt.toDate().getTime() : 0;
         const bTime = b.lastAnsweredAt?.toDate ? b.lastAnsweredAt.toDate().getTime() : 0;

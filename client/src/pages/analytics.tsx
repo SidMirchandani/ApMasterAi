@@ -10,7 +10,9 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
+  Crown,
 } from "lucide-react";
+import { APScoreCircle } from "@/components/ui/APScoreCircle";
 import Navigation from "@/components/ui/navigation";
 import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
@@ -230,7 +232,7 @@ export default function AnalyticsPage() {
             </p>
             <Button
               onClick={() => router.push(subjectId ? `/diagnostic?subject=${subjectId}` : "/diagnostic")}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 h-11 rounded-xl shadow-[0_4px_14px_rgba(220,38,38,0.3)]"
+              className="bg-rose-500 hover:bg-rose-600 text-white font-semibold px-6 h-11 rounded-xl shadow-md"
             >
               Take Quick Diagnostic Test
             </Button>
@@ -243,11 +245,12 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardContent className="p-4 text-center">
-                  <div
-                    className="mx-auto w-14 h-14 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-md mb-2"
-                    style={{ backgroundColor: subjectId && hasEnoughForPrediction ? predicted.color : "#9ca3af" }}
-                  >
-                    {subjectId && hasEnoughForPrediction ? predicted.score : "?"}
+                  <div className="mx-auto mb-2">
+                    <APScoreCircle
+                      score={subjectId && hasEnoughForPrediction ? predicted.score : null}
+                      color={subjectId && hasEnoughForPrediction ? predicted.color : "#9ca3af"}
+                      size="sm"
+                    />
                   </div>
                   <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex flex-wrap justify-center items-center gap-x-1 gap-y-0">
                     <span>Predicted</span>
@@ -512,10 +515,12 @@ export default function AnalyticsPage() {
                             )}
                             {pct < target5 && (
                               <div
-                                className="absolute top-0 bottom-0 w-1 bg-green-700 pointer-events-none z-10 rounded-sm"
-                                style={{ left: `${target5}%`, marginLeft: -2 }}
+                                className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10 flex items-center justify-center fill-[#FFD700] stroke-[#FFD700]"
+                                style={{ left: `${target5}%` }}
                                 aria-hidden
-                              />
+                              >
+                                <Crown size={14} strokeWidth={2} />
+                              </div>
                             )}
                             <Progress
                               value={unit.percentage}

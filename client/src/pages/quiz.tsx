@@ -31,7 +31,8 @@ interface Question {
   };
 }
 
-import { getApiCodeForSubject, getSectionCodeForUnit } from "@/subjects";
+import { getApiCodeForSubject, getSectionCodeForUnit, getUnitIdForSectionCode, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
+import { getDisplayCorrectLabel } from "@/lib/mcqDisplay";
 
 // Exam configurations: questions and time per test (2026 Digital/Hybrid standards)
 const EXAM_CONFIGS: { [key: string]: { questions: number; timeMinutes: number } } = {
@@ -325,7 +326,46 @@ export default function Quiz() {
           console.error("Failed to clear saved exam state:", deleteError);
         }
 
+        // Save wrong answers per unit with unit info so they appear in Review for that unit (await before redirect)
+        const subject = getSubjectByLegacyId(subjectId as string) || getSubjectByCode(subjectId as string);
+        const mcqOptionCount = subject?.metadata?.mcqOptionCount;
+        const trackPromises: Promise<unknown>[] = [];
+        questions.forEach((q, idx) => {
+          const displayCorrect = getDisplayCorrectLabel(q, mcqOptionCount);
+          const userAns = answersToUse[idx];
+          const isCorrect = userAns === displayCorrect;
+          if (!isCorrect && q.id) {
+            const sectionCode = q.section_code || "";
+            const unitId = getUnitIdForSectionCode(subjectId as string, sectionCode) || sectionCode || "unknown";
+            const promptStr =
+              q.prompt && typeof q.prompt === "string"
+                ? q.prompt
+                : Array.isArray(q.prompt_blocks)
+                  ? q.prompt_blocks
+                      .filter((b: any) => b?.type === "text" && b.value != null)
+                      .map((b: any) => String(b.value))
+                      .join(" ")
+                      .trim() || undefined
+                  : undefined;
+            trackPromises.push(
+              apiRequest("POST", "/api/user/questions/track", {
+                questionId: q.id,
+                subjectId,
+                unitId,
+                correct: false,
+                timeSpentSec: 0,
+                sectionCode,
+                prompt: promptStr,
+                choices: q.choices,
+                answerIndex: q.answerIndex,
+                explanation: q.explanation,
+              })
+            );
+          }
+        });
+        await Promise.all(trackPromises);
 
+        queryClient.invalidateQueries({ queryKey: ["dueReviews", subjectId, "all"] });
         // Redirect to the full-length results page
         if (testId) {
           router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);

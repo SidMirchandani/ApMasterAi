@@ -20,6 +20,7 @@ import {
   Flame,
   Lock,
   Sparkles,
+  Crown,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import SimpleFooter from "@/components/sections/simple-footer";
@@ -32,6 +33,7 @@ import { getUnitsForSubject, getSubjectByCode, getApiCodeForSubject } from "@/su
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { getPredictedAPScoreFromTests, computeProjectedPercentage, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
+import { APScoreCircle } from "@/components/ui/APScoreCircle";
 
 interface StudySubject {
   id: number;
@@ -119,6 +121,30 @@ export default function Study() {
   });
   const unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }> =
     unitProgressResponse?.data || {};
+
+  const { data: dueForSubjectResponse } = useQuery<{ success: boolean; data: { unitId?: string }[] }>({
+    queryKey: ["dueReviews", subjectId, "all"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/user/questions/due?subjectId=${subjectId}&limit=500`);
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!subjectId && isAuthenticated && !!user,
+    staleTime: 60000,
+  });
+  const dueForSubject = dueForSubjectResponse?.data || [];
+
+  const { data: bookmarksForSubjectResponse } = useQuery<{ success: boolean; data: { unitId?: string }[] }>({
+    queryKey: ["bookmarks", subjectId, "all"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/user/bookmarks?subjectId=${subjectId}`);
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!subjectId && isAuthenticated && !!user,
+    staleTime: 60000,
+  });
+  const bookmarksForSubject = bookmarksForSubjectResponse?.data || [];
 
   const subjectCode = subjectId ? getApiCodeForSubject(subjectId) : undefined;
   const targets = getTargetPercentagesForSubject(subjectCode);
@@ -228,12 +254,11 @@ export default function Study() {
                 className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center gap-1 flex-shrink-0 min-h-0"
                 title="Predicted AP Score"
               >
-                <div
-                  className="flex items-center justify-center w-14 h-14 rounded-full text-white text-2xl font-bold shadow-md"
-                  style={{ backgroundColor: predicted ? predicted.color : "#94a3b8" }}
-                >
-                  {predicted ? predicted.score : "?"}
-                </div>
+                <APScoreCircle
+                  score={predicted?.score ?? null}
+                  color={predicted ? predicted.color : "#94a3b8"}
+                  size="sm"
+                />
                 <APScoreExplainDialog inline triggerClassName="self-start mt-0.5" />
               </div>
               <div className="px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
@@ -269,7 +294,7 @@ export default function Study() {
               {/* Row 1 — Hero Diagnostic CTA (full width) */}
               <button
                 onClick={() => router.push(`/diagnostic?subject=${subjectId}`)}
-                className="group relative overflow-hidden rounded-xl p-6 w-full bg-red-600 text-white text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md active:translate-y-0"
+                className="group relative overflow-hidden rounded-xl p-6 w-full bg-rose-500 text-white text-left transition-all duration-150 ease-out hover:bg-rose-600 hover:-translate-y-[1px] hover:shadow-md active:translate-y-0"
               >
                 <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
                 <div className="relative z-10 flex items-center gap-4">
@@ -499,7 +524,6 @@ export default function Study() {
               const level = tierResult.label;
               const hasAttempted = score > 0;
               const isMastered = tierResult.tier === "5";
-
               /* 5-scale: Mastered=dark green, Proficient=medium green, In Progress=light green, Needs Practice=light red, Weak=dark red */
               const statusConfig = {
                 Mastered: {
@@ -559,15 +583,25 @@ export default function Study() {
                     className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${statusConfig.barColor} opacity-${isMastered ? "100" : "40"} group-hover:opacity-100 transition-opacity duration-150 ease-out`}
                   />
 
-                  <div className="flex flex-col md:flex-row pl-4">
+                  <div className="flex flex-col md:flex-row md:items-center pl-4">
                     {/* Main content */}
-                    <div className="p-5 flex-1 min-w-0">
+                    <div className="p-5 flex-1 min-w-0 md:min-w-[50%]">
                       <div className="flex items-start gap-4">
-                        {/* Unit number */}
-                        <div
-                          className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center font-black text-lg ${statusConfig.numBg} transition-colors`}
-                        >
-                          {index + 1}
+                        {/* Unit number + crown when mastered */}
+                        <div className="relative shrink-0">
+                          {isMastered && (
+                            <Crown
+                              className="absolute -top-1 left-1/2 -translate-x-1/2 fill-[#FFD700] stroke-[#FFD700] pointer-events-none z-10"
+                              size={16}
+                              strokeWidth={2}
+                              aria-hidden
+                            />
+                          )}
+                          <div
+                            className={`w-11 h-11 rounded-xl flex items-center justify-center font-black text-lg ${statusConfig.numBg} transition-colors`}
+                          >
+                            {index + 1}
+                          </div>
                         </div>
 
                         <div className="flex-1 min-w-0 space-y-1.5">
@@ -617,32 +651,22 @@ export default function Study() {
                       </div>
                     </div>
 
-                    {/* CTA */}
-                    <div className="px-5 pb-5 md:pb-0 md:w-52 flex items-center">
+                    {/* CTA: max 50% width, full text → short text → icons as narrow */}
+                    <div className="px-5 pb-5 md:pb-0 flex items-center flex-shrink-0 gap-2 flex-wrap justify-end md:justify-start md:max-w-[50%]">
                       <Button
                         onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)}
-                        className={`w-full h-11 font-bold rounded-xl transition-all duration-150 ease-out text-sm ${
+                        variant="outline"
+                        size="sm"
+                        title="Save questions you want to study later during the quiz"
+                        className={`h-11 font-semibold rounded-xl transition-all duration-150 ease-out text-sm shrink-0 min-w-0 ${
                           isMastered
-                            ? "bg-green-700 hover:bg-green-800 dark:bg-green-600 dark:hover:bg-green-700 text-white shadow-sm hover:shadow-md"
-                            : "bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-blue-500 group-hover:shadow-md"
+                            ? "bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/60 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+                            : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-600 hover:text-white text-slate-900 dark:text-white"
                         }`}
                       >
-                        {isMastered ? (
-                          <>
-                            <Star className="w-4 h-4 mr-2 fill-current" />
-                            Revisit
-                          </>
-                        ) : hasAttempted ? (
-                          <>
-                            <RotateCcw className="w-4 h-4 mr-2" />
-                            Keep Practicing
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-4 h-4 mr-2" />
-                            Start Quiz
-                          </>
-                        )}
+                        <Play className="w-4 h-4 flex-shrink-0 mr-1.5" />
+                        <span className="hidden xl:inline truncate">Take Quiz</span>
+                        <span className="xl:hidden truncate">Quiz</span>
                       </Button>
                     </div>
                   </div>

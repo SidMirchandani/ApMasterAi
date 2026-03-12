@@ -11,7 +11,7 @@ import { useRouter } from "next/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
-import { getSubjectByLegacyId, getSubjectByCode, getApiCodeForSubject } from '@/subjects';
+import { getSubjectByLegacyId, getSubjectByCode, getApiCodeForSubject, getUnitIdForSectionCode } from '@/subjects';
 import { getDisplayCorrectLabel, getStoredAnswerForSubmit } from '@/lib/mcqDisplay';
 import { getSubjectDisplayName } from '../../../../lib/subject-display-names';
 
@@ -266,6 +266,30 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         `/api/user/subjects/${subjectId}/delete-exam-state`
       );
 
+      // Save wrong answers per unit with unit info so they appear in Review for that unit (await before redirect)
+      const trackPromises: Promise<unknown>[] = [];
+      questions.forEach((q, idx) => {
+        const displayCorrect = getDisplayCorrectLabel(q, mcqOptionCount);
+        const userAns = userAnswers[idx];
+        const isCorrect = userAns === displayCorrect;
+        if (!isCorrect && q.id) {
+          const sectionCode = (q as any).section_code || "";
+          const unitId = getUnitIdForSectionCode(subjectId, sectionCode) || sectionCode || "unknown";
+          trackPromises.push(
+            apiRequest("POST", "/api/user/questions/track", {
+              questionId: q.id,
+              subjectId,
+              unitId,
+              correct: false,
+              timeSpentSec: 0,
+              sectionCode,
+            })
+          );
+        }
+      });
+      await Promise.all(trackPromises);
+
+      queryClient.invalidateQueries({ queryKey: ["dueReviews", subjectId, "all"] });
       router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
     } catch (error) {
       console.error("Error submitting test:", error);

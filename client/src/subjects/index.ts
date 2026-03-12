@@ -116,6 +116,21 @@ export function getSectionCodeForUnit(subjectId: string, unitId: string): string
   return section?.code;
 }
 
+/** Get unit id (e.g. "unit1") for a section code (e.g. "BEC") so wrong answers can be tracked per unit. */
+export function getUnitIdForSectionCode(subjectIdOrCode: string, sectionCode: string): string | undefined {
+  const subject = getSubjectByLegacyId(subjectIdOrCode) || getSubjectByCode(subjectIdOrCode);
+  if (!subject) return undefined;
+  const entry = Object.entries(subject.sections).find(([, s]) => s.code === sectionCode);
+  return entry ? entry[0] : undefined;
+}
+
+/** Get display label like "Unit 1", "Unit 2" for a unit id. */
+export function getUnitDisplayLabel(subjectIdOrCode: string, unitId: string): string {
+  const units = getUnitsForSubject(subjectIdOrCode);
+  const idx = units.findIndex((u) => u.id === unitId);
+  return idx >= 0 ? `Unit ${idx + 1}` : unitId;
+}
+
 export function getSectionByCode(subjectIdOrCode: string, sectionCode: string): { code: string; name: string; unitNumber: number } | undefined {
   let subject = getSubjectByLegacyId(subjectIdOrCode) || getSubjectByCode(subjectIdOrCode);
   if (!subject) return undefined;

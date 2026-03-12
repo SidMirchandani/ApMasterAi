@@ -21,7 +21,8 @@ export default async function handler(
     const userId = decodedToken.uid;
 
     const subjectId = req.query.subjectId as string | undefined;
-    const bookmarks = await storage.getBookmarks(userId, subjectId);
+    const unitId = req.query.unitId as string | undefined;
+    const bookmarks = await storage.getBookmarks(userId, subjectId, unitId);
     return res.status(200).json({ success: true, data: bookmarks });
   } catch (error) {
     console.error("Error getting bookmarks:", error);

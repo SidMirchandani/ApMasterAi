@@ -91,10 +91,10 @@ export function ReportQuestionDialog({
         {submitted ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <CheckCircle className="w-10 h-10 text-green-500" />
-            <p className="text-base font-medium text-gray-800 dark:text-gray-200">
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
               Thanks for your report!
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               We'll review this question and fix any issues.
             </p>
           </div>
@@ -135,7 +135,7 @@ export function ReportQuestionDialog({
               </div>
 
               {error && (
-                <p className="text-sm text-red-500">{error}</p>
+                <p className="text-xs text-red-500">{error}</p>
               )}
             </div>
 

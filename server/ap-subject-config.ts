@@ -377,6 +377,17 @@ export const DIAGNOSTIC_UNIT_WEIGHTS: Record<string, Record<string, number>> = {
     APIB: 12.5,
     PP: 23.5,
   },
+  APSTATS: {
+    EOV: 19,
+    ETV: 6,
+    CD: 13.5,
+    PRD: 15,
+    SD: 9.5,
+    ICP: 13.5,
+    IQM: 14,
+    ICC: 3.5,
+    IQS: 3.5,
+  },
 };
 
 export function getDiagnosticWeightsForSubject(subjectCode: string): Record<string, number> | null {
@@ -406,6 +417,7 @@ export const DIAGNOSTIC_UNIT_DISTRIBUTIONS: Record<string, Record<string, number
   APWORLD:   { GT: 3, NE: 3, LBE: 3, TI: 3, REV: 4, COI: 3, GC: 2, CWD: 2, GLO: 2 },
   APPHYS1:   { KIN: 3, FTD: 5, WEP: 5, LMO: 3, TRD: 3, EMR: 2, OSC: 2, FLU: 2 },
   APPHYS2:   { THD: 4, EFP: 4, EC: 4, MEI: 3, GPO: 4, WPO: 3, MOD: 3 },
+  APSTATS:   { EOV: 5, ETV: 2, CD: 3, PRD: 4, SD: 2, ICP: 3, IQM: 4, ICC: 1, IQS: 1 },
 };
 
 /**
