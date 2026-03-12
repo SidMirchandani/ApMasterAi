@@ -52,12 +52,17 @@ export default function Courses() {
       return response.json();
     },
     enabled: isAuthenticated,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 
   const addedSubjectIds = new Set(
     (subjectsResponse?.data || []).map((s: any) => s.subjectId),
+  );
+
+  const archivedAddedSubjectIds = new Set(
+    (subjectsResponse?.data || [])
+      .filter((s: any) => s.archived === true)
+      .map((s: any) => s.subjectId),
   );
 
   const addSubjectMutation = useMutation({
@@ -211,7 +216,7 @@ export default function Courses() {
               Choose Your <span className="text-gradient">AP Subject</span>
             </h1>
             <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-4">
-              Select an AP course to add to your dashboard and start your personalized learning journey.
+              Add a course to your dashboard and start your personalized learning journey.
             </p>
             <div className="max-w-md mx-auto relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -276,7 +281,7 @@ export default function Courses() {
                         className="w-full rounded-xl h-11 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-2 border-blue-200 dark:border-blue-800/50 font-semibold cursor-default"
                       >
                         <Check className="mr-2 w-4 h-4" />
-                        {isAdding ? "Adding..." : "Added to Dashboard"}
+                        {isAdding ? "Adding..." : archivedAddedSubjectIds.has(subject.id) ? "Added to Dashboard (Archived)" : "Added to Dashboard"}
                       </Button>
                     ) : (
                       <Button
