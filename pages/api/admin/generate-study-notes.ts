@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getModelName, getGeminiClientOptions } from "../../../lib/gemini-models";
+import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 
 export const config = {
   api: {
@@ -59,15 +60,18 @@ async function callWithRetry(
   throw lastError;
 }
 
-const STUDY_NOTE_PROMPT = `You are writing a Study Note for someone who has NOT studied this topic yet. Your goal is to explain the core concept so they can understand it on first read.
+const STUDY_NOTE_PROMPT = `You are an Expert AP Exam Tutor. Your task is to write a "Study Note" that teaches how to answer this type of question on the exam. The note will be used as a reusable study tool—synthesize the concept; do not just repeat the explanation.
 
-Instructions:
-- Extract the main idea being tested and write a single Study Note paragraph (max 3–4 sentences).
-- Use simple, clear language: short sentences, everyday words where possible. Avoid jargon unless necessary; when you use a technical term, briefly explain it in plain language.
-- Keep all technical details and facts accurate—simplify how you say it, not what you say.
-- Do not mention the specific question or answer choices.
-- State the concept as a clear takeaway: what they need to know and why it matters.
-- Format for readability: use line breaks if it helps; no labels or "Study Note:" prefix in your output.
+Subject: {{SUBJECT}}
+
+Guidelines:
+- **Core Concept:** Define the overarching concept or rule being tested.
+- **How-To:** Give explicit steps or logic to reach the answer (e.g. "To find X, first identify Y, then…").
+- **Quantitative (Chem, Physics, Calc, Econ):** If the item involves math, state the formula, define variables, explain the relationship, and outline calculation steps. Use LaTeX for all equations: inline math with $...$ and display math with $$...$$. Use only these delimiters—no other equation formats. Example: "The relationship is $F = ma$ where $F$ is force."
+- **Qualitative (History, Gov, Psych, Bio):** If theoretical, explain historical context, cause–effect, or framework that makes the correct answer right and distractors wrong.
+- **Trick:** Briefly call out common traps, misconceptions, or "AP tricks" in the question or wrong choices.
+- **Tone:** Scannable, encouraging, test-prep only. 2–3 paragraphs, 5–6 sentences total.
+- **Format:** Plain text output only. Use line breaks between paragraphs. No "Study Note:" or section labels in your output. For any mathematics or formulas you must use LaTeX: $...$ for inline, $$...$$ for display. No other equation syntax.
 
 Question:
 {{QUESTION}}
@@ -77,7 +81,7 @@ Correct Answer: {{ANSWER}}
 Explanation:
 {{EXPLANATION}}
 
-Study Note (plain text only):`;
+Study Note (plain text; use $...$ and $$...$$ for equations):`;
 
 export default async function handler(
   req: NextApiRequest,
@@ -202,7 +206,9 @@ export default async function handler(
         message: `Generating study note for Q${i + 1}/${total}...`,
       });
 
-      const promptText = STUDY_NOTE_PROMPT.replace("{{QUESTION}}", questionText)
+      const subjectName = getSubjectDisplayName(question.subject_code || "") || "AP";
+      const promptText = STUDY_NOTE_PROMPT.replace("{{SUBJECT}}", subjectName)
+        .replace("{{QUESTION}}", questionText)
         .replace("{{ANSWER}}", answer)
         .replace("{{EXPLANATION}}", explanation);
 

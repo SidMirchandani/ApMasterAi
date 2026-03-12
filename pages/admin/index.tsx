@@ -12,7 +12,7 @@ import {
   browserPopupRedirectResolver,
 } from "firebase/auth";
 import toast, { Toaster } from "react-hot-toast";
-import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square } from "lucide-react";
+import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square, Pencil } from "lucide-react";
 import { Progress } from "../../client/src/components/ui/progress";
 import Link from "next/link";
 import { Button } from "../../client/src/components/ui/button";
@@ -33,6 +33,7 @@ import { AdminDashboardLayout } from "../../client/src/components/admin/AdminDas
 import { AdminInsightsTab } from "../../client/src/components/admin/AdminInsightsTab";
 import { AdminUsersTab } from "../../client/src/components/admin/AdminUsersTab";
 import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../lib/subject-display-names";
+import { ExplanationMarkdown } from "../../client/src/components/ui/ExplanationMarkdown";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -1620,9 +1621,14 @@ function Row({
     choicesText: Array.isArray(q.choices) ? q.choices.join("\n") : "",
     answerIndex: q.answerIndex || 0,
     explanation: q.explanation || "",
+    study_note: getStudyNoteFromQuestion(q) || "",
   });
 
   async function save() {
+    const existingTags: string[] = q.tags || [];
+    const otherTags = existingTags.filter((t) => typeof t !== "string" || !t.startsWith("study_note:"));
+    const updatedTags = [...otherTags, `study_note: ${form.study_note.trim()}`];
+
     const patch: Partial<Question> = {
       subject_code: form.subject_code,
       section_code: form.section_code,
@@ -1633,6 +1639,7 @@ function Row({
         .filter(Boolean),
       answerIndex: Number(form.answerIndex),
       explanation: form.explanation,
+      tags: updatedTags,
     };
     await onSave(q.id, patch);
     setEdit(false);
@@ -1644,7 +1651,7 @@ function Row({
         <div className="text-xs space-y-1 break-words">
           {q.prompt_blocks.map((block, idx) => {
             if (block.type === "text") {
-              return <div key={idx} className="line-clamp-3">{block.value}</div>;
+              return <div key={idx}>{block.value}</div>;
             } else if (block.type === "image") {
               const imgSrc = getImageUrl(block.url);
               return (
@@ -1699,7 +1706,7 @@ function Row({
             })}
           </div>
         )}
-        {hasText && <div className="line-clamp-3">{q.prompt}</div>}
+        {hasText && <div>{q.prompt}</div>}
       </div>
     );
   };
@@ -1785,50 +1792,72 @@ function Row({
         </td>
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">{q.subject_code ? getSubjectDisplayName(q.subject_code) : "-"}</td>
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">{q.section_code || "-"}</td>
-        <td className="p-2 align-top min-w-[200px] max-w-[300px]" title={q.prompt_blocks ? q.prompt_blocks.filter((b): b is Block => b.type === "text").map(b => (b as { value: string }).value).join(" ") : (q.prompt || "")}>
-          {renderQuestionPrompt()}
+        <td className="p-2 align-top min-w-[200px] max-w-[300px]">
+          <div className="flex items-start gap-1">
+            <div className="max-h-[240px] overflow-y-auto flex-1 min-w-0" title={q.prompt_blocks ? q.prompt_blocks.filter((b): b is Block => b.type === "text").map(b => (b as { value: string }).value).join(" ") : (q.prompt || "")}>
+              {renderQuestionPrompt()}
+            </div>
+            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
+          </div>
         </td>
         <td className="p-2 align-top min-w-[200px] max-w-[300px]">
-          <div className="text-xs space-y-1">
-            {(['A', 'B', 'C', 'D', 'E'] as const).map((letter) => (
-              <div key={letter} className="break-words line-clamp-2">
-                <span className="font-medium">{letter}.</span> {renderChoice(letter)}
-              </div>
-            ))}
+          <div className="flex items-start gap-1">
+            <div className="max-h-[240px] overflow-y-auto text-xs space-y-1 flex-1 min-w-0">
+              {(['A', 'B', 'C', 'D', 'E'] as const).map((letter) => (
+                <div key={letter} className="break-words">
+                  <span className="font-medium">{letter}.</span> {renderChoice(letter)}
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
           </div>
         </td>
         <td className="p-2 text-center align-top font-semibold text-xs">
-          ({String.fromCharCode(65 + q.answerIndex)})
-        </td>
-        <td className="p-2 align-top text-xs break-words overflow-hidden min-w-[200px] max-w-[300px]">
-          <div className="line-clamp-3" title={q.explanation || ""}>
-            <span dangerouslySetInnerHTML={{ __html: renderSimpleMarkdownHtml(q.explanation || "-") }} />
+          <div className="flex items-center justify-center gap-1">
+            <span>({String.fromCharCode(65 + q.answerIndex)})</span>
+            <button type="button" onClick={() => setEdit(true)} className="p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
           </div>
         </td>
-        <td className="p-2 align-top text-xs break-words overflow-hidden min-w-[200px] max-w-[320px]">
-          <div className="line-clamp-5 whitespace-pre-wrap" title={getStudyNoteFromQuestion(q) || ""}>
-            <span
-              className="block text-slate-700 dark:text-slate-300 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: renderStudyNotesHtml(getStudyNoteFromQuestion(q) || "-") }}
-            />
+        <td className="p-2 align-top text-xs break-words min-w-[200px] max-w-[300px]">
+          <div className="flex items-start gap-1">
+            <div className="max-h-[240px] overflow-y-auto flex-1 min-w-0" title={q.explanation || ""}>
+              <span dangerouslySetInnerHTML={{ __html: renderSimpleMarkdownHtml(q.explanation || "-") }} />
+            </div>
+            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
+          </div>
+        </td>
+        <td className="p-2 align-top text-xs break-words min-w-[200px] max-w-[320px]">
+          <div className="flex items-start gap-1">
+            <div className="max-h-[240px] overflow-y-auto flex-1 min-w-0 text-slate-700 dark:text-slate-300 leading-relaxed">
+              <ExplanationMarkdown className="text-xs prose-p:my-0.5">{getStudyNoteFromQuestion(q) || "-"}</ExplanationMarkdown>
+            </div>
+            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
           </div>
         </td>
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">
           {getDifficultyFromQuestion(q) || "-"}
         </td>
-        <td className="p-2 align-top text-xs break-words overflow-hidden dark:text-slate-300">
-          <div className="line-clamp-3">{getReasoningFromQuestion(q) || "-"}</div>
-        </td>
-        <td className="p-2 align-top text-xs break-words overflow-hidden">
-          {(q.tags || []).includes("error_reported") ? (
-            <div className="space-y-1">
-              <div className="text-red-600 dark:text-red-400 font-medium line-clamp-2">
-                {getErrorReasonFromQuestion(q) || "Reported"}
-              </div>
+        <td className="p-2 align-top text-xs break-words dark:text-slate-300">
+          <div className="flex items-start gap-1">
+            <div className="max-h-[240px] overflow-y-auto flex-1 min-w-0">
+              {getReasoningFromQuestion(q) || "-"}
             </div>
-          ) : (
-            <span className="text-slate-400">-</span>
-          )}
+            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
+          </div>
+        </td>
+        <td className="p-2 align-top text-xs break-words">
+          <div className="flex items-start gap-1">
+            <div className="max-h-[240px] overflow-y-auto flex-1 min-w-0">
+              {(q.tags || []).includes("error_reported") ? (
+                <div className="text-red-600 dark:text-red-400 font-medium">
+                  {getErrorReasonFromQuestion(q) || "Reported"}
+                </div>
+              ) : (
+                <span className="text-slate-400">-</span>
+              )}
+            </div>
+            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
+          </div>
         </td>
         <td className="p-2 text-center align-top">
           <div className="flex gap-1 justify-center flex-col">
@@ -1929,16 +1958,17 @@ function Row({
         />
       </td>
       <td className="p-2 align-top text-xs min-w-[200px] max-w-[320px]">
-        <div className="line-clamp-5 text-slate-700 dark:text-slate-300 leading-relaxed">
-          <span
-            dangerouslySetInnerHTML={{ __html: renderStudyNotesHtml(getStudyNoteFromQuestion(q) || "-") }}
-          />
-        </div>
+        <textarea
+          className="w-full border rounded p-2 min-h-[80px] max-h-[240px] dark:bg-slate-800 dark:text-white dark:border-slate-700"
+          value={form.study_note}
+          onChange={(e) => setForm((s) => ({ ...s, study_note: e.target.value }))}
+          placeholder="Study note..."
+        />
       </td>
       <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
         {getDifficultyFromQuestion(q) || "-"}
       </td>
-      <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400 line-clamp-3">
+      <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400 max-h-[240px] overflow-y-auto">
         {getReasoningFromQuestion(q) || "-"}
       </td>
       <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">

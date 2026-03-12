@@ -29,7 +29,6 @@
     "incremental": true,
     "strict": false, // ✅ disables strict null checks, etc.
     "noImplicitAny": false, // 🔑 (extra looseness: allow implicit any)
-    "suppressImplicitAnyIndexErrors": true // 🔑 prevents index signature errors
   },
   "include": [
     "next-env.d.ts",
