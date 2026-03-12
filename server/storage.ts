@@ -974,6 +974,78 @@ export class Storage {
     }
   }
 
+  async saveUnitQuizState(
+    userId: string,
+    subjectId: string,
+    unitId: string,
+    state: { questionIds: string[]; currentQuestionIndex: number; userAnswers: { [key: number]: string }; flaggedQuestions?: number[]; timeElapsed?: number }
+  ): Promise<void> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      const savedUnitQuizState = data.savedUnitQuizState || {};
+      savedUnitQuizState[unitId] = {
+        ...state,
+        savedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      await doc.ref.update({ savedUnitQuizState });
+    }
+  }
+
+  async getUnitQuizState(
+    userId: string,
+    subjectId: string,
+    unitId: string
+  ): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (snapshot.empty) return null;
+    const data = snapshot.docs[0].data();
+    const savedUnitQuizState = data.savedUnitQuizState || {};
+    return savedUnitQuizState[unitId] || null;
+  }
+
+  async deleteUnitQuizState(
+    userId: string,
+    subjectId: string,
+    unitId: string
+  ): Promise<void> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      await doc.ref.update({
+        [`savedUnitQuizState.${unitId}`]: admin.firestore.FieldValue.delete(),
+      });
+    }
+  }
+
   async getSectionReviewData(userId: string, subjectId: string, testId: string, sectionCode: string): Promise<any> {
     await this.ensureConnection();
     const db = this.getDbInstance();

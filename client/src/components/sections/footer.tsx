@@ -13,13 +13,7 @@ export default function Footer() {
   return (
     <>
       {/* CTA Banner */}
-      <section className="relative py-20 md:py-28 bg-slate-950 overflow-hidden">
-        {/* Glow bg */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-emerald-500/10 rounded-full blur-[120px]" />
-          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-violet-500/8 rounded-full blur-[100px]" />
-          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-cyan-500/8 rounded-full blur-[80px]" />
-        </div>
+      <section className="relative py-20 md:py-28 bg-[#0B0F1A] overflow-hidden">
 
         {/* Dot grid */}
         <div
@@ -32,16 +26,16 @@ export default function Footer() {
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-8">
-            <GraduationCap className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm font-semibold text-emerald-300">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 mb-8">
+            <GraduationCap className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-semibold text-blue-300">
               Join 5,000+ students already acing their AP exams
             </span>
           </div>
 
           <h2 className="text-4xl sm:text-5xl md:text-6xl font-display font-extrabold text-white mb-6 tracking-tight leading-tight">
             Ready to Score a{" "}
-            <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-400 to-blue-400 bg-clip-text text-transparent">
               5?
             </span>
           </h2>
@@ -53,13 +47,13 @@ export default function Footer() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/signup">
-              <button className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold px-8 py-4 rounded-2xl transition-all duration-300 shadow-[0_8px_32px_rgba(16,185,129,0.35)] hover:shadow-[0_12px_40px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 text-base group">
+              <button className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400 text-white font-bold px-8 py-4 rounded-xl transition-all duration-150 ease-out shadow-sm hover:shadow-md hover:-translate-y-[1px] hover:scale-[1.02] active:scale-[0.98] text-base group">
                 Start Learning Free
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
             </Link>
             <Link href="/learn">
-              <button className="inline-flex items-center justify-center gap-2 border-2 border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white font-bold px-8 py-4 rounded-2xl transition-all duration-300 hover:bg-slate-800/50 text-base">
+              <button className="inline-flex items-center justify-center gap-2 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white font-bold px-8 py-4 rounded-xl transition-all duration-150 ease-out hover:bg-slate-800/50 text-base">
                 Browse Courses
               </button>
             </Link>
@@ -68,15 +62,9 @@ export default function Footer() {
       </section>
 
       {/* Footer */}
-      <footer className="relative bg-slate-950 text-white overflow-hidden border-t border-slate-800/60">
+      <footer className="relative bg-[#0B0F1A] text-white overflow-hidden border-t border-slate-800">
         {/* Gradient separator */}
-        <div className="h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
-
-        {/* Subtle mesh */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[300px] bg-emerald-500/3 rounded-full blur-[120px]" />
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[300px] bg-violet-500/3 rounded-full blur-[120px]" />
-        </div>
+        <div className="h-px bg-slate-800" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-14 pb-10">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-12">
@@ -84,7 +72,7 @@ export default function Footer() {
             {/* Brand column */}
             <div className="md:col-span-5">
               <Link href="/" className="inline-flex items-center gap-2.5 mb-5 group">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-[0_4px_12px_rgba(16,185,129,0.3)]">
+                <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-display font-bold">
@@ -107,9 +95,9 @@ export default function Footer() {
                     key={label}
                     href={href}
                     title={label}
-                    className="group/social w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-emerald-500/20 border border-slate-700/50 hover:border-emerald-500/40 flex items-center justify-center transition-all duration-300"
+                    className="group/social w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-blue-500/20 border border-slate-700/50 hover:border-blue-500/40 flex items-center justify-center transition-all duration-150 ease-out"
                   >
-                    <Icon className="w-4 h-4 text-slate-400 group-hover/social:text-emerald-400 transition-colors" />
+                    <Icon className="w-4 h-4 text-slate-400 group-hover/social:text-blue-400 transition-colors" />
                   </a>
                 ))}
               </div>
@@ -134,10 +122,10 @@ export default function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="group/link flex items-center gap-1.5 text-slate-400 hover:text-emerald-400 transition-colors text-sm font-medium"
+                      className="group/link flex items-center gap-1.5 text-slate-400 hover:text-blue-400 transition-colors duration-150 ease-out text-sm font-medium"
                     >
                       {link.label}
-                      <ArrowUpRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all duration-200" />
+                      <ArrowUpRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all duration-150" />
                     </Link>
                   </li>
                 ))}
@@ -159,10 +147,10 @@ export default function Footer() {
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="group/link flex items-center gap-1.5 text-slate-400 hover:text-emerald-400 transition-colors text-sm font-medium"
+                      className="group/link flex items-center gap-1.5 text-slate-400 hover:text-blue-400 transition-colors duration-150 ease-out text-sm font-medium"
                     >
                       {link.label}
-                      <ArrowUpRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all duration-200" />
+                      <ArrowUpRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all duration-150" />
                     </a>
                   </li>
                 ))}

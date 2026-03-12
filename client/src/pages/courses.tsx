@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 import Navigation from "@/components/ui/navigation";
+import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
@@ -105,7 +106,7 @@ export default function Courses() {
         description: (
           <>
             {subject.name} has been added to your{" "}
-            <Link href="/dashboard" className="font-bold text-green-600 dark:text-green-400 hover:underline">
+            <Link href="/dashboard" className="font-bold text-blue-600 dark:text-blue-400 hover:underline">
               Dashboard
             </Link>
             .
@@ -180,11 +181,11 @@ export default function Courses() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex items-center justify-center">
         <div className="text-center">
           <div className="relative w-10 h-10 mx-auto mb-4">
-            <div className="absolute inset-0 rounded-full border-2 border-emerald-200 dark:border-emerald-800" />
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-500 animate-spin" />
+            <div className="absolute inset-0 rounded-full border-2 border-blue-200 dark:border-blue-800" />
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
           </div>
           <p className="text-slate-500 dark:text-slate-400 font-medium">Loading...</p>
         </div>
@@ -195,20 +196,16 @@ export default function Courses() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-400/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-violet-400/8 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] relative overflow-hidden">
 
       <Navigation />
 
       <div className="py-8 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20 mb-4">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">Courses</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200/60 dark:border-blue-500/20 mb-4">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">Courses</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-3">
               Choose Your <span className="text-gradient">AP Subject</span>
@@ -223,13 +220,13 @@ export default function Courses() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search AP subjects..."
-                className="w-full pl-11 pr-4 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                className="w-full pl-11 pr-4 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all duration-150 ease-out"
               />
             </div>
           </div>
 
           {filteredSubjects.length === 0 && searchQuery.trim() && (
-            <div className="text-center py-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+            <div className="text-center py-12 rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-sm">
               <p className="text-slate-500 dark:text-slate-400">
                 No subjects match &quot;{searchQuery}&quot;. Try a different search term.
               </p>
@@ -246,10 +243,10 @@ export default function Courses() {
               return (
                 <Card
                   key={subject.id}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden hover:border-emerald-200 dark:hover:border-emerald-800/50 hover:shadow-xl transition-all duration-300 group"
+                  className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden hover:border-blue-200 dark:hover:border-blue-800/50 hover:shadow-md hover:-translate-y-[1px] transition-all duration-150 ease-out group"
                 >
                   <CardHeader className="pb-3 pt-5 px-6">
-                    <CardTitle className="text-lg font-display font-bold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                    <CardTitle className="text-lg font-display font-bold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors duration-150 ease-out">
                       {subject.name}
                     </CardTitle>
                     <CardDescription className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-2">
@@ -260,13 +257,13 @@ export default function Courses() {
                   <CardContent className="px-6 pb-6">
                     <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 mb-4">
                       <div className="flex items-center gap-1.5">
-                        <BookOpen className="w-4 h-4 text-emerald-500" />
+                        <BookOpen className="w-4 h-4 text-blue-500" />
                         <span className="font-medium text-slate-700 dark:text-slate-300">
                           {subject.units} Units
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-violet-500" />
+                        <Clock className="w-4 h-4 text-blue-500" />
                         <span className="font-medium text-slate-700 dark:text-slate-300">
                           {formatDate(subject.examDate)}
                         </span>
@@ -276,7 +273,7 @@ export default function Courses() {
                     {isAdded ? (
                       <Button
                         disabled
-                        className="w-full rounded-xl h-11 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-2 border-emerald-200 dark:border-emerald-800/50 font-semibold cursor-default"
+                        className="w-full rounded-xl h-11 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-2 border-blue-200 dark:border-blue-800/50 font-semibold cursor-default"
                       >
                         <Check className="mr-2 w-4 h-4" />
                         {isAdding ? "Adding..." : "Added to Dashboard"}
@@ -284,7 +281,7 @@ export default function Courses() {
                     ) : (
                       <Button
                         onClick={() => handleAddToDashboard(subject)}
-                        className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl h-11 font-semibold shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] transition-all"
+                        className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl h-11 font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98]"
                       >
                         Add to Dashboard
                         <ArrowRight className="ml-2 w-4 h-4" />
@@ -297,6 +294,7 @@ export default function Courses() {
           </div>
         </div>
       </div>
+      <SimpleFooter />
     </div>
   );
 }

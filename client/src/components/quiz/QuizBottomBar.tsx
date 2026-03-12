@@ -33,11 +33,11 @@ export function QuizBottomBar({
   subjectId,
 }: QuizBottomBarProps) {
   return (
-    <div className="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-[0_-4px_20px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.2)]">
+    <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-display font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="text-sm font-display font-bold text-blue-600 dark:text-blue-400">
               APMaster
             </span>
           </div>
@@ -60,7 +60,7 @@ export function QuizBottomBar({
               <Button
                 variant="outline"
                 onClick={onReportError}
-                className="text-rose-600 border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl text-sm font-medium"
+                className="text-red-600 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl text-sm font-medium"
                 title="Report Error"
               >
                 <AlertTriangle className="h-4 w-4 flex-shrink-0 sm:mr-1" />
@@ -72,7 +72,7 @@ export function QuizBottomBar({
                 variant="outline"
                 onClick={onPrevious}
                 disabled={!canGoPrevious}
-                className="flex items-center gap-2 rounded-xl border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 min-w-[2.25rem] sm:min-w-0"
+                className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 min-w-[2.25rem] sm:min-w-0 transition-all duration-150 ease-out"
                 title={currentQuestion === 0 ? "Back" : "Previous"}
               >
                 <ChevronLeft className="h-4 w-4 flex-shrink-0" />
@@ -81,7 +81,7 @@ export function QuizBottomBar({
               {onReview ? (
                 <Button
                   onClick={onReview}
-                  className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white flex items-center gap-2 rounded-xl shadow-[0_4px_14px_rgba(16,185,129,0.25)] min-w-[2.25rem] sm:min-w-0"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white flex items-center gap-2 rounded-xl shadow-sm hover:shadow-md min-w-[2.25rem] sm:min-w-0 transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98]"
                   title="Next"
                 >
                   <span className="hidden sm:inline">Next</span>
@@ -91,7 +91,7 @@ export function QuizBottomBar({
                 <Button
                   onClick={onNext}
                   disabled={!canGoNext}
-                  className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white flex items-center gap-2 rounded-xl shadow-[0_4px_14px_rgba(16,185,129,0.25)] min-w-[2.25rem] sm:min-w-0"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white flex items-center gap-2 rounded-xl shadow-sm hover:shadow-md min-w-[2.25rem] sm:min-w-0 transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98]"
                   title="Next"
                 >
                   <span className="hidden sm:inline">Next</span>

@@ -82,9 +82,9 @@ export function QuestionCard({
   const shouldShowCorrectness = isAnswerSubmitted || isFullLength;
 
   return (
-    <Card className={`rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm ${isFlagged ? "ring-2 ring-rose-400 dark:ring-rose-500" : ""}`}>
+    <Card className={`rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm transition-all duration-150 ease-out ${isFlagged ? "ring-2 ring-red-400 dark:ring-red-500" : ""}`}>
       <CardHeader className="pb-1 pt-2">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-slate-50 dark:bg-slate-800/50 min-h-[48px] rounded-t-2xl">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-slate-50 dark:bg-slate-800/50 min-h-[48px] rounded-t-xl">
           <div className="flex items-center gap-2">
             {!hidePracticeQuizElements && (
               <div className="bg-slate-900 dark:bg-slate-700 text-white px-2.5 py-0.5 font-bold text-xs rounded-lg">
@@ -95,7 +95,7 @@ export function QuestionCard({
               <button
                 onClick={onToggleFlag}
                 className={`flex items-center gap-1 text-xs font-medium rounded-lg px-1.5 py-0.5 transition-colors ${
-                  isFlagged ? "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                  isFlagged ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
                 }`}
               >
                 <Flag className={`h-3 w-3 ${isFlagged ? "fill-current" : ""}`} />
@@ -107,7 +107,7 @@ export function QuestionCard({
             {onToggleBookmark && (
               <button
                 onClick={onToggleBookmark}
-                className={`p-1 rounded-lg transition-colors ${isBookmarked ? "text-amber-500" : "text-slate-400 hover:text-amber-500"}`}
+                className={`p-1 rounded-lg transition-colors duration-150 ease-out ${isBookmarked ? "text-blue-500" : "text-slate-400 hover:text-blue-500"}`}
                 title={isBookmarked ? "Remove bookmark" : "Bookmark this question"}
               >
                 <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
@@ -143,9 +143,10 @@ export function QuestionCard({
               const isCorrectAnswer = label === displayCorrectLabel;
               const isCrossedOut = crossedOut.has(label);
 
-              // Determine the background and border color for this choice
-              let bgColor = "bg-white dark:bg-slate-800";
-              let borderColor = "border-slate-200 dark:border-slate-600";
+              // Quiz option states: default, hover, selected (blue), correct (green), incorrect (red)
+              let bgColor = "bg-white dark:bg-slate-800/50";
+              let borderColor = "border border-slate-200 dark:border-slate-800";
+              let ringClass = "";
               let opacity = "opacity-100";
 
               if (isCrossedOut && !isAnswerSubmitted && !isReviewMode) {
@@ -153,48 +154,58 @@ export function QuestionCard({
               }
 
               if (cheatMode && isCorrectAnswer && !isAnswerSubmitted && !isReviewMode) {
-                bgColor = "bg-green-50 dark:bg-green-900/30";
-                borderColor = "border-green-300 dark:border-green-600";
-              }
-
-              if (isReviewMode) {
+                ringClass = "ring-2 ring-green-500";
+                bgColor = "bg-green-50 dark:bg-green-500/10";
+                borderColor = "border-green-500 dark:border-green-600";
+              } else if (isReviewMode) {
                 if (isUserAnswer && isCorrect) {
-                  bgColor = "bg-green-50 dark:bg-green-900/30";
+                  ringClass = "ring-2 ring-green-500";
+                  bgColor = "bg-green-50 dark:bg-green-500/10";
                   borderColor = "border-green-500";
                 } else if (isUserAnswer && !isCorrect) {
-                  bgColor = "bg-red-50 dark:bg-red-900/30";
+                  ringClass = "ring-2 ring-red-500";
+                  bgColor = "bg-red-50 dark:bg-red-500/10";
                   borderColor = "border-red-500";
                 } else if (isCorrectAnswer && !isCorrect) {
-                  bgColor = "bg-green-50 dark:bg-green-900/30";
+                  ringClass = "ring-2 ring-green-500";
+                  bgColor = "bg-green-50 dark:bg-green-500/10";
                   borderColor = "border-green-500";
                 }
               } else if (isAnswerSubmitted) {
                 if (isUserAnswer && isCorrect) {
-                  bgColor = "bg-green-50 dark:bg-green-900/30";
+                  ringClass = "ring-2 ring-green-500";
+                  bgColor = "bg-green-50 dark:bg-green-500/10";
                   borderColor = "border-green-500";
                 } else if (isUserAnswer && !isCorrect) {
-                  bgColor = "bg-red-50 dark:bg-red-900/30";
+                  ringClass = "ring-2 ring-red-500";
+                  bgColor = "bg-red-50 dark:bg-red-500/10";
                   borderColor = "border-red-500";
                 } else if (isCorrectAnswer && !isCorrect) {
-                  bgColor = "bg-green-50 dark:bg-green-900/30";
+                  ringClass = "ring-2 ring-green-500";
+                  bgColor = "bg-green-50 dark:bg-green-500/10";
                   borderColor = "border-green-500";
                 }
               } else if (isUserAnswer) {
-                borderColor = "border-blue-600";
+                ringClass = "ring-2 ring-blue-500";
+                bgColor = "bg-blue-50 dark:bg-blue-500/10";
+                borderColor = "border-blue-500";
               }
+
+              const isInteractive = !shouldShowCorrectness && !isAnswerSubmitted;
+              const hoverRing = isInteractive ? "hover:ring-1 hover:ring-blue-400/40" : "";
 
               return (
                 <div
                   key={label}
-                  className={`flex items-center gap-2 p-3 rounded border transition-all cursor-pointer min-h-[48px] relative group/choice
-                    ${bgColor} ${borderColor} ${opacity}
-                    ${!shouldShowCorrectness && !isUserAnswer ? "hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500" : ""}
+                  className={`flex items-center gap-2 p-3 rounded-xl border transition-all duration-150 ease-out cursor-pointer min-h-[48px] relative group/choice
+                    ${bgColor} ${borderColor} ${ringClass} ${opacity}
+                    ${isInteractive ? `hover:bg-slate-50 dark:hover:bg-slate-700/50 ${hoverRing}` : ""}
                   `}
                   onClick={() => !isAnswerSubmitted && onAnswerSelect(label)}
                 >
                   <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center font-semibold text-xs ${
                     isUserAnswer
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/40'
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-500/20 dark:border-blue-400"
                       : "border-slate-400 bg-white dark:bg-slate-700 dark:border-slate-500"
                   }`}>
                     {label}

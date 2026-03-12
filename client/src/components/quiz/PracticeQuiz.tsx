@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PracticeQuizHeader } from "./PracticeQuizHeader";
 import { PracticeQuizQuestionCard } from "./PracticeQuizQuestionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +45,13 @@ interface Question {
   };
 }
 
+export interface UnitQuizState {
+  questionIds: string[];
+  currentQuestionIndex: number;
+  userAnswers: { [key: number]: string };
+  flaggedQuestions?: number[];
+}
+
 interface PracticeQuizProps {
   questions: Question[];
   subjectId: string;
@@ -53,6 +60,8 @@ interface PracticeQuizProps {
   onComplete: (score: number) => void;
   isFullLength?: boolean;
   lastSavedTestId?: string;
+  onSaveAndExit?: (state: UnitQuizState) => void;
+  savedState?: UnitQuizState | null;
 }
 
 export function PracticeQuiz({
@@ -63,6 +72,8 @@ export function PracticeQuiz({
   onComplete,
   isFullLength = false,
   lastSavedTestId,
+  onSaveAndExit,
+  savedState,
 }: PracticeQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -81,6 +92,20 @@ export function PracticeQuiz({
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [showCalculator, setShowCalculator] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+
+  const appliedSavedState = useRef(false);
+  // Initialize from saved state when resuming a unit quiz (only once)
+  useEffect(() => {
+    if (savedState && questions.length > 0 && !appliedSavedState.current) {
+      appliedSavedState.current = true;
+      const idx = Math.min(savedState.currentQuestionIndex, questions.length - 1);
+      setCurrentQuestionIndex(idx);
+      setFinalUserAnswers(savedState.userAnswers || {});
+      if (savedState.flaggedQuestions && savedState.flaggedQuestions.length > 0) {
+        setFlaggedQuestions(new Set(savedState.flaggedQuestions));
+      }
+    }
+  }, [savedState, questions.length]);
 
   const router = useRouter();
   const { user } = useAuth();
@@ -195,45 +220,7 @@ export function PracticeQuiz({
       }).catch(() => {});
     }
 
-    if (!isFullLength) {
-      const unit = currentQuestion.id.split("_")[1];
-      const answeredUnitQuestions =
-        Object.keys(finalUserAnswers).filter((index) => {
-          const question = orderedQuestions[parseInt(index)];
-          return question && question.id.split("_")[1] === unit;
-        }).length + 1;
-
-      let correctCount = 0;
-      Object.entries(finalUserAnswers).forEach(([index, answer]) => {
-        const question = orderedQuestions[parseInt(index)];
-        if (question && question.id.split("_")[1] === unit) {
-          const correctLabel = getDisplayCorrectLabel(question, mcqOptionCount);
-          if (answer === correctLabel) correctCount++;
-        }
-      });
-      if (isCorrect) correctCount++;
-
-      const percentage = Math.round(
-        (correctCount / answeredUnitQuestions) * 100,
-      );
-
-      apiRequest("PUT", `/api/user/subjects/${subjectId}/unit-progress`, {
-        unitId: unit,
-        mcqScore: percentage,
-      })
-        .then((response) => {
-          if (response.ok) {
-            response.json().then(() => {
-              queryClient.invalidateQueries({ queryKey: ["subjects"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/user/analytics", subjectId] });
-              window.dispatchEvent(new CustomEvent("subjectsUpdated"));
-            });
-          }
-        })
-        .catch((error) => {
-          console.error("Error saving unit progress:", error);
-        });
-    }
+    // Unit score is updated only when the student completes the full quiz (see quiz.tsx), not per-answer.
   };
 
   const handleNextQuestion = () => {
@@ -280,11 +267,11 @@ export function PracticeQuiz({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col text-slate-900 dark:text-slate-100">
       <div className="flex-1 flex overflow-hidden">
         {/* Desmos Sidebar */}
         {isCalculatorAllowed && showCalculator && (
-          <div className="w-full md:w-1/3 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col z-40">
+          <div className="w-full md:w-1/3 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 flex flex-col z-40">
             <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
               <h3 className="font-semibold text-gray-900 dark:text-gray-100">Desmos Calculator</h3>
               <Button 
@@ -324,11 +311,11 @@ export function PracticeQuiz({
               return (
                 <Card className={
                   explanationCorrect
-                    ? "border-emerald-500 dark:border-emerald-600 bg-emerald-50/50 dark:bg-emerald-900/20"
-                    : "border-red-500 dark:border-red-600 bg-red-50/50 dark:bg-red-900/20"
+                    ? "ring-2 ring-green-500 border-green-500 dark:border-green-600 bg-green-50 dark:bg-green-500/10"
+                    : "ring-2 ring-red-500 border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-500/10"
                 }>
                   <CardHeader className="pb-2 pt-3">
-                    <CardTitle className={`text-sm ${explanationCorrect ? "text-emerald-800 dark:text-emerald-300" : "text-red-800 dark:text-red-300"}`}>
+                    <CardTitle className={`text-sm ${explanationCorrect ? "text-green-800 dark:text-green-300" : "text-red-800 dark:text-red-300"}`}>
                       {explanationCorrect ? "Correct — Explanation" : "Incorrect — Explanation"}
                     </CardTitle>
                   </CardHeader>
@@ -345,7 +332,7 @@ export function PracticeQuiz({
       </div>
 
       {/* Fixed Bottom Bar */}
-      <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 fixed bottom-0 left-0 right-0 z-50">
+      <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 fixed bottom-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex justify-between items-center gap-2 sm:gap-4">
             <div className="flex flex-1 items-center">
@@ -386,19 +373,37 @@ export function PracticeQuiz({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowReportDialog(true)}
-                className="border-rose-300 dark:border-rose-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-xs sm:text-sm"
+                className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm"
               >
                 <Flag className="w-3.5 h-3.5 mr-1" />
                 Report
               </Button>
-              <Button
-                onClick={onExit}
-                variant="outline"
-                size="sm"
-                className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm dark:border-red-500 dark:text-red-400"
-              >
-                Exit
-              </Button>
+              {onSaveAndExit ? (
+                <Button
+                  onClick={() => {
+                    onSaveAndExit({
+                      questionIds: orderedQuestions.map((q) => q.id),
+                      currentQuestionIndex,
+                      userAnswers: finalUserAnswers,
+                      flaggedQuestions: Array.from(flaggedQuestions),
+                    });
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm dark:border-red-500 dark:text-red-400"
+                >
+                  Save & Exit
+                </Button>
+              ) : (
+                <Button
+                  onClick={onExit}
+                  variant="outline"
+                  size="sm"
+                  className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm dark:border-red-500 dark:text-red-400"
+                >
+                  Exit
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -413,7 +418,7 @@ export function PracticeQuiz({
 
       {showResults && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <Card className="w-full max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+          <Card className="w-full max-w-md bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
             <CardHeader>
               <CardTitle className="text-center text-gray-900 dark:text-gray-100">Quiz Complete!</CardTitle>
             </CardHeader>

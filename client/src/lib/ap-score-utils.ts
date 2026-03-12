@@ -28,12 +28,13 @@ const AP_SCORE_LABELS: Record<number, string> = {
   1: "Needs improvement",
 };
 
+/* 5-scale: dark green (5) → medium green (4) → light green (3) → light red (2) → dark red (1) */
 const AP_SCORE_COLORS: Record<number, string> = {
-  5: "#10b981",
-  4: "#22c55e",
-  3: "#eab308",
-  2: "#f97316",
-  1: "#ef4444",
+  5: "#15803d",
+  4: "#16a34a",
+  3: "#22c55e",
+  2: "#f87171",
+  1: "#b91c1c",
 };
 
 const CONFIG = apSubjectConfig as APSubjectConfigEntry[];
@@ -214,12 +215,13 @@ export interface UnitTierResult {
   textClass: string;
 }
 
+/* 5-scale: 1=dark red, 2=light red, 3=light green, 4=medium green, 5=dark green */
 const UNIT_TIER_STYLES: Record<Exclude<UnitTier, "none">, { label: string; bg: string; textClass: string }> = {
-  "5": { label: "Mastered", bg: "bg-emerald-500", textClass: "text-emerald-600 dark:text-emerald-400" },
-  "4": { label: "Proficient", bg: "bg-green-500", textClass: "text-green-600 dark:text-green-400" },
-  "3": { label: "In Progress", bg: "bg-amber-500", textClass: "text-amber-600 dark:text-amber-400" },
-  "2": { label: "Needs Practice", bg: "bg-orange-500", textClass: "text-orange-600 dark:text-orange-400" },
-  "1": { label: "Weak", bg: "bg-red-500", textClass: "text-red-500" },
+  "1": { label: "Weak", bg: "bg-red-700 dark:bg-red-800", textClass: "text-red-700 dark:text-red-400" },
+  "2": { label: "Needs Practice", bg: "bg-red-400 dark:bg-red-500", textClass: "text-red-600 dark:text-red-300" },
+  "3": { label: "In Progress", bg: "bg-green-300 dark:bg-green-400", textClass: "text-green-600 dark:text-green-400" },
+  "4": { label: "Proficient", bg: "bg-green-600 dark:bg-green-600", textClass: "text-green-700 dark:text-green-300" },
+  "5": { label: "Mastered", bg: "bg-green-700 dark:bg-green-800", textClass: "text-green-800 dark:text-green-200" },
 };
 
 /**

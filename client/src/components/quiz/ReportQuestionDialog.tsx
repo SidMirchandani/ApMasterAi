@@ -90,7 +90,7 @@ export function ReportQuestionDialog({
 
         {submitted ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <CheckCircle className="w-10 h-10 text-emerald-500" />
+            <CheckCircle className="w-10 h-10 text-green-500" />
             <p className="text-base font-medium text-gray-800 dark:text-gray-200">
               Thanks for your report!
             </p>
@@ -150,7 +150,7 @@ export function ReportQuestionDialog({
               <Button
                 onClick={handleSubmit}
                 disabled={!reason || submitting}
-                className="bg-rose-600 hover:bg-rose-700 text-white"
+                className="bg-red-600 hover:bg-red-700 text-white"
               >
                 {submitting ? "Submitting..." : "Submit Report"}
               </Button>

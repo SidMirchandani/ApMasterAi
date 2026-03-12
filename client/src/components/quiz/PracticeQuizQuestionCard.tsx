@@ -69,18 +69,18 @@ export function PracticeQuizQuestionCard({
   const isCorrect = selectedAnswer === displayCorrectLabel;
 
   return (
-    <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <Card className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden rounded-xl transition-all duration-150 ease-out">
       <CardHeader className="p-0">
-        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3 bg-gray-50/50 dark:bg-gray-800/50">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-3 bg-slate-50/50 dark:bg-slate-800/50">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
               Question {questionNumber} of {totalQuestions}
             </span>
             {question.difficulty && ["easy", "medium", "hard"].includes(question.difficulty) && (
               <span
                 className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
                   question.difficulty === "easy"
-                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                    ? "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400"
                     : question.difficulty === "medium"
                     ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
                     : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
@@ -94,10 +94,10 @@ export function PracticeQuizQuestionCard({
             {onToggleBookmark && (
               <button
                 onClick={onToggleBookmark}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150 ease-out border ${
                   isBookmarked
-                    ? 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-400 dark:border-yellow-600'
-                    : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700'
+                    ? "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-600"
+                    : "bg-white dark:bg-slate-800 text-slate-500 border-slate-300 hover:bg-slate-50 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700"
                 }`}
               >
                 <BookmarkCheck className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
@@ -109,7 +109,7 @@ export function PracticeQuizQuestionCard({
       </CardHeader>
 
       <CardContent className="p-6 space-y-6">
-        <div className="text-gray-900 dark:text-white leading-relaxed text-base">
+        <div className="text-slate-900 dark:text-white leading-relaxed text-base">
           <BlockRenderer blocks={question.prompt_blocks || []} />
         </div>
 
@@ -119,9 +119,10 @@ export function PracticeQuizQuestionCard({
             const isCorrectAnswer = label === displayCorrectLabel;
             const isCrossedOut = crossedOut.has(label);
 
-            let borderColor = "border-gray-200 dark:border-gray-800";
-            let bgColor = "bg-white dark:bg-gray-900";
-            let textColor = "text-gray-700 dark:text-white";
+            let borderColor = "border border-slate-200 dark:border-slate-800";
+            let bgColor = "bg-white dark:bg-slate-800/50";
+            let textColor = "text-slate-700 dark:text-white";
+            let ringClass = "";
             let opacity = "opacity-100";
 
             if (isCrossedOut && !isAnswerSubmitted) {
@@ -129,41 +130,46 @@ export function PracticeQuizQuestionCard({
             }
 
             if (cheatMode && isCorrectAnswer && !isAnswerSubmitted) {
-              borderColor = "border-green-300 dark:border-green-500";
-              bgColor = "bg-green-50/50 dark:bg-green-900/20";
-            }
-
-            if (isAnswerSubmitted) {
+              ringClass = "ring-2 ring-green-500";
+              borderColor = "border-green-500 dark:border-green-600";
+              bgColor = "bg-green-50 dark:bg-green-500/10";
+            } else if (isAnswerSubmitted) {
               if (isCorrectAnswer) {
+                ringClass = "ring-2 ring-green-500";
                 borderColor = "border-green-500 dark:border-green-600";
-                bgColor = "bg-green-50/50 dark:bg-green-900/20";
+                bgColor = "bg-green-50 dark:bg-green-500/10";
                 textColor = "text-green-700 dark:text-green-300";
               } else if (isUserAnswer && !isCorrect) {
+                ringClass = "ring-2 ring-red-500";
                 borderColor = "border-red-500 dark:border-red-600";
-                bgColor = "bg-red-50/50 dark:bg-red-900/20";
+                bgColor = "bg-red-50 dark:bg-red-500/10";
                 textColor = "text-red-700 dark:text-red-300";
               }
             } else if (isUserAnswer) {
-              borderColor = "border-blue-500 dark:border-blue-600";
-              bgColor = "bg-blue-50/30 dark:bg-blue-900/10";
+              ringClass = "ring-2 ring-blue-500";
+              borderColor = "border-blue-500";
+              bgColor = "bg-blue-50 dark:bg-blue-500/10";
               textColor = "text-blue-700 dark:text-blue-300";
             } else {
-              bgColor = "bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50";
+              bgColor = "bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-700/50";
             }
+
+            const hoverRing = !isAnswerSubmitted ? "hover:ring-1 hover:ring-blue-400/40" : "";
 
             return (
               <button
                 key={label}
                 disabled={isAnswerSubmitted}
                 onClick={() => onAnswerSelect(label)}
-                className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left relative group/choice
-                  ${borderColor} ${bgColor} ${opacity} ${isAnswerSubmitted ? 'cursor-default' : 'cursor-pointer hover:shadow-sm'}
+                className={`w-full flex items-start gap-4 p-4 rounded-xl border transition-all duration-150 ease-out text-left relative group/choice
+                  ${borderColor} ${bgColor} ${ringClass} ${opacity} ${hoverRing}
+                  ${isAnswerSubmitted ? "cursor-default" : "cursor-pointer hover:shadow-sm"}
                 `}
               >
                 <div className={`flex-shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center font-bold text-sm transition-colors
-                  ${isUserAnswer 
-                    ? 'bg-blue-600 border-blue-600 text-white' 
-                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-white'
+                  ${isUserAnswer
+                    ? "bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500 text-white"
+                    : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-300"
                   }
                 `}>
                   {label}
@@ -182,7 +188,7 @@ export function PracticeQuizQuestionCard({
                         return next;
                       });
                     }}
-                    className="opacity-0 group-hover/choice:opacity-100 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 transition-opacity"
+                    className="opacity-0 group-hover/choice:opacity-100 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-opacity"
                     title="Cross out"
                   >
                     <XCircle className="w-4 h-4" />

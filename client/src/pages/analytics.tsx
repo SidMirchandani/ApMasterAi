@@ -12,6 +12,7 @@ import {
   XCircle,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
+import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -26,7 +27,8 @@ import {
   ReferenceLine,
 } from "recharts";
 import { getApiCodeForSubject, getSectionByCode } from "@/subjects";
-import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject } from "@/lib/ap-score-utils";
+import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject, getUnitTierFromScore, getAPScoreColor } from "@/lib/ap-score-utils";
+import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 
 interface TestHistoryEntry {
@@ -172,6 +174,16 @@ export default function AnalyticsPage() {
     .filter((e) => e.percentage > 0 || e.total > 0)
     .sort((a, b) => a.percentage - b.percentage);
 
+  // Same 5-scale fill colors as dashboard/study for Performance by Unit bars
+  const TIER_FILL_CLASS: Record<string, string> = {
+    "1": "[&>div]:bg-red-700 [&>div]:dark:bg-red-800",
+    "2": "[&>div]:bg-red-400 [&>div]:dark:bg-red-500",
+    "3": "[&>div]:bg-green-300 [&>div]:dark:bg-green-400",
+    "4": "[&>div]:bg-green-600 [&>div]:dark:bg-green-600",
+    "5": "[&>div]:bg-green-700 [&>div]:dark:bg-green-800",
+    none: "[&>div]:bg-slate-400 [&>div]:dark:bg-slate-500",
+  };
+
   const testChartData = testHistory.map((test) => ({
     testLabel: `Test ${test.testNumber}`,
     testNumber: test.testNumber,
@@ -203,7 +215,7 @@ export default function AnalyticsPage() {
             Analytics
           </h1>
           {subjectId && (
-            <Badge className="bg-khan-green text-white">{subjectId}</Badge>
+            <Badge className="bg-blue-600 dark:bg-blue-500 text-white">{getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId ?? "")}</Badge>
           )}
         </div>
 
@@ -346,17 +358,17 @@ export default function AnalyticsPage() {
                         />
                         <ReferenceLine
                           y={target4}
-                          stroke="#22c55e"
+                          stroke={getAPScoreColor(4)}
                           strokeDasharray="5 5"
-                          strokeWidth={1.5}
-                          label={{ position: "right", value: "4", fill: "#22c55e", fontSize: 10 }}
+                          strokeWidth={3}
+                          label={{ position: "top", value: `Score needed for 4: ~${Math.round(target4)}%`, fill: getAPScoreColor(4), fontSize: 14, fontWeight: 600, offset: 4 }}
                         />
                         <ReferenceLine
                           y={target5}
-                          stroke="#10b981"
+                          stroke={getAPScoreColor(5)}
                           strokeDasharray="5 5"
-                          strokeWidth={2.5}
-                          label={{ position: "right", value: "5", fill: "#10b981", fontSize: 10 }}
+                          strokeWidth={3}
+                          label={{ position: "top", value: `Score needed for 5: ~${Math.round(target5)}%`, fill: getAPScoreColor(5), fontSize: 14, fontWeight: 600, offset: 4 }}
                         />
 
                         <Line
@@ -418,12 +430,12 @@ export default function AnalyticsPage() {
                       Test Score
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-0 border-t-2 border-dashed border-green-500" style={{ borderColor: "#22c55e" }} />
-                      Target: 4 ({Math.round(target4)}%)
+                      <div className="w-6 h-0 border-t-[3px] border-dashed" style={{ borderColor: getAPScoreColor(4) }} />
+                      Score needed for 4: ~{Math.round(target4)}%
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-0 border-t-2 border-dashed border-emerald-500" style={{ borderColor: "#10b981" }} />
-                      Target: 5 ({Math.round(target5)}%)
+                      <div className="w-6 h-0 border-t-[3px] border-dashed" style={{ borderColor: getAPScoreColor(5) }} />
+                      Score needed for 5: ~{Math.round(target5)}%
                     </div>
                   </div>
                 </CardContent>
@@ -457,27 +469,10 @@ export default function AnalyticsPage() {
                   <div className="space-y-3">
                     {unitEntries.map((unit) => {
                       const pct = unit.percentage;
-                      // Fill color = color of the level exceeded (5→emerald, 4→green, 3→amber, 2→orange, 1→red)
-                      const fillClass =
-                        pct >= target5
-                          ? "[&>div]:bg-emerald-500"
-                          : pct >= target4
-                            ? "[&>div]:bg-green-500"
-                            : pct >= target3
-                              ? "[&>div]:bg-amber-500"
-                              : pct >= target2
-                                ? "[&>div]:bg-orange-500"
-                                : "[&>div]:bg-red-500";
-                      const textClass =
-                        pct >= target5
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : pct >= target4
-                            ? "text-green-600 dark:text-green-400"
-                            : pct >= target3
-                              ? "text-amber-600 dark:text-amber-400"
-                              : pct >= target2
-                                ? "text-orange-600 dark:text-orange-400"
-                                : "text-red-500";
+                      const targets = { target2, target3, target4, target5 };
+                      const tierResult = getUnitTierFromScore(pct, targets);
+                      const fillClass = TIER_FILL_CLASS[tierResult.tier] ?? TIER_FILL_CLASS.none;
+                      const textClass = tierResult.textClass;
                       return (
                         <div key={unit.code} className="flex items-center gap-3">
                           <div className="w-56 sm:w-64 flex-shrink-0">
@@ -486,38 +481,38 @@ export default function AnalyticsPage() {
                             </p>
                           </div>
                           <div className="flex-1 min-w-0 relative h-3">
-                            {/* Zoned track: under 2, 2–3, 3–4 (lighter), 4–5 (darker), above 5 */}
+                            {/* Zoned track: same 5-scale as dashboard/study (dark red → light red → light green → medium green → dark green) */}
                             <div className="absolute inset-0 flex rounded-full overflow-hidden pointer-events-none">
-                              <div style={{ width: `${target2}%` }} className="bg-red-100 dark:bg-red-900/30" aria-hidden />
-                              <div style={{ width: `${target3 - target2}%` }} className="bg-orange-100 dark:bg-orange-900/30" aria-hidden />
-                              <div style={{ width: `${target4 - target3}%` }} className="bg-amber-100 dark:bg-amber-900/30" aria-hidden />
-                              <div style={{ width: `${target5 - target4}%` }} className="bg-green-100 dark:bg-green-800/30" aria-hidden />
-                              <div className="flex-1 bg-emerald-200 dark:bg-emerald-900/30" aria-hidden />
+                              <div style={{ width: `${target2}%` }} className="bg-red-200 dark:bg-red-900/40" aria-hidden />
+                              <div style={{ width: `${target3 - target2}%` }} className="bg-red-100 dark:bg-red-800/30" aria-hidden />
+                              <div style={{ width: `${target4 - target3}%` }} className="bg-green-200 dark:bg-green-800/30" aria-hidden />
+                              <div style={{ width: `${target5 - target4}%` }} className="bg-green-400/50 dark:bg-green-700/40" aria-hidden />
+                              <div className="flex-1 bg-green-600/50 dark:bg-green-900/40" aria-hidden />
                             </div>
                             {pct < target2 && (
                               <div
-                                className="absolute top-0 bottom-0 w-1 bg-orange-500 pointer-events-none z-10 rounded-sm"
+                                className="absolute top-0 bottom-0 w-1 bg-red-400 pointer-events-none z-10 rounded-sm"
                                 style={{ left: `${target2}%`, marginLeft: -2 }}
                                 aria-hidden
                               />
                             )}
                             {pct < target3 && (
                               <div
-                                className="absolute top-0 bottom-0 w-1 bg-amber-500 pointer-events-none z-10 rounded-sm"
+                                className="absolute top-0 bottom-0 w-1 bg-green-300 pointer-events-none z-10 rounded-sm"
                                 style={{ left: `${target3}%`, marginLeft: -2 }}
                                 aria-hidden
                               />
                             )}
                             {pct < target4 && (
                               <div
-                                className="absolute top-0 bottom-0 w-1 bg-green-500 pointer-events-none z-10 rounded-sm"
+                                className="absolute top-0 bottom-0 w-1 bg-green-600 pointer-events-none z-10 rounded-sm"
                                 style={{ left: `${target4}%`, marginLeft: -2 }}
                                 aria-hidden
                               />
                             )}
                             {pct < target5 && (
                               <div
-                                className="absolute top-0 bottom-0 w-1 bg-emerald-500 pointer-events-none z-10 rounded-sm"
+                                className="absolute top-0 bottom-0 w-1 bg-green-700 pointer-events-none z-10 rounded-sm"
                                 style={{ left: `${target5}%`, marginLeft: -2 }}
                                 aria-hidden
                               />
@@ -545,6 +540,7 @@ export default function AnalyticsPage() {
           </div>
         )}
       </div>
+      <SimpleFooter />
     </div>
   );
 }

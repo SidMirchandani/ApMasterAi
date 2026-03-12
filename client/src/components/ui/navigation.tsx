@@ -151,11 +151,7 @@ export default function Navigation() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
-            ? "bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-700/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.25)]"
-            : "bg-transparent border-b border-transparent"
-        }`}
+        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/70 dark:bg-[#0B0F1A]/70 border-b border-slate-200 dark:border-slate-800 transition-all duration-150 ease-out"
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[4.25rem]">
@@ -168,7 +164,7 @@ export default function Navigation() {
                 }`}
                 onClick={handleDisabledClick}
               >
-                <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-[0_2px_8px_rgba(16,185,129,0.25)] group-hover:shadow-[0_4px_14px_rgba(16,185,129,0.35)] transition-all duration-300 group-hover:scale-105">
+                <div className="w-9 h-9 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-150 ease-out group-hover:scale-[1.02]">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-lg font-display font-bold text-slate-900 dark:text-white tracking-tight hidden sm:inline">
@@ -188,7 +184,7 @@ export default function Navigation() {
                       ) : (
                         <Link
                           href={crumb.href}
-                          className="hover:text-emerald-500 transition-colors whitespace-nowrap truncate max-w-[150px]"
+                          className="hover:text-blue-500 transition-colors duration-150 ease-out whitespace-nowrap truncate max-w-[150px]"
                           onClick={handleDisabledClick}
                         >
                           {crumb.label}
@@ -207,14 +203,14 @@ export default function Navigation() {
                   <Link
                     href="/about"
                     onClick={handleDisabledClick}
-                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
+                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-150 ease-out hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
                   >
                     About
                   </Link>
                   <Link
                     href="/team"
                     onClick={handleDisabledClick}
-                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
+                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-150 ease-out hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
                   >
                     Team
                   </Link>
@@ -226,14 +222,14 @@ export default function Navigation() {
                   <Link
                     href="/about"
                     onClick={handleDisabledClick}
-                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
+                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-150 ease-out hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
                   >
                     About
                   </Link>
                   <Link
                     href="/team"
                     onClick={handleDisabledClick}
-                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-500 transition-colors hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
+                    className={`text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-150 ease-out hidden md:block px-3 py-2 rounded-xl hover:bg-slate-100/60 dark:hover:bg-slate-800/60 ${isInQuizMode ? "opacity-60 pointer-events-none" : ""}`}
                   >
                     Team
                   </Link>
@@ -276,11 +272,11 @@ export default function Navigation() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`h-9 w-9 p-0 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:border-emerald-300 dark:hover:border-emerald-700 transition-all hidden md:flex ${
+                        className={`h-9 w-9 p-0 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-150 ease-out hidden md:flex ${
                           isInQuizMode ? "opacity-60 pointer-events-none" : ""
                         }`}
                       >
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-500">
+                        <div className="w-full h-full flex items-center justify-center bg-blue-600 dark:bg-blue-500">
                           {userProfile?.data?.firstName ? (
                             <span className="text-xs font-black text-white">
                               {userProfile.data.firstName.charAt(0).toUpperCase()}
@@ -292,7 +288,7 @@ export default function Navigation() {
                       </Button>
                     </DropdownMenuTrigger>
 
-                    <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 border border-slate-200 dark:border-slate-700 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
+                    <DropdownMenuContent align="end" className="w-56 rounded-xl p-2 border border-slate-200 dark:border-slate-800 shadow-lg dark:shadow-xl bg-white dark:bg-slate-900/70">
                       <DropdownMenuLabel className="font-normal px-3 py-2.5">
                         <div className="flex flex-col space-y-1">
                           <p className="text-sm font-semibold leading-none">
@@ -333,7 +329,7 @@ export default function Navigation() {
                           await logout();
                           router.push("/");
                         }}
-                        className="cursor-pointer text-rose-600 focus:text-rose-600 rounded-xl px-3 py-2.5"
+                        className="cursor-pointer text-red-600 focus:text-red-600 rounded-xl px-3 py-2.5"
                       >
                         <LogOut className="w-4 h-4 mr-2.5" />
                         Logout
@@ -346,13 +342,13 @@ export default function Navigation() {
                   <Link href="/login">
                     <Button
                       variant="ghost"
-                      className="text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 font-semibold text-sm rounded-xl px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-semibold text-sm rounded-xl px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-150 ease-out"
                     >
                       Log in
                     </Button>
                   </Link>
                   <Link href="/signup">
-                    <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold px-5 h-10 rounded-xl shadow-[0_4px_14px_rgba(16,185,129,0.28)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.38)] hover:-translate-y-0.5 transition-all duration-300 text-sm">
+                    <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold px-5 h-10 rounded-xl shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] text-sm">
                       Get Started
                     </Button>
                   </Link>
@@ -372,7 +368,7 @@ export default function Navigation() {
                   ) : (
                     <Link
                       href={crumb.href}
-                      className="hover:text-emerald-500 transition-colors whitespace-nowrap"
+                      className="hover:text-blue-500 transition-colors duration-150 ease-out whitespace-nowrap"
                       onClick={handleDisabledClick}
                     >
                       {crumb.label}
@@ -387,7 +383,7 @@ export default function Navigation() {
 
         {/* Mobile menu dropdown */}
         {isAuthenticated && mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200/50 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl px-4 py-4 space-y-0.5 animate-slide-down">
+          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#0B0F1A]/95 backdrop-blur-md px-4 py-4 space-y-0.5 animate-slide-down">
             {breadcrumbs.length > 1 && (
               <div className="flex items-center gap-1.5 px-4 py-2 mb-1 text-[12px] font-medium text-slate-400 flex-wrap">
                 {breadcrumbs.map((crumb, i) => (
@@ -399,7 +395,7 @@ export default function Navigation() {
                       <Link
                         href={crumb.href}
                         onClick={() => setMobileMenuOpen(false)}
-                        className="hover:text-emerald-500 transition-colors"
+                        className="hover:text-blue-500 transition-colors duration-150 ease-out"
                       >
                         {crumb.label}
                       </Link>
@@ -411,7 +407,7 @@ export default function Navigation() {
             <Link
               href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-500/20"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200/60 dark:border-blue-500/20"
             >
               <LayoutDashboard className="w-4 h-4" />
               Dashboard
@@ -453,7 +449,7 @@ export default function Navigation() {
                   await logout();
                   router.push("/");
                 }}
-                className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 Logout

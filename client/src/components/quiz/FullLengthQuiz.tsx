@@ -165,10 +165,17 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         `/api/user/subjects/${subjectId}/save-exam-state`,
         { examState }
       );
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
+      await queryClient.refetchQueries({ queryKey: ["subjects"] });
+      await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
       router.push(`/study?subject=${subjectId}`);
     } catch (error) {
       console.error("Failed to save exam state:", error);
-      // Still navigate even if save fails
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
+      await queryClient.refetchQueries({ queryKey: ["subjects"] });
+      await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
       router.push(`/study?subject=${subjectId}`);
     }
   };
@@ -246,10 +253,13 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       const result = await response.json();
       const testId = result.data.id;
 
-      // Invalidate queries to ensure dashboard and analytics are up to date
+      // Invalidate and refetch so study/dashboard show updated data when user navigates back
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/analytics", subjectId] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/score-history", subjectId] });
+      await queryClient.refetchQueries({ queryKey: ["subjects"] });
+      await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
 
       await apiRequest(
         "DELETE",
@@ -298,7 +308,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   };
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+    <div className="h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col">
       <div className={`fixed left-0 right-0 z-50 ${hasAppNav ? "top-[4.25rem]" : "top-0"}`}>
         <QuizHeader
           title={`${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test`}
@@ -314,7 +324,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
       {/* Time warning overlay */}
       {showTimeWarning && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-orange-500 text-white px-6 py-3 rounded-lg shadow-lg animate-pulse">
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-xl shadow-lg animate-pulse">
           <p className="font-semibold">⏰ 10 minutes remaining!</p>
         </div>
       )}

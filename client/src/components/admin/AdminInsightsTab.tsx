@@ -42,8 +42,8 @@ const chartConfig = {
   enrollmentsCumulative: { label: "Total enrollments", color: "hsl(200, 70%, 40%)" },
 };
 
-/** Alternating shades (same hue) for enrollment bar chart so each subject bar is easy to distinguish. */
-const ENROLLMENT_BAR_SHADES = ["hsl(142, 76%, 38%)", "hsl(142, 76%, 28%)"];
+/** Alternating shades of blue (theme) for enrollment bar chart so each subject bar is easy to distinguish. */
+const ENROLLMENT_BAR_SHADES = ["hsl(217, 91%, 58%)", "hsl(217, 91%, 48%)"];
 function getEnrollmentBarShade(index: number): string {
   return ENROLLMENT_BAR_SHADES[index % ENROLLMENT_BAR_SHADES.length];
 }
@@ -140,15 +140,15 @@ export function AdminInsightsTab({ token }: { token: string }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-khan-green" />
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <Card className="dark:bg-gray-800 dark:border-gray-700">
-        <CardContent className="py-8 text-center text-khan-gray-medium dark:text-gray-400">
+      <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+        <CardContent className="py-8 text-center text-slate-500 dark:text-slate-400">
           {error || "No insights data available."}
         </CardContent>
       </Card>
@@ -206,15 +206,15 @@ export function AdminInsightsTab({ token }: { token: string }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.05 * i }}
           >
-            <Card className="dark:bg-gray-800 dark:border-gray-700">
+            <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-khan-gray-medium dark:text-gray-400">
+                <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">
                   {item.label}
                 </CardTitle>
                 <item.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-khan-gray-dark dark:text-white">
+                <div className="text-2xl font-bold text-slate-900 dark:text-white">
                   {item.display}
                 </div>
               </CardContent>
@@ -226,15 +226,15 @@ export function AdminInsightsTab({ token }: { token: string }) {
       {/* Date range selector */}
       <div className="flex flex-wrap items-center gap-2">
         <Calendar className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-khan-gray-medium dark:text-gray-400">Range:</span>
+        <span className="text-sm text-slate-500 dark:text-slate-400">Range:</span>
         {RANGE_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             onClick={() => setDateRange(opt.value)}
             className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               dateRange === opt.value
-                ? "bg-khan-green text-white dark:bg-khan-green dark:text-white"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted dark:bg-gray-700 dark:hover:bg-gray-600"
+                ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-white"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted dark:bg-slate-700 dark:hover:bg-slate-600"
             }`}
           >
             {opt.label}
@@ -248,13 +248,13 @@ export function AdminInsightsTab({ token }: { token: string }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="dark:bg-gray-800 dark:border-gray-700 overflow-hidden">
+        <Card className="dark:bg-slate-900/70 dark:border-slate-800 overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl dark:text-white flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-khan-green" />
+              <TrendingUp className="h-5 w-5 text-blue-500" />
               Cumulative signups over time
             </CardTitle>
-            <CardDescription className="dark:text-gray-400">
+            <CardDescription className="dark:text-slate-400">
               Total registered users over time
             </CardDescription>
           </CardHeader>
@@ -307,7 +307,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
                 </AreaChart>
               </ChartContainer>
             ) : (
-              <div className="flex flex-col items-center justify-center h-[280px] text-center text-khan-gray-medium dark:text-gray-400">
+              <div className="flex flex-col items-center justify-center h-[280px] text-center text-slate-500 dark:text-slate-400">
                 <Users className="h-12 w-12 mb-3 opacity-50" />
                 <p className="font-medium">No signups yet</p>
                 <p className="text-sm mt-1">Cumulative signups will appear here once users join.</p>
@@ -324,10 +324,10 @@ export function AdminInsightsTab({ token }: { token: string }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.15 }}
         >
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
             <CardHeader>
               <CardTitle className="dark:text-white">New signups per day</CardTitle>
-              <CardDescription className="dark:text-gray-400">
+              <CardDescription className="dark:text-slate-400">
                 Daily registration count
               </CardDescription>
             </CardHeader>
@@ -358,13 +358,13 @@ export function AdminInsightsTab({ token }: { token: string }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       >
-        <Card className="dark:bg-gray-800 dark:border-gray-700 overflow-hidden">
+        <Card className="dark:bg-slate-900/70 dark:border-slate-800 overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl dark:text-white flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-khan-green" />
+              <BookOpen className="h-5 w-5 text-blue-500" />
               Cumulative subjects enrolled over time
             </CardTitle>
-            <CardDescription className="dark:text-gray-400">
+            <CardDescription className="dark:text-slate-400">
               Total subject enrollments over time
             </CardDescription>
           </CardHeader>
@@ -417,7 +417,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
                 </AreaChart>
               </ChartContainer>
             ) : (
-              <div className="flex flex-col items-center justify-center h-[280px] text-center text-khan-gray-medium dark:text-gray-400">
+              <div className="flex flex-col items-center justify-center h-[280px] text-center text-slate-500 dark:text-slate-400">
                 <BookOpen className="h-12 w-12 mb-3 opacity-50" />
                 <p className="font-medium">No enrollment history yet</p>
                 <p className="text-sm mt-1">Enrollment over time will appear when enrollment timestamps are available.</p>
@@ -434,10 +434,10 @@ export function AdminInsightsTab({ token }: { token: string }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.15 }}
         >
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
             <CardHeader>
               <CardTitle className="dark:text-white">New subjects enrolled per day</CardTitle>
-              <CardDescription className="dark:text-gray-400">
+              <CardDescription className="dark:text-slate-400">
                 Daily subject enrollment count
               </CardDescription>
             </CardHeader>
@@ -469,10 +469,10 @@ export function AdminInsightsTab({ token }: { token: string }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
         >
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
             <CardHeader>
               <CardTitle className="dark:text-white">Enrollments by subject</CardTitle>
-              <CardDescription className="dark:text-gray-400">
+              <CardDescription className="dark:text-slate-400">
                 Students enrolled per course
               </CardDescription>
             </CardHeader>
@@ -527,8 +527,8 @@ export function AdminInsightsTab({ token }: { token: string }) {
 
       {!hasSignupData && data.courseEnrollments.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}>
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
-            <CardContent className="py-8 text-center text-khan-gray-medium dark:text-gray-400">
+          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+            <CardContent className="py-8 text-center text-slate-500 dark:text-slate-400">
               No chart data yet. More activity will populate trends and distributions.
             </CardContent>
           </Card>

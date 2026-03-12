@@ -46,7 +46,7 @@ export default function DiagnosticPage() {
 
   if (loading || !subjectId) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
         <Navigation />
         <div className="flex items-center justify-center h-96">
           <div className="relative w-12 h-12">
@@ -64,7 +64,7 @@ export default function DiagnosticPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
       <Navigation />
       <DiagnosticModal
         subjectId={subjectId}

@@ -882,22 +882,22 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-khan-background dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-khan-gray-dark dark:text-gray-300">Loading...</div>
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex items-center justify-center">
+        <div className="text-slate-900 dark:text-slate-300">Loading...</div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-khan-background dark:bg-gray-900 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md dark:bg-gray-800 dark:border-gray-700">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex items-center justify-center px-4">
+        <Card className="w-full max-w-md dark:bg-slate-900/60 dark:border-slate-800">
           <CardHeader className="text-center">
             <Link href="/" className="inline-flex items-center justify-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
                 <BookOpen className="w-7 h-7 text-white" />
               </div>
-              <span className="text-3xl font-bold text-khan-gray-dark dark:text-white">APMaster</span>
+              <span className="text-3xl font-bold text-slate-900 dark:text-white">APMaster</span>
             </Link>
             <CardTitle className="text-2xl">Admin Login</CardTitle>
             <CardDescription>Sign in to access the admin dashboard</CardDescription>
@@ -905,12 +905,12 @@ export default function AdminPage() {
           <CardContent>
             <Button
               onClick={() => signInWithPopup(auth, googleProvider, browserPopupRedirectResolver)}
-              className="w-full bg-khan-green hover:bg-khan-green-light text-white"
+              className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
             >
               Sign in with Google
             </Button>
             <div className="mt-4 text-center">
-              <Link href="/" className="text-khan-blue hover:text-khan-purple transition-colors text-sm">
+              <Link href="/" className="text-blue-600 hover:text-blue-500 transition-colors text-sm">
                 ← Back to home
               </Link>
             </div>
@@ -922,8 +922,8 @@ export default function AdminPage() {
 
   if (adminStatus === "pending") {
     return (
-      <div className="min-h-screen bg-khan-background dark:bg-gray-900 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-khan-gray-dark dark:text-gray-300">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-slate-900 dark:text-slate-300">
           <Loader2 className="h-8 w-8 animate-spin" />
           <span>Checking access...</span>
         </div>
@@ -933,14 +933,14 @@ export default function AdminPage() {
 
   if (!isAllowed) {
     return (
-      <div className="min-h-screen bg-khan-background dark:bg-gray-900 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md dark:bg-gray-800 dark:border-gray-700">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex items-center justify-center px-4">
+        <Card className="w-full max-w-md dark:bg-slate-900/60 dark:border-slate-800">
           <CardHeader className="text-center">
             <Link href="/" className="inline-flex items-center justify-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
                 <BookOpen className="w-7 h-7 text-white" />
               </div>
-              <span className="text-3xl font-bold text-khan-gray-dark dark:text-white">APMaster</span>
+              <span className="text-3xl font-bold text-slate-900 dark:text-white">APMaster</span>
             </Link>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -962,7 +962,7 @@ export default function AdminPage() {
                 Sign out
               </Button>
               <Link href="/" className="w-full">
-                <Button variant="default" className="w-full bg-khan-green hover:bg-khan-green-light">
+                <Button variant="default" className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
                   Go to Home
                 </Button>
               </Link>
@@ -974,7 +974,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-khan-background dark:bg-gray-900">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
       <Toaster position="top-right" />
       <AdminDashboardLayout
         tab={tab}
@@ -986,30 +986,30 @@ export default function AdminPage() {
         {tab === "library" && (
       <div className="space-y-6">
         {/* Subjects Overview */}
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <Card className="dark:bg-slate-900/60 dark:border-slate-800">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2 text-xl dark:text-white">
-                  <BookOpen className="w-5 h-5 text-khan-green" />
+                  <BookOpen className="w-5 h-5 text-blue-500" />
                   Subjects Overview
                 </CardTitle>
-                <CardDescription className="dark:text-gray-400">
+                <CardDescription className="dark:text-slate-400">
                   {loadingStatus ? "Loading..." : `${alreadyAdded.length} of ${allApSubjectsRef.length} subjects imported`}
                 </CardDescription>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-khan-gray-dark dark:text-white">
+                <div className="text-2xl font-bold text-slate-900 dark:text-white">
                   {Object.values(subjectStatus).reduce((sum, s) => sum + (s.questionCount || 0), 0).toLocaleString()}
                 </div>
-                <div className="text-xs text-khan-gray-medium dark:text-gray-400">Total Questions</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Total Questions</div>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             {loadingStatus ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-khan-green" />
+                <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -1023,11 +1023,11 @@ export default function AdminPage() {
                       className={`relative group rounded-lg border-2 p-3 transition-all ${
                         hasQuestions
                           ? "border-green-200 bg-green-50 hover:border-green-300 dark:border-green-700 dark:bg-green-900/30"
-                          : "border-gray-200 bg-gray-50 hover:border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                          : "border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800"
                       }`}
                     >
                       <div className="flex items-start justify-between mb-1">
-                        <span className={`text-xs font-bold ${hasQuestions ? "text-green-700 dark:text-green-400" : "text-gray-400 dark:text-gray-500"}`}>
+                        <span className={`text-xs font-bold ${hasQuestions ? "text-green-700 dark:text-green-400" : "text-slate-400 dark:text-slate-500"}`}>
                           {s.code}
                         </span>
                         {hasQuestions && (
@@ -1041,13 +1041,13 @@ export default function AdminPage() {
                           </button>
                         )}
                       </div>
-                      <div className={`text-xs font-medium leading-tight mb-1 ${hasQuestions ? "text-gray-800 dark:text-gray-200" : "text-gray-500 dark:text-gray-400"}`}>
+                      <div className={`text-xs font-medium leading-tight mb-1 ${hasQuestions ? "text-slate-800 dark:text-slate-200" : "text-slate-500 dark:text-slate-400"}`}>
                         {s.label.replace("AP ", "")}
                       </div>
                       {hasQuestions ? (
                         <div className="text-lg font-bold text-green-700 dark:text-green-400">{count.toLocaleString()}</div>
                       ) : (
-                        <div className="text-xs text-gray-400 dark:text-gray-500 italic">Not imported</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-500 italic">Not imported</div>
                       )}
                     </div>
                   );
@@ -1058,22 +1058,22 @@ export default function AdminPage() {
         </Card>
 
         {/* Add Subject Card */}
-        <Card className="border-2 border-dashed border-khan-green/30 dark:bg-gray-800 dark:border-green-600/30">
+        <Card className="border-2 border-dashed border-blue-500/30 dark:bg-slate-900/60 dark:border-blue-600/30 rounded-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 dark:text-white">
-              <Zap className="w-5 h-5 text-khan-green" />
+              <Zap className="w-5 h-5 text-blue-500" />
               Add Subject
             </CardTitle>
-            <CardDescription className="dark:text-gray-400">
+            <CardDescription className="dark:text-slate-400">
               Select an AP subject to automatically scrape questions from CrackAP, classify by unit, and import
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3 items-end">
               <div className="flex-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Subject to Add</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Subject to Add</label>
                 <Select value={addSubjectCode} onValueChange={setAddSubjectCode} disabled={addingSubject}>
-                  <SelectTrigger className="bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                  <SelectTrigger className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
                     <SelectValue placeholder={loadingStatus ? "Loading subjects..." : availableToAdd.length > 0 ? "Select AP Subject" : "All subjects imported"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1094,7 +1094,7 @@ export default function AdminPage() {
                 <Button
                   onClick={startAddSubject}
                   disabled={!addSubjectCode || loadingStatus}
-                  className="bg-khan-green hover:bg-khan-green-light text-white min-w-[140px]"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white min-w-[140px]"
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Add Subject
@@ -1104,7 +1104,7 @@ export default function AdminPage() {
 
             {addSubjectProgress && (
               <div className="space-y-3 pt-2">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
                   <span>{addSubjectProgress.message}</span>
                   {addSubjectProgress.total > 0 && (
                     <span>{Math.round((addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100)}%</span>
@@ -1114,9 +1114,9 @@ export default function AdminPage() {
                   value={(addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100}
                   className="h-2"
                 />
-                <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex gap-4 text-xs text-slate-500 dark:text-slate-400">
                   <span className="text-green-600 font-medium">Imported: {addSubjectProgress.imported}</span>
-                  <span className="text-yellow-600">Skipped: {addSubjectProgress.skipped}</span>
+                  <span className="text-amber-500">Skipped: {addSubjectProgress.skipped}</span>
                   <span className="text-red-600">Errors: {addSubjectProgress.errors}</span>
                 </div>
               </div>
@@ -1125,26 +1125,26 @@ export default function AdminPage() {
         </Card>
 
         {/* Image Migration Card */}
-        <Card className="border-2 border-dashed border-orange-300 dark:border-orange-600 dark:bg-gray-800">
+        <Card className="border-2 border-dashed border-amber-300 dark:border-amber-600 dark:bg-slate-900/60">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 dark:text-white">
-              <AlertCircle className="w-5 h-5 text-orange-500" />
+              <AlertCircle className="w-5 h-5 text-amber-500" />
               Migrate Firebase Storage Images
             </CardTitle>
-            <CardDescription className="dark:text-gray-400">
+            <CardDescription className="dark:text-slate-400">
               Make Firebase Storage images publicly accessible so they load without the proxy. Or migrate external images (e.g. CrackAP) into Firebase Storage so all subjects store images like APMICRO.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3 items-end">
               <div className="flex-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Subject (optional)</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Subject (optional)</label>
                 <Select
                   value={migrateSubjectCode}
                   onValueChange={setMigrateSubjectCode}
                   disabled={migratingImages || migratingExternalImages}
                 >
-                  <SelectTrigger className="bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                  <SelectTrigger className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
                     <SelectValue placeholder="All subjects with Firebase images" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1168,7 +1168,7 @@ export default function AdminPage() {
               ) : (
                 <Button
                   onClick={startImageMigration}
-                  className="bg-orange-500 hover:bg-orange-600 text-white min-w-[160px]"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white min-w-[160px] rounded-xl transition-all duration-150 ease-out"
                   disabled={migratingExternalImages}
                 >
                   <Zap className="w-4 h-4 mr-2" />
@@ -1184,7 +1184,7 @@ export default function AdminPage() {
                 <Button
                   onClick={startExternalImageMigration}
                   variant="secondary"
-                  className="min-w-[200px] border border-orange-400 text-orange-700 dark:text-orange-300 dark:border-orange-500"
+                  className="min-w-[200px] border border-blue-400 text-blue-700 dark:text-blue-300 dark:border-blue-500 rounded-xl"
                   disabled={migratingImages}
                 >
                   <Zap className="w-4 h-4 mr-2" />
@@ -1195,7 +1195,7 @@ export default function AdminPage() {
 
             {migrateProgress && (
               <div className="space-y-3 pt-2">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
                   <span>{migrateProgress.message}</span>
                   {migrateProgress.total > 0 && (
                     <span>{Math.round((migrateProgress.current / Math.max(migrateProgress.total, 1)) * 100)}%</span>
@@ -1205,17 +1205,17 @@ export default function AdminPage() {
                   value={migrateProgress.total > 0 ? (migrateProgress.current / Math.max(migrateProgress.total, 1)) * 100 : 0}
                   className="h-2"
                 />
-                <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex gap-4 text-xs text-slate-500 dark:text-slate-400">
                   <span className="text-green-600 font-medium">Made Public: {migrateProgress.made_public}</span>
-                  <span className="text-gray-500">Skipped (already public): {migrateProgress.skipped}</span>
+                  <span className="text-slate-500">Skipped (already public): {migrateProgress.skipped}</span>
                   <span className="text-red-600">Failed: {migrateProgress.failed}</span>
                 </div>
               </div>
             )}
 
             {migrateExternalProgress && (
-              <div className="space-y-3 pt-2 border-t border-orange-200 dark:border-orange-800">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+              <div className="space-y-3 pt-2 border-t border-amber-200 dark:border-amber-800">
+                <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
                   <span>{migrateExternalProgress.message}</span>
                   {migrateExternalProgress.total > 0 && (
                     <span>
@@ -1234,7 +1234,7 @@ export default function AdminPage() {
                   }
                   className="h-2"
                 />
-                <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex gap-4 text-xs text-slate-500 dark:text-slate-400">
                   <span className="text-green-600 font-medium">
                     Migrated: {migrateExternalProgress.images_migrated}
                   </span>
@@ -1247,18 +1247,18 @@ export default function AdminPage() {
         </Card>
 
         {/* Filter Card */}
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <Card className="dark:bg-slate-900/60 dark:border-slate-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 dark:text-white">
               <Search className="w-5 w-5" />
               Filter Questions
             </CardTitle>
-            <CardDescription className="dark:text-gray-400">Search by subject and section code</CardDescription>
+            <CardDescription className="dark:text-slate-400">Search by subject and section code</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3">
               <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger className="flex-1 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                <SelectTrigger className="flex-1 bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
                   <SelectValue placeholder="Select Subject" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1275,7 +1275,7 @@ export default function AdminPage() {
                 onValueChange={setSection}
                 disabled={!subject}
               >
-                <SelectTrigger className="flex-1 bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                <SelectTrigger className="flex-1 bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
                   <SelectValue placeholder={subject ? "All Sections" : "Select subject first"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -1291,7 +1291,7 @@ export default function AdminPage() {
               <Button
                 onClick={fetchFiltered}
                 disabled={!subject}
-                className="bg-khan-blue hover:bg-khan-purple text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Search className="w-4 h-4 mr-2" />
                 Search
@@ -1304,7 +1304,7 @@ export default function AdminPage() {
                   checked={showOnlyMissingExplanation}
                   onCheckedChange={(v) => setShowOnlyMissingExplanation(!!v)}
                 />
-                <Label htmlFor="missing-explanation-only" className="text-sm font-medium cursor-pointer dark:text-gray-300">
+                <Label htmlFor="missing-explanation-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
                   Only show questions without explanation
                 </Label>
               </div>
@@ -1314,7 +1314,7 @@ export default function AdminPage() {
                   checked={showOnlyErrorReports}
                   onCheckedChange={(v) => setShowOnlyErrorReports(!!v)}
                 />
-                <Label htmlFor="error-reports-only" className="text-sm font-medium cursor-pointer dark:text-gray-300">
+                <Label htmlFor="error-reports-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
                   Only show questions with error reports
                 </Label>
               </div>
@@ -1323,7 +1323,7 @@ export default function AdminPage() {
         </Card>
 
         {/* Questions Table Card */}
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <Card className="dark:bg-slate-900/60 dark:border-slate-800">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -1340,7 +1340,7 @@ export default function AdminPage() {
               </div>
               <div className="flex gap-2 items-center">
                 <Select value={selectedAction} onValueChange={setSelectedAction}>
-                  <SelectTrigger className="w-[250px] bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                  <SelectTrigger className="w-[250px] bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
                     <SelectValue placeholder="Select Action" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1363,7 +1363,7 @@ export default function AdminPage() {
                   <Button
                     onClick={executeAIAction}
                     disabled={selectedQuestions.size === 0}
-                    className="bg-khan-green hover:bg-khan-green-light text-white"
+                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
                   >
                     {`Execute (${selectedQuestions.size})`}
                   </Button>
@@ -1371,7 +1371,7 @@ export default function AdminPage() {
               </div>
               {explanationProgress && (
                 <div className="mt-3 space-y-2">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-slate-600">
                     <span>{explanationProgress.message}</span>
                     {explanationProgress.total > 0 && (
                       <span>{Math.round((explanationProgress.current / Math.max(explanationProgress.total, 1)) * 100)}%</span>
@@ -1381,9 +1381,9 @@ export default function AdminPage() {
                     value={(explanationProgress.current / Math.max(explanationProgress.total, 1)) * 100}
                     className="h-2"
                   />
-                  <div className="flex gap-4 text-xs text-gray-500">
+                  <div className="flex gap-4 text-xs text-slate-500">
                     <span className="text-green-600 font-medium">Done: {explanationProgress.updated}</span>
-                    <span className="text-yellow-600">Skipped: {explanationProgress.skipped}</span>
+                    <span className="text-amber-500">Skipped: {explanationProgress.skipped}</span>
                     <span className="text-red-600">Failed: {explanationProgress.failed}</span>
                   </div>
                 </div>
@@ -1406,7 +1406,7 @@ export default function AdminPage() {
                   <col style={{ width: '12%' }} />
                   <col style={{ width: '13%' }} />
                 </colgroup>
-                <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
+                <thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700">
                   <tr>
                     <th className="p-2 text-center">
                       <Checkbox
@@ -1414,25 +1414,25 @@ export default function AdminPage() {
                         onCheckedChange={toggleSelectAll}
                       />
                     </th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Subject</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Section</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Prompt</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Choices</th>
-                    <th className="p-2 text-center font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Ans</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Explanation</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Difficulty</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Reasoning</th>
-                    <th className="p-2 text-left font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Error reason</th>
-                    <th className="p-2 text-center font-semibold text-khan-gray-dark dark:text-gray-300 text-xs">Actions</th>
+                    <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Subject</th>
+                    <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Section</th>
+                    <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Prompt</th>
+                    <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Choices</th>
+                    <th className="p-2 text-center font-semibold text-slate-900 dark:text-slate-300 text-xs">Ans</th>
+                    <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Explanation</th>
+                    <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Difficulty</th>
+                    <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Reasoning</th>
+                    <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Error reason</th>
+                    <th className="p-2 text-center font-semibold text-slate-900 dark:text-slate-300 text-xs">Actions</th>
                   </tr>
-                  <tr className="bg-gray-100 dark:bg-gray-600/50 border-b dark:border-gray-600">
+                  <tr className="bg-slate-100 dark:bg-slate-700/50 border-b dark:border-slate-700">
                     <th className="p-1" />
                     <th className="p-1">
                       <Input
                         placeholder="Search..."
                         value={columnSearch.subject}
                         onChange={(e) => setColumnSearchField("subject", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
                       />
                     </th>
                     <th className="p-1">
@@ -1440,7 +1440,7 @@ export default function AdminPage() {
                         placeholder="Search..."
                         value={columnSearch.section}
                         onChange={(e) => setColumnSearchField("section", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
                       />
                     </th>
                     <th className="p-1">
@@ -1448,7 +1448,7 @@ export default function AdminPage() {
                         placeholder="Search..."
                         value={columnSearch.prompt}
                         onChange={(e) => setColumnSearchField("prompt", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
                       />
                     </th>
                     <th className="p-1">
@@ -1456,7 +1456,7 @@ export default function AdminPage() {
                         placeholder="Search..."
                         value={columnSearch.choices}
                         onChange={(e) => setColumnSearchField("choices", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
                       />
                     </th>
                     <th className="p-1">
@@ -1464,7 +1464,7 @@ export default function AdminPage() {
                         placeholder="A-E"
                         value={columnSearch.ans}
                         onChange={(e) => setColumnSearchField("ans", e.target.value.toUpperCase().slice(0, 1))}
-                        className="h-8 w-12 text-xs text-center bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                        className="h-8 w-12 text-xs text-center bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
                       />
                     </th>
                     <th className="p-1">
@@ -1472,7 +1472,7 @@ export default function AdminPage() {
                         placeholder="Search..."
                         value={columnSearch.explanation}
                         onChange={(e) => setColumnSearchField("explanation", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
                       />
                     </th>
                     <th className="p-1">
@@ -1480,7 +1480,7 @@ export default function AdminPage() {
                         placeholder="Search..."
                         value={columnSearch.difficulty}
                         onChange={(e) => setColumnSearchField("difficulty", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
                       />
                     </th>
                     <th className="p-1">
@@ -1488,7 +1488,7 @@ export default function AdminPage() {
                         placeholder="Search..."
                         value={columnSearch.reasoning}
                         onChange={(e) => setColumnSearchField("reasoning", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
                       />
                     </th>
                     <th className="p-1">
@@ -1496,7 +1496,7 @@ export default function AdminPage() {
                         placeholder="Search..."
                         value={columnSearch.error_reason}
                         onChange={(e) => setColumnSearchField("error_reason", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
+                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
                       />
                     </th>
                     <th className="p-1" />
@@ -1516,7 +1516,7 @@ export default function AdminPage() {
                 </tbody>
               </table>
               {filteredDisplayItems.length === 0 && (
-                <div className="p-8 text-center text-khan-gray-medium dark:text-gray-400">
+                <div className="p-8 text-center text-slate-500 dark:text-slate-400">
                   {displayedItems.length === 0
                     ? showOnlyMissingExplanation && items.length > 0
                       ? "No questions without explanation in this set."
@@ -1607,12 +1607,12 @@ function Row({
                   <img
                     src={imgSrc}
                     alt={`Question image ${idx + 1}`}
-                    className="h-8 w-auto rounded border border-gray-300 cursor-pointer"
+                    className="h-8 w-auto rounded border border-slate-300 cursor-pointer"
                   />
                   <img
                     src={imgSrc}
                     alt={`Question image ${idx + 1} enlarged`}
-                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
               );
@@ -1628,7 +1628,7 @@ function Row({
     const hasText = q.prompt && q.prompt.trim() !== "";
 
     if (!hasImage && !hasText) {
-      return <span className="text-gray-400">N/A</span>;
+      return <span className="text-slate-400">N/A</span>;
     }
 
     return (
@@ -1642,12 +1642,12 @@ function Row({
                   <img
                     src={imgSrc}
                     alt={`Question image ${idx + 1}`}
-                    className="h-8 w-auto rounded border border-gray-300 cursor-pointer"
+                    className="h-8 w-auto rounded border border-slate-300 cursor-pointer"
                   />
                   <img
                     src={imgSrc}
                     alt={`Question image ${idx + 1} enlarged`}
-                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
               );
@@ -1674,12 +1674,12 @@ function Row({
                   <img
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1}`}
-                    className="h-6 w-auto rounded border border-gray-300 cursor-pointer"
+                    className="h-6 w-auto rounded border border-slate-300 cursor-pointer"
                   />
                   <img
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
-                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
               );
@@ -1698,7 +1698,7 @@ function Row({
     const hasText = choice && choice.trim() !== "";
 
     if (!hasImage && !hasText) {
-      return <span className="text-gray-400">N/A</span>;
+      return <span className="text-slate-400">N/A</span>;
     }
 
     return (
@@ -1712,12 +1712,12 @@ function Row({
                   <img
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1}`}
-                    className="h-6 w-auto rounded border border-gray-300 cursor-pointer"
+                    className="h-6 w-auto rounded border border-slate-300 cursor-pointer"
                   />
                   <img
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
-                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-khan-blue shadow-lg"
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
               );
@@ -1731,15 +1731,15 @@ function Row({
 
   if (!edit) {
     return (
-      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600">
+      <tr className="border-b hover:bg-slate-50 dark:hover:bg-slate-700 dark:border-slate-700">
         <td className="p-2 text-center align-top">
           <Checkbox
             checked={selected}
             onCheckedChange={onToggleSelect}
           />
         </td>
-        <td className="p-2 align-top text-xs break-words dark:text-gray-300">{q.subject_code ? getSubjectDisplayName(q.subject_code) : "-"}</td>
-        <td className="p-2 align-top text-xs break-words dark:text-gray-300">{q.section_code || "-"}</td>
+        <td className="p-2 align-top text-xs break-words dark:text-slate-300">{q.subject_code ? getSubjectDisplayName(q.subject_code) : "-"}</td>
+        <td className="p-2 align-top text-xs break-words dark:text-slate-300">{q.section_code || "-"}</td>
         <td className="p-2 align-top">{renderQuestionPrompt()}</td>
         <td className="p-2 align-top">
           <div className="text-xs space-y-1">
@@ -1756,21 +1756,21 @@ function Row({
         <td className="p-2 align-top text-xs break-words overflow-hidden">
           <div className="line-clamp-4">{q.explanation || "-"}</div>
         </td>
-        <td className="p-2 align-top text-xs break-words dark:text-gray-300">
+        <td className="p-2 align-top text-xs break-words dark:text-slate-300">
           {getDifficultyFromQuestion(q) || "-"}
         </td>
-        <td className="p-2 align-top text-xs break-words overflow-hidden dark:text-gray-300">
+        <td className="p-2 align-top text-xs break-words overflow-hidden dark:text-slate-300">
           <div className="line-clamp-3">{getReasoningFromQuestion(q) || "-"}</div>
         </td>
         <td className="p-2 align-top text-xs break-words overflow-hidden">
           {(q.tags || []).includes("error_reported") ? (
             <div className="space-y-1">
-              <div className="text-rose-600 dark:text-rose-400 font-medium line-clamp-2">
+              <div className="text-red-600 dark:text-red-400 font-medium line-clamp-2">
                 {getErrorReasonFromQuestion(q) || "Reported"}
               </div>
             </div>
           ) : (
-            <span className="text-gray-400">-</span>
+            <span className="text-slate-400">-</span>
           )}
         </td>
         <td className="p-2 text-center align-top">
@@ -1793,7 +1793,7 @@ function Row({
                   );
                   onSave(q.id, { tags: newTags });
                 }}
-                className="text-xs px-2 h-7 border-emerald-500 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                className="text-xs px-2 h-7 border-blue-500 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl"
               >
                 Mark fixed
               </Button>
@@ -1838,14 +1838,14 @@ function Row({
       </td>
       <td className="p-2">
         <textarea
-          className="w-full border rounded p-2 min-h-[80px] dark:bg-gray-700 dark:text-white dark:border-gray-600"
+          className="w-full border rounded p-2 min-h-[80px] dark:bg-slate-800 dark:text-white dark:border-slate-700"
           value={form.prompt}
           onChange={(e) => setForm((s) => ({ ...s, prompt: e.target.value }))}
         />
       </td>
       <td className="p-2">
         <textarea
-          className="w-full border rounded p-2 min-h-[80px] dark:bg-gray-700 dark:text-white dark:border-gray-600"
+          className="w-full border rounded p-2 min-h-[80px] dark:bg-slate-800 dark:text-white dark:border-slate-700"
           value={form.choicesText}
           onChange={(e) =>
             setForm((s) => ({ ...s, choicesText: e.target.value }))
@@ -1864,25 +1864,25 @@ function Row({
       </td>
       <td className="p-2">
         <textarea
-          className="w-full border rounded p-2 min-h-[80px] dark:bg-gray-700 dark:text-white dark:border-gray-600"
+          className="w-full border rounded p-2 min-h-[80px] dark:bg-slate-800 dark:text-white dark:border-slate-700"
           value={form.explanation}
           onChange={(e) =>
             setForm((s) => ({ ...s, explanation: e.target.value }))
           }
         />
       </td>
-      <td className="p-2 align-top text-xs text-gray-500 dark:text-gray-400">
+      <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
         {getDifficultyFromQuestion(q) || "-"}
       </td>
-      <td className="p-2 align-top text-xs text-gray-500 dark:text-gray-400 line-clamp-3">
+      <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400 line-clamp-3">
         {getReasoningFromQuestion(q) || "-"}
       </td>
-      <td className="p-2 align-top text-xs text-gray-500 dark:text-gray-400">
+      <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
         {getErrorReasonFromQuestion(q) || "-"}
       </td>
       <td className="p-2 text-center">
         <div className="flex gap-2 justify-center flex-col">
-          <Button size="sm" onClick={save} className="bg-khan-green hover:bg-khan-green-light text-white">
+          <Button size="sm" onClick={save} className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white">
             Save
           </Button>
           <Button

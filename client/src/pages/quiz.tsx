@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import { FullLengthQuiz } from "@/components/quiz/FullLengthQuiz";
@@ -65,6 +66,7 @@ function getExamConfig(subjectId: string): { questions: number; timeMinutes: num
 export default function Quiz() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { subject: subjectId, unit } = router.query;
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -76,6 +78,7 @@ export default function Quiz() {
   const [score, setScore] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [savedExamState, setSavedExamState] = useState<any>(null);
+  const [savedUnitQuizState, setSavedUnitQuizState] = useState<any>(null);
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
@@ -192,6 +195,25 @@ export default function Quiz() {
             return;
           }
 
+          // Check for saved unit quiz state (save and exit)
+          try {
+            const stateResponse = await apiRequest(
+              "GET",
+              `/api/user/subjects/${subjectId}/unit-quiz-state?unitId=${encodeURIComponent(unit as string)}`,
+            );
+            if (stateResponse.ok) {
+              const stateData = await stateResponse.json();
+              if (stateData.success && stateData.data) {
+                setSavedUnitQuizState(stateData.data);
+                setShowResumeDialog(true);
+                setIsLoading(false);
+                return;
+              }
+            }
+          } catch (err) {
+            console.log("No saved unit quiz state found");
+          }
+
           const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`;
           console.log("📡 [Quiz] Fetching questions with:", {
             url: apiUrl,
@@ -249,8 +271,14 @@ export default function Quiz() {
     if (isAuthenticated && unit && subjectId) fetchQuestions();
   }, [isAuthenticated, unit, subjectId]);
 
-  const handleExitQuiz = () => {
-    // Force navigation to study page
+  const handleExitQuiz = async () => {
+    // Refetch subjects and unit progress so study page shows updated Mastered status immediately
+    if (subjectId) {
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
+      await queryClient.refetchQueries({ queryKey: ["subjects"] });
+      await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
+    }
     router.replace(`/study?subject=${subjectId}`);
   };
 
@@ -391,6 +419,12 @@ export default function Quiz() {
         `/api/user/subjects/${subjectId}/save-exam-state`,
         { examState: { ...examState, timeElapsed } } // Include current time elapsed
       );
+      if (subjectId) {
+        queryClient.invalidateQueries({ queryKey: ["subjects"] });
+        queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
+        await queryClient.refetchQueries({ queryKey: ["subjects"] });
+        await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
+      }
       router.push(`/study?subject=${subjectId}`);
     } catch (error) {
       console.error("Failed to save exam state:", error);
@@ -476,7 +510,93 @@ export default function Quiz() {
     }
   };
 
-  // Save score for practice tests only (full-length handled in submit)
+  const handleSaveAndExitUnit = async (unitState: { questionIds: string[]; currentQuestionIndex: number; userAnswers: { [key: number]: string }; flaggedQuestions?: number[] }) => {
+    try {
+      await apiRequest(
+        "POST",
+        `/api/user/subjects/${subjectId}/unit-quiz-state`,
+        { unitId: unit, state: unitState },
+      );
+      if (subjectId) {
+        queryClient.invalidateQueries({ queryKey: ["subjects"] });
+        queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
+        await queryClient.refetchQueries({ queryKey: ["subjects"] });
+        await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
+      }
+    } catch (error) {
+      console.error("Failed to save unit quiz state:", error);
+    } finally {
+      router.replace(`/study?subject=${subjectId}`);
+    }
+  };
+
+  const handleResumeUnitQuiz = async () => {
+    setShowResumeDialog(false);
+    setIsLoading(true);
+    try {
+      const subjectApiCode = getApiCodeForSubject(subjectId as string);
+      if (!subjectApiCode) throw new Error("Invalid subject");
+      const savedQuestionIds: string[] = savedUnitQuizState?.questionIds || [];
+      const url =
+        savedQuestionIds.length > 0
+          ? `/api/questions?subject=${subjectApiCode}&ids=${encodeURIComponent(savedQuestionIds.join(","))}`
+          : `/api/questions?subject=${subjectApiCode}&section=${getSectionCodeForUnit(subjectId as string, unit as string)}&limit=25`;
+      const response = await apiRequest("GET", url);
+      if (!response.ok) throw new Error("Failed to fetch questions");
+      const data = await response.json();
+      if (data.success && data.data?.length > 0) {
+        setQuestions(normalizeQuestions(data.data));
+      } else {
+        setError("No questions found");
+      }
+    } catch (err) {
+      setError("Failed to load quiz questions");
+      console.error("Error resuming unit quiz:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartNewUnitQuiz = async () => {
+    try {
+      await apiRequest(
+        "DELETE",
+        `/api/user/subjects/${subjectId}/unit-quiz-state?unitId=${encodeURIComponent(unit as string)}`,
+      );
+    } catch (error) {
+      console.error("Failed to delete saved unit quiz state:", error);
+    }
+    setSavedUnitQuizState(null);
+    setShowResumeDialog(false);
+    setIsLoading(true);
+    try {
+      const subjectApiCode = getApiCodeForSubject(subjectId as string);
+      if (!subjectApiCode) throw new Error("Invalid subject");
+      const sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
+      if (!sectionCode) {
+        setError("Invalid unit");
+        setIsLoading(false);
+        return;
+      }
+      const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`;
+      const response = await apiRequest("GET", apiUrl);
+      if (!response.ok) throw new Error("Failed to fetch");
+      const data = await response.json();
+      if (data.success && data.data?.length > 0) {
+        const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
+        setQuestions(shuffled.slice(0, 25));
+      } else {
+        setError("No questions found");
+      }
+    } catch (err) {
+      setError("Failed to load quiz questions");
+      console.error("Error starting new unit quiz:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Save score for practice tests only (full-length handled in submit); clear saved unit quiz state on completion
   useEffect(() => {
     const saveScore = async () => {
       if (!quizCompleted || !subjectId || !unit || isFullLength) return;
@@ -487,6 +607,11 @@ export default function Quiz() {
           `/api/user/subjects/${subjectId}/unit-progress`,
           { unitId: unit, mcqScore: pct },
         );
+        await apiRequest(
+          "DELETE",
+          `/api/user/subjects/${subjectId}/unit-quiz-state?unitId=${encodeURIComponent(unit as string)}`,
+        );
+        setSavedUnitQuizState(null);
       } catch (e) {
         console.error("Failed to save practice quiz score:", e);
       }
@@ -503,7 +628,7 @@ export default function Quiz() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-khan-background">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
         <Navigation />
         <div className="flex items-center justify-center h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
@@ -514,7 +639,7 @@ export default function Quiz() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-khan-background">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
@@ -532,7 +657,7 @@ export default function Quiz() {
 
   if (quizCompleted && !isReviewMode) {
     return (
-      <div className="min-h-screen bg-khan-background">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
         <Navigation />
         <div className="container mx-auto px-4 py-4">
           <QuizResults
@@ -563,7 +688,7 @@ export default function Quiz() {
   }
 
   return (
-    <div className="min-h-screen bg-khan-background">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
       {isFullLength ? (
         <>
           <Navigation />
@@ -589,6 +714,8 @@ export default function Quiz() {
             timeElapsed={timeElapsed}
             onExit={handleExitQuiz}
             onComplete={handleCompletePractice}
+            onSaveAndExit={handleSaveAndExitUnit}
+            savedState={savedUnitQuizState}
           />
         </>
       )}
@@ -596,17 +723,21 @@ export default function Quiz() {
       <AlertDialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Resume Previous Exam?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {savedUnitQuizState ? "Resume unit quiz?" : "Resume Previous Exam?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              You have a saved exam in progress. Would you like to continue where you left off or start a new exam?
+              {savedUnitQuizState
+                ? "You have a saved unit quiz in progress. Would you like to continue where you left off or start a new quiz?"
+                : "You have a saved exam in progress. Would you like to continue where you left off or start a new exam?"}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleStartNewExam}>
-              Start New Exam
+            <AlertDialogCancel onClick={savedUnitQuizState ? handleStartNewUnitQuiz : handleStartNewExam}>
+              {savedUnitQuizState ? "Start New Quiz" : "Start New Exam"}
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleResumeExam}>
-              Resume Exam
+            <AlertDialogAction onClick={savedUnitQuizState ? handleResumeUnitQuiz : handleResumeExam}>
+              {savedUnitQuizState ? "Resume Quiz" : "Resume Exam"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

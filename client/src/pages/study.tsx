@@ -22,6 +22,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
+import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -76,6 +77,7 @@ export default function Study() {
       return response.json();
     },
     enabled: isAuthenticated && !!user,
+    refetchOnMount: "always",
   });
 
   const subjects: StudySubject[] = subjectsResponse?.data || [];
@@ -140,13 +142,13 @@ export default function Study() {
 
   if (loading || subjectsLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
         <Navigation />
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="relative w-12 h-12 mx-auto mb-4">
-              <div className="absolute inset-0 rounded-full border-2 border-emerald-200 dark:border-emerald-800" />
-              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-500 animate-spin" />
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200 dark:border-blue-800" />
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
             </div>
             <span className="text-slate-500 dark:text-slate-400 font-medium">Loading...</span>
           </div>
@@ -157,11 +159,11 @@ export default function Study() {
 
   if (!currentSubject) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
         <Navigation />
         <div className="container mx-auto px-4 py-12 max-w-xl">
-          <div className="text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+          <div className="text-center rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
               <HelpCircle className="h-8 w-8 text-slate-400" />
             </div>
             <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-2">
@@ -172,7 +174,7 @@ export default function Study() {
             </p>
             <Button
               onClick={() => router.push("/dashboard")}
-              className="bg-emerald-500 hover:bg-emerald-600 rounded-xl"
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-xl transition-all duration-150 ease-out"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dashboard
@@ -192,21 +194,18 @@ export default function Study() {
   const totalTopics = units.length;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
       <Navigation />
 
       {/* Hero header */}
-      <div className="relative bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 overflow-hidden">
-        {/* Subtle gradient bg */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent dark:from-emerald-500/5 dark:to-transparent pointer-events-none" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative bg-white dark:bg-slate-900/70 border-b border-slate-200 dark:border-slate-800 overflow-hidden">
 
         <div className="container mx-auto px-4 py-6 max-w-6xl relative z-10">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push("/dashboard")}
-            className="text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 -ml-2 mb-4 rounded-lg group"
+            className="text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 -ml-2 mb-4 rounded-lg group transition-colors duration-150 ease-out"
           >
             <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
             Back to Dashboard
@@ -237,9 +236,9 @@ export default function Study() {
                 </div>
                 <APScoreExplainDialog inline triggerClassName="self-start mt-0.5" />
               </div>
-              <div className="px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex items-center gap-2.5">
-                <div className="w-9 h-9 bg-violet-50 dark:bg-violet-500/10 rounded-xl flex items-center justify-center">
-                  <CalendarDays className="h-4 w-4 text-violet-500" />
+              <div className="px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
+                  <CalendarDays className="h-4 w-4 text-blue-500" />
                 </div>
                 <div>
                   <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider leading-none">
@@ -270,9 +269,9 @@ export default function Study() {
               {/* Row 1 — Hero Diagnostic CTA (full width) */}
               <button
                 onClick={() => router.push(`/diagnostic?subject=${subjectId}`)}
-                className="group relative overflow-hidden rounded-2xl p-6 w-full bg-red-600 text-white text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(220,38,38,0.4)] active:translate-y-0"
+                className="group relative overflow-hidden rounded-xl p-6 w-full bg-red-600 text-white text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md active:translate-y-0"
               >
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
                 <div className="relative z-10 flex items-center gap-4">
                   <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Sparkles className="w-7 h-7 text-white" />
@@ -290,7 +289,7 @@ export default function Study() {
                 {/* MCQ Full-Length Test — secondary/discouraged */}
                 <button
                   onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-                  className="group relative overflow-hidden rounded-2xl p-5 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-left transition-all duration-200 opacity-60 hover:opacity-80"
+                  className="group relative overflow-hidden rounded-xl p-5 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-left transition-all duration-150 ease-out opacity-60 hover:opacity-80"
                 >
                   <div className="relative z-10 flex items-center gap-4">
                     <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -306,7 +305,7 @@ export default function Study() {
                 {/* Analytics — locked */}
                 <button
                   disabled
-                  className="group relative overflow-hidden rounded-2xl p-5 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-left opacity-50 cursor-not-allowed"
+                  className="group relative overflow-hidden rounded-xl p-5 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-left opacity-50 cursor-not-allowed"
                 >
                   <div className="relative z-10 flex items-center gap-4">
                     <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -337,9 +336,9 @@ export default function Study() {
                     label: "Review Questions",
                     desc: "Questions you got wrong",
                     href: `/review?subject=${subjectId}`,
-                    iconClass: "text-violet-600 dark:text-violet-400",
-                    iconBg: "bg-violet-50 dark:bg-violet-500/10 group-hover:bg-violet-100 dark:group-hover:bg-violet-500/20",
-                    borderHover: "hover:border-violet-200 dark:hover:border-violet-800/60",
+                    iconClass: "text-blue-600 dark:text-blue-400",
+                    iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
+                    borderHover: "hover:border-blue-200 dark:hover:border-blue-800/60",
                   },
                   {
                     icon: Clock,
@@ -354,7 +353,7 @@ export default function Study() {
                   <button
                     key={action.label}
                     onClick={() => router.push(action.href)}
-                    className={`group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 ${action.borderHover} text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}
+                    className={`group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 ${action.borderHover} text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 ${action.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 transition-colors`}>
@@ -379,9 +378,9 @@ export default function Study() {
                 {/* MCQ Full-Length Test — elevated primary CTA */}
                 <button
                   onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-                  className="group relative overflow-hidden rounded-2xl p-5 bg-emerald-500 text-white text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(16,185,129,0.35)] active:translate-y-0"
+                  className="group relative overflow-hidden rounded-xl p-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md active:translate-y-0"
                 >
-                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
                   <div className="relative z-10 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
                       <Play className="w-6 h-6 text-white fill-white" />
@@ -397,11 +396,11 @@ export default function Study() {
                 {/* Analytics — highlighted secondary CTA */}
                 <button
                   onClick={() => router.push(`/analytics?subject=${subjectId}`)}
-                  className="group relative overflow-hidden rounded-2xl p-5 bg-white dark:bg-slate-900 border-2 border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-300 dark:hover:border-emerald-700 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+                  className="group relative overflow-hidden rounded-xl p-5 bg-white dark:bg-slate-900/70 border border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
                 >
                   <div className="relative z-10 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
-                      <BarChart3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                      <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight">Analytics</p>
@@ -429,9 +428,9 @@ export default function Study() {
                     label: "Review Questions",
                     desc: "Questions you got wrong",
                     href: `/review?subject=${subjectId}`,
-                    iconClass: "text-violet-600 dark:text-violet-400",
-                    iconBg: "bg-violet-50 dark:bg-violet-500/10 group-hover:bg-violet-100 dark:group-hover:bg-violet-500/20",
-                    borderHover: "hover:border-violet-200 dark:hover:border-violet-800/60",
+                    iconClass: "text-blue-600 dark:text-blue-400",
+                    iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
+                    borderHover: "hover:border-blue-200 dark:hover:border-blue-800/60",
                   },
                   {
                     icon: Bookmark,
@@ -447,15 +446,15 @@ export default function Study() {
                     label: "Retake Diagnostic",
                     desc: "Re-baseline your score",
                     href: `/diagnostic?subject=${subjectId}`,
-                    iconClass: "text-rose-600 dark:text-rose-400",
-                    iconBg: "bg-rose-50 dark:bg-rose-500/10 group-hover:bg-rose-100 dark:group-hover:bg-rose-500/20",
-                    borderHover: "hover:border-rose-200 dark:hover:border-rose-800/60",
+                    iconClass: "text-red-600 dark:text-red-400",
+                    iconBg: "bg-red-50 dark:bg-red-500/10 group-hover:bg-red-100 dark:group-hover:bg-red-500/20",
+                    borderHover: "hover:border-red-200 dark:hover:border-red-800/60",
                   },
                 ].map((action) => (
                   <button
                     key={action.label}
                     onClick={() => router.push(action.href)}
-                    className={`group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 ${action.borderHover} text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}
+                    className={`group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 ${action.borderHover} text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 ${action.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 transition-colors`}>
@@ -478,7 +477,7 @@ export default function Study() {
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-[0_4px_12px_rgba(16,185,129,0.25)]">
+              <div className="w-9 h-9 rounded-xl bg-blue-600 dark:bg-blue-500 flex items-center justify-center shadow-sm">
                 <Target className="h-4 w-4 text-white" />
               </div>
               <div>
@@ -501,35 +500,36 @@ export default function Study() {
               const hasAttempted = score > 0;
               const isMastered = tierResult.tier === "5";
 
+              /* 5-scale: Mastered=dark green, Proficient=medium green, In Progress=light green, Needs Practice=light red, Weak=dark red */
               const statusConfig = {
                 Mastered: {
-                  badge: "bg-emerald-500 text-white",
-                  numBg: "bg-emerald-500 text-white",
-                  barColor: "from-emerald-500 to-teal-500",
+                  badge: "bg-green-700 dark:bg-green-800 text-white",
+                  numBg: "bg-green-700 dark:bg-green-800 text-white",
+                  barColor: "from-green-700 to-green-800",
                   icon: Star,
                 },
                 Proficient: {
-                  badge: "bg-green-500 text-white",
-                  numBg: "bg-green-50 dark:bg-green-500/20 text-green-600 dark:text-green-400",
-                  barColor: "from-green-400 to-emerald-500",
+                  badge: "bg-green-600 text-white",
+                  numBg: "bg-green-50 dark:bg-green-500/20 text-green-700 dark:text-green-300",
+                  barColor: "from-green-500 to-green-600",
                   icon: CheckCircle,
                 },
                 "In Progress": {
-                  badge: "bg-amber-500 text-white",
-                  numBg: "bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400",
-                  barColor: "from-amber-400 to-orange-400",
+                  badge: "bg-green-300 dark:bg-green-400 text-white",
+                  numBg: "bg-green-50 dark:bg-green-500/20 text-green-600 dark:text-green-400",
+                  barColor: "from-green-300 to-green-400",
                   icon: Flame,
                 },
                 "Needs Practice": {
-                  badge: "bg-orange-500 text-white",
-                  numBg: "bg-orange-50 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400",
-                  barColor: "from-orange-400 to-amber-400",
+                  badge: "bg-red-400 dark:bg-red-500 text-white",
+                  numBg: "bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-300",
+                  barColor: "from-red-400 to-red-500",
                   icon: Flame,
                 },
                 Weak: {
-                  badge: "bg-red-500 text-white",
-                  numBg: "bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400",
-                  barColor: "from-red-400 to-orange-400",
+                  badge: "bg-red-700 dark:bg-red-800 text-white",
+                  numBg: "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-400",
+                  barColor: "from-red-700 to-red-800",
                   icon: Flame,
                 },
                 "Not Started": {
@@ -548,15 +548,15 @@ export default function Study() {
               return (
                 <div
                   key={unit.id}
-                  className={`group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border transition-all duration-300 ${
+                  className={`group relative overflow-hidden rounded-xl bg-white dark:bg-slate-900/70 border transition-all duration-150 ease-out ${
                     isMastered
-                      ? "border-emerald-200/60 dark:border-emerald-800/40 hover:border-emerald-300 dark:hover:border-emerald-700/60"
-                      : "border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600"
-                  } hover:shadow-lg hover:-translate-y-0.5`}
+                      ? "border-green-200/60 dark:border-green-800/40 hover:border-green-300 dark:hover:border-green-700/60"
+                      : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600"
+                  } hover:shadow-md hover:-translate-y-[1px]`}
                 >
                   {/* Left colored accent */}
                   <div
-                    className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${statusConfig.barColor} opacity-${isMastered ? "100" : "40"} group-hover:opacity-100 transition-opacity duration-300`}
+                    className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${statusConfig.barColor} opacity-${isMastered ? "100" : "40"} group-hover:opacity-100 transition-opacity duration-150 ease-out`}
                   />
 
                   <div className="flex flex-col md:flex-row pl-4">
@@ -621,10 +621,10 @@ export default function Study() {
                     <div className="px-5 pb-5 md:pb-0 md:w-52 flex items-center">
                       <Button
                         onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)}
-                        className={`w-full h-11 font-bold rounded-xl transition-all duration-200 text-sm ${
+                        className={`w-full h-11 font-bold rounded-xl transition-all duration-150 ease-out text-sm ${
                           isMastered
-                            ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_16px_rgba(16,185,129,0.35)]"
-                            : "bg-white dark:bg-slate-800 hover:bg-emerald-500 hover:text-white text-slate-900 dark:text-white border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-500 group-hover:shadow-md"
+                            ? "bg-green-700 hover:bg-green-800 dark:bg-green-600 dark:hover:bg-green-700 text-white shadow-sm hover:shadow-md"
+                            : "bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-blue-500 group-hover:shadow-md"
                         }`}
                       >
                         {isMastered ? (
@@ -652,6 +652,7 @@ export default function Study() {
           </div>
         </div>
       </div>
+      <SimpleFooter />
     </div>
   );
 }

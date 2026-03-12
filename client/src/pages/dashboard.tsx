@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
+import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -180,7 +181,7 @@ export default function Dashboard() {
   })();
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 relative">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] relative">
       <BackgroundDecor />
       <Navigation />
 
@@ -189,7 +190,7 @@ export default function Dashboard() {
         <div className="mb-10">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-1 uppercase tracking-widest">
+              <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-widest">
                 {greeting}
               </p>
               <h1 className="text-3xl sm:text-4xl font-display font-bold text-slate-900 dark:text-white tracking-tight">
@@ -204,7 +205,7 @@ export default function Dashboard() {
             {activeSubjects.length > 0 && (
               <Button
                 onClick={() => router.push("/learn")}
-                className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl font-semibold shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] transition-all px-5 h-11 flex-shrink-0"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] px-5 h-11 flex-shrink-0"
               >
                 <Plus className="mr-2 w-4 h-4" /> Add Course
               </Button>
@@ -270,7 +271,7 @@ export default function Dashboard() {
             <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate(String(subjectToRemove?.id))}
-              className="bg-rose-600 hover:bg-rose-700 rounded-xl"
+              className="bg-red-600 hover:bg-red-700 rounded-xl"
             >
               Delete
             </AlertDialogAction>
@@ -294,13 +295,15 @@ export default function Dashboard() {
                 archiveMutation.mutate({ id: subjectToArchive?.id, archive: true });
                 setSubjectToArchive(null);
               }}
-              className="bg-emerald-500 hover:bg-emerald-600 rounded-xl"
+              className="bg-blue-500 hover:bg-blue-600 rounded-xl"
             >
               Archive
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SimpleFooter />
     </div>
   );
 }
@@ -309,20 +312,14 @@ export default function Dashboard() {
 // SUBCOMPONENTS
 // ======================================================================================
 
-const BackgroundDecor = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-400/10 rounded-full blur-3xl" />
-    <div className="absolute bottom-20 right-10 w-96 h-96 bg-violet-400/8 rounded-full blur-3xl" />
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-400/5 rounded-full blur-3xl" />
-  </div>
-);
+const BackgroundDecor = () => null;
 
 const CenteredLoader = () => (
   <div className="flex items-center justify-center py-24">
     <div className="text-center">
       <div className="relative w-12 h-12 mx-auto mb-4">
-        <div className="absolute inset-0 rounded-full border-2 border-emerald-200 dark:border-emerald-800" />
-        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-500 animate-spin" />
+        <div className="absolute inset-0 rounded-full border-2 border-blue-200 dark:border-blue-800" />
+        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
       </div>
       <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">Loading...</p>
     </div>
@@ -331,8 +328,8 @@ const CenteredLoader = () => (
 
 const EmptyState = ({ router }: { router: any }) => (
   <div className="text-center py-24 px-4">
-    <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-500/20 dark:to-emerald-500/10 flex items-center justify-center border border-emerald-200/60 dark:border-emerald-800/60">
-      <Sparkles className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
+    <div className="w-20 h-20 mx-auto mb-6 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-200/60 dark:border-blue-800/60">
+      <Sparkles className="h-10 w-10 text-blue-600 dark:text-blue-400" />
     </div>
     <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-2">
       No subjects yet
@@ -342,7 +339,7 @@ const EmptyState = ({ router }: { router: any }) => (
     </p>
     <Button
       onClick={() => router.push("/learn")}
-      className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-8 h-12 rounded-xl font-semibold shadow-[0_4px_14px_rgba(16,185,129,0.25)]"
+      className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-8 h-12 rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98]"
     >
       <Plus className="mr-2 w-5 h-5" /> Browse Courses
     </Button>
@@ -351,30 +348,31 @@ const EmptyState = ({ router }: { router: any }) => (
 
 const RefreshingState = () => (
   <div className="inline-flex items-center text-sm text-slate-500 dark:text-slate-400 gap-2">
-    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-emerald-200 border-t-emerald-500" />
+    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-blue-200 border-t-blue-500" />
     Refreshing…
   </div>
 );
 
 const ErrorScreen = ({ refetch }: { refetch: () => void }) => (
-  <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+  <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
     <Navigation />
     <div className="py-12 px-4 max-w-xl mx-auto">
-      <Alert className="border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-500/10 rounded-2xl">
-        <AlertTriangle className="h-4 w-4 text-rose-600" />
-        <AlertDescription className="text-rose-700 dark:text-rose-300 flex flex-wrap justify-between items-center gap-3">
+      <Alert className="border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-500/10 rounded-2xl">
+        <AlertTriangle className="h-4 w-4 text-red-600" />
+        <AlertDescription className="text-red-700 dark:text-red-300 flex flex-wrap justify-between items-center gap-3">
           Failed to load your subjects.
           <Button
             variant="outline"
             size="sm"
             onClick={refetch}
-            className="border-rose-500 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg"
+            className="border-red-500 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg"
           >
             Try Again
           </Button>
         </AlertDescription>
       </Alert>
     </div>
+    <SimpleFooter />
   </div>
 );
 
@@ -392,7 +390,7 @@ const ArchivedSection = ({
   <div className="mt-6">
     <button
       onClick={toggle}
-      className="flex justify-between items-center w-full p-4 bg-slate-100/80 dark:bg-slate-800/80 rounded-2xl hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200/50 dark:border-slate-700/50 transition-colors"
+      className="flex justify-between items-center w-full p-4 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-800 transition-all duration-150 ease-out"
     >
       <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
         Archived ({subjects.length})
@@ -407,7 +405,7 @@ const ArchivedSection = ({
         {subjects.map((s) => (
           <Card
             key={s.id}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl opacity-80 hover:opacity-100 transition-opacity"
+            className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl opacity-80 hover:opacity-100 transition-all duration-150 ease-out"
           >
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start gap-4">
@@ -421,7 +419,7 @@ const ArchivedSection = ({
                   variant="outline"
                   size="sm"
                   onClick={() => onRestore(s)}
-                  className="border-emerald-500 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl shrink-0"
+                  className="border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl shrink-0 transition-all duration-150 ease-out"
                 >
                   Restore
                 </Button>
@@ -434,12 +432,13 @@ const ArchivedSection = ({
   </div>
 );
 
+/* 5-scale: 1=dark red, 2=light red, 3=light green, 4=medium green, 5=dark green */
 const scoreColorMap: Record<number, { text: string; bg: string; border: string; gradient: string }> = {
-  5: { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10", border: "border-emerald-200 dark:border-emerald-800", gradient: "from-emerald-500 to-teal-500" },
-  4: { text: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-500/10", border: "border-green-200 dark:border-green-800", gradient: "from-green-500 to-emerald-500" },
-  3: { text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10", border: "border-amber-200 dark:border-amber-800", gradient: "from-amber-500 to-yellow-500" },
-  2: { text: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10", border: "border-orange-200 dark:border-orange-800", gradient: "from-orange-500 to-amber-500" },
-  1: { text: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-500/10", border: "border-rose-200 dark:border-rose-800", gradient: "from-rose-500 to-pink-500" },
+  1: { text: "text-red-700 dark:text-red-400", bg: "bg-red-50 dark:bg-red-500/10", border: "border-red-200 dark:border-red-800", gradient: "from-red-700 to-red-800" },
+  2: { text: "text-red-600 dark:text-red-300", bg: "bg-red-50 dark:bg-red-500/10", border: "border-red-200 dark:border-red-800", gradient: "from-red-400 to-red-500" },
+  3: { text: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-500/10", border: "border-green-200 dark:border-green-800", gradient: "from-green-300 to-green-400" },
+  4: { text: "text-green-700 dark:text-green-300", bg: "bg-green-50 dark:bg-green-500/10", border: "border-green-200 dark:border-green-800", gradient: "from-green-500 to-green-600" },
+  5: { text: "text-green-800 dark:text-green-200", bg: "bg-green-50 dark:bg-green-500/10", border: "border-green-200 dark:border-green-800", gradient: "from-green-700 to-green-800" },
 };
 
 const SubjectCard = ({
@@ -493,13 +492,13 @@ const SubjectCard = ({
   const scoreColors = predicted ? scoreColorMap[predicted.score] : null;
 
   return (
-    <Card className="group flex flex-col h-full overflow-hidden border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-800/50 transition-all duration-300 bg-white dark:bg-slate-900 rounded-2xl hover:-translate-y-0.5">
+    <Card className="group flex flex-col h-full overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-[1px] hover:border-blue-200 dark:hover:border-blue-800/50 transition-all duration-150 ease-out bg-white dark:bg-slate-900/60 rounded-xl">
       <div
         className={`h-1 w-full bg-gradient-to-r ${
           scoreColors ? scoreColors.gradient : "from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600"
         } opacity-60 group-hover:opacity-100 transition-opacity duration-300`}
       />
-      <CardHeader className="pb-3 pt-5 px-5 border-b border-slate-100 dark:border-slate-800">
+      <CardHeader className="pb-3 pt-5 px-5 border-b border-slate-200 dark:border-slate-800">
         <div className="flex justify-between items-start gap-3">
           <div className="space-y-1.5 min-w-0">
             <CardTitle className="text-lg font-display font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
@@ -521,7 +520,7 @@ const SubjectCard = ({
             <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 w-8 p-0 rounded-lg" onClick={onArchive} title="Archive">
               <BookOpen className="w-3.5 h-3.5" />
             </Button>
-            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 h-8 w-8 p-0 rounded-lg" onClick={onDelete} title="Delete">
+            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 h-8 w-8 p-0 rounded-lg" onClick={onDelete} title="Delete">
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
           </div>
@@ -573,7 +572,7 @@ const SubjectCard = ({
           </div>
           <Button
             onClick={onStudy}
-            className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-5 h-12 text-sm font-bold rounded-xl shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] transition-all active:scale-[0.98] group"
+            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-5 h-12 text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] group"
           >
             <span>Continue Practice</span>
             <TrendingUp className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />

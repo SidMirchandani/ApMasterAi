@@ -457,8 +457,8 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 max-w-md w-full text-center shadow-sm">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 p-8 max-w-md w-full text-center shadow-sm">
           <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Something went wrong</h2>
           <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">{error}</p>
@@ -472,8 +472,8 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
 
   if (isCalculating) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-10 max-w-sm w-full text-center shadow-sm">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 p-10 max-w-sm w-full text-center shadow-sm">
           <Loader2 className="mx-auto h-14 w-14 text-blue-500 animate-spin mb-5" />
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
             Calculating your results…
@@ -492,8 +492,8 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
 
   if (isLoadingPool || !currentQuestion) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-10 max-w-sm w-full text-center shadow-sm">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 p-10 max-w-sm w-full text-center shadow-sm">
           <Loader2 className="mx-auto h-12 w-12 text-blue-500 animate-spin mb-4" />
           <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Loading questions…</p>
         </div>
@@ -515,12 +515,12 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
   const currentDiff = unitDifficultyState[sectionCode] || "medium";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col text-gray-900 dark:text-gray-100">
       {/* Scrollable content area with bottom padding for fixed bar */}
       <div className="flex-1 overflow-y-auto pb-20">
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 space-y-4">
           {/* Header card */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 px-5 pt-5 pb-4 shadow-sm">
+          <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 px-5 pt-5 pb-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-blue-500" />
@@ -533,11 +533,11 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
                 </span>
               </div>
             </div>
-            <Progress value={progressPct} className="h-1.5 bg-gray-100 dark:bg-gray-800" />
+            <Progress value={progressPct} className="h-1.5 bg-slate-100 dark:bg-slate-800" />
           </div>
 
           {/* Question card */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 px-5 py-5 shadow-sm">
+          <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 px-5 py-5 shadow-sm">
             <div className="mb-5 text-gray-900 dark:text-white text-sm leading-relaxed font-medium">
               <BlockRenderer blocks={currentQuestion.prompt_blocks || [{ type: "text", value: currentQuestion.prompt || "" }]} />
             </div>
@@ -551,19 +551,19 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
 
                 if (!showFeedback) {
                   if (cheatMode && isCorrect) {
-                    base += "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10";
+                    base += "ring-2 ring-green-500 border-green-500 bg-green-50 dark:bg-green-500/10";
                   } else if (isSelected) {
-                    base += "border-blue-500 bg-blue-50 dark:bg-blue-500/10";
+                    base += "ring-2 ring-blue-500 border-blue-500 bg-blue-50 dark:bg-blue-500/10";
                   } else {
-                    base += "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50/50 dark:hover:bg-blue-500/5 cursor-pointer";
+                    base += "border border-slate-200 dark:border-slate-800 hover:ring-1 hover:ring-blue-400/40 cursor-pointer";
                   }
                 } else {
                   if (isCorrect) {
-                    base += "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10";
+                    base += "ring-2 ring-green-500 border-green-500 bg-green-50 dark:bg-green-500/10";
                   } else if (isSelected && !isCorrect) {
-                    base += "border-red-500 bg-red-50 dark:bg-red-500/10";
+                    base += "ring-2 ring-red-500 border-red-500 bg-red-50 dark:bg-red-500/10";
                   } else {
-                    base += "border-gray-200 dark:border-gray-700 opacity-60";
+                    base += "border border-slate-200 dark:border-slate-800 opacity-60";
                   }
                 }
 
@@ -577,14 +577,14 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
                     <div
                       className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 border-2 transition-colors ${
                         showFeedback && isCorrect
-                          ? "bg-emerald-500 border-emerald-500 text-white"
+                          ? "bg-green-500 border-green-500 text-white"
                           : showFeedback && isSelected && !isCorrect
                           ? "bg-red-500 border-red-500 text-white"
                           : !showFeedback && cheatMode && isCorrect
-                          ? "bg-emerald-500 border-emerald-500 text-white"
+                          ? "bg-green-500 border-green-500 text-white"
                           : isSelected
                           ? "bg-blue-500 border-blue-500 text-white"
-                          : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400"
+                          : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400"
                       }`}
                     >
                       {label}
@@ -593,7 +593,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
                       <BlockRenderer blocks={blocks} />
                     </div>
                     {showFeedback && isCorrect && (
-                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
                     )}
                     {showFeedback && isSelected && !isCorrect && (
                       <XCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
@@ -606,7 +606,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
             {showFeedback && (
               <div className={`mt-4 rounded-xl p-3.5 text-sm ${
                 selectedAnswer === correctLabel
-                  ? "bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-200"
+                  ? "bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-800/50 text-green-800 dark:text-green-200"
                   : "bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-200"
               }`}>
                 <span className="font-semibold">
@@ -630,7 +630,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
       </div>
 
       {/* Fixed Bottom Bar */}
-      <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 fixed bottom-0 left-0 right-0 z-50">
+      <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 fixed bottom-0 left-0 right-0 z-50">
         <div className="max-w-2xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex justify-between items-center gap-2 sm:gap-4">
             {/* Left: Back */}
@@ -640,7 +640,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
                 size="sm"
                 onClick={handleBack}
                 disabled={currentIndex === 0}
-                className="border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 disabled:opacity-30"
+                className="border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 disabled:opacity-30 rounded-xl"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Back
@@ -651,7 +651,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
               <Button
                 onClick={handleNext}
                 disabled={!showFeedback}
-                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-4 sm:px-8 text-sm sm:text-base h-10 text-white border-none shadow-none disabled:opacity-40 flex items-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-4 sm:px-8 text-sm sm:text-base h-10 text-white border-none shadow-none disabled:opacity-40 flex items-center gap-2 rounded-xl transition-all duration-150 ease-out"
               >
                 {currentIndex + 1 >= TOTAL_QUESTIONS ? "Finish" : "Next"}
                 <ChevronRight className="h-4 w-4" />
@@ -663,7 +663,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowReportDialog(true)}
-                className="border-rose-300 dark:border-rose-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-xs sm:text-sm"
+                className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm"
               >
                 Report
               </Button>
@@ -710,7 +710,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
 
 function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
   const map: Record<Difficulty, string> = {
-    easy: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
+    easy: "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400",
     medium: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
     hard: "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400",
   };
@@ -738,8 +738,8 @@ function DiagnosticResults({
   const weakest = units.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-start justify-center p-3 overflow-y-auto">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 w-full max-w-md shadow-sm my-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex items-start justify-center p-3 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 w-full max-w-md shadow-sm my-6">
         <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800 text-center">
           <Sparkles className="mx-auto h-10 w-10 text-red-500 mb-3" />
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Diagnostic Complete!</h2>
@@ -758,7 +758,7 @@ function DiagnosticResults({
           </div>
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Projected AP Score</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{predicted.label}</p>
-          <div className="mt-3 inline-flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-full px-4 py-1.5">
+          <div className="mt-3 inline-flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-full px-4 py-1.5">
             <TrendingUp className="h-3.5 w-3.5 text-gray-500" />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {result.score}/{TOTAL_QUESTIONS} correct &nbsp;·&nbsp; {result.percentage}%
@@ -781,7 +781,7 @@ function DiagnosticResults({
                   <span
                     className={`text-xs font-bold ml-3 flex-shrink-0 ${
                       section.percentage >= 70
-                        ? "text-emerald-600"
+                        ? "text-green-600"
                         : section.percentage >= 50
                         ? "text-amber-600"
                         : "text-red-600"

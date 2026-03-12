@@ -83,17 +83,17 @@ export function AdminUsersTab({ token }: { token: string }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-khan-green" />
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <Card className="dark:bg-gray-800 dark:border-gray-700">
+      <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
         <CardHeader>
           <CardTitle className="dark:text-white">User Management</CardTitle>
-          <p className="text-sm text-khan-gray-medium dark:text-gray-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Search and manage platform users.
           </p>
         </CardHeader>
@@ -104,14 +104,14 @@ export function AdminUsersTab({ token }: { token: string }) {
               placeholder="Search by email..."
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
-              className="pl-9 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="pl-9 bg-white dark:bg-slate-900/70 dark:border-slate-800 dark:text-white"
             />
           </div>
 
-          <div className="rounded-md border dark:border-gray-700 overflow-hidden">
+          <div className="rounded-md border dark:border-slate-700 overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <TableRow className="bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                   <TableHead className="font-semibold">Name</TableHead>
                   <TableHead className="font-semibold">Email</TableHead>
                   <TableHead className="font-semibold">Join Date</TableHead>
@@ -123,20 +123,20 @@ export function AdminUsersTab({ token }: { token: string }) {
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
-                  <TableRow key={user.id} className="dark:border-gray-700">
-                    <TableCell className="font-medium dark:text-gray-200">
+                  <TableRow key={user.id} className="dark:border-slate-700">
+                    <TableCell className="font-medium dark:text-slate-200">
                       {user.name || "—"}
                     </TableCell>
-                    <TableCell className="dark:text-gray-300">{user.email}</TableCell>
-                    <TableCell className="dark:text-gray-300">
+                    <TableCell className="dark:text-slate-300">{user.email}</TableCell>
+                    <TableCell className="dark:text-slate-300">
                       {formatDate(user.joinDate)}
                     </TableCell>
-                    <TableCell className="dark:text-gray-300">
+                    <TableCell className="dark:text-slate-300">
                       {user.lastLogin
                         ? formatDate(user.lastLogin)
                         : "—"}
                     </TableCell>
-                    <TableCell className="dark:text-gray-300">
+                    <TableCell className="dark:text-slate-300">
                       {user.totalCoursesEnrolled}
                     </TableCell>
                     <TableCell>
@@ -184,13 +184,13 @@ export function AdminUsersTab({ token }: { token: string }) {
 
           {filteredUsers.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Users className="h-12 w-12 text-khan-gray-medium dark:text-gray-500 mb-4" />
-              <p className="text-lg font-medium text-khan-gray-dark dark:text-gray-300">
+              <Users className="h-12 w-12 text-slate-500 dark:text-slate-500 mb-4" />
+              <p className="text-lg font-medium text-slate-900 dark:text-slate-300">
                 {searchEmail.trim()
                   ? "No users match your search"
                   : "No users yet"}
               </p>
-              <p className="text-sm text-khan-gray-medium dark:text-gray-400 mt-1">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 {searchEmail.trim()
                   ? "Try a different email or clear the search."
                   : "Users will appear here once they sign up."}
