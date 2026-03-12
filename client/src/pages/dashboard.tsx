@@ -279,25 +279,21 @@ export default function Dashboard() {
             </div>
             {(activeList.length > 0 || subjects.length > 0) && (
               <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                {subjects.filter((s) => s.archived).length > 0 && (
-                  <Button
-                    onClick={() => archiveSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
-                    variant="outline"
-                    size="sm"
-                    className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out px-4 h-9 text-xs flex-shrink-0"
-                  >
-                    <BookOpen className="mr-1.5 w-3.5 h-3.5" /> Go to Archive
-                  </Button>
-                )}
-                {activeList.length > 0 && (
-                  <Button
-                    onClick={() => router.push("/learn")}
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] px-4 h-9 text-xs flex-shrink-0"
-                  >
-                    <Plus className="mr-1.5 w-3.5 h-3.5" /> Add Course
-                  </Button>
-                )}
+                <Button
+                  onClick={() => archiveSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out px-4 h-9 text-xs flex-shrink-0"
+                >
+                  Go to Archive
+                </Button>
+                <Button
+                  onClick={() => router.push("/learn")}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] px-4 h-9 text-xs flex-shrink-0"
+                >
+                  <Plus className="mr-1.5 w-3.5 h-3.5" /> Add Course
+                </Button>
               </div>
             )}
           </div>
@@ -356,7 +352,7 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {archivedSubjects.length > 0 && (
+            {subjects.length > 0 && (
               <div ref={archiveSectionRef}>
               <ArchivedSection
                 subjects={archivedSubjects}
@@ -516,31 +512,35 @@ const ArchivedSection = ({
 
     {isOpen && (
       <div className="mt-3 space-y-3">
-        {subjects.map((s) => (
-          <Card
-            key={s.id}
-            className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl opacity-80 hover:opacity-100 transition-all duration-150 ease-out"
-          >
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start gap-4">
-                <div>
-                  <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">
-                    {s.name}
-                  </CardTitle>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{s.description}</p>
+        {subjects.length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400 py-2">No archived courses.</p>
+        ) : (
+          subjects.map((s) => (
+            <Card
+              key={s.id}
+              className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl opacity-80 hover:opacity-100 transition-all duration-150 ease-out"
+            >
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">
+                      {s.name}
+                    </CardTitle>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{s.description}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onRestore(s)}
+                    className="border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl shrink-0 transition-all duration-150 ease-out"
+                  >
+                    Restore
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onRestore(s)}
-                  className="border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl shrink-0 transition-all duration-150 ease-out"
-                >
-                  Restore
-                </Button>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
+              </CardHeader>
+            </Card>
+          ))
+        )}
       </div>
     )}
   </div>
@@ -647,8 +647,13 @@ const SubjectCard = ({
               )}
             </div>
             <div className="flex items-center gap-0.5 flex-shrink-0">
-              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 w-8 p-0 rounded-lg" onClick={onArchive} title="Archive">
-                <BookOpen className="w-3.5 h-3.5" />
+              <Button
+                size="sm"
+                onClick={onArchive}
+                title="Archive"
+                className="h-8 px-2.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border-0 transition-colors"
+              >
+                Archive
               </Button>
               {isAdmin && onDelete && (
                 <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 h-8 w-8 p-0 rounded-lg" onClick={onDelete} title="Delete">
