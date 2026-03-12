@@ -4,6 +4,10 @@ export interface Unit {
   description: string;
   examWeight: string;
   progress: number;
+  /** Optional: numeric weight for diagnostic distribution (e.g. 9.5 for 8–11%). */
+  unit_weight?: number;
+  /** Optional: relative difficulty 1–5 for diagnostic priority. */
+  unit_difficulty?: number;
 }
 
 export interface SubjectSection {

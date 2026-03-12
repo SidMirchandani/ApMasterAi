@@ -390,6 +390,168 @@ export const DIAGNOSTIC_UNIT_WEIGHTS: Record<string, Record<string, number>> = {
   },
 };
 
+/**
+ * Unit/section difficulties for diagnostic test question distribution (20 questions).
+ */
+export const DIAGNOSTIC_UNIT_DIFFICULTIES: Record<string, Record<string, number>> = {
+  APCSA: {
+    U1: 1.5, // Primitive Types (Easy syntax)
+    U2: 2.5, // Using Objects
+    U3: 2.0, // Boolean/If Statements
+    U4: 3.5, // Iteration, Classes, Arrays (The logic jump)
+  },
+  APCALCAB: {
+    LIM: 2.0, // Limits
+    DDF: 3.0, // Derivatives Definition
+    DCI: 3.5, // Chain/Implicit
+    CAD: 4.0, // Contextual Apps
+    AAD: 4.5, // Analytical Apps
+    IAC: 4.0, // Integration Accumulation
+    DE: 4.5,  // Differential Equations
+    AI: 5.0,  // Apps of Integration (Volume, etc. - Spatial reasoning wall)
+  },
+  APCALCBC: {
+    LIM: 2.0,
+    DDF: 3.0,
+    DCI: 3.5,
+    CAD: 4.0,
+    AAD: 4.5,
+    IAC: 4.0,
+    DE: 4.5,
+    AI: 5.0,
+    PPV: 4.8, // Parametric/Polar/Vector
+    ISS: 5.0, // Infinite Sequences/Series (The hardest unit in high school math) 
+  },
+  APUSH: {
+    P1: 2.0, // 1491-1607 (Short, easy)
+    P2: 2.5,
+    P3: 3.0,
+    P4: 3.5,
+    P5: 4.0, // Civil War (Dense)
+    P6: 4.5, // Gilded Age
+    P7: 4.5, // World Wars / Depression
+    P8: 4.0, // Cold War
+    P9: 2.5, // Modern (Familiar to students)
+  },
+  APLANG: {
+    CRE: 2.5,
+    SS: 3.0,
+    RS: 3.5,
+    OC: 4.0,
+    ARG: 4.5, // Argumentation (Requires generating original logic, not just identifying it)
+  },
+  APBIO: {
+    CL: 2.0,
+    CSF: 2.5,
+    CE: 4.5,
+    CCC: 4.0,
+    HER: 3.0,
+    GER: 4.8, // Gene Expression (Abstract micro-mechanisms)
+    NS: 3.0,
+    ECO: 1.5,
+  },
+  APCHEM: {
+    ASP: 2.0,
+    MIS: 2.5,
+    IMF: 3.5,
+    RXN: 3.0,
+    KIN: 4.0,
+    THERMO: 4.5,
+    EQM: 4.5, // Equilibrium
+    ACB: 5.0, // Acids & Bases (Massive math load, overlapping systems) 
+    ATD: 4.8,
+  },
+  APWORLD: {
+    GT: 2.0,
+    NE: 2.5,
+    LBE: 3.0,
+    TI: 3.5,
+    REV: 4.0,
+    COI: 4.0,
+    GC: 4.5, // Global Conflict
+    CWD: 4.5, // Cold War / Decolonization
+    GLO: 3.5,
+  },
+  APWH: { // Duplicated keys from your object
+    GT: 2.0,
+    NE: 2.5,
+    LBE: 3.0,
+    TI: 3.5,
+    REV: 4.0,
+    COI: 4.0,
+    GC: 4.5,
+    CWD: 4.5,
+    GLO: 3.5,
+  },
+  APPHYS1: {
+    KIN: 2.5,
+    FTD: 3.5, 
+    WEP: 4.0,
+    LMO: 3.5,
+    TRD: 5.0, // Torque/Rotational (Notoriously the lowest-scoring physics unit) 
+    EMR: 4.5,
+    OSC: 4.0,
+    FLU: 3.5,
+  },
+  APPHYS2: {
+    THD: 4.0,
+    EFP: 4.5,
+    EC: 4.0,
+    MEI: 5.0, // Magnetism (Right-hand rule and 3D spatial logic)
+    GPO: 3.5,
+    WPO: 4.5,
+    MOD: 3.5,
+  },
+  APPSYCH: {
+    BIO: 4.0, // Bio Bases (Brain anatomy memorization) 
+    COG: 3.5,
+    DEV: 2.5,
+    SOC: 2.0, // Social Psych (Highly intuitive)
+    MPH: 3.0,
+  },
+  APMACRO: {
+    BEC: 2.0,
+    EIBC: 3.0,
+    NIPD: 3.5,
+    FS: 4.0, // Financial Sector
+    LRCSP: 4.5, // Long-Run Consequences
+    OEITF: 4.5, // Open Economy (Forex is highly confusing for students)
+  },
+  APMICRO: {
+    BEC: 2.0,
+    SD: 3.0,
+    PC: 4.0, // Production/Cost
+    IMP: 4.5, // Imperfect Competition (Monopolies, Oligopolies)
+    FM: 4.5,  // Factor Markets
+    MF: 3.5,
+  },
+  APCSP: {
+    CRD: 1.5,
+    DAT: 2.5,
+    AAP: 3.5, // Algorithms & Programming
+    CSN: 3.0,
+    IOC: 1.5, // Impact of Computing (Reading comprehension)
+  },
+  APGOV: {
+    FAD: 2.5,
+    IAB: 4.0, // Institutions (Congress/Presidency mechanics)
+    CLCR: 4.0, // Civil Libs/SCOTUS cases
+    APIB: 3.0,
+    PP: 2.5,
+  },
+  APSTATS: {
+    EOV: 2.0,
+    ETV: 2.5,
+    CD: 3.0,
+    PRD: 4.5, // Probability (Combinatorics wall) 
+    SD: 3.5,
+    ICP: 4.0,
+    IQM: 4.0,
+    ICC: 4.5, // Inference for Categorical
+    IQS: 4.5, // Inference for Slopes
+  },
+};
+
 export function getDiagnosticWeightsForSubject(subjectCode: string): Record<string, number> | null {
   return DIAGNOSTIC_UNIT_WEIGHTS[subjectCode] ?? null;
 }
@@ -443,4 +605,86 @@ export function getDiagnosticDistributionForSubject(subjectCode: string): Record
     remaining -= n;
   });
   return counts;
+}
+
+const DIAGNOSTIC_TARGET_35 = 35;
+const DIAGNOSTIC_POOL_CAP = 150;
+const BASELINE_PER_UNIT = 3;
+
+/**
+ * Largest-remainder (Hamilton) allocation: allocate totalSlots across units proportionally to priorities.
+ * Returns per-unit counts that sum exactly to totalSlots.
+ */
+function allocateByLargestRemainder(
+  unitCodes: string[],
+  priorities: Record<string, number>,
+  totalSlots: number
+): Record<string, number> {
+  const totalPriority = unitCodes.reduce((s, code) => s + (priorities[code] ?? 0), 0);
+  if (totalPriority <= 0) {
+    const equal = Math.floor(totalSlots / unitCodes.length);
+    const remainder = totalSlots - equal * unitCodes.length;
+    const out: Record<string, number> = {};
+    unitCodes.forEach((code, i) => {
+      out[code] = equal + (i < remainder ? 1 : 0);
+    });
+    return out;
+  }
+  const withFrac: { code: string; base: number; frac: number }[] = unitCodes.map((code) => {
+    const p = priorities[code] ?? 0;
+    const rawShare = (p / totalPriority) * totalSlots;
+    const base = Math.floor(rawShare);
+    const frac = rawShare - base;
+    return { code, base, frac };
+  });
+  const sumBase = withFrac.reduce((s, x) => s + x.base, 0);
+  let toDistribute = totalSlots - sumBase;
+  withFrac.sort((a, b) => b.frac - a.frac);
+  const result: Record<string, number> = {};
+  withFrac.forEach(({ code, base }, i) => {
+    result[code] = base + (i < toDistribute ? 1 : 0);
+  });
+  return result;
+}
+
+/**
+ * Returns exact per-section question counts for a 35-question diagnostic.
+ * Phase A: 3 per unit (baseline). Phase B: remainder allocated by priority = unit_weight × unit_difficulty (largest-remainder).
+ */
+export function getDiagnostic35Distribution(subjectCode: string): Record<string, number> | null {
+  const weights = DIAGNOSTIC_UNIT_WEIGHTS[subjectCode];
+  const difficulties = DIAGNOSTIC_UNIT_DIFFICULTIES[subjectCode];
+  if (!weights || !difficulties) return null;
+  const unitCodes = Object.keys(weights);
+  if (unitCodes.length === 0) return null;
+  const baselineTotal = BASELINE_PER_UNIT * unitCodes.length;
+  let remaining = DIAGNOSTIC_TARGET_35 - baselineTotal;
+  if (remaining <= 0) {
+    return Object.fromEntries(unitCodes.map((c) => [c, BASELINE_PER_UNIT]));
+  }
+  const priorities: Record<string, number> = {};
+  unitCodes.forEach((code) => {
+    const w = weights[code] ?? 0;
+    const d = difficulties[code] ?? 1;
+    priorities[code] = w * d;
+  });
+  const extra = allocateByLargestRemainder(unitCodes, priorities, remaining);
+  const result: Record<string, number> = {};
+  unitCodes.forEach((code) => {
+    result[code] = BASELINE_PER_UNIT + (extra[code] ?? 0);
+  });
+  return result;
+}
+
+/**
+ * Per-unit caps for the diagnostic pool (max 150 questions total).
+ * Allocates 150 across units proportionally to unit_weight; sum of caps = 150.
+ */
+export function getDiagnosticPoolCaps(subjectCode: string): Record<string, number> | null {
+  const weights = DIAGNOSTIC_UNIT_WEIGHTS[subjectCode];
+  if (!weights) return null;
+  const unitCodes = Object.keys(weights);
+  if (unitCodes.length === 0) return null;
+  const priorities: Record<string, number> = { ...weights };
+  return allocateByLargestRemainder(unitCodes, priorities, DIAGNOSTIC_POOL_CAP);
 }

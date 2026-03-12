@@ -1,8 +1,11 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../../server/db";
-import { getDiagnosticDistributionForSubject } from "../../../server/ap-subject-config";
+import { getDiagnosticDistributionForSubject, getDiagnostic35Distribution } from "../../../server/ap-subject-config";
+import { getDifficultyTier } from "../../../server/difficulty";
+import { buildCappedPool, generateDiagnosticTest } from "../../../server/diagnostic-generator";
 
-const DIAGNOSTIC_QUESTION_COUNT = 25;
+const DIAGNOSTIC_QUESTION_COUNT_35 = 35;
+const DIAGNOSTIC_QUESTION_COUNT_LEGACY = 25;
 
 // Legacy AP CSA section codes (same as questions.ts)
 const APCSA_SECTION_QUERY_MAP: Record<string, string[]> = {
@@ -11,20 +14,6 @@ const APCSA_SECTION_QUERY_MAP: Record<string, string[]> = {
   U3: ["U3", "WC", "INH"],
   U4: ["U4", "ARR", "AL", "TDA", "REC"],
 };
-
-function getDifficulty(q: { tags?: string[]; difficulty?: string | null }): "easy" | "medium" | "hard" {
-  const raw =
-    q.difficulty ||
-    (q.tags || []).find((t) => typeof t === "string" && t.startsWith("difficulty:"))
-      ?.toString()
-      .replace(/^difficulty:/, "")
-      .trim()
-      .toLowerCase() ||
-    "";
-  if (raw === "easy") return "easy";
-  if (raw === "hard") return "hard";
-  return "medium";
-}
 
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
@@ -75,7 +64,7 @@ export default async function handler(
         .map((doc) => ({ id: doc.id, ...doc.data() } as any))
         .filter((q) => !excluded.includes(q.id));
 
-      const matchingDiff = allQuestions.filter((q) => getDifficulty(q) === diff);
+      const matchingDiff = allQuestions.filter((q) => getDifficultyTier(q) === diff);
       const pool = matchingDiff.length > 0 ? matchingDiff : allQuestions;
       if (pool.length === 0) {
         res.status(404).json({ success: false, message: "No questions available for this section/difficulty." });
@@ -83,7 +72,7 @@ export default async function handler(
       }
       const picked = pool[Math.floor(Math.random() * pool.length)];
       const { _d, ...rest } = picked as any;
-      res.status(200).json({ success: true, data: { ...rest, difficulty: getDifficulty(picked) } });
+      res.status(200).json({ success: true, data: { ...rest, difficulty: getDifficultyTier(picked) } });
       return;
     } catch (error) {
       console.error("Error fetching next diagnostic question:", error);
@@ -92,7 +81,10 @@ export default async function handler(
     }
   }
 
-  const distribution = getDiagnosticDistributionForSubject(subject);
+  const distribution35 = getDiagnostic35Distribution(subject);
+  const distributionLegacy = getDiagnosticDistributionForSubject(subject);
+  const use35 = distribution35 != null;
+  const distribution = use35 ? distribution35! : distributionLegacy;
   if (!distribution) {
     res.status(400).json({
       success: false,
@@ -101,59 +93,49 @@ export default async function handler(
     return;
   }
 
+  const sectionQueryMap = subject === "APCSA" ? APCSA_SECTION_QUERY_MAP : undefined;
+
   // --- Pool mode: ?subject=&mode=pool ---
-  // Returns all questions per section grouped by difficulty for client-side adaptive selection.
-  // Pool contains enough questions to handle difficulty swaps without network calls.
+  // Returns capped pool (max 150) when 35-question config exists; else legacy unbounded pool.
   if (mode === "pool") {
-    // #region agent log
-    fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'diagnostic.ts:pool:entry',message:'pool handler entry',data:{subject},hypothesisId:'A',timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     try {
       const db = getDb();
-      const questionsRef = db.collection("questions");
-      const sectionEntries = Object.entries(distribution);
-
-      // Fetch all questions for each section in parallel
-      const sectionFetches = sectionEntries.map(async ([sectionCode]) => {
-        const sectionCodesToQuery =
-          subject === "APCSA" && APCSA_SECTION_QUERY_MAP[sectionCode]
-            ? APCSA_SECTION_QUERY_MAP[sectionCode]
-            : [sectionCode];
-
-        const snapshot =
-          sectionCodesToQuery.length === 1
-            ? await questionsRef
-                .where("subject_code", "==", subject)
-                .where("section_code", "==", sectionCode)
-                .get()
-            : await questionsRef
-                .where("subject_code", "==", subject)
-                .where("section_code", "in", sectionCodesToQuery)
-                .get();
-
-        const questions = snapshot.docs.map((doc) => {
-          const data = doc.data() as any;
-          return { id: doc.id, ...data, difficulty: getDifficulty(data), tags: data.tags ?? [] };
+      if (use35) {
+        const pool = await buildCappedPool(db, subject, { sectionQueryMap });
+        const distributionForPool = getDiagnostic35Distribution(subject)!;
+        res.status(200).json({ success: true, data: { pool, distribution: distributionForPool } });
+      } else {
+        const questionsRef = db.collection("questions");
+        const sectionEntries = Object.entries(distribution);
+        const sectionFetches = sectionEntries.map(async ([sectionCode]) => {
+          const sectionCodesToQuery =
+            sectionQueryMap && sectionQueryMap[sectionCode] ? sectionQueryMap[sectionCode] : [sectionCode];
+          const snapshot =
+            sectionCodesToQuery.length === 1
+              ? await questionsRef
+                  .where("subject_code", "==", subject)
+                  .where("section_code", "==", sectionCode)
+                  .get()
+              : await questionsRef
+                  .where("subject_code", "==", subject)
+                  .where("section_code", "in", sectionCodesToQuery)
+                  .get();
+          const questions = snapshot.docs.map((doc) => {
+            const data = doc.data() as any;
+            return { id: doc.id, ...data, difficulty: getDifficultyTier(data), tags: data.tags ?? [] };
+          });
+          const easy = shuffle(questions.filter((q) => q.difficulty === "easy"));
+          const medium = shuffle(questions.filter((q) => q.difficulty === "medium"));
+          const hard = shuffle(questions.filter((q) => q.difficulty === "hard"));
+          return { sectionCode, easy, medium, hard };
         });
-
-        const easy = shuffle(questions.filter((q) => q.difficulty === "easy"));
-        const medium = shuffle(questions.filter((q) => q.difficulty === "medium"));
-        const hard = shuffle(questions.filter((q) => q.difficulty === "hard"));
-
-        return { sectionCode, easy, medium, hard };
-      });
-
-      const results = await Promise.all(sectionFetches);
-
-      const pool: Record<string, { easy: any[]; medium: any[]; hard: any[] }> = {};
-      for (const { sectionCode, easy, medium, hard } of results) {
-        pool[sectionCode] = { easy, medium, hard };
+        const results = await Promise.all(sectionFetches);
+        const pool: Record<string, { easy: any[]; medium: any[]; hard: any[] }> = {};
+        for (const { sectionCode, easy, medium, hard } of results) {
+          pool[sectionCode] = { easy, medium, hard };
+        }
+        res.status(200).json({ success: true, data: { pool, distribution } });
       }
-
-      // #region agent log
-      fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'diagnostic.ts:pool:send',message:'sending pool response',data:{sectionCount:Object.keys(pool).length},hypothesisId:'B',timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
-      res.status(200).json({ success: true, data: { pool, distribution } });
       return;
     } catch (error) {
       console.error("Error fetching diagnostic pool:", error);
@@ -166,67 +148,61 @@ export default async function handler(
     }
   }
 
-  // --- Full 25-question plan mode (legacy): ?subject= (no section, no mode=pool) ---
+  // --- Full diagnostic: 35-question (capped pool + generator) or legacy 25-question ---
   try {
     const db = getDb();
-    const questionsRef = db.collection("questions");
-    const sectionEntries = Object.entries(distribution);
-    const selectedQuestions: any[] = [];
-
-    for (const [sectionCode, sectionCount] of sectionEntries) {
-      if (sectionCount <= 0) continue;
-
-      const sectionCodesToQuery =
-        subject === "APCSA" && APCSA_SECTION_QUERY_MAP[sectionCode]
-          ? APCSA_SECTION_QUERY_MAP[sectionCode]
-          : [sectionCode];
-
-      const snapshot =
-        sectionCodesToQuery.length === 1
-          ? await questionsRef
-              .where("subject_code", "==", subject)
-              .where("section_code", "==", sectionCode)
-              .get()
-          : await questionsRef
-              .where("subject_code", "==", subject)
-              .where("section_code", "in", sectionCodesToQuery)
-              .get();
-
-      const sectionQuestions = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      const withDiff = sectionQuestions.map((q) => ({
-        ...q,
-        tags: (q as any).tags ?? [],
-        difficulty: getDifficulty(q),
-      }));
-
-      const easy = shuffle(withDiff.filter((q) => q.difficulty === "easy"));
-      const medium = shuffle(withDiff.filter((q) => q.difficulty === "medium"));
-      const hard = shuffle(withDiff.filter((q) => q.difficulty === "hard"));
-
-      const selected: any[] = [];
-      const perBucket = Math.max(1, Math.floor(sectionCount / 3));
-      for (const bucket of [easy, medium, hard]) {
-        const n = Math.min(perBucket, bucket.length, sectionCount - selected.length);
-        for (let i = 0; i < n; i++) selected.push(bucket[i]);
+    if (use35) {
+      const pool = await buildCappedPool(db, subject, { sectionQueryMap });
+      const raw = generateDiagnosticTest(pool, subject, DIAGNOSTIC_QUESTION_COUNT_35);
+      const final = raw.map((q) => {
+        const { _d, ...rest } = q as any;
+        return { ...rest, difficulty: getDifficultyTier(q) };
+      });
+      res.status(200).json({ success: true, data: final });
+    } else {
+      const questionsRef = db.collection("questions");
+      const sectionEntries = Object.entries(distribution);
+      const selectedQuestions: any[] = [];
+      for (const [sectionCode, sectionCount] of sectionEntries) {
+        if (sectionCount <= 0) continue;
+        const sectionCodesToQuery =
+          sectionQueryMap && sectionQueryMap[sectionCode] ? sectionQueryMap[sectionCode] : [sectionCode];
+        const snapshot =
+          sectionCodesToQuery.length === 1
+            ? await questionsRef
+                .where("subject_code", "==", subject)
+                .where("section_code", "==", sectionCode)
+                .get()
+            : await questionsRef
+                .where("subject_code", "==", subject)
+                .where("section_code", "in", sectionCodesToQuery)
+                .get();
+        const sectionQuestions = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const withDiff = sectionQuestions.map((q) => ({
+          ...q,
+          tags: (q as any).tags ?? [],
+          difficulty: getDifficultyTier(q),
+        }));
+        const easy = shuffle(withDiff.filter((q) => q.difficulty === "easy"));
+        const medium = shuffle(withDiff.filter((q) => q.difficulty === "medium"));
+        const hard = shuffle(withDiff.filter((q) => q.difficulty === "hard"));
+        const selected: any[] = [];
+        const perBucket = Math.max(1, Math.floor(sectionCount / 3));
+        for (const bucket of [easy, medium, hard]) {
+          const n = Math.min(perBucket, bucket.length, sectionCount - selected.length);
+          for (let i = 0; i < n; i++) selected.push(bucket[i]);
+        }
+        const used = new Set(selected.map((q) => q.id));
+        const remaining = shuffle(withDiff.filter((q) => !used.has(q.id)));
+        while (selected.length < sectionCount && remaining.length > 0) {
+          selected.push(remaining.shift());
+        }
+        selectedQuestions.push(...selected);
       }
-      // Fill remainder with any leftover
-      const used = new Set(selected.map((q) => q.id));
-      const remaining = shuffle(withDiff.filter((q) => !used.has(q.id)));
-      while (selected.length < sectionCount && remaining.length > 0) {
-        selected.push(remaining.shift());
-      }
-
-      selectedQuestions.push(...selected);
+      const shuffled = selectedQuestions.sort(() => Math.random() - 0.5);
+      const final = shuffled.slice(0, DIAGNOSTIC_QUESTION_COUNT_LEGACY);
+      res.status(200).json({ success: true, data: final });
     }
-
-    const shuffled = selectedQuestions.sort(() => Math.random() - 0.5);
-    const final = shuffled.slice(0, DIAGNOSTIC_QUESTION_COUNT);
-
-    res.status(200).json({ success: true, data: final });
     return;
   } catch (error) {
     console.error("Error fetching diagnostic questions:", error);

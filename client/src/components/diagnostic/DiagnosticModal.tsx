@@ -1,5 +1,5 @@
 /**
- * DiagnosticModal — 25-question adaptive diagnostic test.
+ * DiagnosticModal — adaptive diagnostic test (35 or 25 questions by subject).
  *
  * Fast preload strategy:
  *   On open, one API call fetches the full question pool per section grouped by
@@ -50,7 +50,6 @@ import {
 } from "lucide-react";
 import { APScoreCircle } from "@/components/ui/APScoreCircle";
 
-const TOTAL_QUESTIONS = 25;
 type Difficulty = "easy" | "medium" | "hard";
 
 // Pool returned from the API: per section, per difficulty bucket
@@ -128,9 +127,11 @@ function pickFromPool(
 export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePractice }: Props) {
   const subjectApiCode = getApiCodeForSubject(subjectId) || subjectId;
 
-  // The distribution plan: [sectionCode, sectionCode, ...] length = TOTAL_QUESTIONS
+  // The distribution plan: [sectionCode, sectionCode, ...]; length = total questions (35 or 25 by subject)
   // Each slot = which section that question slot belongs to
   const [sectionPlan, setSectionPlan] = useState<string[]>([]);
+  /** Total number of questions in this run (plan length); used for result display so we don't rely on sectionPlan after completion. */
+  const [totalQuestions, setTotalQuestions] = useState(0);
 
   // Already-resolved questions (grows as user answers)
   const [questionSequence, setQuestionSequence] = useState<DiagnosticQuestion[]>([]);
@@ -147,6 +148,8 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
   const [cheatMode, setCheatMode] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showAutoAnswerDialog, setShowAutoAnswerDialog] = useState(false);
+  const [autoAnswerScoreInput, setAutoAnswerScoreInput] = useState("75");
 
   useEffect(() => {
     const saved = localStorage.getItem("adminCheatMode");
@@ -202,7 +205,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
         // #endregion
         if (res.ok) {
           const data = await res.json();
-          if (data.success && data.data && data.data.questionIndex < TOTAL_QUESTIONS) {
+          if (data.success && data.data && data.data.questionIndex != null) {
             const saved = data.data;
             const restoredQuestions: DiagnosticQuestion[] = (saved.questions || []).map(normalizeQuestion);
             // #region agent log
@@ -223,15 +226,17 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
             if (!cancelled) {
               poolRef.current = poolData.data.pool;
               const plan = buildSectionPlan(poolData.data.distribution);
-
-              // If saved progress has no question bodies, we can't show current question — show first question from pool so UI isn't stuck
-              if (restoredQuestions.length === 0) {
-                const firstQuestion = resolveQuestion(0, plan, saved.unitDifficultyState || {}, []);
-                if (firstQuestion) {
-                  const normalized = normalizeQuestion(firstQuestion);
-                  usedIdsRef.current.add(normalized.id);
-                  setQuestionSequence([normalized]);
-                  setSectionPlan(plan);
+              // Only restore if saved index is within current run (35 vs 25 question total)
+              if (saved.questionIndex < plan.length) {
+                // If saved progress has no question bodies, we can't show current question — show first question from pool so UI isn't stuck
+                if (restoredQuestions.length === 0) {
+                  const firstQuestion = resolveQuestion(0, plan, saved.unitDifficultyState || {}, []);
+                  if (firstQuestion) {
+                    const normalized = normalizeQuestion(firstQuestion);
+                    usedIdsRef.current.add(normalized.id);
+                    setQuestionSequence([normalized]);
+setSectionPlan(plan);
+                  setTotalQuestions(plan.length);
                   setUnitDifficultyState(saved.unitDifficultyState || {});
                   setUserAnswers(saved.userAnswers || {});
                   setCurrentIndex(0);
@@ -239,46 +244,62 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
                   setError("No questions available for this diagnostic.");
                 }
                 setSectionPlan(plan);
+                setTotalQuestions(plan.length);
                 setIsLoadingPool(false);
-              } else {
-                restoredQuestions.forEach((q) => { if (q.id) usedIdsRef.current.add(q.id); });
+                } else {
+                  restoredQuestions.forEach((q) => { if (q.id) usedIdsRef.current.add(q.id); });
 
-                const totalRestored = restoredQuestions.length;
-                let resumeIndex = typeof saved.questionIndex === "number" ? saved.questionIndex : 0;
+                  const totalRestored = restoredQuestions.length;
+                  let resumeIndex = typeof saved.questionIndex === "number" ? saved.questionIndex : 0;
 
-                // If backend stored the next index (equal to length), resolve the next question from pool
-                if (resumeIndex >= totalRestored) {
-                  const nextIndex = totalRestored;
-                  const nextQuestion = resolveQuestion(nextIndex, plan, saved.unitDifficultyState || {}, restoredQuestions);
-                  if (nextQuestion) {
-                    const normalizedNext = normalizeQuestion(nextQuestion);
-                    usedIdsRef.current.add(normalizedNext.id);
-                    const seq = [...restoredQuestions, normalizedNext];
-                    setQuestionSequence(seq);
+                  // If backend stored the next index (equal to length), resolve the next question from pool
+                  if (resumeIndex >= totalRestored) {
+                    const nextIndex = totalRestored;
+                    const nextQuestion = resolveQuestion(nextIndex, plan, saved.unitDifficultyState || {}, restoredQuestions);
+                    if (nextQuestion) {
+                      const normalizedNext = normalizeQuestion(nextQuestion);
+                      usedIdsRef.current.add(normalizedNext.id);
+                      const seq = [...restoredQuestions, normalizedNext];
+setQuestionSequence(seq);
                     setSectionPlan(plan);
+                    setTotalQuestions(plan.length);
                     setUnitDifficultyState(saved.unitDifficultyState || {});
-                    setUserAnswers(saved.userAnswers || {});
-                    setCurrentIndex(nextIndex);
-                  } else {
-                    // Fall back to last available restored question
+                      setUserAnswers(saved.userAnswers || {});
+                      setCurrentIndex(nextIndex);
+                    } else {
+// Fall back to last available restored question
                     setQuestionSequence(restoredQuestions);
                     setSectionPlan(plan);
+                    setTotalQuestions(plan.length);
                     setUnitDifficultyState(saved.unitDifficultyState || {});
-                    setUserAnswers(saved.userAnswers || {});
-                    setCurrentIndex(Math.max(0, totalRestored - 1));
-                  }
-                } else {
+                      setUserAnswers(saved.userAnswers || {});
+                      setCurrentIndex(Math.max(0, totalRestored - 1));
+                    }
+} else {
                   setQuestionSequence(restoredQuestions);
                   setSectionPlan(plan);
+                  setTotalQuestions(plan.length);
                   setUnitDifficultyState(saved.unitDifficultyState || {});
                   setUserAnswers(saved.userAnswers || {});
                   setCurrentIndex(resumeIndex);
                 }
 
                 setIsLoadingPool(false);
+                }
+                return;
               }
+              // Saved progress out of range for this run (e.g. 25 vs 35) — fresh start with same pool
+              setSectionPlan(plan);
+              setTotalQuestions(plan.length);
+              const firstQuestion = resolveQuestion(0, plan, {}, []);
+              if (firstQuestion) {
+                const normalized = normalizeQuestion(firstQuestion);
+                usedIdsRef.current.add(normalized.id);
+                setQuestionSequence([normalized]);
+              }
+              setIsLoadingPool(false);
+              return;
             }
-            return;
           }
         }
       } catch (e) {
@@ -305,6 +326,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
           poolRef.current = poolData.data.pool;
           const plan = buildSectionPlan(poolData.data.distribution);
           setSectionPlan(plan);
+          setTotalQuestions(plan.length);
 
           // Pre-pick the first question immediately
           const firstQuestion = resolveQuestion(0, plan, {}, []);
@@ -334,14 +356,14 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
 
   // Auto-save progress
   const saveProgress = useCallback(() => {
-    if (isLoadingPool || currentIndex >= TOTAL_QUESTIONS) return;
+    if (isLoadingPool || !sectionPlan.length || currentIndex >= sectionPlan.length) return;
     apiRequest("POST", `/api/user/subjects/${subjectId}/diagnostic-progress`, {
       questionIndex: currentIndex,
       userAnswers,
       unitDifficultyState,
       questions: questionSequence,
     }).catch(() => {});
-  }, [subjectId, currentIndex, userAnswers, unitDifficultyState, questionSequence, isLoadingPool]);
+  }, [subjectId, currentIndex, userAnswers, unitDifficultyState, questionSequence, isLoadingPool, sectionPlan.length]);
 
   useEffect(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -397,7 +419,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
 
     const nextIndex = currentIndex + 1;
 
-    if (nextIndex >= TOTAL_QUESTIONS) {
+    if (nextIndex >= sectionPlan.length) {
       setIsCalculating(true);
       submitDiagnostic(newAnswers, questionSequence);
       return;
@@ -498,6 +520,67 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
     }
   }
 
+  // Admin: auto-answer to get a desired score % and jump to results
+  const runAutoAnswer = useCallback(() => {
+    const percent = Math.min(100, Math.max(0, parseInt(autoAnswerScoreInput, 10) || 0));
+    setShowAutoAnswerDialog(false);
+
+    const plan = sectionPlan;
+    const total = plan.length;
+    if (total === 0 || !poolRef.current) return;
+
+    // Resolve full question sequence (reuse existing, resolve rest)
+    const fullSeq: DiagnosticQuestion[] = [];
+    for (let i = 0; i < total; i++) {
+      const existing = questionSequence[i];
+      if (existing) {
+        fullSeq.push(existing);
+      } else {
+        const q = resolveQuestion(i, plan, unitDifficultyState, fullSeq);
+        if (q) {
+          const normalized = normalizeQuestion(q);
+          fullSeq.push(normalized);
+          usedIdsRef.current.add(q.id);
+        } else if (fullSeq.length > 0) {
+          fullSeq.push(fullSeq[fullSeq.length - 1]);
+        } else {
+          return;
+        }
+      }
+    }
+
+    const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
+    const mcqOptionCount = subject?.metadata?.mcqOptionCount;
+    const numCorrect = Math.round((percent / 100) * total);
+    const indices = Array.from({ length: total }, (_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    const correctSet = new Set(indices.slice(0, numCorrect));
+
+    const answers: Record<number, string> = {};
+    for (let i = 0; i < fullSeq.length; i++) {
+      const q = fullSeq[i] as any;
+      const { displayCorrectLabel, choiceLabels } = getDisplayChoicesAndCorrect(q, mcqOptionCount);
+      if (correctSet.has(i)) {
+        answers[i] = displayCorrectLabel;
+      } else {
+        const wrongLabels = choiceLabels.filter((l) => l !== displayCorrectLabel);
+        answers[i] = wrongLabels[Math.floor(Math.random() * wrongLabels.length)] ?? displayCorrectLabel;
+      }
+    }
+
+    setIsCalculating(true);
+    submitDiagnostic(answers, fullSeq);
+  }, [
+    autoAnswerScoreInput,
+    sectionPlan,
+    questionSequence,
+    unitDifficultyState,
+    subjectId,
+  ]);
+
   // --- Render ---
 
   if (error) {
@@ -536,6 +619,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
       <DiagnosticResults
         result={result}
         subjectId={subjectId}
+        totalQuestions={totalQuestions || sectionPlan.length || questionSequence.length}
         onClose={onClose}
         onContinuePractice={onContinuePractice}
       />
@@ -559,7 +643,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
     currentQuestion as any,
     mcqOptionCount
   );
-  const progressPct = Math.round((currentIndex / TOTAL_QUESTIONS) * 100);
+  const progressPct = sectionPlan.length ? Math.round((currentIndex / sectionPlan.length) * 100) : 0;
   const sectionCode = sectionPlan[currentIndex] || currentQuestion.section_code || "";
   const currentDiff = unitDifficultyState[sectionCode] || "medium";
 
@@ -581,7 +665,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
                   <div className="flex items-center gap-2">
                     <DifficultyBadge difficulty={currentDiff} />
                     <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                      {currentIndex + 1} / {TOTAL_QUESTIONS}
+                      {currentIndex + 1} / {sectionPlan.length}
                     </span>
                   </div>
                 </div>
@@ -592,7 +676,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
               <PracticeQuizQuestionCard
                 question={currentQuestion as any}
                 questionNumber={currentIndex + 1}
-                totalQuestions={TOTAL_QUESTIONS}
+                totalQuestions={sectionPlan.length}
                 selectedAnswer={selectedAnswer}
                 onAnswerSelect={handleAnswerSelect}
                 isAnswerSubmitted={showFeedback}
@@ -658,12 +742,22 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
                   onClick={handleNext}
                   className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-5 py-2 text-xs font-medium text-white border-none shadow-none rounded-xl flex items-center gap-2"
                 >
-                  {currentIndex + 1 >= TOTAL_QUESTIONS ? "Finish" : "Next"}
+                  {currentIndex + 1 >= sectionPlan.length ? "Finish" : "Next"}
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               )}
             </div>
             <div className="flex justify-end flex-1 items-center gap-2 min-w-0">
+              {cheatMode && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAutoAnswerDialog(true)}
+                  className="border-amber-500/60 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-xs"
+                >
+                  Auto Answer
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -709,6 +803,35 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Admin: Auto Answer — set desired score % and skip to results */}
+      <AlertDialog open={showAutoAnswerDialog} onOpenChange={setShowAutoAnswerDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Auto Answer (admin)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter the score percentage you want (0–100). The diagnostic will be auto-answered and results shown.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={autoAnswerScoreInput}
+              onChange={(e) => setAutoAnswerScoreInput(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+              placeholder="e.g. 75"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={runAutoAnswer}>
+              Run &amp; show results
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -729,11 +852,13 @@ function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
 function DiagnosticResults({
   result,
   subjectId,
+  totalQuestions,
   onClose,
   onContinuePractice,
 }: {
   result: DiagnosticResult;
   subjectId: string;
+  totalQuestions: number;
   onClose: () => void;
   onContinuePractice?: () => void;
 }) {
@@ -765,7 +890,7 @@ function DiagnosticResults({
           <div className="mt-3 inline-flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-full px-4 py-1.5">
             <TrendingUp className="h-3.5 w-3.5 text-gray-500" />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {result.score}/{TOTAL_QUESTIONS} correct &nbsp;·&nbsp; {result.percentage}%
+              {result.score}/{totalQuestions || result.score} correct &nbsp;·&nbsp; {result.percentage}%
             </span>
           </div>
         </div>

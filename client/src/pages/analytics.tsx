@@ -254,6 +254,8 @@ export default function AnalyticsPage() {
     }
 
     const totalScore = (() => {
+      // For diagnostic, show the actual quiz score as Student Score so it matches "Quiz score" (no mismatch)
+      if (test.type === "diagnostic") return Math.round(test.percentage);
       if (!hasWeights) return Math.round(test.percentage);
       const weightedScore = Object.entries(unitWeights).reduce(
         (sum, [code, weight]) => sum + ((bestPerUnitForTimeline[code] ?? 0) / 100) * weight,
@@ -320,7 +322,7 @@ export default function AnalyticsPage() {
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Unlock Your Projected AP Score</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto text-sm leading-relaxed">
-              Take our 25-question adaptive diagnostic to see your projected 1–5 score and identify your weakest units.
+              Take our adaptive diagnostic to see your projected 1–5 score and identify your weakest units.
             </p>
             <Button
               onClick={() => router.push(subjectId ? `/diagnostic?subject=${subjectId}` : "/diagnostic")}
@@ -402,10 +404,11 @@ export default function AnalyticsPage() {
 
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={testChartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                      <LineChart data={testChartData} margin={{ top: 20, right: 30, left: 19, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:opacity-10" />
                         <XAxis
                           dataKey="testNumber"
+                          tickFormatter={(value) => (value === 1 ? "Test 1" : String(value))}
                           tick={{ fontSize: 11, fill: "#9ca3af" }}
                           axisLine={{ stroke: "#e5e7eb" }}
                           tickLine={false}
