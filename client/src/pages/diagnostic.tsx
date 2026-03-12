@@ -62,7 +62,7 @@ export default function DiagnosticPage() {
 
   const handleClose = () => {
     setDiagnosticInProgress(false);
-    router.push(`/study?subject=${subjectId}`);
+    router.push("/dashboard");
   };
 
   const handleComplete = async () => {

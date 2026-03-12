@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,7 @@ import { APScoreCircle } from "@/components/ui/APScoreCircle";
 import Navigation from "@/components/ui/navigation";
 import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -70,6 +70,7 @@ export default function Dashboard() {
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
   const [subjectSearch, setSubjectSearch] = useState("");
+  const archiveSectionRef = useRef<HTMLDivElement>(null);
 
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile"],
@@ -82,6 +83,18 @@ export default function Dashboard() {
     staleTime: Infinity,
     gcTime: Infinity,
   });
+
+  const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean } }>({
+    queryKey: ["adminCheck"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/user/admin-check");
+      if (!res.ok) return { success: false, data: { isAdmin: false } };
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
+  const isAdmin = adminCheck?.data?.isAdmin ?? false;
 
   const {
     data: subjectsResponse,
@@ -107,14 +120,66 @@ export default function Dashboard() {
     [subjectsResponse?.data]
   );
 
+  const activeList = useMemo(() => subjects.filter((s) => !s.archived), [subjects]);
+  const activeSubjectIds = useMemo(() => activeList.map((s) => s.subjectId), [activeList]);
+
+  const testHistoryQueries = useQueries({
+    queries: activeSubjectIds.map((subjectId) => ({
+      queryKey: ["testHistory", subjectId],
+      queryFn: async () => {
+        const res = await apiRequest("GET", `/api/user/test-history?subjectId=${subjectId}`);
+        if (!res.ok) throw new Error("Failed");
+        return res.json();
+      },
+      staleTime: 60000,
+      enabled: isAuthenticated && activeSubjectIds.length > 0,
+    })),
+  });
+
+  const unitProgressQueries = useQueries({
+    queries: activeSubjectIds.map((subjectId) => ({
+      queryKey: ["unitProgress", subjectId],
+      queryFn: async () => {
+        const res = await apiRequest("GET", `/api/user/subjects/${subjectId}/unit-progress`);
+        if (!res.ok) throw new Error("Failed");
+        return res.json();
+      },
+      staleTime: 60000,
+      enabled: isAuthenticated && activeSubjectIds.length > 0,
+    })),
+  });
+
+  const hasProjectedScoreMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    activeSubjectIds.forEach((subjectId, i) => {
+      const thRes = testHistoryQueries[i]?.data as { data?: unknown[] } | undefined;
+      const testHistory = Array.isArray(thRes?.data) ? thRes.data : [];
+      const upRes = unitProgressQueries[i]?.data as { data?: Record<string, { highestScore?: number; mcqScore?: number }> } | undefined;
+      const unitProgressMap = upRes?.data && typeof upRes.data === "object" && !Array.isArray(upRes.data) ? upRes.data : {};
+      const { hasEnoughForPrediction } = computeProjectedPercentage({ unitProgressMap, testHistory });
+      map[subjectId] = hasEnoughForPrediction;
+    });
+    return map;
+  }, [activeSubjectIds, testHistoryQueries, unitProgressQueries]);
+
   const activeSubjects = useMemo(() => {
-    const active = subjects.filter((s) => !s.archived);
-    const sorted = [...active].sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
+    const sorted = [...activeList].sort((a, b) => {
+      const aHas = hasProjectedScoreMap[a.subjectId] ?? false;
+      const bHas = hasProjectedScoreMap[b.subjectId] ?? false;
+      if (aHas && !bHas) return -1;
+      if (!aHas && bHas) return 1;
+      return (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" });
+    });
     const q = subjectSearch.trim().toLowerCase();
     if (!q) return sorted;
     return sorted.filter((s) => (s.name || "").toLowerCase().includes(q) || (s.description || "").toLowerCase().includes(q));
+  }, [activeList, subjectSearch, hasProjectedScoreMap]);
+  const archivedSubjects = useMemo(() => {
+    const archived = subjects.filter((s) => s.archived);
+    const q = subjectSearch.trim().toLowerCase();
+    if (!q) return archived;
+    return archived.filter((s) => (s.name || "").toLowerCase().includes(q) || (s.description || "").toLowerCase().includes(q));
   }, [subjects, subjectSearch]);
-  const archivedSubjects = subjects.filter((s) => s.archived);
 
   useEffect(() => {
     if (subjectsError && !subjectsLoading) {
@@ -212,14 +277,28 @@ export default function Dashboard() {
                 Continue your personalized AP preparation journey.
               </p>
             </div>
-            {activeSubjects.length > 0 && (
-              <Button
-                onClick={() => router.push("/learn")}
-                size="sm"
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] px-4 h-9 text-xs flex-shrink-0"
-              >
-                <Plus className="mr-1.5 w-3.5 h-3.5" /> Add Course
-              </Button>
+            {(activeList.length > 0 || subjects.length > 0) && (
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                {subjects.filter((s) => s.archived).length > 0 && (
+                  <Button
+                    onClick={() => archiveSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
+                    variant="outline"
+                    size="sm"
+                    className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out px-4 h-9 text-xs flex-shrink-0"
+                  >
+                    <BookOpen className="mr-1.5 w-3.5 h-3.5" /> Go to Archive
+                  </Button>
+                )}
+                {activeList.length > 0 && (
+                  <Button
+                    onClick={() => router.push("/learn")}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] px-4 h-9 text-xs flex-shrink-0"
+                  >
+                    <Plus className="mr-1.5 w-3.5 h-3.5" /> Add Course
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -236,7 +315,10 @@ export default function Dashboard() {
                   My Subjects
                 </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                  {activeSubjects.length} course{activeSubjects.length !== 1 ? "s" : ""} enrolled
+                  {activeList.length} active course{activeList.length !== 1 ? "s" : ""}
+                  {subjects.filter((s) => s.archived).length > 0 && (
+                    <>, {subjects.filter((s) => s.archived).length} archived</>
+                  )}
                 </p>
               </div>
               <div className="flex-1 min-w-[200px] max-w-sm flex items-center justify-center">
@@ -259,29 +341,37 @@ export default function Dashboard() {
                 <SubjectCard
                   key={subject.id}
                   subject={subject}
+                  isAdmin={isAdmin}
                   onArchive={() => setSubjectToArchive(subject)}
-                  onDelete={() => {
-                    setSubjectToRemove(subject);
-                    setShowRemoveDialog(true);
-                  }}
+                  onDelete={
+                    isAdmin
+                      ? () => {
+                          setSubjectToRemove(subject);
+                          setShowRemoveDialog(true);
+                        }
+                      : undefined
+                  }
                   onStudy={() => router.push(`/study?subject=${subject.subjectId}`)}
                 />
               ))}
             </div>
 
             {archivedSubjects.length > 0 && (
+              <div ref={archiveSectionRef}>
               <ArchivedSection
                 subjects={archivedSubjects}
                 isOpen={isArchiveExpanded}
                 toggle={() => setIsArchiveExpanded((v) => !v)}
                 onRestore={(s) => archiveMutation.mutate({ id: s.id, archive: false })}
               />
+              </div>
             )}
           </div>
         )}
       </main>
 
-      {/* Delete dialog */}
+      {/* Delete dialog (only relevant when user is admin) */}
+      {isAdmin && (
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="rounded-2xl max-w-md">
           <AlertDialogHeader>
@@ -301,6 +391,7 @@ export default function Dashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      )}
 
       {/* Archive dialog */}
       <AlertDialog open={!!subjectToArchive} onOpenChange={(v) => !v && setSubjectToArchive(null)}>
@@ -466,13 +557,15 @@ const scoreColorMap: Record<number, { text: string; bg: string; border: string; 
 
 const SubjectCard = ({
   subject,
+  isAdmin,
   onArchive,
   onDelete,
   onStudy,
 }: {
   subject: DashboardSubject;
+  isAdmin?: boolean;
   onArchive: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
   onStudy: () => void;
 }) => {
   const router = useRouter();
@@ -493,7 +586,6 @@ const SubjectCard = ({
     staleTime: 60000,
   });
   const testHistory = testHistoryResponse?.data || [];
-  const hasCompletedDiagnostic = testHistory.some((t) => t.type === "diagnostic");
 
   const { data: unitProgressResponse } = useQuery<{ success: boolean; data: any }>({
     queryKey: ["unitProgress", subject.subjectId],
@@ -558,9 +650,11 @@ const SubjectCard = ({
               <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 w-8 p-0 rounded-lg" onClick={onArchive} title="Archive">
                 <BookOpen className="w-3.5 h-3.5" />
               </Button>
-              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 h-8 w-8 p-0 rounded-lg" onClick={onDelete} title="Delete">
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
+              {isAdmin && onDelete && (
+                <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 h-8 w-8 p-0 rounded-lg" onClick={onDelete} title="Delete">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -599,7 +693,7 @@ const SubjectCard = ({
                 {units.length > 10 && <span className="text-[10px] text-slate-400 self-center font-semibold">+{units.length - 10}</span>}
               </div>
             </div>
-            {!hasCompletedDiagnostic ? (
+            {!predicted ? (
               <Button
                 onClick={() => router.push(`/diagnostic?subject=${subject.subjectId}`)}
                 title="Take the diagnostic test to get your projected AP score and identify units to focus on"

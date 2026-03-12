@@ -86,6 +86,7 @@ export default function Profile() {
         description: "Your profile has been successfully updated.",
       });
       setHasChanges(false);
+      router.push("/dashboard");
     },
     onError: (error: Error) => {
       toast({
