@@ -162,6 +162,13 @@ export default function Dashboard() {
     return map;
   }, [activeSubjectIds, testHistoryQueries, unitProgressQueries]);
 
+  const scoreDataReady = useMemo(() => {
+    if (activeSubjectIds.length === 0) return true;
+    const thReady = testHistoryQueries.every((q) => q.isSuccess || q.isError);
+    const upReady = unitProgressQueries.every((q) => q.isSuccess || q.isError);
+    return thReady && upReady;
+  }, [activeSubjectIds.length, testHistoryQueries, unitProgressQueries]);
+
   const activeSubjects = useMemo(() => {
     const sorted = [...activeList].sort((a, b) => {
       const aHas = hasProjectedScoreMap[a.subjectId] ?? false;
@@ -303,6 +310,8 @@ export default function Dashboard() {
           <CenteredLoader />
         ) : subjects.length === 0 ? (
           <EmptyState router={router} />
+        ) : !scoreDataReady ? (
+          <CenteredLoader />
         ) : (
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
