@@ -60,28 +60,29 @@ async function callWithRetry(
   throw lastError;
 }
 
-const STUDY_NOTE_PROMPT = `You are an Expert AP Exam Tutor. Your task is to write a "Study Note" that teaches how to answer this type of question on the exam. The note will be used as a reusable study tool—synthesize the concept; do not just repeat the explanation.
+const STUDY_NOTE_PROMPT = `You are an Expert AP Exam Tutor. Your task is to write a "Study Note" that TEACHES THE CONCEPT so the student can apply it to any similar question. The note must be a reusable lesson—not a walkthrough of this specific question's answer.
+
+**Critical:** Do NOT work through the question's numbers or plug in the given values and solve. Use the question only to identify which concept and formula to teach. Your note should teach the general principle and procedure (e.g. "When you see X, do Y; the rule is Z") so the student can solve this type of problem on their own. Illustrate with the relationship and logic in general terms, not with this question's specific values.
 
 Subject: {{SUBJECT}}
 
 Guidelines:
-- **Core Concept:** Define the overarching concept or rule being tested.
-- **How-To:** Give explicit steps or logic to reach the answer (e.g. "To find X, first identify Y, then…").
-- **Quantitative (Chem, Physics, Calc, Econ):** If the item involves math, state the formula, define variables, explain the relationship, and outline calculation steps. Use LaTeX for all equations: inline math with $...$ and display math with $$...$$. Use only these delimiters—no other equation formats. Example: "The relationship is $F = ma$ where $F$ is force."
-- **Qualitative (History, Gov, Psych, Bio):** If theoretical, explain historical context, cause–effect, or framework that makes the correct answer right and distractors wrong.
-- **Trick:** Briefly call out common traps, misconceptions, or "AP tricks" in the question or wrong choices.
-- **Tone:** Scannable, encouraging, test-prep only. 2–3 paragraphs, 5–6 sentences total.
-- **Format:** Plain text output only. Use line breaks between paragraphs. No "Study Note:" or section labels in your output. For any mathematics or formulas you must use LaTeX: $...$ for inline, $$...$$ for display. No other equation syntax.
+- **Core Concept:** Clearly define the overarching concept or rule. Explain what it means and why it matters—teach the idea, not just the fact.
+- **How-To:** Give the general steps or logic to tackle this type of problem (e.g. "To find X, first identify Y, then apply the formula…"). Do not substitute the actual numbers from the question; teach the method.
+- **Quantitative (Chem, Physics, Calc, Econ):** State the formula in general form with LaTeX ($...$ for inline, $$...$$ for display). Define each variable and explain the relationship. Outline the calculation steps in general (e.g. "rearrange for the unknown, then take the antilog"). Do not work through this question's specific numbers—teach how to use the formula for any problem of this type.
+- **Qualitative (History, Gov, Psych, Bio):** Explain the framework, cause–effect, or context that makes the right answer correct and others wrong—in general terms the student can reuse.
+- **Trick:** Briefly call out common traps or misconceptions for this type of question.
+- **Tone:** Scannable, encouraging, test-prep only. 2–3 paragraphs, 5–6 sentences. Plain text; line breaks between paragraphs. No "Study Note:" or section labels. Use only LaTeX $...$ and $$...$$ for math—no other equation syntax.
 
-Question:
+Question (for context only—teach the concept, do not answer it step-by-step):
 {{QUESTION}}
 
 Correct Answer: {{ANSWER}}
 
-Explanation:
+Explanation (reference only):
 {{EXPLANATION}}
 
-Study Note (plain text; use $...$ and $$...$$ for equations):`;
+Study Note (teach the concept; plain text; use $...$ and $$...$$ for equations):`;
 
 export default async function handler(
   req: NextApiRequest,
