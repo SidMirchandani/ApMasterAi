@@ -66,7 +66,7 @@ export default function DiagnosticPage() {
   };
 
   const handleComplete = async () => {
-    setDiagnosticInProgress(false);
+    // Invalidate caches so results are fresh when user returns to dashboard/subject
     if (subjectId) {
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
       queryClient.invalidateQueries({ queryKey: ["testHistory", subjectId] });
@@ -79,7 +79,11 @@ export default function DiagnosticPage() {
         queryClient.refetchQueries({ queryKey: ["dueReviews", subjectId, "all"] }),
       ]);
     }
-    router.push(`/analytics?subject=${subjectId}`);
+  };
+
+  const handleContinuePractice = () => {
+    setDiagnosticInProgress(false);
+    router.push(`/study?subject=${subjectId}`);
   };
 
   return (
@@ -89,6 +93,7 @@ export default function DiagnosticPage() {
         subjectId={subjectId}
         onClose={handleClose}
         onComplete={handleComplete}
+        onContinuePractice={handleContinuePractice}
       />
     </div>
   );

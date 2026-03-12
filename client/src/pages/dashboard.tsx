@@ -8,11 +8,12 @@ import {
   Plus,
   Calendar,
   AlertTriangle,
-  TrendingUp,
+  ArrowRight,
   Target,
   ChevronDown,
   Sparkles,
   Crown,
+  Search,
 } from "lucide-react";
 import { APScoreCircle } from "@/components/ui/APScoreCircle";
 import Navigation from "@/components/ui/navigation";
@@ -68,6 +69,7 @@ export default function Dashboard() {
   const [subjectToArchive, setSubjectToArchive] = useState<DashboardSubject | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
+  const [subjectSearch, setSubjectSearch] = useState("");
 
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile"],
@@ -105,7 +107,13 @@ export default function Dashboard() {
     [subjectsResponse?.data]
   );
 
-  const activeSubjects = subjects.filter((s) => !s.archived);
+  const activeSubjects = useMemo(() => {
+    const active = subjects.filter((s) => !s.archived);
+    const sorted = [...active].sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
+    const q = subjectSearch.trim().toLowerCase();
+    if (!q) return sorted;
+    return sorted.filter((s) => (s.name || "").toLowerCase().includes(q) || (s.description || "").toLowerCase().includes(q));
+  }, [subjects, subjectSearch]);
   const archivedSubjects = subjects.filter((s) => s.archived);
 
   useEffect(() => {
@@ -187,15 +195,15 @@ export default function Dashboard() {
       <BackgroundDecor />
       <Navigation />
 
-      <main className="py-8 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
+      <main className="py-5 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-5">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-widest">
                 {greeting}
               </p>
-              <h1 className="text-3xl sm:text-4xl font-display font-bold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-slate-900 dark:text-white tracking-tight">
                 {userProfile?.data?.firstName
                   ? `Welcome back, ${userProfile.data.firstName} 👋`
                   : "Welcome back 👋"}
@@ -207,9 +215,10 @@ export default function Dashboard() {
             {activeSubjects.length > 0 && (
               <Button
                 onClick={() => router.push("/learn")}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] px-5 h-11 flex-shrink-0"
+                size="sm"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] px-4 h-9 text-xs flex-shrink-0"
               >
-                <Plus className="mr-2 w-4 h-4" /> Add Course
+                <Plus className="mr-1.5 w-3.5 h-3.5" /> Add Course
               </Button>
             )}
           </div>
@@ -220,8 +229,8 @@ export default function Dashboard() {
         ) : subjects.length === 0 ? (
           <EmptyState router={router} />
         ) : (
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-display font-bold tracking-tight text-slate-900 dark:text-white">
                   My Subjects
@@ -230,10 +239,22 @@ export default function Dashboard() {
                   {activeSubjects.length} course{activeSubjects.length !== 1 ? "s" : ""} enrolled
                 </p>
               </div>
+              <div className="flex-1 min-w-[200px] max-w-sm flex items-center justify-center">
+                <div className="relative w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search subjects..."
+                    value={subjectSearch}
+                    onChange={(e) => setSubjectSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
               {subjectsFetching && <RefreshingState />}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 gap-4">
               {activeSubjects.map((subject) => (
                 <SubjectCard
                   key={subject.id}
@@ -317,7 +338,7 @@ export default function Dashboard() {
 const BackgroundDecor = () => null;
 
 const CenteredLoader = () => (
-  <div className="flex items-center justify-center py-24">
+  <div className="flex items-center justify-center py-12">
     <div className="text-center">
       <div className="relative w-12 h-12 mx-auto mb-4">
         <div className="absolute inset-0 rounded-full border-2 border-blue-200 dark:border-blue-800" />
@@ -329,14 +350,14 @@ const CenteredLoader = () => (
 );
 
 const EmptyState = ({ router }: { router: any }) => (
-  <div className="text-center py-24 px-4">
-    <div className="w-20 h-20 mx-auto mb-6 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-200/60 dark:border-blue-800/60">
+  <div className="text-center py-12 px-4">
+    <div className="w-20 h-20 mx-auto mb-4 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-200/60 dark:border-blue-800/60">
       <Sparkles className="h-10 w-10 text-blue-600 dark:text-blue-400" />
     </div>
     <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-2">
       No subjects yet
     </h2>
-    <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-sm mx-auto font-medium">
+    <p className="text-slate-500 dark:text-slate-400 mb-5 max-w-sm mx-auto font-medium">
       Add AP subjects to start practicing and tracking your progress.
     </p>
     <Button
@@ -358,8 +379,8 @@ const RefreshingState = () => (
 const ErrorScreen = ({ refetch }: { refetch: () => void }) => (
   <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
     <Navigation />
-    <div className="py-12 px-4 max-w-xl mx-auto">
-      <Alert className="border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-500/10 rounded-2xl">
+<div className="py-8 px-4 max-w-xl mx-auto">
+        <Alert className="border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-500/10 rounded-2xl">
         <AlertTriangle className="h-4 w-4 text-red-600" />
         <AlertDescription className="text-red-700 dark:text-red-300 flex flex-wrap justify-between items-center gap-3">
           Failed to load your subjects.
@@ -389,10 +410,10 @@ const ArchivedSection = ({
   toggle: () => void;
   onRestore: (s: DashboardSubject) => void;
 }) => (
-  <div className="mt-6">
+  <div className="mt-4">
     <button
       onClick={toggle}
-      className="flex justify-between items-center w-full p-4 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-800 transition-all duration-150 ease-out"
+      className="flex justify-between items-center w-full p-3 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-800 transition-all duration-150 ease-out"
     >
       <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
         Archived ({subjects.length})
@@ -409,13 +430,13 @@ const ArchivedSection = ({
             key={s.id}
             className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl opacity-80 hover:opacity-100 transition-all duration-150 ease-out"
           >
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2">
               <div className="flex justify-between items-start gap-4">
                 <div>
                   <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">
                     {s.name}
                   </CardTitle>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{s.description}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{s.description}</p>
                 </div>
                 <Button
                   variant="outline"
@@ -454,13 +475,14 @@ const SubjectCard = ({
   onDelete: () => void;
   onStudy: () => void;
 }) => {
+  const router = useRouter();
   const subjectMeta = getSubjectByCode(subject.subjectId);
   const units = subjectMeta?.units || [];
-  const unitProgress = subject.unitProgress || {};
+  const unitCount = subject.units ?? units.length;
 
   const { data: testHistoryResponse } = useQuery<{
     success: boolean;
-    data: { percentage: number; sectionBreakdown?: Record<string, { correct: number; total: number }> }[];
+    data: { percentage: number; type?: "full-length" | "diagnostic"; sectionBreakdown?: Record<string, { correct: number; total: number }> }[];
   }>({
     queryKey: ["testHistory", subject.subjectId],
     queryFn: async () => {
@@ -471,6 +493,7 @@ const SubjectCard = ({
     staleTime: 60000,
   });
   const testHistory = testHistoryResponse?.data || [];
+  const hasCompletedDiagnostic = testHistory.some((t) => t.type === "diagnostic");
 
   const { data: unitProgressResponse } = useQuery<{ success: boolean; data: any }>({
     queryKey: ["unitProgress", subject.subjectId],
@@ -493,91 +516,113 @@ const SubjectCard = ({
   const predicted = hasEnoughForPrediction ? getPredictedAPScoreFromTests(projectedPercentage, subjectCode) : null;
   const scoreColors = predicted ? scoreColorMap[predicted.score] : null;
 
+  const description = subject.description || subjectMeta?.metadata?.description || "";
+
   return (
-    <Card className="group flex flex-col h-full overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-[1px] hover:border-blue-200 dark:hover:border-blue-800/50 transition-all duration-150 ease-out bg-white dark:bg-slate-900/60 rounded-xl">
+    <Card className="group flex flex-row h-full overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-[1px] hover:border-blue-200 dark:hover:border-blue-800/50 transition-all duration-150 ease-out bg-white dark:bg-slate-900/60 rounded-xl">
+      {/* Left: Predicted AP Score + Percentile (big box) */}
       <div
-        className={`h-1 w-full bg-gradient-to-r ${
-          scoreColors ? scoreColors.gradient : "from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600"
-        } opacity-60 group-hover:opacity-100 transition-opacity duration-300`}
-      />
-      <CardHeader className="pb-3 pt-5 px-5 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex justify-between items-start gap-3">
-          <div className="space-y-1.5 min-w-0">
-            <CardTitle className="text-lg font-display font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
-              {subject.name}
-            </CardTitle>
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
-              </span>
-              <span className="text-slate-300 dark:text-slate-600">·</span>
-              <span className="flex items-center gap-1">
-                <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
-                {subject.units} Units
-              </span>
+        className={`flex-shrink-0 w-36 sm:w-40 flex flex-col items-center justify-center gap-2 p-4 rounded-l-xl border-r border-slate-200 dark:border-slate-800 ${
+          scoreColors ? scoreColors.bg : "bg-slate-100 dark:bg-slate-800/80"
+        }`}
+      >
+        <div className="flex flex-col items-center gap-1.5" title="Predicted AP Score">
+          <APScoreCircle
+            score={predicted?.score ?? null}
+            color={predicted ? predicted.color : "#94a3b8"}
+            size="lg"
+          />
+          <APScoreExplainDialog inline triggerClassName="self-center" />
+        </div>
+        <div className="text-center">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-500">Projected</p>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-500">AP Score</p>
+        </div>
+      </div>
+
+      {/* Right: Title, description, metadata, actions */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <CardHeader className="pb-2 pt-3 px-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex justify-between items-start gap-2">
+            <div className="space-y-0.5 min-w-0">
+              <CardTitle className="text-base font-display font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+                {subject.name}
+              </CardTitle>
+              {description && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                  {description}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 w-8 p-0 rounded-lg" onClick={onArchive} title="Archive">
+                <BookOpen className="w-3.5 h-3.5" />
+              </Button>
+              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 h-8 w-8 p-0 rounded-lg" onClick={onDelete} title="Delete">
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-0.5 flex-shrink-0">
-            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 h-8 w-8 p-0 rounded-lg" onClick={onArchive} title="Archive">
-              <BookOpen className="w-3.5 h-3.5" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 h-8 w-8 p-0 rounded-lg" onClick={onDelete} title="Delete">
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
+        </CardHeader>
+        <CardContent className="flex-1 py-2.5 px-4 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1">
+              <Target className="w-3.5 h-3.5 flex-shrink-0" />
+              {unitCount} Units
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+              Exam: {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
+            </span>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 py-4 px-5 flex flex-col gap-4">
-        <div className="flex items-stretch gap-3 flex-wrap">
-          <div
-            className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center gap-1 flex-shrink-0"
-            title="Predicted AP Score"
-          >
-            <APScoreCircle
-              score={predicted?.score ?? null}
-              color={predicted ? predicted.color : "#94a3b8"}
-              size="sm"
-            />
-            <APScoreExplainDialog inline triggerClassName="self-start mt-0.5" />
-          </div>
-          <div className="flex-1 min-w-0 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
-            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1.5">Unit Progress</p>
-            <div className="flex flex-wrap gap-1.5">
-            {units.slice(0, 10).map((u: any, i: number) => {
-              const unitData = unitProgress[u.id];
-              const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
-              const stat = getUnitTierFromScore(score, targets);
-              const isMastered = stat.tier === "5";
-              return (
-                <div
-                  key={u.id}
-                  className={`w-5 h-5 rounded-md ${stat.bg} border border-black/5 dark:border-white/5 flex items-center justify-center transition-transform hover:scale-125 cursor-help`}
-                  title={`Unit ${i + 1}: ${stat.label}${score > 0 ? ` (${score}%)` : ""}`}
-                >
-                  {isMastered && (
-                    <Crown className="w-2.5 h-2.5 fill-[#FFD700] stroke-[#FFD700]" strokeWidth={2} aria-hidden />
-                  )}
-                </div>
-              );
-            })}
-            {units.length > 10 && <span className="text-[10px] text-slate-400 self-center font-semibold">+{units.length - 10}</span>}
+          <div className="flex flex-wrap items-end gap-3 justify-between">
+            <div className="flex flex-col gap-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-500">Unit Progress</p>
+              <div className="flex flex-wrap gap-1 items-center">
+                {units.slice(0, 10).map((u: { id: string }, i: number) => {
+                  const unitData = unitProgressMap[u.id];
+                  const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
+                  const stat = getUnitTierFromScore(score, targets);
+                  const isMastered = stat.tier === "5";
+                  return (
+                    <div
+                      key={u.id}
+                      className={`w-5 h-5 rounded-md ${stat.bg} border border-black/5 dark:border-white/5 flex items-center justify-center transition-transform hover:scale-125 cursor-help`}
+                      title={`Unit ${i + 1}: ${stat.label}${score > 0 ? ` (${score}%)` : ""}`}
+                    >
+                      {isMastered && (
+                        <Crown className="w-2.5 h-2.5 fill-[#FFD700] stroke-[#FFD700]" strokeWidth={2} aria-hidden />
+                      )}
+                    </div>
+                  );
+                })}
+                {units.length > 10 && <span className="text-[10px] text-slate-400 self-center font-semibold">+{units.length - 10}</span>}
+              </div>
             </div>
+            {!hasCompletedDiagnostic ? (
+              <Button
+                onClick={() => router.push(`/diagnostic?subject=${subject.subjectId}`)}
+                title="Take the diagnostic test to get your projected AP score and identify units to focus on"
+                className="flex-shrink-0 bg-rose-500 hover:bg-rose-600 text-white py-2.5 h-9 px-3 sm:px-4 text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] group"
+              >
+                <Sparkles className="w-4 h-4 mr-1.5 flex-shrink-0" aria-hidden />
+                <span className="md:hidden">Diagnostic</span>
+                <span className="hidden md:inline">Take Diagnostic Test</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={onStudy}
+                title="Continue Practice"
+                className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-2.5 h-9 px-3 sm:px-4 text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] group"
+              >
+                <span className="md:hidden">Practice</span>
+                <span className="hidden md:inline">Continue Practice</span>
+                <ArrowRight className="w-4 h-4 ml-1.5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" aria-hidden />
+              </Button>
+            )}
           </div>
-        </div>
-        <div className="pt-1 mt-auto flex flex-col gap-3">
-          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-            Last studied: <span className="text-slate-500 dark:text-slate-400">{subject.lastStudied ? formatDate(subject.lastStudied) : "Never"}</span>
-          </div>
-          <Button
-            onClick={onStudy}
-            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-5 h-12 text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] group"
-          >
-            <span>Continue Practice</span>
-            <TrendingUp className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </div>
-      </CardContent>
+        </CardContent>
+      </div>
     </Card>
   );
 };

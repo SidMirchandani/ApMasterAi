@@ -200,17 +200,17 @@ export default function Courses() {
 
       <Navigation />
 
-      <div className="py-8 px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="py-5 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200/60 dark:border-blue-500/20 mb-4">
+          <div className="text-center mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200/60 dark:border-blue-500/20 mb-2">
               <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">Courses</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-3">
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-2">
               Choose Your <span className="text-gradient">AP Subject</span>
             </h1>
-            <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-6">
+            <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-4">
               Select an AP course to add to your dashboard and start your personalized learning journey.
             </p>
             <div className="max-w-md mx-auto relative">
@@ -226,14 +226,14 @@ export default function Courses() {
           </div>
 
           {filteredSubjects.length === 0 && searchQuery.trim() && (
-            <div className="text-center py-12 rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="text-center py-8 rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-sm">
               <p className="text-slate-500 dark:text-slate-400">
                 No subjects match &quot;{searchQuery}&quot;. Try a different search term.
               </p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredSubjects.map((subject) => {
               const isAdded = addedSubjectIds.has(subject.id);
               const isAdding =
@@ -245,7 +245,7 @@ export default function Courses() {
                   key={subject.id}
                   className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden hover:border-blue-200 dark:hover:border-blue-800/50 hover:shadow-md hover:-translate-y-[1px] transition-all duration-150 ease-out group"
                 >
-                  <CardHeader className="pb-3 pt-5 px-6">
+                  <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="text-lg font-display font-bold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors duration-150 ease-out">
                       {subject.name}
                     </CardTitle>
@@ -254,8 +254,8 @@ export default function Courses() {
                     </CardDescription>
                   </CardHeader>
 
-                  <CardContent className="px-6 pb-6">
-                    <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 mb-4">
+                  <CardContent className="px-4 pb-4">
+                    <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 mb-3">
                       <div className="flex items-center gap-1.5">
                         <BookOpen className="w-4 h-4 text-blue-500" />
                         <span className="font-medium text-slate-700 dark:text-slate-300">

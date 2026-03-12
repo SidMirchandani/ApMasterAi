@@ -187,15 +187,15 @@ export default function Study() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="container mx-auto px-4 py-12 max-w-xl">
-          <div className="text-center rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+        <div className="container mx-auto px-4 py-8 max-w-xl">
+          <div className="text-center rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+            <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
               <HelpCircle className="h-8 w-8 text-slate-400" />
             </div>
             <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-2">
               Subject not found
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mb-6">
+            <p className="text-slate-500 dark:text-slate-400 mb-4">
               The requested subject was not found in your dashboard.
             </p>
             <Button
@@ -226,50 +226,57 @@ export default function Study() {
       {/* Hero header */}
       <div className="relative bg-white dark:bg-slate-900/70 border-b border-slate-200 dark:border-slate-800 overflow-hidden">
 
-        <div className="container mx-auto px-4 py-6 max-w-6xl relative z-10">
+        <div className="container mx-auto px-4 py-3 max-w-6xl relative z-10">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push("/dashboard")}
-            className="text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 -ml-2 mb-4 rounded-lg group transition-colors duration-150 ease-out"
+            className="text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 -ml-2 mb-2 rounded-lg group transition-colors duration-150 ease-out"
           >
             <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
             Back to Dashboard
           </Button>
 
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 dark:text-white tracking-tight mb-1">
+              <h1 className="text-lg md:text-xl font-display font-bold text-slate-900 dark:text-white tracking-tight mb-0.5">
                 {currentSubject.name}
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-sm max-w-2xl leading-relaxed">
+              <p className="text-slate-500 dark:text-slate-400 text-xs max-w-2xl leading-relaxed">
                 {currentSubject.description}
               </p>
-
             </div>
 
             {/* Stat badges */}
-            <div className="flex items-stretch gap-3 flex-shrink-0">
+            <div className="flex items-stretch gap-2 flex-shrink-0">
               <div
-                className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center gap-1 flex-shrink-0 min-h-0"
+                className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center gap-2"
                 title="Predicted AP Score"
               >
+                <div>
+                  <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider leading-none">
+                    Projected
+                  </p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider leading-none">AP Score</p>
+                    <APScoreExplainDialog inline triggerClassName="self-start" />
+                  </div>
+                </div>
                 <APScoreCircle
                   score={predicted?.score ?? null}
                   color={predicted ? predicted.color : "#94a3b8"}
                   size="sm"
                 />
-                <APScoreExplainDialog inline triggerClassName="self-start mt-0.5" />
               </div>
-              <div className="px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
-                <div className="w-9 h-9 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
-                  <CalendarDays className="h-4 w-4 text-blue-500" />
+              <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center gap-2">
+                <div className="w-7 h-7 bg-blue-50 dark:bg-blue-500/10 rounded-lg flex items-center justify-center">
+                  <CalendarDays className="h-3.5 w-3.5 text-blue-500" />
                 </div>
                 <div>
                   <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider leading-none">
                     Exam Date
                   </p>
-                  <p className="text-base font-black text-slate-900 dark:text-white leading-tight mt-0.5">
+                  <p className="text-sm font-black text-slate-900 dark:text-white leading-tight mt-0.5">
                     {formatDate(subjectMeta?.metadata?.examDate ?? currentSubject.examDate)}
                   </p>
                 </div>
@@ -279,156 +286,47 @@ export default function Study() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-4 max-w-6xl">
 
         {/* Quick Actions */}
-        <div className="mb-12">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
+        <div className="mb-4">
+          <h2 className="text-[13px] font-bold uppercase tracking-widest text-slate-400 mb-2">
             Quick Actions
           </h2>
 
-          {!hasCompletedDiagnostic ? (
-            /* ── LAYOUT A: Onboarding State ── */
-            <div className="space-y-4">
-
-              {/* Row 1 — Hero Diagnostic CTA (full width) */}
-              <button
-                onClick={() => router.push(`/diagnostic?subject=${subjectId}`)}
-                className="group relative overflow-hidden rounded-xl p-6 w-full bg-rose-500 text-white text-left transition-all duration-150 ease-out hover:bg-rose-600 hover:-translate-y-[1px] hover:shadow-md active:translate-y-0"
-              >
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
-                <div className="relative z-10 flex items-center gap-4">
-                  <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-lg leading-tight">Quick Diagnostic Test</p>
-                    <p className="text-white/75 text-sm mt-1">25 adaptive questions · Get your projected AP score</p>
-                  </div>
-                  <ChevronRight className="w-6 h-6 text-white/60 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-                </div>
-              </button>
-
-              {/* Row 2 — Secondary/Locked cards (2 columns) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* MCQ Full-Length Test — secondary/discouraged */}
-                <button
-                  onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-                  className="group relative overflow-hidden rounded-xl p-5 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-left transition-all duration-150 ease-out opacity-60 hover:opacity-80"
-                >
-                  <div className="relative z-10 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Play className="w-5 h-5 text-slate-400 dark:text-slate-500 fill-current" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-slate-500 dark:text-slate-400 leading-tight">{subjectId ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test` : "Full Length MCQ Test"}</p>
-                      <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">Complete diagnostic first</p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Analytics — locked */}
-                <button
-                  disabled
-                  className="group relative overflow-hidden rounded-xl p-5 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-left opacity-50 cursor-not-allowed"
-                >
-                  <div className="relative z-10 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Lock className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-slate-500 dark:text-slate-400 leading-tight">Analytics</p>
-                      <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">Take diagnostic to unlock</p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-
-              {/* Row 3 — Standard utility cards (3 columns) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {[
-                  {
-                    icon: Bookmark,
-                    label: "Saved Questions",
-                    desc: "Your bookmarked questions",
-                    href: `/bookmarks?subject=${subjectId}`,
-                    iconClass: "text-amber-600 dark:text-amber-400",
-                    iconBg: "bg-amber-50 dark:bg-amber-500/10 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20",
-                    borderHover: "hover:border-amber-200 dark:hover:border-amber-800/60",
-                  },
-                  {
-                    icon: RotateCcw,
-                    label: "Review Questions",
-                    desc: "Questions you got wrong",
-                    href: `/review?subject=${subjectId}`,
-                    iconClass: "text-blue-600 dark:text-blue-400",
-                    iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
-                    borderHover: "hover:border-blue-200 dark:hover:border-blue-800/60",
-                  },
-                  {
-                    icon: Clock,
-                    label: "Test History",
-                    desc: "Diagnostic & full-length results",
-                    href: `/full-length-history?subject=${subjectId}`,
-                    iconClass: "text-blue-600 dark:text-blue-400",
-                    iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
-                    borderHover: "hover:border-blue-200 dark:hover:border-blue-800/60",
-                  },
-                ].map((action) => (
-                  <button
-                    key={action.label}
-                    onClick={() => router.push(action.href)}
-                    className={`group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 ${action.borderHover} text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 ${action.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 transition-colors`}>
-                        <action.icon className={`w-5 h-5 ${action.iconClass}`} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{action.label}</p>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{action.desc}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-            </div>
-          ) : (
-            /* ── LAYOUT B: Core Study Loop ── */
-            <div className="space-y-4">
+            <div className="space-y-2">
 
               {/* Row 1 — Primary action pair (2 columns) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {/* MCQ Full-Length Test — elevated primary CTA */}
                 <button
                   onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-                  className="group relative overflow-hidden rounded-xl p-5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md active:translate-y-0"
+                  className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md active:translate-y-0"
                 >
                   <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
-                  <div className="relative z-10 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Play className="w-6 h-6 text-white fill-white" />
+                  <div className="relative z-10 flex items-center gap-3">
+                    <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Play className="w-4 h-4 text-white fill-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-base leading-tight">{subjectId ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test` : "Full Length MCQ Test"}</p>
+                      <p className="font-bold text-[13px] leading-tight">{subjectId ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test` : "Full Length MCQ Test"}</p>
                       <p className="text-white/75 text-xs mt-0.5">Simulate real exam conditions</p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-white/60 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-white/60 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
                   </div>
                 </button>
 
                 {/* Analytics — highlighted secondary CTA */}
                 <button
                   onClick={() => router.push(`/analytics?subject=${subjectId}`)}
-                  className="group relative overflow-hidden rounded-xl p-5 bg-white dark:bg-slate-900/70 border border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+                  className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-white dark:bg-slate-900/70 border border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
                 >
-                  <div className="relative z-10 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
-                      <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <div className="relative z-10 flex items-center gap-3">
+                    <div className="w-9 h-9 bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                      <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight">Analytics</p>
+                      <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">Analytics</p>
                       <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Detailed performance data</p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
@@ -437,21 +335,13 @@ export default function Study() {
               </div>
 
               {/* Row 2 — Utility cards (2 cols on mobile → 4 cols on desktop) */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
                 {[
-                  {
-                    icon: Clock,
-                    label: "Test History",
-                    desc: "All your results",
-                    href: `/full-length-history?subject=${subjectId}`,
-                    iconClass: "text-blue-600 dark:text-blue-400",
-                    iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
-                    borderHover: "hover:border-blue-200 dark:hover:border-blue-800/60",
-                  },
                   {
                     icon: RotateCcw,
                     label: "Review Questions",
                     desc: "Questions you got wrong",
+                    descSize: "text-[11px]",
                     href: `/review?subject=${subjectId}`,
                     iconClass: "text-blue-600 dark:text-blue-400",
                     iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
@@ -467,9 +357,19 @@ export default function Study() {
                     borderHover: "hover:border-amber-200 dark:hover:border-amber-800/60",
                   },
                   {
+                    icon: Clock,
+                    label: "Test History",
+                    desc: "All your results",
+                    href: `/full-length-history?subject=${subjectId}`,
+                    iconClass: "text-blue-600 dark:text-blue-400",
+                    iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
+                    borderHover: "hover:border-blue-200 dark:hover:border-blue-800/60",
+                  },
+                  {
                     icon: Sparkles,
-                    label: "Retake Diagnostic",
-                    desc: "Re-baseline your score",
+                    label: hasCompletedDiagnostic ? "Retake Diagnostic" : "Take Diagnostic",
+                    desc: hasCompletedDiagnostic ? "Re-baseline your score" : "Get your projected AP score",
+                    descSize: "text-[11px]",
                     href: `/diagnostic?subject=${subjectId}`,
                     iconClass: "text-red-600 dark:text-red-400",
                     iconBg: "bg-red-50 dark:bg-red-500/10 group-hover:bg-red-100 dark:group-hover:bg-red-500/20",
@@ -479,15 +379,15 @@ export default function Study() {
                   <button
                     key={action.label}
                     onClick={() => router.push(action.href)}
-                    className={`group relative overflow-hidden rounded-xl p-4 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 ${action.borderHover} text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md`}
+                    className={`group relative overflow-hidden rounded-xl p-2.5 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 ${action.borderHover} text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 ${action.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 transition-colors`}>
-                        <action.icon className={`w-5 h-5 ${action.iconClass}`} />
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 ${action.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 transition-colors`}>
+                        <action.icon className={`w-4 h-4 ${action.iconClass}`} />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{action.label}</p>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{action.desc}</p>
+                        <p className="font-semibold text-[13px] text-slate-900 dark:text-white leading-tight truncate">{action.label}</p>
+                        <p className={`text-slate-500 dark:text-slate-400 ${"descSize" in action ? action.descSize : "text-xs"} truncate hidden sm:block`}>{action.desc}</p>
                       </div>
                     </div>
                   </button>
@@ -495,28 +395,22 @@ export default function Study() {
               </div>
 
             </div>
-          )}
         </div>
 
         {/* Units Grid */}
-        <div className="space-y-5">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-600 dark:bg-blue-500 flex items-center justify-center shadow-sm">
-                <Target className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-display font-bold text-slate-900 dark:text-white">
-                  Course Content
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                  {totalTopics} units · {topicsMastered} mastered
-                </p>
-              </div>
+            <div>
+              <h2 className="text-[13px] font-bold uppercase tracking-widest text-slate-400">
+                Course Content
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                {totalTopics} units · {topicsMastered} mastered
+              </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 gap-2">
             {units.map((unit, index) => {
               const unitData = getUnitData(unit.id);
               const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
@@ -583,90 +477,81 @@ export default function Study() {
                     className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${statusConfig.barColor} opacity-${isMastered ? "100" : "40"} group-hover:opacity-100 transition-opacity duration-150 ease-out`}
                   />
 
-                  <div className="flex flex-col md:flex-row md:items-center pl-4">
+                  <div className="flex items-center pl-3">
                     {/* Main content */}
-                    <div className="p-5 flex-1 min-w-0 md:min-w-[50%]">
-                      <div className="flex items-start gap-4">
+                    <div className="py-3 px-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-3">
                         {/* Unit number + crown when mastered */}
                         <div className="relative shrink-0">
                           {isMastered && (
                             <Crown
                               className="absolute -top-1 left-1/2 -translate-x-1/2 fill-[#FFD700] stroke-[#FFD700] pointer-events-none z-10"
-                              size={16}
+                              size={13}
                               strokeWidth={2}
                               aria-hidden
                             />
                           )}
                           <div
-                            className={`w-11 h-11 rounded-xl flex items-center justify-center font-black text-lg ${statusConfig.numBg} transition-colors`}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center font-black text-sm ${statusConfig.numBg} transition-colors`}
                           >
                             {index + 1}
                           </div>
                         </div>
 
-                        <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex-1 min-w-0 space-y-0.5">
                           {/* Title + badge */}
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
                               {unit.title}
                             </h3>
                             {hasAttempted && (
-                              <Badge className={`${statusConfig.badge} border-none px-2 py-0.5 text-[10px] font-bold h-5 leading-none rounded-full`}>
+                              <Badge className={`${statusConfig.badge} border-none px-1.5 py-0 text-[11px] font-bold h-4 leading-none rounded-full`}>
                                 {level}
                               </Badge>
                             )}
                           </div>
 
-                          {/* Description */}
-                          <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-xs max-w-2xl">
-                            {unit.description}
-                          </p>
-
                           {/* Meta row */}
-                          <div className="flex items-center gap-4 pt-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                              <BookOpen className="w-3 h-3" />
-                              Exam Weight: {unit.examWeight}
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-medium text-slate-400">
+                              Exam: {unit.examWeight}
                             </span>
                             {hasAttempted && (
-                              <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${tierResult.textClass}`}>
+                              <span className={`text-xs font-medium flex items-center gap-1 ${tierResult.textClass}`}>
                                 <Target className="w-3 h-3" />
-                                Best Score: {score}%
+                                {score}%
                               </span>
                             )}
-                          </div>
-
-                          {/* Score progress bar */}
-                          {hasAttempted && (
-                            <div className="pt-1 max-w-xs">
-                              <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full bg-gradient-to-r ${statusConfig.barColor} rounded-full transition-all duration-700`}
-                                  style={{ width: `${score}%` }}
-                                />
+                            {hasAttempted && (
+                              <div className="flex-1 max-w-[120px]">
+                                <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full bg-gradient-to-r ${statusConfig.barColor} rounded-full transition-all duration-700`}
+                                    style={{ width: `${score}%` }}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* CTA: max 50% width, full text → short text → icons as narrow */}
-                    <div className="px-5 pb-5 md:pb-0 flex items-center flex-shrink-0 gap-2 flex-wrap justify-end md:justify-start md:max-w-[50%]">
+                    {/* CTA */}
+                    <div className="px-3 py-3 flex items-center flex-shrink-0">
                       <Button
                         onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)}
                         variant="outline"
                         size="sm"
-                        title="Save questions you want to study later during the quiz"
-                        className={`h-11 font-semibold rounded-xl transition-all duration-150 ease-out text-sm shrink-0 min-w-0 ${
+                        title="Practice quiz for this unit"
+                        className={`h-8 font-semibold rounded-lg transition-all duration-150 ease-out text-[13px] shrink-0 px-3 ${
                           isMastered
                             ? "bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/60 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                             : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-600 hover:text-white text-slate-900 dark:text-white"
                         }`}
                       >
-                        <Play className="w-4 h-4 flex-shrink-0 mr-1.5" />
-                        <span className="hidden xl:inline truncate">Take Quiz</span>
-                        <span className="xl:hidden truncate">Quiz</span>
+                        <Play className="w-3 h-3 flex-shrink-0 mr-1" />
+                        Practice Quiz
                       </Button>
                     </div>
                   </div>

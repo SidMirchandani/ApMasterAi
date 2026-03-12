@@ -43,6 +43,7 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  ArrowRight,
   Loader2,
   TrendingUp,
   AlertTriangle,
@@ -79,6 +80,7 @@ interface Props {
   subjectId: string;
   onClose: () => void;
   onComplete?: (result: DiagnosticResult) => void;
+  onContinuePractice?: () => void;
 }
 
 function adaptDifficulty(prev: Difficulty, wasCorrect: boolean): Difficulty {
@@ -123,7 +125,7 @@ function pickFromPool(
   return null;
 }
 
-export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
+export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePractice }: Props) {
   const subjectApiCode = getApiCodeForSubject(subjectId) || subjectId;
 
   // The distribution plan: [sectionCode, sectionCode, ...] length = TOTAL_QUESTIONS
@@ -485,7 +487,7 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
           sectionBreakdown: r.sectionBreakdown || {},
           testId: r.id,
         });
-        if (onComplete) onComplete(r);
+        if (onComplete) onComplete(r); // cache invalidation side-effect only — navigation handled by onContinuePractice
       } else {
         setError("Failed to save your results. Please try again.");
       }
@@ -530,7 +532,14 @@ export function DiagnosticModal({ subjectId, onClose, onComplete }: Props) {
   }
 
   if (result) {
-    return <DiagnosticResults result={result} subjectId={subjectId} onClose={onClose} />;
+    return (
+      <DiagnosticResults
+        result={result}
+        subjectId={subjectId}
+        onClose={onClose}
+        onContinuePractice={onContinuePractice}
+      />
+    );
   }
 
   if (isLoadingPool || !currentQuestion) {
@@ -721,10 +730,12 @@ function DiagnosticResults({
   result,
   subjectId,
   onClose,
+  onContinuePractice,
 }: {
   result: DiagnosticResult;
   subjectId: string;
   onClose: () => void;
+  onContinuePractice?: () => void;
 }) {
   const subjectApiCode = getApiCodeForSubject(subjectId) || subjectId;
   const predicted = getPredictedAPScoreFromTests(result.percentage, subjectApiCode);
@@ -788,15 +799,13 @@ function DiagnosticResults({
           </div>
         )}
 
-        <div className="px-6 py-4 text-center">
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-            Projected score is a statistical estimate based on MCQ performance.
-          </p>
+        <div className="px-6 py-4">
           <Button
-            onClick={onClose}
-            className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl h-11 font-semibold"
+            onClick={onContinuePractice ?? onClose}
+            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl h-11 font-semibold flex items-center justify-center gap-2 group"
           >
-            View Analytics
+            Continue Practice
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </Button>
         </div>
       </div>

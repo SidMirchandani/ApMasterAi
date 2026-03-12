@@ -89,7 +89,7 @@ export function AdminUsersTab({ token }: { token: string }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
         <CardHeader>
           <CardTitle className="dark:text-white">User Management</CardTitle>

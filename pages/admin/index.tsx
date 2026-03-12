@@ -984,10 +984,10 @@ export default function AdminPage() {
       >
         {tab === "insights" && <AdminInsightsTab token={token} />}
         {tab === "library" && (
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Subjects Overview */}
         <Card className="dark:bg-slate-900/60 dark:border-slate-800">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2 text-xl dark:text-white">
@@ -1008,7 +1008,7 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent>
             {loadingStatus ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-5">
                 <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
               </div>
             ) : (

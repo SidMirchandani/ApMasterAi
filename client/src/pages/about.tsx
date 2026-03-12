@@ -9,41 +9,41 @@ export default function About() {
       <Navigation />
 
       {/* Hero */}
-      <section className="relative overflow-hidden pt-8 pb-12 md:pt-12 md:pb-16">
+      <section className="relative overflow-hidden pt-6 pb-8 md:pt-8 md:pb-10">
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200/60 dark:border-blue-500/20 mb-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200/60 dark:border-blue-500/20 mb-2">
             <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
               Our Mission
             </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
             About{" "}
             <span className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500 bg-clip-text text-transparent">
               APMaster
             </span>
           </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl font-medium leading-snug">
+          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-medium leading-snug">
             Democratizing elite-level AP preparation for every student.
           </p>
         </div>
       </section>
 
       {/* Main content — structured sections */}
-      <section className="relative py-8 md:py-12 bg-slate-50 dark:bg-[#0B0F1A]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+      <section className="relative py-5 md:py-6 bg-slate-50 dark:bg-[#0B0F1A]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
           {/* Pull quote */}
-          <div className="rounded-xl border-l-4 border-blue-500 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm transition-all duration-150 ease-out">
-            <p className="text-xl sm:text-2xl font-display font-bold text-slate-900 dark:text-white leading-snug italic">
+          <div className="rounded-xl border-l-4 border-blue-500 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-3 sm:p-4 shadow-sm transition-all duration-150 ease-out">
+            <p className="text-xl sm:text-2xl font-display font-bold text-slate-900 dark:text-white leading-snug italic text-center">
               AP success shouldn't come with a price tag.
             </p>
           </div>
 
           {/* The Problem */}
           <div>
-            <h2 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+            <h2 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
               <span className="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs">1</span>
               The problem
             </h2>
@@ -56,7 +56,7 @@ export default function About() {
 
           {/* Our Mission */}
           <div>
-            <h2 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+            <h2 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
               <span className="w-7 h-7 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
                 <Target className="w-3.5 h-3.5 text-white" />
               </span>
@@ -84,7 +84,7 @@ export default function About() {
 
           {/* How we do it — two cards */}
           <div>
-            <h2 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+            <h2 className="text-lg font-display font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
               <span className="w-7 h-7 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
                 <Zap className="w-3.5 h-3.5 text-white" />
               </span>
@@ -109,7 +109,7 @@ export default function About() {
           </div>
 
           {/* Vision block */}
-          <div className="rounded-xl bg-blue-50/80 dark:bg-blue-500/10 p-5 border border-blue-200/60 dark:border-blue-500/20 transition-all duration-150 ease-out">
+          <div className="rounded-xl bg-blue-50/80 dark:bg-blue-500/10 p-4 border border-blue-200/60 dark:border-blue-500/20 transition-all duration-150 ease-out">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
                 <Target className="w-5 h-5 text-white" />

@@ -167,7 +167,7 @@ export default function Navigation() {
                 <div className="w-9 h-9 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-150 ease-out group-hover:scale-[1.02]">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-display font-bold text-slate-900 dark:text-white tracking-tight hidden sm:inline">
+                <span className="text-sm font-display font-bold text-slate-900 dark:text-white tracking-tight hidden sm:inline">
                   APMaster
                 </span>
               </Link>

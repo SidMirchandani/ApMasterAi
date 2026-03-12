@@ -148,7 +148,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
   if (error || !data) {
     return (
       <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-        <CardContent className="py-8 text-center text-slate-500 dark:text-slate-400">
+        <CardContent className="py-5 text-center text-slate-500 dark:text-slate-400">
           {error || "No insights data available."}
         </CardContent>
       </Card>
@@ -171,7 +171,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
   const monthlyTicks = getMonthlyTicks(data.signUpsOverTime.map((p) => p.date));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* KPI strip at top */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -528,7 +528,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
       {!hasSignupData && data.courseEnrollments.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}>
           <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-            <CardContent className="py-8 text-center text-slate-500 dark:text-slate-400">
+            <CardContent className="py-5 text-center text-slate-500 dark:text-slate-400">
               No chart data yet. More activity will populate trends and distributions.
             </CardContent>
           </Card>
