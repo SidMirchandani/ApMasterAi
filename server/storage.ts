@@ -433,6 +433,56 @@ export class Storage {
     });
   }
 
+  /**
+   * Ensures a user_subjects document exists for the given userId and subjectId.
+   * If none exists, creates a minimal document so unit progress and unit quiz results can be saved.
+   * Returns the document reference (Firestore) or null (dev mode).
+   */
+  async ensureUserSubject(
+    userId: string,
+    subjectId: string
+  ): Promise<admin.firestore.DocumentReference | null> {
+    if (isDevelopmentMode()) {
+      return null;
+    }
+
+    return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
+
+      const subjectsRef = db.collection("user_subjects");
+      const snapshot = await subjectsRef
+        .where("userId", "==", userId)
+        .where("subjectId", "==", subjectId)
+        .limit(1)
+        .get();
+
+      if (!snapshot.empty) {
+        return snapshot.docs[0].ref;
+      }
+
+      const now = new Date();
+      const docRef = subjectsRef.doc();
+      const minimalSubject: Omit<UserSubject, "id"> & { createdAt?: Date } = {
+        userId,
+        subjectId,
+        name: subjectId,
+        description: "",
+        units: 0,
+        difficulty: "",
+        examDate: "",
+        progress: 0,
+        masteryLevel: 0,
+        dateAdded: now,
+        unitProgress: {},
+        createdAt: now,
+      };
+      await docRef.set(minimalSubject);
+      return docRef;
+    });
+  }
+
   async updateSubjectMasteryLevel(
     userId: string,
     subjectId: string,
@@ -473,6 +523,15 @@ export class Storage {
     const db = this.getDbInstance();
     if (!db) throw new Error("Firestore not available");
 
+    console.log("[storage.updateUnitProgress] called", {
+      userId,
+      subjectId,
+      unitId,
+      mcqScore,
+    });
+
+    await this.ensureUserSubject(userId, subjectId);
+
     const subjectsRef = db.collection("user_subjects");
 
     const snapshot = await subjectsRef
@@ -481,6 +540,10 @@ export class Storage {
       .get();
 
     if (snapshot.empty) {
+      console.error("[storage.updateUnitProgress] Subject not found after ensureUserSubject", {
+        userId,
+        subjectId,
+      });
       throw new Error("Subject not found");
     }
 
@@ -525,6 +588,14 @@ export class Storage {
 
       const updated = await doc.ref.get();
       const updatedData = { id: updated.id, ...updated.data() };
+
+      console.log("[storage.updateUnitProgress] updated", {
+        userId,
+        subjectId,
+        unitId,
+        highestScore,
+        status,
+      });
 
       return updatedData;
     } catch (firestoreError) {
@@ -838,6 +909,114 @@ export class Storage {
       return aMs - bMs;
     });
     return allTests;
+  }
+
+  async saveUnitQuizResult(
+    userId: string,
+    subjectId: string,
+    payload: {
+      unitId: string;
+      sectionCode: string;
+      score: number;
+      percentage: number;
+      totalQuestions: number;
+      sectionName?: string;
+      unitNumber?: number;
+    }
+  ): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    console.log("[storage.saveUnitQuizResult] called", {
+      userId,
+      subjectId,
+      payload,
+    });
+
+    const docId = `unit_${payload.sectionCode}_${Date.now()}`;
+    const timestamp = new Date();
+
+    const sectionBreakdown: { [key: string]: { name: string; unitNumber: number; correct: number; total: number; percentage: number } } = {};
+    sectionBreakdown[payload.sectionCode] = {
+      name: payload.sectionName || payload.sectionCode,
+      unitNumber: payload.unitNumber ?? 0,
+      correct: payload.score,
+      total: payload.totalQuestions,
+      percentage: payload.percentage,
+    };
+
+    const testData = {
+      id: docId,
+      type: "unit",
+      date: timestamp,
+      score: payload.score,
+      percentage: payload.percentage,
+      totalQuestions: payload.totalQuestions,
+      subjectId,
+      unitId: payload.unitId,
+      sectionCode: payload.sectionCode,
+      sectionBreakdown,
+    };
+
+    await this.ensureUserSubject(userId, subjectId);
+
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (!snapshot.empty) {
+      await snapshot.docs[0].ref.collection("unitQuizResults").doc(docId).set(testData);
+      console.log("[storage.saveUnitQuizResult] saved unit quiz result", {
+        userId,
+        subjectId,
+        docId,
+        unitId: payload.unitId,
+        sectionCode: payload.sectionCode,
+      });
+    } else {
+      console.error("[storage.saveUnitQuizResult] No user_subjects doc found after ensureUserSubject", {
+        userId,
+        subjectId,
+      });
+    }
+
+    return testData;
+  }
+
+  async getAllUnitQuizResults(userId: string, subjectId?: string): Promise<any[]> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    let query: admin.firestore.Query = subjectsRef.where("userId", "==", userId);
+    if (subjectId) {
+      query = query.where("subjectId", "==", subjectId);
+    }
+
+    const snapshot = await query.get();
+    const allResults: any[] = [];
+
+    for (const doc of snapshot.docs) {
+      const resultsSnapshot = await doc.ref.collection("unitQuizResults").orderBy("date", "asc").get();
+      resultsSnapshot.docs.forEach((resultDoc) => {
+        allResults.push({
+          ...resultDoc.data(),
+          subjectId: doc.data().subjectId,
+          type: "unit",
+        });
+      });
+    }
+
+    allResults.sort((a, b) => {
+      const aMs = a.date?.toMillis ? a.date.toMillis() : new Date(a.date).getTime();
+      const bMs = b.date?.toMillis ? b.date.toMillis() : new Date(b.date).getTime();
+      return aMs - bMs;
+    });
+    return allResults;
   }
 
   async saveDiagnosticProgress(

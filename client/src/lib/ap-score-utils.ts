@@ -137,8 +137,11 @@ export function getPredictedAPScoreFromTests(
   avgTestPercentage: number,
   subjectCode: string | undefined
 ): APScoreResult {
-  const weightedResult = weightedPercentageToAPScore(avgTestPercentage, subjectCode);
-  return weightedResult ?? fallbackAPScore(avgTestPercentage);
+  // Use the subject's official curve directly on the latest student score
+  // so the predicted AP score is easy to interpret. Fall back to simple
+  // percentage bands when no subject config exists.
+  const directResult = percentageToAPScore(avgTestPercentage, subjectCode);
+  return directResult ?? fallbackAPScore(avgTestPercentage);
 }
 
 /**
@@ -187,13 +190,12 @@ export function computeProjectedPercentage(params: {
 
   const unitBestValues = Object.values(unitBestMap).filter((v) => v > 0);
   const hasEnoughForPrediction = unitBestValues.length > 0 || testHistory.length >= 1;
+  // Use latest student score (last test history entry) for prediction when available; otherwise fall back to unit-best average or test average
   const projectedPercentage =
-    unitBestValues.length > 0
+    testHistory.length > 0
+      ? Math.round(testHistory[testHistory.length - 1].percentage)
+      : unitBestValues.length > 0
       ? Math.round(unitBestValues.reduce((s, v) => s + v, 0) / unitBestValues.length)
-      : testHistory.length > 0
-      ? Math.round(
-          testHistory.reduce((sum, t) => sum + t.percentage, 0) / testHistory.length
-        )
       : 0;
 
   return { projectedPercentage, hasEnoughForPrediction };

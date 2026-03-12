@@ -321,7 +321,7 @@ export default function BookmarksPage() {
           <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 fixed bottom-0 left-0 right-0 z-50">
             <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2.5">
               <div className="flex justify-between items-center gap-2 sm:gap-4">
-                <div className="flex flex-1 items-center min-w-0">
+                <div className="flex flex-1 items-center gap-2 min-w-0">
                   <Button
                     variant="outline"
                     size="sm"
@@ -332,24 +332,25 @@ export default function BookmarksPage() {
                     <ChevronLeft className="w-4 h-4 mr-1" />
                     Prev
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNext}
+                    disabled={currentIndex >= bookmarks.length - 1}
+                    className="border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 disabled:opacity-30 rounded-xl shrink-0 flex items-center gap-1"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
                 <div className="flex justify-center items-center flex-shrink-0">
-                  {!isRevealed ? (
+                  {!isRevealed && (
                     <Button
                       onClick={handleSubmit}
                       disabled={!selectedAnswer}
                       className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-5 py-2 text-xs font-medium text-white border-none shadow-none rounded-xl disabled:opacity-50"
                     >
                       Submit
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleNext}
-                      disabled={currentIndex >= bookmarks.length - 1}
-                      className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-5 py-2 text-xs font-medium text-white border-none shadow-none rounded-xl flex items-center gap-2 disabled:opacity-50"
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
                     </Button>
                   )}
                 </div>

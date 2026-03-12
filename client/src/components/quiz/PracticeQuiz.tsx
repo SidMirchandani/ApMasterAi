@@ -236,6 +236,7 @@ export function PracticeQuiz({
         );
       } else {
         setShowResults(true);
+        onComplete(score);
       }
     }
   };

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, XCircle, BookOpen } from "lucide-react";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/date";
 import { getSectionInfo, getSubjectByCode, getSubjectByLegacyId } from "@/subjects";
 
 // Import the QuizReviewPage component

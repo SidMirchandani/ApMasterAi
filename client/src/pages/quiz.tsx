@@ -12,6 +12,7 @@ import { QuizReviewPage } from "@/components/quiz/QuizReviewPage";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface Question {
   id: string;
@@ -31,7 +32,7 @@ interface Question {
   };
 }
 
-import { getApiCodeForSubject, getSectionCodeForUnit, getUnitIdForSectionCode, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
+import { getApiCodeForSubject, getSectionByCode, getSectionCodeForUnit, getUnitIdForSectionCode, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayCorrectLabel } from "@/lib/mcqDisplay";
 
 // Exam configurations: questions and time per test (2026 Digital/Hybrid standards)
@@ -68,6 +69,7 @@ export default function Quiz() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { subject: subjectId, unit } = router.query;
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -636,24 +638,99 @@ export default function Quiz() {
     }
   };
 
-  // Save score for practice tests only (full-length handled in submit); clear saved unit quiz state on completion
+  // Save score for practice tests only (full-length handled in submit); clear saved unit quiz state on completion; add unit quiz to test history
+  // Note: router.query can be empty in Next.js; always prefer URL params when quiz is completed so save runs.
   useEffect(() => {
-    const saveScore = async () => {
-      if (!quizCompleted || !subjectId || !unit || isFullLength) return;
-      const pct = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
+    const getSubjectAndUnitFromUrl = (): { subject: string; unit: string } => {
       try {
-        await apiRequest(
+        const search = typeof window !== "undefined" ? window.location.search : "";
+        const params = new URLSearchParams(search);
+        const subject = params.get("subject") ?? "";
+        const unit = params.get("unit") ?? "";
+        return { subject, unit };
+      } catch {
+        return { subject: "", unit: "" };
+      }
+    };
+
+    const saveScore = async (retryCount = 0) => {
+      const fromUrl = getSubjectAndUnitFromUrl();
+      // When quiz is completed, prefer URL so we never miss save due to empty router.query
+      const subj = quizCompleted && fromUrl.subject
+        ? fromUrl.subject
+        : (typeof subjectId === "string" ? subjectId : Array.isArray(subjectId) ? subjectId[0] : "") || fromUrl.subject;
+      const unitStr = quizCompleted && fromUrl.unit
+        ? fromUrl.unit
+        : (unit != null ? (typeof unit === "string" ? unit : Array.isArray(unit) ? unit[0] : String(unit)) : "") || fromUrl.unit;
+
+      const skip = !quizCompleted || !subj || !unitStr || unitStr === "full-length";
+      console.log("[quiz saveScore] effect run", {
+        quizCompleted,
+        subj,
+        unitStr,
+        fromUrl,
+        isFullLength,
+        skip,
+        retryCount,
+      });
+      if (skip) return;
+      const pct = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
+      const sectionCode =
+        typeof unitStr === "string" && /^[A-Z]{2,}$/.test(unitStr)
+          ? unitStr
+          : getSectionCodeForUnit(subj, unitStr);
+      const sectionInfo = sectionCode && subj ? getSectionByCode(subj, sectionCode) : undefined;
+
+      console.log("[quiz saveScore] starting save", {
+        subj,
+        unitStr,
+        pct,
+        sectionCode,
+        retryCount,
+      });
+
+      try {
+        const putRes = await apiRequest(
           "PUT",
-          `/api/user/subjects/${subjectId}/unit-progress`,
-          { unitId: unit, mcqScore: pct },
+          `/api/user/subjects/${subj}/unit-progress`,
+          { unitId: unitStr, mcqScore: pct },
         );
-        await apiRequest(
+        console.log("[quiz saveScore] unit-progress OK", putRes.status);
+
+        const postRes = await apiRequest(
+          "POST",
+          `/api/user/subjects/${subj}/unit-quiz-result`,
+          {
+            unitId: unitStr,
+            sectionCode: sectionCode || unitStr,
+            score,
+            percentage: pct,
+            totalQuestions: questions.length,
+            sectionName: sectionInfo?.name,
+            unitNumber: sectionInfo?.unitNumber,
+          },
+        );
+        console.log("[quiz saveScore] unit-quiz-result OK", postRes.status);
+
+        const deleteRes = await apiRequest(
           "DELETE",
-          `/api/user/subjects/${subjectId}/unit-quiz-state?unitId=${encodeURIComponent(unit as string)}`,
+          `/api/user/subjects/${subj}/unit-quiz-state?unitId=${encodeURIComponent(unitStr)}`,
         );
+        console.log("[quiz saveScore] unit-quiz-state deleted", deleteRes.status);
+
         setSavedUnitQuizState(null);
+        queryClient.invalidateQueries({ queryKey: ["testHistory", subj] });
+        queryClient.invalidateQueries({ queryKey: ["testHistory", "all"] });
       } catch (e) {
-        console.error("Failed to save practice quiz score:", e);
+        console.error("[quiz saveScore] Failed to save practice quiz score:", e);
+        toast({
+          variant: "destructive",
+          title: "Score not saved",
+          description: "Your quiz score couldn't be saved. Your progress may not appear in Analytics or Test History.",
+        });
+        if (retryCount < 1) {
+          setTimeout(() => saveScore(retryCount + 1), 2000);
+        }
       }
     };
     saveScore();
@@ -664,6 +741,9 @@ export default function Quiz() {
     score,
     questions.length,
     isFullLength,
+    queryClient,
+    toast,
+    router.isReady,
   ]);
 
   if (loading || isLoading) {
@@ -722,7 +802,7 @@ export default function Quiz() {
         userAnswers={userAnswers}
         flaggedQuestions={flaggedQuestions}
         subjectId={subjectId as string}
-        onBack={() => setIsReviewMode(false)}
+        onBack={() => handleExitQuiz()}
       />
     );
   }

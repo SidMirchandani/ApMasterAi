@@ -13,13 +13,11 @@ import {
   Bookmark,
   BarChart3,
   CalendarDays,
-  Clock,
   Play,
   ChevronRight,
   Star,
   Flame,
   Lock,
-  Sparkles,
   Crown,
 } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
@@ -28,10 +26,9 @@ import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { formatDate } from "@/lib/date";
-import { useIsMobile } from "@/lib/hooks/useMobile";
-import { getUnitsForSubject, getSubjectByCode, getApiCodeForSubject } from "@/subjects";
+import { getUnitsForSubject, getSubjectByCode, getApiCodeForSubject, getUnitWeightsBySectionCode } from "@/subjects";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
-import { getPredictedAPScoreFromTests, computeProjectedPercentage, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
+import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 import { APScoreCircle } from "@/components/ui/APScoreCircle";
 
@@ -60,7 +57,6 @@ interface StudySubject {
 export default function Study() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const isMobile = useIsMobile();
 
   const rawSubject = router.query.subject;
   const subjectId: string | undefined = Array.isArray(rawSubject)
@@ -107,7 +103,6 @@ export default function Study() {
     staleTime: 60000,
   });
   const testHistory = testHistoryResponse?.data || [];
-  const hasCompletedDiagnostic = testHistory.some((t) => t.type === "diagnostic");
 
   const { data: unitProgressResponse } = useQuery<{ success: boolean; data: any }>({
     queryKey: ["unitProgress", subjectId],
@@ -148,11 +143,52 @@ export default function Study() {
 
   const subjectCode = subjectId ? getApiCodeForSubject(subjectId) : undefined;
   const targets = getTargetPercentagesForSubject(subjectCode);
-  const { projectedPercentage, hasEnoughForPrediction } = computeProjectedPercentage({
-    unitProgressMap,
-    testHistory,
+
+  // Compute Student Score for prediction using the same idea as Analytics:
+  // - Use unit weights when available (best-per-unit × weight, summed)
+  // - Otherwise fall back to latest test percentage
+  const unitBestMap: Record<string, number> = {};
+  Object.entries(unitProgressMap).forEach(([code, prog]) => {
+    unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, prog.highestScore ?? prog.mcqScore ?? 0);
   });
-  const predicted = hasEnoughForPrediction ? getPredictedAPScoreFromTests(projectedPercentage, subjectCode) : null;
+  const unitPerformanceMap: { [sectionCode: string]: { correct: number; total: number } } = {};
+  testHistory.forEach((test) => {
+    if (test.sectionBreakdown) {
+      Object.entries(test.sectionBreakdown).forEach(([code, section]) => {
+        if (!unitPerformanceMap[code]) {
+          unitPerformanceMap[code] = { correct: 0, total: 0 };
+        }
+        unitPerformanceMap[code].correct += section.correct;
+        unitPerformanceMap[code].total += section.total;
+      });
+    }
+  });
+  Object.entries(unitPerformanceMap).forEach(([code, stats]) => {
+    const pct = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+    unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, pct);
+  });
+
+  const unitWeights = subjectId ? getUnitWeightsBySectionCode(subjectId) : {};
+  const hasWeights = Object.keys(unitWeights).length > 0;
+
+  let studentScore = 0;
+  let hasEnoughForPrediction = false;
+
+  if (hasWeights && Object.values(unitBestMap).some((v) => v > 0)) {
+    const weightedScore = Object.entries(unitWeights).reduce(
+      (sum, [code, weight]) => sum + ((unitBestMap[code] ?? 0) / 100) * weight,
+      0
+    );
+    studentScore = Math.round(weightedScore);
+    hasEnoughForPrediction = true;
+  } else if (testHistory.length > 0) {
+    studentScore = Math.round(testHistory[testHistory.length - 1].percentage);
+    hasEnoughForPrediction = true;
+  }
+
+  const predicted = hasEnoughForPrediction
+    ? getPredictedAPScoreFromTests(studentScore, subjectCode)
+    : null;
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.push("/login");
@@ -288,113 +324,79 @@ export default function Study() {
 
       <div className="container mx-auto px-4 py-4 max-w-6xl">
 
-        {/* Quick Actions */}
+        {/* Quick Actions — 4 buttons: wide = 1 row, narrow = 2x2 */}
         <div className="mb-4">
           <h2 className="text-[13px] font-bold uppercase tracking-widest text-slate-400 mb-2">
             Quick Actions
           </h2>
-
-            <div className="space-y-2">
-
-              {/* Row 1 — Primary action pair (2 columns) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {/* MCQ Full-Length Test — elevated primary CTA */}
-                <button
-                  onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-                  className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md active:translate-y-0"
-                >
-                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
-                  <div className="relative z-10 flex items-center gap-3">
-                    <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Play className="w-4 h-4 text-white fill-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[13px] leading-tight">{subjectId ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test` : "Full Length MCQ Test"}</p>
-                      <p className="text-white/75 text-xs mt-0.5">Simulate real exam conditions</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-white/60 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                  </div>
-                </button>
-
-                {/* Analytics — highlighted secondary CTA */}
-                <button
-                  onClick={() => router.push(`/analytics?subject=${subjectId}`)}
-                  className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-white dark:bg-slate-900/70 border border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
-                >
-                  <div className="relative z-10 flex items-center gap-3">
-                    <div className="w-9 h-9 bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
-                      <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">Analytics</p>
-                      <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Detailed performance data</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                  </div>
-                </button>
+          <div className="grid grid-cols-2 gap-2">
+            {/* Full Length MCQ Test */}
+            <button
+              onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
+              className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md active:translate-y-0"
+            >
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
+              <div className="relative z-10 flex items-center gap-3">
+                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Play className="w-4 h-4 text-white fill-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-[13px] leading-tight">{subjectId ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test` : "Full Length MCQ Test"}</p>
+                  <p className="text-white/75 text-xs mt-0.5">Simulate real exam conditions</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-white/60 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
               </div>
+            </button>
 
-              {/* Row 2 — Utility cards (2 cols on mobile → 4 cols on desktop) */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-                {[
-                  {
-                    icon: RotateCcw,
-                    label: "Review Questions",
-                    desc: "Questions you got wrong",
-                    descSize: "text-[11px]",
-                    href: `/review?subject=${subjectId}`,
-                    iconClass: "text-blue-600 dark:text-blue-400",
-                    iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
-                    borderHover: "hover:border-blue-200 dark:hover:border-blue-800/60",
-                  },
-                  {
-                    icon: Bookmark,
-                    label: "Saved Questions",
-                    desc: "Your bookmarks",
-                    href: `/bookmarks?subject=${subjectId}`,
-                    iconClass: "text-amber-600 dark:text-amber-400",
-                    iconBg: "bg-amber-50 dark:bg-amber-500/10 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20",
-                    borderHover: "hover:border-amber-200 dark:hover:border-amber-800/60",
-                  },
-                  {
-                    icon: Clock,
-                    label: "Test History",
-                    desc: "All your results",
-                    href: `/full-length-history?subject=${subjectId}`,
-                    iconClass: "text-blue-600 dark:text-blue-400",
-                    iconBg: "bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20",
-                    borderHover: "hover:border-blue-200 dark:hover:border-blue-800/60",
-                  },
-                  {
-                    icon: Sparkles,
-                    label: hasCompletedDiagnostic ? "Retake Diagnostic" : "Take Diagnostic",
-                    desc: hasCompletedDiagnostic ? "Re-baseline your score" : "Get your projected AP score",
-                    descSize: "text-[11px]",
-                    href: `/diagnostic?subject=${subjectId}`,
-                    iconClass: "text-red-600 dark:text-red-400",
-                    iconBg: "bg-red-50 dark:bg-red-500/10 group-hover:bg-red-100 dark:group-hover:bg-red-500/20",
-                    borderHover: "hover:border-red-200 dark:hover:border-red-800/60",
-                  },
-                ].map((action) => (
-                  <button
-                    key={action.label}
-                    onClick={() => router.push(action.href)}
-                    className={`group relative overflow-hidden rounded-xl p-2.5 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 ${action.borderHover} text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 ${action.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 transition-colors`}>
-                        <action.icon className={`w-4 h-4 ${action.iconClass}`} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-[13px] text-slate-900 dark:text-white leading-tight truncate">{action.label}</p>
-                        <p className={`text-slate-500 dark:text-slate-400 ${"descSize" in action ? action.descSize : "text-xs"} truncate hidden sm:block`}>{action.desc}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+            {/* Analytics */}
+            <button
+              onClick={() => router.push(`/analytics?subject=${subjectId}`)}
+              className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-white dark:bg-slate-900/70 border border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+            >
+              <div className="relative z-10 flex items-center gap-3">
+                <div className="w-9 h-9 bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                  <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">Analytics</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Detailed performance data</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
               </div>
+            </button>
 
-            </div>
+            {/* Review Questions */}
+            <button
+              onClick={() => router.push(`/review?subject=${subjectId}`)}
+              className="group relative overflow-hidden rounded-xl p-2.5 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800/60 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors">
+                  <RotateCcw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-[13px] text-slate-900 dark:text-white leading-tight truncate">Review Questions</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate hidden sm:block">Questions you got wrong</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Saved Questions */}
+            <button
+              onClick={() => router.push(`/bookmarks?subject=${subjectId}`)}
+              className="group relative overflow-hidden rounded-xl p-2.5 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-800/60 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-amber-50 dark:bg-amber-500/10 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors">
+                  <Bookmark className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-[13px] text-slate-900 dark:text-white leading-tight truncate">Saved Questions</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs truncate hidden sm:block">Your bookmarks</p>
+                </div>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Units Grid */}

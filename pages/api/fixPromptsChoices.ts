@@ -19,57 +19,19 @@ function flattenChoiceText(blocks: any[]) {
     .join(" ");
 }
 
-function formatTextContent(text: string): string {
-  if (!text || typeof text !== 'string') return text;
-  
-  let formatted = text;
-  formatted = formatted.replace(/\s+/g, ' ');
-  formatted = formatted.replace(/\s([.,!?;:])/g, '$1');
-  formatted = formatted.replace(/([.,!?;:])([^\s])/g, '$1 $2');
-  
-  if (formatted.length > 0 && !formatted.match(/[.!?]$/) && formatted.length > 20) {
-    formatted += '.';
-  }
-  
-  formatted = formatted.replace(/(\d+)\s*([+\-*/^=])\s*(\d+)/g, '$1 $2 $3');
-  
-  return formatted.trim();
-}
-
-function deduplicateTextContent(text: string): string {
-  if (!text || typeof text !== 'string') return text;
-  
-  const sentences = text.split(/([.!?]+\s+)/).filter(s => s.trim());
-  const seen = new Set<string>();
-  const uniqueSentences: string[] = [];
-  
-  for (const sentence of sentences) {
-    const normalized = sentence.trim().toLowerCase();
-    if (normalized && !seen.has(normalized)) {
-      seen.add(normalized);
-      uniqueSentences.push(sentence);
-    }
-  }
-  
-  return uniqueSentences.join('');
-}
-
 function removeDuplicateBlocks(blocks: any[]): any[] {
   if (!blocks || blocks.length === 0) return blocks;
-  
+
   const seen = new Set<string>();
   const uniqueBlocks: any[] = [];
-  
+
   for (const block of blocks) {
     let key: string;
     if (block.type === "text") {
-      const deduplicatedText = deduplicateTextContent(block.value);
-      const formattedText = formatTextContent(deduplicatedText);
-      key = `text:${formattedText}`;
-      
+      key = `text:${block.value}`;
       if (!seen.has(key)) {
         seen.add(key);
-        uniqueBlocks.push({ ...block, value: formattedText });
+        uniqueBlocks.push({ ...block });
       }
     } else if (block.type === "image") {
       key = `image:${block.url}`;
@@ -85,7 +47,7 @@ function removeDuplicateBlocks(blocks: any[]): any[] {
       }
     }
   }
-  
+
   return uniqueBlocks;
 }
 
@@ -206,27 +168,23 @@ export default async function handler(
 
       sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Fixing Q${i + 1}/${total}...` });
 
-      let promptText = `Fix ONLY formatting issues in this AP question text. DO NOT change any words or add new content.
+      let promptText = `Act as a professional AP Exam Editor.
+Your goal is to "Pretty Print" and "Proofread" the following question.
 
-Only fix:
-- Math notation (exponents, subscripts, superscripts)
-- Chemical formulas and symbols
-- Special characters and symbols
-- Spacing between words (remove extra spaces, add missing spaces)
-- Punctuation spacing (space after commas, periods, etc.)
-- Missing periods at end of sentences
+1. LAYOUT: Use double newlines (\\n\\n) to separate stimulus, question text, and code blocks.
+2. CLEANUP: Remove "garbage" characters from scraping, fix "the the" style duplicates, and correct grammar/punctuation.
+3. STEM: If you see Java code or Math, format it with proper indentation and symbols (e.g., x², not x^2).
+4. SUBJECT AGNOSTIC: Treat History quotes, Bio data, and CS code with equal care for readability.
 
-DO NOT:
-- Change any words
-- Add explanatory text
-- Rephrase anything
-- Fix "typos" or "grammar"
-- Change sentence structure
-- Add context
+Return ONLY valid JSON:
+{
+  "question": "...",
+  "choices": { "A": "...", "B": "...", "C": "...", "D": "...", "E": "..." }
+}
 
 Question:
 `;
-      
+
       if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
         const questionText = flattenChoiceText(question.prompt_blocks);
         promptText += questionText + "\n\n";
@@ -237,20 +195,6 @@ Question:
         const choiceText = flattenChoiceText(blocks);
         promptText += `${letter}. ${choiceText}\n`;
       });
-
-      promptText += `\n\nReturn the text with ONLY formatting fixes in this exact JSON format:
-{
-  "question": "formatting-fixed question text",
-  "choices": {
-    "A": "formatting-fixed choice A",
-    "B": "formatting-fixed choice B",
-    "C": "formatting-fixed choice C",
-    "D": "formatting-fixed choice D",
-    "E": "formatting-fixed choice E"
-  }
-}
-
-Remember: Only fix formatting (math notation, symbols, spacing). Keep all words exactly the same.`;
 
       const result = await callWithRetry(
         () => ai.models.generateContent({
@@ -268,12 +212,11 @@ Remember: Only fix formatting (math notation, symbols, spacing). Keep all words 
       
       const corrected = JSON.parse(responseText);
 
-      const updatedPromptBlocks = question.prompt_blocks?.map((block: any) => {
-        if (block.type === "text") {
-          return { ...block, value: corrected.question };
-        }
-        return block;
-      }) || [{ type: "text", value: corrected.question }];
+      const imageBlocks = (question.prompt_blocks || []).filter((b: any) => b.type !== "text");
+      const updatedPromptBlocks = [
+        { type: "text", value: corrected.question },
+        ...imageBlocks,
+      ];
 
       const deduplicatedPromptBlocks = removeDuplicateBlocks(updatedPromptBlocks);
 

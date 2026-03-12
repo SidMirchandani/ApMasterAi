@@ -2,6 +2,14 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { storage } from "../../../server/storage";
 
+async function getOrCreateUser(firebaseUid: string): Promise<string> {
+  let user = await storage.getUserByFirebaseUid(firebaseUid);
+  if (!user) {
+    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`);
+  }
+  return user.id;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -18,19 +26,29 @@ export default async function handler(
 
     const token = authHeader.split("Bearer ")[1];
     const decodedToken = await verifyFirebaseToken(token);
-    const userId = decodedToken.uid;
+    const userId = await getOrCreateUser(decodedToken.uid);
 
     const subjectId = req.query.subjectId as string | undefined;
 
-    // Fetch both full-length and diagnostic tests in parallel
-    const [fullLengthTests, diagnosticTests] = await Promise.all([
+    // Fetch full-length, diagnostic, and unit quiz results in parallel
+    const [fullLengthTests, diagnosticTests, unitQuizResults] = await Promise.all([
       storage.getAllFullLengthTests(userId, subjectId),
       storage.getAllDiagnosticTests(userId, subjectId),
+      storage.getAllUnitQuizResults(userId, subjectId),
     ]);
+
+    console.log("[test-history API] fetched tests", {
+      userId,
+      subjectId,
+      fullLengthCount: fullLengthTests.length,
+      diagnosticCount: diagnosticTests.length,
+      unitQuizCount: unitQuizResults.length,
+    });
 
     const combined = [
       ...fullLengthTests.map((t) => ({ ...t, type: t.type || "full-length" })),
       ...diagnosticTests.map((t) => ({ ...t, type: "diagnostic" })),
+      ...unitQuizResults.map((t) => ({ ...t, type: "unit" })),
     ].sort((a, b) => {
       const aMs = a.date?.toMillis ? a.date.toMillis() : new Date(a.date).getTime();
       const bMs = b.date?.toMillis ? b.date.toMillis() : new Date(b.date).getTime();
@@ -47,6 +65,11 @@ export default async function handler(
       subjectId: test.subjectId,
       type: test.type,
       sectionBreakdown: test.sectionBreakdown || {},
+      ...(test.type === "unit" && {
+        unitId: test.unitId,
+        sectionCode: test.sectionCode,
+        unitNumber: test.sectionBreakdown?.[test.sectionCode]?.unitNumber,
+      }),
     }));
 
     return res.status(200).json({ success: true, data: testHistory });

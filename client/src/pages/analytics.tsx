@@ -27,9 +27,11 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Customized,
 } from "recharts";
-import { getApiCodeForSubject, getSectionByCode } from "@/subjects";
-import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject, getUnitTierFromScore, getAPScoreColor } from "@/lib/ap-score-utils";
+import { getApiCodeForSubject, getSectionByCode, getUnitWeightsBySectionCode } from "@/subjects";
+import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject, getUnitTierFromScore, getAPScoreColor, percentageToAPScore } from "@/lib/ap-score-utils";
+import { safeDateParse } from "@/lib/date";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 
@@ -41,6 +43,10 @@ interface TestHistoryEntry {
   percentage: number;
   totalQuestions: number;
   subjectId: string;
+  type?: "full-length" | "diagnostic" | "unit";
+  unitId?: string;
+  sectionCode?: string;
+  unitNumber?: number;
   sectionBreakdown?: {
     [key: string]: {
       name: string;
@@ -52,23 +58,46 @@ interface TestHistoryEntry {
   };
 }
 
-function TestScoreTooltip({ active, payload }: any) {
+function getQuizLabel(data: { type?: string; unitNumber?: number; sectionName?: string }): string {
+  if (data.type === "diagnostic") return "Diagnostic Quiz";
+  if (data.type === "full-length") return "Full Length MCQ Quiz";
+  if (data.type === "unit") {
+    const num = data.unitNumber;
+    const name = data.sectionName;
+    if (name != null && num != null) return `Unit Quiz: Unit ${num}: ${name}`;
+    if (num != null) return `Unit Quiz: Unit ${num}`;
+    return "Unit Quiz";
+  }
+  return "Quiz";
+}
+
+function StudentProgressTooltip({ active, payload }: any) {
   if (!active || !payload || !payload.length) return null;
 
   const data = payload[0]?.payload;
   if (!data) return null;
 
-  const percentage = data.percentage;
-  const score = data.score;
-  const totalQuestions = data.totalQuestions;
+  const quizScore = data.quizScore ?? data.percentage;
+  const subjectScore = data.percentage;
+  const impact = typeof data.scoreImpact === "number" ? data.scoreImpact : null;
+  const impactLabel =
+    impact === null
+      ? null
+      : impact === 0
+      ? "No change"
+      : impact > 0
+      ? `+${impact}%`
+      : `${impact}%`;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white/95 px-3 py-2 shadow-md text-xs">
-      <div className="font-semibold text-blue-600 text-sm leading-tight">
-        {percentage}%
+    <div className="rounded-xl border border-gray-200 bg-white/95 px-3 py-2 shadow-md text-xs dark:border-gray-700 dark:bg-gray-900/95">
+      <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1">
+        {getQuizLabel(data)}
       </div>
-      <div className="text-[11px] text-gray-600 leading-tight">
-        {score}/{totalQuestions} correct
+      <div className="text-gray-600 dark:text-gray-300 space-y-0.5">
+        <div>Quiz score: {quizScore}%</div>
+        <div>Student Score: {subjectScore}%</div>
+        {impactLabel && <div>Score Impact: {impactLabel}</div>}
       </div>
     </div>
   );
@@ -102,8 +131,11 @@ export default function AnalyticsPage() {
   });
 
   const testHistory = testHistoryResponse?.data || [];
-  
+
   const subjectCode = subjectId ? getApiCodeForSubject(subjectId) : undefined;
+  const subjectDisplayName = subjectId
+    ? getSubjectDisplayName(subjectCode ?? subjectId ?? "")
+    : undefined;
   const { target2, target3, target4, target5 } = getTargetPercentagesForSubject(subjectCode);
 
   // --- Fetch unitProgress (includes diagnostic per-unit scores) ---
@@ -143,17 +175,6 @@ export default function AnalyticsPage() {
     unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, pct);
   });
 
-  // Projected score: average of per-unit best percentages (only units with any data)
-  const unitBestValues = Object.values(unitBestMap).filter((v) => v > 0);
-  const hasEnoughForPrediction = unitBestValues.length > 0 || testHistory.length >= 1;
-  const projectedPercentage =
-    unitBestValues.length > 0
-      ? Math.round(unitBestValues.reduce((s, v) => s + v, 0) / unitBestValues.length)
-      : testHistory.length > 0
-      ? Math.round(testHistory.reduce((sum, test) => sum + test.percentage, 0) / testHistory.length)
-      : 0;
-  const predicted = getPredictedAPScoreFromTests(projectedPercentage, subjectCode);
-
   // Merge unit codes from both unitBestMap and unitPerformanceMap for complete unit list
   const allUnitCodes = new Set([...Object.keys(unitBestMap), ...Object.keys(unitPerformanceMap)]);
   const unitEntries = Array.from(allUnitCodes)
@@ -174,7 +195,7 @@ export default function AnalyticsPage() {
       };
     })
     .filter((e) => e.percentage > 0 || e.total > 0)
-    .sort((a, b) => a.percentage - b.percentage);
+    .sort((a, b) => (a.unitNumber ?? 999) - (b.unitNumber ?? 999));
 
   // Same 5-scale fill colors as dashboard/study for Performance by Unit bars
   const TIER_FILL_CLASS: Record<string, string> = {
@@ -186,14 +207,88 @@ export default function AnalyticsPage() {
     none: "[&>div]:bg-slate-400 [&>div]:dark:bg-slate-500",
   };
 
-  const testChartData = testHistory.map((test) => ({
-    testLabel: `Test ${test.testNumber}`,
-    testNumber: test.testNumber,
-    percentage: test.percentage,
-    score: test.score,
-    totalQuestions: test.totalQuestions,
-    date: test.date
-  }));
+  // Build chart data with the same numbering rules as Test History:
+  // - Diagnostic quiz is always test #1 (if present)
+  // - All other tests are numbered starting from #2
+  // - Non-diagnostic tests are ordered oldest → newest
+  const toMs = (t: TestHistoryEntry) => safeDateParse(t.date)?.getTime() ?? 0;
+  const diagnosticTests = testHistory.filter((t) => t.type === "diagnostic").sort((a, b) => toMs(a) - toMs(b));
+  const diagnostic = diagnosticTests[0];
+  const otherTests = testHistory
+    .filter((t) => t !== diagnostic)
+    .sort((a, b) => toMs(a) - toMs(b)); // oldest first
+
+  const numberedTests: (TestHistoryEntry & { displayTestNumber: number })[] = (() => {
+    if (!diagnostic) {
+      return otherTests.map((t, i) => ({ ...t, displayTestNumber: i + 1 }));
+    }
+    return [
+      { ...(diagnostic as TestHistoryEntry), displayTestNumber: 1 },
+      ...otherTests.map((t, i) => ({ ...t, displayTestNumber: i + 2 })),
+    ];
+  })();
+
+  // Unit weights for weighted subject score (sectionCode -> 0-100, sum ~= 100)
+  const unitWeights = subjectId ? getUnitWeightsBySectionCode(subjectId) : {};
+  const hasWeights = Object.keys(unitWeights).length > 0;
+
+  // Build weighted Student Score over time. For each test we:
+  // - update per-unit best scores using that test's breakdown
+  // - compute a weighted subject score = sum(bestPerUnit[code] * weight / 100)
+  // - compute Score Impact as the change in that weighted score since the last test
+  const bestPerUnitForTimeline: Record<string, number> = {};
+  let lastTotalScoreForImpact = 0;
+
+  const testChartData = numberedTests.map((test) => {
+    if (hasWeights) {
+      if (test.type === "unit" && test.sectionCode) {
+        const prev = bestPerUnitForTimeline[test.sectionCode] ?? 0;
+        bestPerUnitForTimeline[test.sectionCode] = Math.max(prev, test.percentage);
+      } else if (test.sectionBreakdown) {
+        Object.entries(test.sectionBreakdown).forEach(([code, section]) => {
+          const pct = section.total > 0 ? Math.round((section.correct / section.total) * 100) : 0;
+          const prev = bestPerUnitForTimeline[code] ?? 0;
+          bestPerUnitForTimeline[code] = Math.max(prev, pct);
+        });
+      }
+    }
+
+    const totalScore = (() => {
+      if (!hasWeights) return Math.round(test.percentage);
+      const weightedScore = Object.entries(unitWeights).reduce(
+        (sum, [code, weight]) => sum + ((bestPerUnitForTimeline[code] ?? 0) / 100) * weight,
+        0
+      );
+      return Math.round(weightedScore);
+    })();
+
+    const rawImpact = totalScore - lastTotalScoreForImpact;
+    const scoreImpact = test.type === "diagnostic" ? null : rawImpact;
+    lastTotalScoreForImpact = totalScore;
+
+    return {
+      testNumber: test.displayTestNumber,
+      percentage: totalScore,
+      scoreImpact,
+      quizScore: test.percentage,
+      score: test.score,
+      totalQuestions: test.totalQuestions,
+      date: test.date,
+      type: test.type || "full-length",
+      unitId: test.unitId,
+      sectionCode: test.sectionCode,
+      unitNumber:
+        test.unitNumber ??
+        (test.sectionBreakdown && test.sectionCode
+          ? test.sectionBreakdown[test.sectionCode]?.unitNumber
+          : undefined),
+      sectionName: test.sectionBreakdown?.[test.sectionCode ?? ""]?.name,
+    };
+  });
+
+  const lastTestPercentage = testChartData.length >= 1 ? testChartData[testChartData.length - 1]?.percentage ?? 0 : 0;
+  const hasEnoughForPrediction = testChartData.length >= 1;
+  const predicted = getPredictedAPScoreFromTests(lastTestPercentage, subjectCode);
 
   if (loading || isLoading) {
     return (
@@ -214,11 +309,8 @@ export default function AnalyticsPage() {
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-khan-green" />
-            Analytics
+            {subjectDisplayName ? `${subjectDisplayName} Analytics` : "Analytics"}
           </h1>
-          {subjectId && (
-            <Badge className="bg-blue-600 dark:bg-blue-500 text-white">{getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId ?? "")}</Badge>
-          )}
         </div>
 
         {testHistory.length === 0 ? (
@@ -244,26 +336,29 @@ export default function AnalyticsPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="dark:bg-gray-900 dark:border-gray-700">
-                <CardContent className="p-4 text-center">
-                  <div className="mx-auto mb-2">
+                <CardContent className="p-4 flex flex-col items-center justify-center min-h-[120px] text-center">
+                  <div className="flex flex-col items-center justify-center gap-2">
                     <APScoreCircle
                       score={subjectId && hasEnoughForPrediction ? predicted.score : null}
                       color={subjectId && hasEnoughForPrediction ? predicted.color : "#9ca3af"}
                       size="sm"
                     />
-                  </div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex flex-wrap justify-center items-center gap-x-1 gap-y-0">
-                    <span>Predicted</span>
-                    <span className="relative pr-5">
-                      AP Score
-                      <span className="absolute right-0 top-1/2 -translate-y-1/2 leading-none">
-                        <APScoreExplainDialog inline triggerClassName="ml-0.5" />
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex flex-wrap justify-center items-center gap-x-1 gap-y-0">
+                      <span>Predicted</span>
+                      <span className="relative pr-5">
+                        AP Score
+                        <span className="absolute right-0 top-1/2 -translate-y-1/2 leading-none">
+                          <APScoreExplainDialog inline triggerClassName="ml-0.5" />
+                        </span>
                       </span>
-                    </span>
-                  </p>
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
-              <Card className="dark:bg-gray-900 dark:border-gray-700">
+              <Card
+                className="dark:bg-gray-900 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors"
+                onClick={() => subjectId && router.push(`/full-length-history?subject=${subjectId}`)}
+              >
                 <CardContent className="p-4 text-center">
                   <BarChart3 className="mx-auto h-8 w-8 text-purple-500 mb-2" />
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{testHistory.length}</p>
@@ -296,56 +391,24 @@ export default function AnalyticsPage() {
                   <CardTitle className="text-lg flex items-center justify-between dark:text-gray-100">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5 text-blue-500" />
-                      Test Score Progress
+                    {subjectDisplayName ? `${subjectDisplayName} Student Progress` : "Student Progress"}
                     </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4 px-1">
-                    Track your performance across all full-length practice tests
+                    Track your performance across diagnostic, unit quizzes, and full-length tests
                   </p>
-                  <div className="mb-4 grid grid-cols-2 gap-3 text-center">
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
-                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                        {testChartData[testChartData.length - 1]?.percentage || "-"}%
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Latest Test</p>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
-                      {(() => {
-                        if (testChartData.length < 2) {
-                          return (
-                            <>
-                              <p className="text-2xl font-bold text-gray-500">-</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Score Change</p>
-                            </>
-                          );
-                        }
-                        const first = testChartData[0]?.percentage || 0;
-                        const last = testChartData[testChartData.length - 1]?.percentage || 0;
-                        const diff = last - first;
-                        return (
-                          <>
-                            <p className={`text-2xl font-bold ${diff > 0 ? "text-green-500" : diff < 0 ? "text-red-500" : "text-gray-500"}`}>
-                              {diff > 0 ? `+${diff}%` : diff === 0 ? "0%" : `${diff}%`}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Overall Change</p>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
 
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={testChartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:opacity-10" />
                         <XAxis
-                          dataKey="testLabel"
+                          dataKey="testNumber"
                           tick={{ fontSize: 11, fill: "#9ca3af" }}
                           axisLine={{ stroke: "#e5e7eb" }}
                           tickLine={false}
-                          label={{ value: "Test #", position: "insideBottom", offset: -5, style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" } }}
                         />
                         <YAxis
                           domain={[0, 100]}
@@ -353,11 +416,11 @@ export default function AnalyticsPage() {
                           tick={{ fontSize: 12, fill: "#9ca3af" }}
                           axisLine={false}
                           tickLine={false}
-                          label={{ value: "Score %", angle: -90, position: "insideLeft", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
+                      label={{ value: "Student Score %", angle: -90, position: "insideLeft", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
                         />
                         <Tooltip
                           cursor={{ strokeDasharray: "3 3" }}
-                          content={<TestScoreTooltip />}
+                          content={<StudentProgressTooltip subjectId={subjectId} />}
                         />
                         <ReferenceLine
                           y={target4}
@@ -374,27 +437,59 @@ export default function AnalyticsPage() {
                           label={{ position: "top", value: `Score needed for 5: ~${Math.round(target5)}%`, fill: getAPScoreColor(5), fontSize: 14, fontWeight: 600, offset: 4 }}
                         />
 
+                        {/* Segment from last data point to right axis: current score line */}
+                        {testChartData.length >= 1 && (
+                          <Customized
+                            component={(props: any) => {
+                              const { offset } = props;
+                              if (!offset || offset.width == null) return null;
+                              const n = testChartData.length;
+                              const lastPct = testChartData[n - 1]?.percentage ?? 0;
+                              const y = offset.top + offset.height - (lastPct / 100) * offset.height;
+                              const xLast = offset.left + (offset.width * (n - 0.5)) / Math.max(n, 1);
+                              const xRight = offset.left + offset.width;
+                              const color = "#3b82f6";
+                              return (
+                                <g>
+                                  <line
+                                    x1={xLast}
+                                    y1={y}
+                                    x2={xRight}
+                                    y2={y}
+                                    stroke={color}
+                                    strokeWidth={1.5}
+                                    strokeDasharray="5 5"
+                                  />
+                                  <text
+                                    x={xRight}
+                                    y={y - 6}
+                                    textAnchor="end"
+                                    fill={color}
+                                    fontSize={12}
+                                    fontWeight={600}
+                                  >
+                                    Student Score: ~{Math.round(lastPct)}%
+                                  </text>
+                                </g>
+                              );
+                            }}
+                          />
+                        )}
+
                         <Line
                           type="natural"
                           dataKey="percentage"
                           stroke="#3b82f6"
                           strokeWidth={3.5}
                           dot={(props: any) => {
-                            const { cx, cy, payload } = props;
-                            const percentage = payload.percentage;
-                            let color = "#3b82f6";
-                            if (percentage >= 80) color = "#10b981";
-                            else if (percentage >= 70) color = "#22c55e";
-                            else if (percentage >= 50) color = "#eab308";
-                            else color = "#ef4444";
-                            
+                            const { cx, cy } = props;
                             return (
                               <circle
                                 key={`dot-${props.index}`}
                                 cx={cx}
                                 cy={cy}
                                 r={7}
-                                fill={color}
+                                fill="#3b82f6"
                                 stroke="white"
                                 strokeWidth={3}
                                 style={{ cursor: "pointer" }}
@@ -402,20 +497,13 @@ export default function AnalyticsPage() {
                             );
                           }}
                           activeDot={(props: any) => {
-                            const { cx, cy, payload } = props;
-                            const percentage = payload.percentage;
-                            let color = "#3b82f6";
-                            if (percentage >= 80) color = "#10b981";
-                            else if (percentage >= 70) color = "#22c55e";
-                            else if (percentage >= 50) color = "#eab308";
-                            else color = "#ef4444";
-                            
+                            const { cx, cy } = props;
                             return (
                               <circle
                                 cx={cx}
                                 cy={cy}
                                 r={10}
-                                fill={color}
+                                fill="#3b82f6"
                                 stroke="white"
                                 strokeWidth={3}
                                 style={{ filter: "drop-shadow(0 0 6px rgba(59,130,246,0.5))" }}
@@ -427,11 +515,13 @@ export default function AnalyticsPage() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="flex items-center justify-center gap-6 mt-3 text-xs text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-8 h-0 border-t-[3px] border-blue-500" />
-                      Test Score
-                    </div>
+                  <div className="flex flex-wrap items-center justify-center gap-6 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                    {testChartData.length >= 1 && (
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-0 border-t-[2px] border-dashed border-blue-500" />
+                        <span className="text-blue-500">Student Score: ~{Math.round(lastTestPercentage)}%</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1.5">
                       <div className="w-6 h-0 border-t-[3px] border-dashed" style={{ borderColor: getAPScoreColor(4) }} />
                       Score needed for 4: ~{Math.round(target4)}%
@@ -462,10 +552,7 @@ export default function AnalyticsPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
                     <AlertTriangle className="h-5 w-5 text-orange-500" />
-                    Performance by Unit
-                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-2">
-                      (sorted weakest first)
-                    </span>
+                    {subjectDisplayName ? `${subjectDisplayName} Performance by Unit` : "Performance by Unit"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -513,15 +600,13 @@ export default function AnalyticsPage() {
                                 aria-hidden
                               />
                             )}
-                            {pct < target5 && (
-                              <div
-                                className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10 flex items-center justify-center fill-[#FFD700] stroke-[#FFD700]"
-                                style={{ left: `${target5}%` }}
-                                aria-hidden
-                              >
-                                <Crown size={14} strokeWidth={2} />
-                              </div>
-                            )}
+                            <div
+                              className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10 flex items-center justify-center"
+                              style={{ left: `${target5}%` }}
+                              aria-hidden
+                            >
+                              <Crown size={14} strokeWidth={2} className="fill-[#FFD700] stroke-black dark:stroke-white" />
+                            </div>
                             <Progress
                               value={unit.percentage}
                               className={`h-3 relative z-[5] bg-transparent ${fillClass}`}

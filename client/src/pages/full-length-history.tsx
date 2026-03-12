@@ -1,30 +1,71 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Calendar, Target, Sparkles, Play } from "lucide-react";
+import { BarChart3, ArrowLeft, FileQuestion, ClipboardList, BookOpen } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
+import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
-import { apiRequest } from "@/lib/queryClient";
-import { formatDate } from "@/lib/date";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/api";
+import { formatDate, safeDateParse } from "@/lib/date";
+import { getSubjectDisplayName } from "../../../lib/subject-display-names";
+import { getApiCodeForSubject } from "@/subjects";
 
-interface TestHistory {
+interface TestHistoryEntry {
+  testNumber: number;
   id: string;
-  date: string | number | Date | { seconds: number };
+  date: any;
   score: number;
   percentage: number;
   totalQuestions: number;
-  type?: "full-length" | "diagnostic";
-  testNumber?: number;
+  subjectId: string;
+  type?: "full-length" | "diagnostic" | "unit";
+  unitId?: string;
+  sectionCode?: string;
+  unitNumber?: number;
+  sectionBreakdown?: {
+    [key: string]: {
+      name: string;
+      unitNumber: number;
+      correct: number;
+      total: number;
+      percentage: number;
+    };
+  };
 }
 
-export default function FullLengthHistory() {
+function getTestTypeLabel(type: string): string {
+  switch (type) {
+    case "full-length":
+      return "Full Length MCQ Quiz";
+    case "diagnostic":
+      return "Diagnostic Quiz";
+    case "unit":
+      return "Unit Quiz";
+    default:
+      return type || "Test";
+  }
+}
+
+function getTestTypeIcon(type: string) {
+  switch (type) {
+    case "full-length":
+      return <FileQuestion className="h-4 w-4 text-blue-500" />;
+    case "diagnostic":
+      return <ClipboardList className="h-4 w-4 text-rose-500" />;
+    case "unit":
+      return <BookOpen className="h-4 w-4 text-green-500" />;
+    default:
+      return <BarChart3 className="h-4 w-4 text-gray-500" />;
+  }
+}
+
+export default function FullLengthHistoryPage() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const { subject: subjectId } = router.query;
-  const [testHistory, setTestHistory] = useState<TestHistory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const subjectId = (router.query.subject as string) || undefined;
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -32,175 +73,151 @@ export default function FullLengthHistory() {
     }
   }, [loading, isAuthenticated, router]);
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      if (!subjectId || !isAuthenticated) return;
-      try {
-        // Unified endpoint returns both full-length and diagnostic tests
-        const response = await apiRequest("GET", `/api/user/test-history?subjectId=${subjectId}`);
-        if (!response.ok) throw new Error("Failed to fetch test history");
-        const data = await response.json();
-        if (data.success && Array.isArray(data.data)) {
-          setTestHistory(data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching test history:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchHistory();
-  }, [subjectId, isAuthenticated]);
+  const { data: response, isLoading } = useQuery<{
+    success: boolean;
+    data: TestHistoryEntry[];
+  }>({
+    queryKey: ["testHistory", subjectId || "all"],
+    queryFn: async () => {
+      const url = subjectId
+        ? `/api/user/test-history?subjectId=${subjectId}`
+        : "/api/user/test-history";
+      const res = await apiRequest("GET", url);
+      if (!res.ok) throw new Error("Failed to fetch test history");
+      return res.json();
+    },
+    enabled: isAuthenticated && !!router.isReady,
+  });
 
-  const handleViewResults = (test: TestHistory) => {
-    if (test.type === "diagnostic") {
-      router.push(`/analytics?subject=${subjectId}`);
-    } else {
-      router.push(`/full-length-results?subject=${subjectId}&testId=${test.id}`);
+  // Ordering rules for test history:
+  // - Diagnostic quiz is always test #1 at the top (if it exists)
+  // - All other tests are numbered starting from #2
+  // - Non-diagnostic tests are ordered oldest → newest (older tests at the bottom)
+  const tests = (() => {
+    const list = response?.data ?? [];
+    const toMs = (t: TestHistoryEntry) => safeDateParse(t.date)?.getTime() ?? 0;
+
+    const diagnosticTests = list.filter((t) => t.type === "diagnostic").sort((a, b) => toMs(a) - toMs(b));
+    const diagnostic = diagnosticTests[0];
+
+    const otherTests = list
+      .filter((t) => t !== diagnostic)
+      .sort((a, b) => toMs(a) - toMs(b)); // oldest first, newer at the bottom
+
+    if (!diagnostic) {
+      // No diagnostic quiz present: just number all tests oldest → newest
+      return otherTests.map((t, i) => ({ ...t, testNumber: i + 1 }));
     }
-  };
 
-  if (loading || isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-        <Navigation />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500" />
-        </div>
-      </div>
-    );
+    return [
+      { ...diagnostic, testNumber: 1 },
+      ...otherTests.map((t, i) => ({ ...t, testNumber: i + 2 })),
+    ];
+  })();
+
+  if (!router.isReady || loading) {
+    return null;
   }
 
-  const getPerformanceColor = (percentage: number) => {
-    if (percentage >= 90) return "text-green-600 bg-green-50 border-green-200";
-    if (percentage >= 75) return "text-blue-600 bg-blue-50 border-blue-200";
-    if (percentage >= 60) return "text-yellow-600 bg-yellow-50 border-yellow-200";
-    return "text-red-600 bg-red-50 border-red-200";
-  };
-
-  const reversed = [...testHistory].reverse();
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white dark:from-slate-950 dark:via-slate-950 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-red-500/5 rounded-full blur-3xl" />
-      </div>
-
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <Navigation />
-      <main className="py-6 px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+      <div className="container mx-auto px-4 py-4 max-w-3xl">
+        <div className="flex items-center gap-3 mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push(subjectId ? `/analytics?subject=${subjectId}` : "/dashboard")}
+            className="rounded-full"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <BarChart3 className="w-6 h-6 text-purple-500" />
               Test History
             </h1>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => router.push(`/diagnostic?subject=${subjectId}`)}
-                className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-500/10 rounded-xl text-xs font-semibold"
-              >
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                New Diagnostic
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold"
-              >
-                <Play className="h-3.5 w-3.5 mr-1.5 fill-white" />
-                New Full-Length
-              </Button>
-            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              {subjectId ? `Subject: ${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId ?? "")}` : "All subjects"}
+            </p>
           </div>
+        </div>
 
-          {testHistory.length === 0 ? (
-            <Card>
-              <CardContent className="pt-8 pb-8 text-center">
-                <Trophy className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <h2 className="text-lg font-semibold mb-1 text-slate-900 dark:text-white">No Tests Taken Yet</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
-                  Take a diagnostic or full-length test to track your progress.
-                </p>
-                <Button
-                  onClick={() => router.push(`/diagnostic?subject=${subjectId}`)}
-                  className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Take Quick Diagnostic Test
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {reversed.map((test) => {
-                const originalIdx = testHistory.indexOf(test);
+        {isLoading ? (
+          <Card className="dark:bg-gray-900 dark:border-gray-700">
+            <CardContent className="p-8 text-center text-gray-500 dark:text-gray-400">
+              Loading test history…
+            </CardContent>
+          </Card>
+        ) : tests.length === 0 ? (
+          <Card className="dark:bg-gray-900 dark:border-gray-700">
+            <CardContent className="p-8 text-center">
+              <BarChart3 className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" />
+              <p className="text-gray-600 dark:text-gray-300 font-medium">No tests yet</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Complete a full-length test, diagnostic, or unit quiz to see results here.
+              </p>
+              <Button
+                className="mt-4"
+                onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
+              >
+                Go to study
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="dark:bg-gray-900 dark:border-gray-700">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg dark:text-gray-100">Tests completed</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {tests.map((test) => {
+                const dateStr = formatDate(test.date);
                 return (
-                  <Card key={test.id} className="relative group hover:shadow-md transition-shadow">
-                    <CardContent className="py-3 px-4">
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            test.type === "diagnostic"
-                              ? "bg-red-100 dark:bg-red-500/20"
-                              : "bg-blue-100 dark:bg-blue-500/20"
-                          }`}>
-                            {test.type === "diagnostic" ? (
-                              <Sparkles className="h-4 w-4 text-red-600 dark:text-red-400" />
-                            ) : (
-                              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                                #{originalIdx + 1}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <Badge className={`text-[10px] px-1.5 py-0 rounded-full font-semibold border-0 ${
-                                test.type === "diagnostic"
-                                  ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
-                                  : "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400"
-                              }`}>
-                                {test.type === "diagnostic" ? "Diagnostic" : "Full-Length"}
-                              </Badge>
-                              <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                              <span className="text-xs text-slate-500 dark:text-slate-400">
-                                {formatDate(test.date)}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <Target className="h-3.5 w-3.5 text-slate-400" />
-                              <span className="text-xs text-slate-500 dark:text-slate-400">
-                                {test.score}/{test.totalQuestions} correct
-                              </span>
-                            </div>
-                          </div>
+                  <div
+                    key={`${test.type}-${test.id}`}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex-shrink-0 w-6 text-sm font-semibold text-gray-500 dark:text-gray-400 tabular-nums">
+                        {test.testNumber}.
+                      </span>
+                      {getTestTypeIcon(test.type ?? "")}
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {getTestTypeLabel(test.type ?? "")}
+                            {test.type === "unit" && (() => {
+                              const num = test.unitNumber ?? test.sectionBreakdown?.[test.sectionCode ?? ""]?.unitNumber;
+                              const name = test.sectionBreakdown?.[test.sectionCode ?? ""]?.name;
+                              if (num == null && !name) return null;
+                              const unitPart = name != null ? (num != null ? `Unit ${num}: ${name}` : name) : (num != null ? `Unit ${num}` : null);
+                              if (!unitPart) return null;
+                              return (
+                                <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">
+                                  {" "}{unitPart}
+                                </span>
+                              );
+                            })()}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                          <div className={`px-3 py-1.5 rounded-lg border-2 ${getPerformanceColor(test.percentage)} flex-1 sm:flex-initial text-center`}>
-                            <span className="text-lg font-bold">{test.percentage}%</span>
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => handleViewResults(test)}
-                            className={`flex-1 sm:flex-initial rounded-xl font-semibold text-xs ${
-                              test.type === "diagnostic"
-                                ? "bg-red-600 hover:bg-red-700 text-white"
-                                : "bg-blue-600 hover:bg-blue-700 text-white"
-                            }`}
-                          >
-                            View Results
-                          </Button>
-                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{dateStr}</p>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="secondary" className="font-mono">
+                        {test.score}/{test.totalQuestions} ({test.percentage}%)
+                      </Badge>
+                    </div>
+                  </div>
                 );
               })}
-            </div>
-          )}
-        </div>
-      </main>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+      <SimpleFooter />
     </div>
   );
 }

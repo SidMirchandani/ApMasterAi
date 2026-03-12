@@ -147,6 +147,36 @@ export function getSectionInfo(subjectIdOrCode: string, sectionCode: string): { 
   return section ? { name: section.name, unitNumber: section.unitNumber } : undefined;
 }
 
+/** Parse exam weight string like "15–25%" or "5-10%" to midpoint percentage (e.g. 20). */
+function parseExamWeightToNumber(examWeight: string): number {
+  const match = examWeight.match(/(\d+)\s*[–\-]\s*(\d+)/);
+  if (match) return (parseInt(match[1], 10) + parseInt(match[2], 10)) / 2;
+  const single = examWeight.match(/(\d+)\s*%?/);
+  return single ? parseInt(single[1], 10) : 0;
+}
+
+/**
+ * Returns sectionCode → weight (0–100, normalized to sum to 100) for the subject.
+ * Used for weighted subject score in student progress (each unit contributes best_score * unit_weight).
+ */
+export function getUnitWeightsBySectionCode(subjectIdOrCode: string): Record<string, number> {
+  const subject = getSubjectByLegacyId(subjectIdOrCode) || getSubjectByCode(subjectIdOrCode);
+  if (!subject) return {};
+  const weights: Record<string, number> = {};
+  let sum = 0;
+  for (const unit of subject.units) {
+    const section = subject.sections[unit.id];
+    const sectionCode = section?.code ?? unit.id;
+    const w = parseExamWeightToNumber(unit.examWeight);
+    weights[sectionCode] = w;
+    sum += w;
+  }
+  if (sum <= 0) return weights;
+  const out: Record<string, number> = {};
+  for (const [code, w] of Object.entries(weights)) out[code] = (w / sum) * 100;
+  return out;
+}
+
 export function getAllSubjects(): APSubject[] {
   return allSubjects;
 }
