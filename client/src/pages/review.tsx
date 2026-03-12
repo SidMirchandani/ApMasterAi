@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,25 @@ interface DueQuestion {
   tags?: string[];
 }
 
+type ReviewSource = "due" | "bookmark" | "both";
+
+interface ReviewQuestion extends DueQuestion {
+  _source: ReviewSource;
+}
+
+interface BookmarkedItem {
+  questionId?: string;
+  id?: string;
+  subjectId: string;
+  unitId: string;
+  sectionCode?: string;
+  prompt?: string;
+  prompt_blocks?: any[];
+  choices?: string[] | Record<string, any>;
+  answerIndex?: number;
+  explanation?: string;
+}
+
 export default function ReviewPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -60,7 +79,7 @@ export default function ReviewPage() {
     }
   }, [loading, isAuthenticated, router]);
 
-  const { data: dueResponse, isLoading, refetch } = useQuery<{
+  const { data: dueResponse, isLoading: dueLoading, refetch: refetchDue } = useQuery<{
     success: boolean;
     data: DueQuestion[];
   }>({
@@ -78,8 +97,73 @@ export default function ReviewPage() {
     enabled: isAuthenticated && !!user,
   });
 
-  const dueQuestions = dueResponse?.data || [];
-  const currentQuestion = dueQuestions[currentIndex];
+  const { data: bookmarksResponse, isLoading: bookmarksLoading, refetch: refetchBookmarks } = useQuery<{
+    success: boolean;
+    data: BookmarkedItem[];
+  }>({
+    queryKey: ["bookmarks", subjectId || "all", unit || ""],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (subjectId) params.set("subjectId", subjectId);
+      if (unit) params.set("unitId", unit);
+      const url = `/api/user/bookmarks?${params.toString()}`;
+      const res = await apiRequest("GET", url);
+      if (!res.ok) throw new Error("Failed to fetch bookmarks");
+      return res.json();
+    },
+    enabled: isAuthenticated && !!user,
+  });
+
+  const dueList = dueResponse?.data || [];
+  const bookmarksList = bookmarksResponse?.data || [];
+
+  const reviewQuestions = useMemo((): ReviewQuestion[] => {
+    const dueIds = new Set(dueList.map((d) => d.questionId));
+    const bookmarkIds = new Set(
+      bookmarksList.map((b) => b.questionId || (b as any).id || "")
+    );
+    const dueWithSource: ReviewQuestion[] = dueList.map((d) => ({
+      ...d,
+      _source: bookmarkIds.has(d.questionId) ? "both" : "due",
+    }));
+    const bookmarkOnly = bookmarksList.filter(
+      (b) => !dueIds.has(b.questionId || (b as any).id || "")
+    );
+    const mapped: ReviewQuestion[] = bookmarkOnly.map((b) => {
+      const qId = b.questionId || (b as any).id || "";
+      return {
+        questionId: qId,
+        subjectId: b.subjectId,
+        unitId: b.unitId || "",
+        sectionCode: b.sectionCode,
+        correctStreak: 0,
+        totalAttempts: 0,
+        totalCorrect: 0,
+        nextReviewAt: "",
+        prompt: b.prompt,
+        prompt_blocks: (b as any).prompt_blocks,
+        choices: b.choices,
+        answerIndex: b.answerIndex,
+        explanation: b.explanation,
+        _source: "bookmark" as const,
+      };
+    });
+    return [...dueWithSource, ...mapped];
+  }, [dueList, bookmarksList]);
+
+  const isLoading = dueLoading || bookmarksLoading;
+  const refetch = () => {
+    refetchDue();
+    refetchBookmarks();
+  };
+
+  useEffect(() => {
+    if (reviewQuestions.length > 0 && currentIndex >= reviewQuestions.length) {
+      setCurrentIndex(Math.max(0, reviewQuestions.length - 1));
+    }
+  }, [reviewQuestions.length, currentIndex]);
+
+  const currentQuestion = reviewQuestions[currentIndex];
   const subject = currentQuestion?.subjectId
     ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId)
     : getSubjectByLegacyId(subjectId || "") || getSubjectByCode(subjectId || "");
@@ -125,18 +209,13 @@ export default function ReviewPage() {
     const wasCorrect = isSubmitted && selectedAnswer === correctLetter;
 
     if (wasCorrect) {
-      const newList = dueQuestions.filter((_, i) => i !== currentIndex);
-      queryClient.setQueryData(["dueReviews", subjectId || "all", unit || ""], {
-        success: true,
-        data: newList,
-      });
-      const newIndex = newList.length === 0 ? 0 : Math.min(currentIndex, newList.length - 1);
+      const newIndex = reviewQuestions.length <= 1 ? 0 : Math.min(currentIndex, reviewQuestions.length - 2);
       setCurrentIndex(newIndex);
       setSelectedAnswer(null);
       setIsSubmitted(false);
       refetch();
     } else {
-      if (currentIndex < dueQuestions.length - 1) {
+      if (currentIndex < reviewQuestions.length - 1) {
         setCurrentIndex(currentIndex + 1);
         setSelectedAnswer(null);
         setIsSubmitted(false);
@@ -153,7 +232,7 @@ export default function ReviewPage() {
   };
 
   const handleSkip = () => {
-    if (currentIndex < dueQuestions.length - 1) {
+    if (currentIndex < reviewQuestions.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setSelectedAnswer(null);
       setIsSubmitted(false);
@@ -162,41 +241,51 @@ export default function ReviewPage() {
 
   const handleRemove = async () => {
     if (!currentQuestion) return;
-    const removedQuestion = currentQuestion;
+    const removedQuestion = currentQuestion as ReviewQuestion;
+    const source = removedQuestion._source;
     setIsRemoving(true);
     try {
-      await apiRequest("POST", "/api/user/questions/remove", {
-        questionId: removedQuestion.questionId,
-      });
-      const newQuestions = dueQuestions.filter((_, i) => i !== currentIndex);
-      queryClient.setQueryData(["dueReviews", subjectId || "all", unit || ""], {
-        success: true,
-        data: newQuestions,
-      });
-      if (currentIndex >= newQuestions.length && newQuestions.length > 0) {
-        setCurrentIndex(newQuestions.length - 1);
+      if (source === "due" || source === "both") {
+        await apiRequest("POST", "/api/user/questions/remove", {
+          questionId: removedQuestion.questionId,
+        });
+      }
+      if (source === "bookmark" || source === "both") {
+        await apiRequest("POST", "/api/user/bookmarks/toggle", {
+          questionId: removedQuestion.questionId,
+          subjectId: removedQuestion.subjectId,
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["dueReviews"] });
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+      await refetch();
+      if (currentIndex >= reviewQuestions.length - 1 && reviewQuestions.length > 1) {
+        setCurrentIndex(reviewQuestions.length - 2);
       }
       setSelectedAnswer(null);
       setIsSubmitted(false);
+      const hasDue = source === "due" || source === "both";
       toast({
         title: "Question removed from review",
-        action: (
-          <ToastAction
-            altText="Undo remove"
-            onClick={async () => {
-              try {
-                await apiRequest("POST", "/api/user/questions/restore", {
-                  questionId: removedQuestion.questionId,
-                });
-                refetch();
-              } catch (e) {
-                console.log("Could not undo removal");
-              }
-            }}
-          >
-            Undo
-          </ToastAction>
-        ),
+        ...(hasDue && {
+          action: (
+            <ToastAction
+              altText="Undo remove"
+              onClick={async () => {
+                try {
+                  await apiRequest("POST", "/api/user/questions/restore", {
+                    questionId: removedQuestion.questionId,
+                  });
+                  refetch();
+                } catch (e) {
+                  console.log("Could not undo removal");
+                }
+              }}
+            >
+              Undo
+            </ToastAction>
+          ),
+        }),
       });
     } catch (e) {
       console.log("Could not remove question");
@@ -220,7 +309,7 @@ export default function ReviewPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col text-slate-900 dark:text-slate-100">
       <Navigation />
 
-      {dueQuestions.length === 0 ? (
+      {reviewQuestions.length === 0 ? (
         <div className="flex-1 container mx-auto px-3 py-4 max-w-6xl">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -232,7 +321,7 @@ export default function ReviewPage() {
             <CheckCircle className="mx-auto h-12 w-12 text-green-400 mb-4" />
             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">All caught up!</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              No questions to review. Questions you get wrong during practice will appear here.
+              No questions to review. Questions you get wrong or bookmark during practice will appear here.
             </p>
             <Button
               onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
@@ -252,7 +341,7 @@ export default function ReviewPage() {
                   Review Questions
                 </h1>
                 <Badge variant="outline" className="text-[11px] dark:border-slate-600 dark:text-slate-300">
-                  {dueQuestions.length} to review
+                  {reviewQuestions.length} to review
                 </Badge>
               </div>
               {subjectId && currentQuestion.unitId && (
@@ -265,7 +354,7 @@ export default function ReviewPage() {
                   <PracticeQuizQuestionCard
                     question={normalizedQuestion}
                     questionNumber={currentIndex + 1}
-                    totalQuestions={dueQuestions.length}
+                    totalQuestions={reviewQuestions.length}
                     selectedAnswer={selectedAnswer}
                     onAnswerSelect={handleAnswerSelect}
                     isAnswerSubmitted={isSubmitted}
@@ -326,7 +415,7 @@ export default function ReviewPage() {
                     variant="outline"
                     size="sm"
                     onClick={isSubmitted ? handleNext : handleSkip}
-                    disabled={currentIndex >= dueQuestions.length - 1}
+                    disabled={currentIndex >= reviewQuestions.length - 1}
                     className="border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 disabled:opacity-30 rounded-xl shrink-0 flex items-center gap-1"
                   >
                     Next
@@ -371,7 +460,7 @@ export default function ReviewPage() {
                     onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
                     className="border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 text-xs"
                   >
-                    {dueQuestions.length > 0 ? "Save & Exit" : "Exit"}
+                    {reviewQuestions.length > 0 ? "Save & Exit" : "Exit"}
                   </Button>
                 </div>
               </div>

@@ -778,15 +778,17 @@ const SubjectCard = ({
                 <span className="hidden md:inline">Take Diagnostic Test</span>
               </Button>
             ) : (
-              <Button
-                onClick={onStudy}
-                title="Continue Practice"
-                className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-2.5 h-9 px-3 sm:px-4 text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] group"
-              >
-                <span className="md:hidden">Practice</span>
-                <span className="hidden md:inline">Continue Practice</span>
-                <ArrowRight className="w-4 h-4 ml-1.5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" aria-hidden />
-              </Button>
+              <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                <Button
+                  onClick={onStudy}
+                  title="Continue Practice"
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-2.5 h-9 px-3 sm:px-4 text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] group"
+                >
+                  <span className="md:hidden">Practice</span>
+                  <span className="hidden md:inline">Continue Practice</span>
+                  <ArrowRight className="w-4 h-4 ml-1.5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" aria-hidden />
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>

@@ -70,7 +70,7 @@ export default function Quiz() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { subject: subjectId, unit } = router.query;
+  const { subject: subjectId, unit, limit: limitParam } = router.query;
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -217,13 +217,14 @@ export default function Quiz() {
             console.log("No saved unit quiz state found");
           }
 
-          const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=25`;
+          const limit = typeof limitParam === "string" && /^\d+$/.test(limitParam) ? Math.min(100, Math.max(1, parseInt(limitParam, 10))) : 25;
+          const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=${limit}`;
           console.log("📡 [Quiz] Fetching questions with:", {
             url: apiUrl,
             params: {
               subject_code: subjectApiCode,
               section_code: sectionCode,
-              limit: 25
+              limit
             }
           });
 
@@ -252,7 +253,7 @@ export default function Quiz() {
 
           if (data.success && data.data?.length > 0) {
             const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
-            setQuestions(shuffled.slice(0, 25));
+            setQuestions(shuffled.slice(0, limit));
             console.log("✅ [Quiz] Questions loaded successfully:", shuffled.length);
           } else {
             console.error("❌ [Quiz] No questions found in response:", {
@@ -272,7 +273,7 @@ export default function Quiz() {
     };
 
     if (isAuthenticated && unit && subjectId) fetchQuestions();
-  }, [isAuthenticated, unit, subjectId]);
+  }, [isAuthenticated, unit, subjectId, limitParam]);
 
   const handleExitQuiz = async () => {
     // Refetch subjects and unit progress so study page shows updated Mastered status immediately

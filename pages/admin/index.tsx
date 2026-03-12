@@ -91,6 +91,33 @@ function getErrorReasonFromQuestion(q: Question): string {
   return tag ? String(tag).replace(/^error_reason:/, "").trim() : "";
 }
 
+function getStudyNoteFromQuestion(q: Question): string {
+  const tag = (q.tags || []).find(t => typeof t === "string" && t.startsWith("study_note:"));
+  return tag ? String(tag).replace(/^study_note:/, "").trim() : "";
+}
+
+/** Escapes HTML and converts **text** to <strong> for Explanation column. */
+function renderSimpleMarkdownHtml(text: string): string {
+  if (!text) return "";
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
+/** Pretty-prints study notes: escape HTML, **bold**, newlines → <br />, trim long runs of spaces. */
+function renderStudyNotesHtml(text: string): string {
+  if (!text) return "";
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const withBold = escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const withBreaks = withBold.replace(/\n/g, "<br />");
+  return withBreaks.replace(/[ \t]+/g, " ").trim();
+}
+
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string>("");
@@ -133,6 +160,7 @@ export default function AdminPage() {
     choices: "",
     ans: "",
     explanation: "",
+    study_note: "",
     difficulty: "",
     reasoning: "",
     error_reason: "",
@@ -172,6 +200,7 @@ export default function AdminPage() {
     const c = columnSearch.choices.trim().toLowerCase();
     const a = columnSearch.ans.trim().toUpperCase();
     const e = columnSearch.explanation.trim().toLowerCase();
+    const studyNote = columnSearch.study_note.trim().toLowerCase();
     const diff = columnSearch.difficulty.trim().toLowerCase();
     const reason = columnSearch.reasoning.trim().toLowerCase();
     const errReason = columnSearch.error_reason.trim().toLowerCase();
@@ -181,6 +210,7 @@ export default function AdminPage() {
     if (c) list = list.filter(q => getChoicesSearchText(q).toLowerCase().includes(c));
     if (a) list = list.filter(q => String.fromCharCode(65 + (q.answerIndex ?? 0)) === a || (q.correct_answer || "").toUpperCase() === a);
     if (e) list = list.filter(q => (q.explanation || "").toLowerCase().includes(e));
+    if (studyNote) list = list.filter(q => getStudyNoteFromQuestion(q).toLowerCase().includes(studyNote));
     if (diff) list = list.filter(q => getDifficultyFromQuestion(q).toLowerCase().includes(diff));
     if (reason) list = list.filter(q => getReasoningFromQuestion(q).toLowerCase().includes(reason));
     if (errReason) list = list.filter(q => getErrorReasonFromQuestion(q).toLowerCase().includes(errReason));
@@ -753,12 +783,16 @@ export default function AdminPage() {
       case "grade-difficulty":
         endpoint = "/api/admin/auto-tag-difficulty";
         break;
+      case "study-notes":
+        endpoint = "/api/admin/generate-study-notes";
+        break;
     }
 
     const actionLabel = selectedAction === "explanations" ? "explanation generation"
       : selectedAction === "regen-explanations" ? "explanation regeneration"
       : selectedAction === "fix-prompts" ? "prompt fixing"
       : selectedAction === "fix-units" ? "unit assignment fix"
+      : selectedAction === "study-notes" ? "study notes generation"
       : "difficulty tagging";
 
     setExplanationProgress({
@@ -1348,6 +1382,7 @@ export default function AdminPage() {
                     <SelectItem value="regen-explanations">ReGenerate Explanations Only</SelectItem>
                     <SelectItem value="fix-prompts">Fix Prompts & Choices Only</SelectItem>
                     <SelectItem value="fix-units">Fix Unit Assignment</SelectItem>
+                    <SelectItem value="study-notes">Generate Study Notes Only</SelectItem>
                     <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1397,10 +1432,11 @@ export default function AdminPage() {
                   <col className="w-10" />
                   <col className="w-16" />
                   <col className="w-14" />
-                  <col style={{ width: '22%' }} />
-                  <col style={{ width: '18%' }} />
+                  <col style={{ minWidth: 200, maxWidth: 300 }} />
+                  <col style={{ minWidth: 200, maxWidth: 300 }} />
                   <col className="w-14" />
-                  <col style={{ width: '18%' }} />
+                  <col style={{ minWidth: 200, maxWidth: 300 }} />
+                  <col style={{ minWidth: 200, maxWidth: 300 }} />
                   <col className="w-20" />
                   <col className="w-20" />
                   <col style={{ width: '12%' }} />
@@ -1420,6 +1456,7 @@ export default function AdminPage() {
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Choices</th>
                     <th className="p-2 text-center font-semibold text-slate-900 dark:text-slate-300 text-xs">Ans</th>
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Explanation</th>
+                    <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Study Notes</th>
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Difficulty</th>
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Reasoning</th>
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Error reason</th>
@@ -1472,6 +1509,14 @@ export default function AdminPage() {
                         placeholder="Search..."
                         value={columnSearch.explanation}
                         onChange={(e) => setColumnSearchField("explanation", e.target.value)}
+                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
+                      />
+                    </th>
+                    <th className="p-1">
+                      <Input
+                        placeholder="Search..."
+                        value={columnSearch.study_note}
+                        onChange={(e) => setColumnSearchField("study_note", e.target.value)}
                         className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
                       />
                     </th>
@@ -1740,11 +1785,13 @@ function Row({
         </td>
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">{q.subject_code ? getSubjectDisplayName(q.subject_code) : "-"}</td>
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">{q.section_code || "-"}</td>
-        <td className="p-2 align-top">{renderQuestionPrompt()}</td>
-        <td className="p-2 align-top">
+        <td className="p-2 align-top min-w-[200px] max-w-[300px]" title={q.prompt_blocks ? q.prompt_blocks.filter((b): b is Block => b.type === "text").map(b => (b as { value: string }).value).join(" ") : (q.prompt || "")}>
+          {renderQuestionPrompt()}
+        </td>
+        <td className="p-2 align-top min-w-[200px] max-w-[300px]">
           <div className="text-xs space-y-1">
             {(['A', 'B', 'C', 'D', 'E'] as const).map((letter) => (
-              <div key={letter} className="break-words">
+              <div key={letter} className="break-words line-clamp-2">
                 <span className="font-medium">{letter}.</span> {renderChoice(letter)}
               </div>
             ))}
@@ -1753,8 +1800,18 @@ function Row({
         <td className="p-2 text-center align-top font-semibold text-xs">
           ({String.fromCharCode(65 + q.answerIndex)})
         </td>
-        <td className="p-2 align-top text-xs break-words overflow-hidden">
-          <div className="line-clamp-4">{q.explanation || "-"}</div>
+        <td className="p-2 align-top text-xs break-words overflow-hidden min-w-[200px] max-w-[300px]">
+          <div className="line-clamp-3" title={q.explanation || ""}>
+            <span dangerouslySetInnerHTML={{ __html: renderSimpleMarkdownHtml(q.explanation || "-") }} />
+          </div>
+        </td>
+        <td className="p-2 align-top text-xs break-words overflow-hidden min-w-[200px] max-w-[320px]">
+          <div className="line-clamp-5 whitespace-pre-wrap" title={getStudyNoteFromQuestion(q) || ""}>
+            <span
+              className="block text-slate-700 dark:text-slate-300 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: renderStudyNotesHtml(getStudyNoteFromQuestion(q) || "-") }}
+            />
+          </div>
         </td>
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">
           {getDifficultyFromQuestion(q) || "-"}
@@ -1870,6 +1927,13 @@ function Row({
             setForm((s) => ({ ...s, explanation: e.target.value }))
           }
         />
+      </td>
+      <td className="p-2 align-top text-xs min-w-[200px] max-w-[320px]">
+        <div className="line-clamp-5 text-slate-700 dark:text-slate-300 leading-relaxed">
+          <span
+            dangerouslySetInnerHTML={{ __html: renderStudyNotesHtml(getStudyNoteFromQuestion(q) || "-") }}
+          />
+        </div>
       </td>
       <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
         {getDifficultyFromQuestion(q) || "-"}

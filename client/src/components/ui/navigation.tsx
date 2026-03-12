@@ -135,6 +135,11 @@ export default function Navigation() {
       bc.push({ label: "Diagnostic", href: "#" });
     }
 
+    if (location.startsWith("/dualpath")) {
+      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      bc.push({ label: "DualPath", href: "#" });
+    }
+
     if (location === "/about") {
       bc.push({ label: "About", href: "#" });
     }

@@ -10,7 +10,6 @@ import {
   Trophy,
   HelpCircle,
   RotateCcw,
-  Bookmark,
   BarChart3,
   CalendarDays,
   Play,
@@ -128,18 +127,6 @@ export default function Study() {
     staleTime: 60000,
   });
   const dueForSubject = dueForSubjectResponse?.data || [];
-
-  const { data: bookmarksForSubjectResponse } = useQuery<{ success: boolean; data: { unitId?: string }[] }>({
-    queryKey: ["bookmarks", subjectId, "all"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", `/api/user/bookmarks?subjectId=${subjectId}`);
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
-    },
-    enabled: !!subjectId && isAuthenticated && !!user,
-    staleTime: 60000,
-  });
-  const bookmarksForSubject = bookmarksForSubjectResponse?.data || [];
 
   const subjectCode = subjectId ? getApiCodeForSubject(subjectId) : undefined;
   const targets = getTargetPercentagesForSubject(subjectCode);
@@ -365,6 +352,25 @@ export default function Study() {
               </div>
             </button>
 
+            {/* Dual-Path Plan */}
+            <button
+              onClick={() => router.push(`/dualpath?subject=${subjectId}`)}
+              className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-white dark:bg-slate-900/70 border border-green-200 dark:border-green-800/50 hover:border-green-300 dark:hover:border-green-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+            >
+              <div className="relative z-10 flex items-center gap-3">
+                <div className="w-9 h-9 bg-green-50 dark:bg-green-500/10 group-hover:bg-green-100 dark:group-hover:bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                  <Target className="w-4 h-4 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">
+                    DualPath <span className="text-red-500 dark:text-red-400 font-bold">(experimental)</span>
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Dual-path study plan</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+              </div>
+            </button>
+
             {/* Review Questions */}
             <button
               onClick={() => router.push(`/review?subject=${subjectId}`)}
@@ -376,23 +382,7 @@ export default function Study() {
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-[13px] text-slate-900 dark:text-white leading-tight truncate">Review Questions</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate hidden sm:block">Questions you got wrong</p>
-                </div>
-              </div>
-            </button>
-
-            {/* Saved Questions */}
-            <button
-              onClick={() => router.push(`/bookmarks?subject=${subjectId}`)}
-              className="group relative overflow-hidden rounded-xl p-2.5 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-800/60 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 bg-amber-50 dark:bg-amber-500/10 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors">
-                  <Bookmark className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-[13px] text-slate-900 dark:text-white leading-tight truncate">Saved Questions</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs truncate hidden sm:block">Your bookmarks</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate hidden sm:block">Questions for review</p>
                 </div>
               </div>
             </button>

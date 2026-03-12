@@ -308,10 +308,10 @@ export default function AnalyticsPage() {
       <Navigation />
 
       <div className="container mx-auto px-4 py-4 max-w-5xl">
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3">
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-khan-green" />
-            {subjectDisplayName ? `${subjectDisplayName} Analytics` : "Analytics"}
+            {subjectDisplayName ? `${subjectDisplayName}: Analytics` : "Analytics"}
           </h1>
         </div>
 
@@ -393,7 +393,7 @@ export default function AnalyticsPage() {
                   <CardTitle className="text-lg flex items-center justify-between dark:text-gray-100">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5 text-blue-500" />
-                    {subjectDisplayName ? `${subjectDisplayName} Student Progress` : "Student Progress"}
+                    {subjectDisplayName ? `${subjectDisplayName}: Student Progress` : "Student Progress"}
                     </div>
                   </CardTitle>
                 </CardHeader>
@@ -555,7 +555,7 @@ export default function AnalyticsPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
                     <AlertTriangle className="h-5 w-5 text-orange-500" />
-                    {subjectDisplayName ? `${subjectDisplayName} Performance by Unit` : "Performance by Unit"}
+                    {subjectDisplayName ? `${subjectDisplayName}: Performance by Unit` : "Performance by Unit"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
