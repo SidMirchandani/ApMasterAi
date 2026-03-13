@@ -120,21 +120,7 @@ export default async function handler(
       }
 
       const question = doc.data() as any;
-
-      if ((question.test_slug || "").trim() !== "") {
-        skipped++;
-        sendEvent({
-          type: "progress",
-          current: i + 1,
-          total,
-          updated,
-          skipped,
-          failed,
-          message: `Q${i + 1}/${total}: already has a study note, skipped`,
-        });
-        continue;
-      }
-
+      
       const questionText = question.prompt_blocks
         ? flattenPromptText(question.prompt_blocks)
         : (question.prompt || "");

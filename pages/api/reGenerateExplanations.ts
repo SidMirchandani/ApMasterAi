@@ -1,8 +1,8 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 import { getModelName, getGeminiClientOptions } from "../../lib/gemini-models";
+import { runExplanationGeneration } from "../../server/explanation-helpers";
 
 export const config = {
   api: {
@@ -11,51 +11,6 @@ export const config = {
   },
   maxDuration: 300,
 };
-
-function flattenChoiceText(blocks: any[]) {
-  return blocks
-    .filter(b => b.type === "text")
-    .map(b => b.value)
-    .join(" ");
-}
-
-async function fetchImageAsBase64(url: string): Promise<string> {
-  const response = await fetch(url);
-  const buffer = await response.arrayBuffer();
-  return Buffer.from(buffer).toString('base64');
-}
-
-function isQuotaError(error: any): boolean {
-  const msg = (error?.message || error?.toString() || "").toLowerCase();
-  const status = error?.status || error?.code || error?.httpCode || 0;
-  if (status === 429 || status === "429") return true;
-  return msg.includes("quota") || msg.includes("rate") || msg.includes("429") || msg.includes("resource_exhausted") || msg.includes("too many requests") || msg.includes("limit");
-}
-
-async function callWithRetry(
-  fn: () => Promise<any>,
-  maxRetries: number = 5,
-  baseDelayMs: number = 5000,
-  onRetry?: (attempt: number, waitSec: number) => void
-): Promise<any> {
-  let lastError: any;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error: any) {
-      lastError = error;
-      if (isQuotaError(error) && attempt < maxRetries) {
-        const waitMs = baseDelayMs * Math.pow(2, attempt) + Math.random() * 2000;
-        const waitSec = Math.round(waitMs / 1000);
-        onRetry?.(attempt + 1, waitSec);
-        await new Promise(resolve => setTimeout(resolve, waitMs));
-      } else {
-        throw error;
-      }
-    }
-  }
-  throw lastError;
-}
 
 export default async function handler(
   req: NextApiRequest,
@@ -93,10 +48,14 @@ export default async function handler(
   const questionsRef = firestore.collection("questions");
   const total = questionIds.length;
 
-  console.log(`Re-generating explanations for ${total} selected questions (forced, ignoring existing)...`);
+  console.log(
+    `Re-generating explanations for ${total} selected questions (forced, ignoring existing)...`
+  );
 
   let aborted = false;
-  req.on("close", () => { aborted = true; });
+  req.on("close", () => {
+    aborted = true;
+  });
 
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -118,10 +77,6 @@ export default async function handler(
     } catch {}
   };
 
-  let updated = 0;
-  let skipped = 0;
-  let failed = 0;
-
   sendEvent({
     type: "progress",
     current: 0,
@@ -132,183 +87,20 @@ export default async function handler(
     message: `Starting explanation re-generation for ${total} questions (overwriting existing)...`,
   });
 
-  for (let i = 0; i < questionIds.length; i++) {
-    const questionId = questionIds[i];
+  const { updated, skipped, failed } = await runExplanationGeneration({
+    questionIds,
+    model: selectedModel,
+    ai,
+    questionsRef,
+    sendEvent,
+    skipIfExplanationExists: false,
+    isRegenerate: true,
+    onAborted: () => aborted,
+  });
 
-    if (aborted) {
-      console.log("Client disconnected, stopping explanation re-generation.");
-      break;
-    }
-
-    try {
-      const doc = await questionsRef.doc(questionId).get();
-
-      if (!doc.exists) {
-        console.log(`Question ${questionId} not found, skipping...`);
-        skipped++;
-        sendEvent({
-          type: "progress",
-          current: i + 1,
-          total,
-          updated,
-          skipped,
-          failed,
-          message: `Q${i + 1}/${total}: not found, skipped`,
-        });
-        continue;
-      }
-
-      const question = doc.data();
-
-      sendEvent({
-        type: "progress",
-        current: i + 1,
-        total,
-        updated,
-        skipped,
-        failed,
-        message: `Re-generating explanation ${i + 1}/${total}...`,
-      });
-
-      const promptParts: any[] = [];
-      
-      let promptText = `You are an expert AP tutor. Generate a clear, structured explanation for this AP question.\n\n`;
-      
-      if (question!.prompt_blocks && Array.isArray(question!.prompt_blocks)) {
-        const questionText = flattenChoiceText(question!.prompt_blocks);
-        promptText += `Question: ${questionText}\n`;
-      }
-      
-      promptParts.push({ text: promptText });
-      
-      if (question!.prompt_blocks && Array.isArray(question!.prompt_blocks)) {
-        for (const block of question!.prompt_blocks) {
-          if (block.type === "image" && block.url) {
-            try {
-              const base64Data = await fetchImageAsBase64(block.url);
-              promptParts.push({
-                inlineData: {
-                  mimeType: "image/png",
-                  data: base64Data
-                }
-              });
-            } catch (err) {
-              console.error(`Failed to fetch image ${block.url}:`, err);
-            }
-          }
-        }
-      }
-      
-      let choicesText = `\nAnswer Choices:\n`;
-      Object.entries(question!.choices ?? {}).forEach(([letter, blocks]: [string, any]) => {
-        const choiceText = flattenChoiceText(blocks);
-        choicesText += `${letter}. ${choiceText}\n`;
-      });
-      
-      const correctLabel = String.fromCharCode(65 + question!.answerIndex);
-      const correctAnswerBlocks = question!.choices?.[correctLabel];
-      const correctAnswer = correctAnswerBlocks ? flattenChoiceText(correctAnswerBlocks) : "";
-      choicesText += `\nCorrect Answer: ${correctLabel}. ${correctAnswer}\n\n`;
-      
-      promptParts.push({ text: choicesText });
-      
-      for (const [letter, blocks] of Object.entries(question!.choices ?? {})) {
-        for (const block of blocks as any[]) {
-          if (block.type === "image" && block.url) {
-            try {
-              const base64Data = await fetchImageAsBase64(block.url);
-              promptParts.push({
-                inlineData: {
-                  mimeType: "image/png",
-                  data: base64Data
-                }
-              });
-            } catch (err) {
-              console.error(`Failed to fetch choice image ${block.url}:`, err);
-            }
-          }
-        }
-      }
-      
-      promptParts.push({
-        text: `\nProvide a concise explanation following this structure (do NOT number the sections):
-
-**Concept**: In 1-2 sentences, briefly explain what concept this question tests.
-
-**Why ${correctLabel} is correct**: Clearly explain why this answer is right. Include the key formula and any calculations if applicable, then state the conclusion (e.g. "Therefore, ...").
-
-**Why other choices are wrong**: Give a bulleted list with one bullet per incorrect choice. Each bullet must start with the letter and "is incorrect because" (e.g. "A is incorrect because ...", "B is incorrect because ..."). Use markdown bullets: start each line with "- ".
-
-Keep the ENTIRE explanation to about 100-150 words maximum. Be clear, concise, and student-friendly.
-
-For math and equations use LaTeX inside single dollar signs, e.g. $P(t) = 1200 - 1000e^{-0.16t}$ or $\\frac{dP}{dt}$. Do not use backticks for math.
-
-Your explanation:`
-      });
-
-      const result = await callWithRetry(
-        () => ai.models.generateContent({
-          model: selectedModel,
-          contents: [{ role: "user", parts: promptParts }],
-        }),
-        5,
-        5000,
-        (attempt, waitSec) => {
-          console.log(`⏳ Quota limit hit, retry ${attempt}/5 — waiting ${waitSec}s...`);
-          sendEvent({
-            type: "rate_limit",
-            current: i + 1,
-            total,
-            updated,
-            skipped,
-            failed,
-            message: `Rate limit hit — waiting ${waitSec}s before retry ${attempt}/5...`,
-          });
-        }
-      );
-
-      let explanation = result.text?.trim() || "";
-      explanation = explanation.replace(/^Explanation:\s*/i, "").trim();
-
-      await doc.ref.update({
-        explanation,
-        updatedAt: new Date(),
-      });
-
-      updated++;
-      console.log(`✓ Re-generated explanation for question ${doc.id}`);
-
-      sendEvent({
-        type: "progress",
-        current: i + 1,
-        total,
-        updated,
-        skipped,
-        failed,
-        message: `Re-generated ${updated}/${total - skipped} explanations`,
-      });
-    } catch (error: any) {
-      failed++;
-      const isQuota = isQuotaError(error);
-      console.error(
-        `✗ Failed to re-generate explanation for ${questionId}:`,
-        isQuota ? "Quota exhausted after retries" : error.message,
-      );
-      sendEvent({
-        type: "progress",
-        current: i + 1,
-        total,
-        updated,
-        skipped,
-        failed,
-        message: isQuota
-          ? `Q${i + 1}: Quota exhausted after retries — skipped`
-          : `Q${i + 1}: Failed — ${(error.message || "").substring(0, 80)}`,
-      });
-    }
-  }
-
-  console.log(`✅ Completed: Re-generated ${updated}/${total} explanations (${skipped} not found, ${failed} failed)`);
+  console.log(
+    `✅ Completed: Re-generated ${updated}/${total} explanations (${skipped} not found, ${failed} failed)`
+  );
 
   sendEvent({
     type: "complete",

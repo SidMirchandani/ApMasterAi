@@ -22,6 +22,7 @@ interface Question {
   explanation: string;
   subject_code?: string;
   section_code?: string;
+  tags?: string[];
   image_urls?: {
     question?: string[];
     A?: string[];
@@ -70,7 +71,8 @@ export default function Quiz() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { subject: subjectId, unit, limit: limitParam } = router.query;
+  const { subject: subjectId, unit, limit: limitParam, primer: primerParam } = router.query;
+  const primerEnabled = primerParam === "1";
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -239,16 +241,21 @@ export default function Quiz() {
 
           const data = await response.json();
 
+          // DEBUG: test_slug for study notes primer (micro drills)
+          const rawQuestions = data.data || [];
           console.log("📥 [Quiz] API response received:", {
             success: data.success,
-            questionCount: data.data?.length || 0,
+            questionCount: rawQuestions.length,
             hasData: !!data.data,
-            firstQuestion: data.data?.[0] ? {
-              id: data.data[0].id,
-              subject_code: data.data[0].subject_code,
-              section_code: data.data[0].section_code
-            } : null,
-            allSectionCodes: data.data?.map((q: any) => q.section_code).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i)
+            firstQuestionKeys: rawQuestions[0] ? Object.keys(rawQuestions[0]) : [],
+            test_slug_debug: rawQuestions.slice(0, 5).map((q: any, i: number) => ({
+              i,
+              id: q.id,
+              test_slug: q.test_slug,
+              test_slug_len: (q.test_slug && String(q.test_slug).length) || 0,
+              has_tags: Array.isArray(q.tags),
+            })),
+            allSectionCodes: rawQuestions.map((q: any) => q.section_code).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i)
           });
 
           if (data.success && data.data?.length > 0) {
@@ -837,6 +844,7 @@ export default function Quiz() {
             onComplete={handleCompletePractice}
             onSaveAndExit={handleSaveAndExitUnit}
             savedState={savedUnitQuizState}
+            enableStudyNotesPrimer={!isFullLength && primerEnabled}
           />
         </>
       )}

@@ -61,6 +61,7 @@ type Question = {
   correct_answer?: string;
   explanation?: string;
   tags?: string[];
+  test_slug?: string | null;
   course?: string | null;
   chapter?: string | null;
   difficulty?: string | null;
@@ -93,8 +94,80 @@ function getErrorReasonFromQuestion(q: Question): string {
 }
 
 function getStudyNoteFromQuestion(q: Question): string {
+  const fromSlug = (q.test_slug ?? "").trim();
+  if (fromSlug) return fromSlug;
   const tag = (q.tags || []).find(t => typeof t === "string" && t.startsWith("study_note:"));
-  return tag ? String(tag).replace(/^study_note:/, "").trim() : "";
+  return tag ? String(tag).replace(/^study_note:\s*/, "").trim() : "";
+}
+
+function extractPromptText(q: Question): string {
+  if (q.prompt_blocks && q.prompt_blocks.length > 0) {
+    return q.prompt_blocks
+      .filter((block): block is { type: "text"; value: string } => block.type === "text")
+      .map(block => block.value)
+      .join(" ");
+  }
+  return q.prompt || "";
+}
+
+function extractChoicesText(q: Question): string {
+  if (q.choices && typeof q.choices === "object" && !Array.isArray(q.choices)) {
+    const keys: Array<"A" | "B" | "C" | "D" | "E"> = ["A", "B", "C", "D", "E"];
+    return keys
+      .map(key => {
+        const blocks = q.choices![key];
+        if (!blocks) return "";
+        const text = blocks
+          .filter((block): block is { type: "text"; value: string } => block.type === "text")
+          .map(block => block.value)
+          .join(" ");
+        return text.trim();
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
+  if (Array.isArray(q.choices)) {
+    return q.choices.join("\n");
+  }
+  return "";
+}
+
+function extractChoicesData(q: Question): Record<'A' | 'B' | 'C' | 'D' | 'E', string> {
+  const result: Record<'A' | 'B' | 'C' | 'D' | 'E', string> = {
+    A: "", B: "", C: "", D: "", E: ""
+  };
+
+  if (q.choices && typeof q.choices === "object" && !Array.isArray(q.choices)) {
+    const keys: Array<"A" | "B" | "C" | "D" | "E"> = ["A", "B", "C", "D", "E"];
+    keys.forEach(key => {
+      const blocks = q.choices![key];
+      if (!blocks) {
+        result[key] = "";
+        return;
+      }
+      const text = blocks
+        .filter((block): block is { type: "text"; value: string } => block.type === "text")
+        .map(block => block.value)
+        .join(" ");
+      result[key] = text.trim();
+    });
+  } else if (Array.isArray(q.choices)) {
+    const keys: Array<"A" | "B" | "C" | "D" | "E"> = ["A", "B", "C", "D", "E"];
+    q.choices.forEach((choice, idx) => {
+      if (idx < keys.length) {
+        result[keys[idx]] = choice || "";
+      }
+    });
+  }
+
+  return result;
+}
+
+function truncateText(text: string, maxWords: number = 10): string {
+  if (!text || text.trim() === "") return "";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text;
+  return words.slice(0, maxWords).join(" ") + "...";
 }
 
 /** Escapes HTML and converts **text** to <strong> for Explanation column. */
@@ -138,7 +211,7 @@ export default function AdminPage() {
   const allApSubjectsRef = AP_SUBJECT_CODES.map((code) => ({
     code,
     label: getSubjectDisplayName(code),
-  }));
+  })).sort((a, b) => a.label.localeCompare(b.label));
   const availableSubjects = allApSubjectsRef.map(s => s.code);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
 
@@ -153,81 +226,12 @@ export default function AdminPage() {
     return list;
   }, [items, showOnlyMissingExplanation, showOnlyErrorReports]);
 
-  // Per-column search filters (search within current results)
-  const [columnSearch, setColumnSearch] = useState({
-    subject: "",
-    section: "",
-    prompt: "",
-    choices: "",
-    ans: "",
-    explanation: "",
-    study_note: "",
-    difficulty: "",
-    reasoning: "",
-    error_reason: "",
-  });
-
-  function getPromptSearchText(q: Question): string {
-    if (q.prompt_blocks && Array.isArray(q.prompt_blocks)) {
-      return q.prompt_blocks
-        .filter((b): b is Block => b.type === "text")
-        .map(b => (b as { value: string }).value)
-        .join(" ");
-    }
-    return q.prompt || "";
-  }
-
-  function getChoicesSearchText(q: Question): string {
-    if (q.choices && typeof q.choices === "object") {
-      return (["A", "B", "C", "D", "E"] as const)
-        .map(letter => {
-          const blocks = q.choices?.[letter];
-          if (!blocks) return "";
-          return blocks
-            .filter((b): b is Block => b.type === "text")
-            .map(b => (b as { value: string }).value)
-            .join(" ");
-        })
-        .join(" ");
-    }
-    return "";
-  }
-
-  const filteredDisplayItems = useMemo(() => {
-    let list = displayedItems;
-    const s = columnSearch.subject.trim().toLowerCase();
-    const sec = columnSearch.section.trim().toLowerCase();
-    const p = columnSearch.prompt.trim().toLowerCase();
-    const c = columnSearch.choices.trim().toLowerCase();
-    const a = columnSearch.ans.trim().toUpperCase();
-    const e = columnSearch.explanation.trim().toLowerCase();
-    const studyNote = columnSearch.study_note.trim().toLowerCase();
-    const diff = columnSearch.difficulty.trim().toLowerCase();
-    const reason = columnSearch.reasoning.trim().toLowerCase();
-    const errReason = columnSearch.error_reason.trim().toLowerCase();
-    if (s) list = list.filter(q => (q.subject_code || "").toLowerCase().includes(s));
-    if (sec) list = list.filter(q => (q.section_code || "").toLowerCase().includes(sec));
-    if (p) list = list.filter(q => getPromptSearchText(q).toLowerCase().includes(p));
-    if (c) list = list.filter(q => getChoicesSearchText(q).toLowerCase().includes(c));
-    if (a) list = list.filter(q => String.fromCharCode(65 + (q.answerIndex ?? 0)) === a || (q.correct_answer || "").toUpperCase() === a);
-    if (e) list = list.filter(q => (q.explanation || "").toLowerCase().includes(e));
-    if (studyNote) list = list.filter(q => getStudyNoteFromQuestion(q).toLowerCase().includes(studyNote));
-    if (diff) list = list.filter(q => getDifficultyFromQuestion(q).toLowerCase().includes(diff));
-    if (reason) list = list.filter(q => getReasoningFromQuestion(q).toLowerCase().includes(reason));
-    if (errReason) list = list.filter(q => getErrorReasonFromQuestion(q).toLowerCase().includes(errReason));
-    return list;
-  }, [displayedItems, columnSearch]);
-
-  function setColumnSearchField(field: keyof typeof columnSearch, value: string) {
-    setColumnSearch(prev => ({ ...prev, [field]: value }));
-  }
-
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(
     new Set(),
   );
-  const [selectedAction, setSelectedAction] = useState<string>("explanations");
+  const [selectedAction, setSelectedAction] = useState<string>("fix-prompts");
   const [cheatMode, setCheatMode] = useState(false);
   const aiActionAbortRef = useRef<AbortController | null>(null);
   const [explanationProgress, setExplanationProgress] = useState<{
@@ -772,14 +776,11 @@ export default function AdminPage() {
       case "explanations":
         endpoint = "/api/generateExplanations";
         break;
-      case "regen-explanations":
+      case "re-generate-explanations":
         endpoint = "/api/reGenerateExplanations";
         break;
       case "fix-prompts":
         endpoint = "/api/fixPromptsChoices";
-        break;
-      case "fix-units":
-        endpoint = "/api/admin/fix-unit-assignment";
         break;
       case "grade-difficulty":
         endpoint = "/api/admin/auto-tag-difficulty";
@@ -787,14 +788,17 @@ export default function AdminPage() {
       case "study-notes":
         endpoint = "/api/admin/generate-study-notes";
         break;
+      case "re-generate-study-notes":
+        endpoint = "/api/admin/re-generate-study-notes";
+        break;
     }
 
-    const actionLabel = selectedAction === "explanations" ? "explanation generation"
-      : selectedAction === "regen-explanations" ? "explanation regeneration"
-      : selectedAction === "fix-prompts" ? "prompt fixing"
-      : selectedAction === "fix-units" ? "unit assignment fix"
-      : selectedAction === "study-notes" ? "study notes generation"
-      : "difficulty tagging";
+    const actionLabel = selectedAction === "explanations" ? "Explanation Generation"
+      : selectedAction === "re-generate-explanations" ? "Explanation Re-Generation"
+      : selectedAction === "fix-prompts" ? "Prompt Fixing"
+      : selectedAction === "study-notes" ? "Study Notes Generation"
+      : selectedAction === "re-generate-study-notes" ? "Study Notes Re-Generation"
+      : "Difficulty Tagging";
 
     setExplanationProgress({
       current: 0,
@@ -816,7 +820,9 @@ export default function AdminPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(
-          selectedAction === "fix-units" ? { questionIds } : { questionIds, model: "2.5lite" }
+          selectedAction === "re-generate-study-notes"
+            ? { questionIds }
+            : { questionIds, model: "2.5lite" }
         ),
         signal: controller.signal,
       });
@@ -900,11 +906,11 @@ export default function AdminPage() {
   }
 
   function toggleSelectAll() {
-    const allDisplayedSelected = filteredDisplayItems.length > 0 && filteredDisplayItems.every(q => selectedQuestions.has(q.id));
+    const allDisplayedSelected = displayedItems.length > 0 && displayedItems.every(q => selectedQuestions.has(q.id));
     if (allDisplayedSelected) {
       setSelectedQuestions(new Set());
     } else {
-      setSelectedQuestions(new Set(filteredDisplayItems.map(q => q.id)));
+      setSelectedQuestions(new Set(displayedItems.map(q => q.id)));
     }
   }
 
@@ -1297,11 +1303,14 @@ export default function AdminPage() {
                   <SelectValue placeholder="Select Subject" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableSubjects.map((subj) => (
-                    <SelectItem key={subj} value={subj}>
-                      {subj}
-                    </SelectItem>
-                  ))}
+                  {availableSubjects
+                    .slice()
+                    .sort((a, b) => getSubjectDisplayName(a).localeCompare(getSubjectDisplayName(b)))
+                    .map((subj) => (
+                      <SelectItem key={subj} value={subj}>
+                        {subj}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
 
@@ -1363,13 +1372,11 @@ export default function AdminPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="dark:text-white">
-                  Questions ({filteredDisplayItems.length}
-                  {showOnlyMissingExplanation && items.length > 0 ? ` of ${displayedItems.length}` : ""})
+                  Questions ({displayedItems.length})
                 </CardTitle>
                 <CardDescription>
                   {showOnlyMissingExplanation && items.length > 0 && "Showing questions without explanation. "}
                   {showOnlyErrorReports && items.length > 0 && "Showing questions with error reports. "}
-                  {Object.values(columnSearch).some(v => v.trim() !== "") && "Column search active. "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
               </div>
@@ -1379,11 +1386,11 @@ export default function AdminPage() {
                     <SelectValue placeholder="Select Action" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="explanations">Generate Explanations Only</SelectItem>
-                    <SelectItem value="regen-explanations">ReGenerate Explanations Only</SelectItem>
-                    <SelectItem value="fix-prompts">Fix Prompts & Choices Only</SelectItem>
-                    <SelectItem value="fix-units">Fix Unit Assignment</SelectItem>
-                    <SelectItem value="study-notes">Generate Study Notes Only</SelectItem>
+                    <SelectItem value="fix-prompts">Fix Prompts & Choices</SelectItem>
+                    <SelectItem value="explanations">Generate Explanations</SelectItem>
+                    <SelectItem value="re-generate-explanations">Re-Generate Explanations</SelectItem>
+                    <SelectItem value="study-notes">Generate Study Notes</SelectItem>
+                    <SelectItem value="re-generate-study-notes">Re-Generate Study Notes</SelectItem>
                     <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1433,21 +1440,20 @@ export default function AdminPage() {
                   <col className="w-10" />
                   <col className="w-16" />
                   <col className="w-14" />
-                  <col style={{ minWidth: 200, maxWidth: 300 }} />
-                  <col style={{ minWidth: 200, maxWidth: 300 }} />
+                  <col style={{ minWidth: 150, maxWidth: 200 }} />
+                  <col style={{ minWidth: 150, maxWidth: 200 }} />
                   <col className="w-14" />
-                  <col style={{ minWidth: 200, maxWidth: 300 }} />
-                  <col style={{ minWidth: 200, maxWidth: 300 }} />
+                  <col style={{ minWidth: 150, maxWidth: 220 }} />
+                  <col style={{ minWidth: 150, maxWidth: 220 }} />
                   <col className="w-20" />
-                  <col className="w-20" />
-                  <col style={{ width: '12%' }} />
+                  <col style={{ minWidth: 120, maxWidth: 180 }} />
                   <col style={{ width: '13%' }} />
                 </colgroup>
                 <thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700">
                   <tr>
                     <th className="p-2 text-center">
                       <Checkbox
-                        checked={filteredDisplayItems.length > 0 && filteredDisplayItems.every(q => selectedQuestions.has(q.id))}
+                        checked={displayedItems.length > 0 && displayedItems.every(q => selectedQuestions.has(q.id))}
                         onCheckedChange={toggleSelectAll}
                       />
                     </th>
@@ -1459,97 +1465,12 @@ export default function AdminPage() {
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Explanation</th>
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Study Notes</th>
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Difficulty</th>
-                    <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Reasoning</th>
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Error reason</th>
                     <th className="p-2 text-center font-semibold text-slate-900 dark:text-slate-300 text-xs">Actions</th>
                   </tr>
-                  <tr className="bg-slate-100 dark:bg-slate-700/50 border-b dark:border-slate-700">
-                    <th className="p-1" />
-                    <th className="p-1">
-                      <Input
-                        placeholder="Search..."
-                        value={columnSearch.subject}
-                        onChange={(e) => setColumnSearchField("subject", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
-                      />
-                    </th>
-                    <th className="p-1">
-                      <Input
-                        placeholder="Search..."
-                        value={columnSearch.section}
-                        onChange={(e) => setColumnSearchField("section", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
-                      />
-                    </th>
-                    <th className="p-1">
-                      <Input
-                        placeholder="Search..."
-                        value={columnSearch.prompt}
-                        onChange={(e) => setColumnSearchField("prompt", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
-                      />
-                    </th>
-                    <th className="p-1">
-                      <Input
-                        placeholder="Search..."
-                        value={columnSearch.choices}
-                        onChange={(e) => setColumnSearchField("choices", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
-                      />
-                    </th>
-                    <th className="p-1">
-                      <Input
-                        placeholder="A-E"
-                        value={columnSearch.ans}
-                        onChange={(e) => setColumnSearchField("ans", e.target.value.toUpperCase().slice(0, 1))}
-                        className="h-8 w-12 text-xs text-center bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
-                      />
-                    </th>
-                    <th className="p-1">
-                      <Input
-                        placeholder="Search..."
-                        value={columnSearch.explanation}
-                        onChange={(e) => setColumnSearchField("explanation", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
-                      />
-                    </th>
-                    <th className="p-1">
-                      <Input
-                        placeholder="Search..."
-                        value={columnSearch.study_note}
-                        onChange={(e) => setColumnSearchField("study_note", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
-                      />
-                    </th>
-                    <th className="p-1">
-                      <Input
-                        placeholder="Search..."
-                        value={columnSearch.difficulty}
-                        onChange={(e) => setColumnSearchField("difficulty", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
-                      />
-                    </th>
-                    <th className="p-1">
-                      <Input
-                        placeholder="Search..."
-                        value={columnSearch.reasoning}
-                        onChange={(e) => setColumnSearchField("reasoning", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
-                      />
-                    </th>
-                    <th className="p-1">
-                      <Input
-                        placeholder="Search..."
-                        value={columnSearch.error_reason}
-                        onChange={(e) => setColumnSearchField("error_reason", e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-400"
-                      />
-                    </th>
-                    <th className="p-1" />
-                  </tr>
                 </thead>
                 <tbody>
-                  {filteredDisplayItems.map((q) => (
+                  {displayedItems.map((q) => (
                     <Row
                       key={q.id}
                       q={q}
@@ -1561,13 +1482,11 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
-              {filteredDisplayItems.length === 0 && (
+              {displayedItems.length === 0 && (
                 <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                  {displayedItems.length === 0
-                    ? showOnlyMissingExplanation && items.length > 0
-                      ? "No questions without explanation in this set."
-                      : "No questions found. Upload a CSV or adjust filters."
-                    : "No questions match the column search. Clear the search fields above."}
+                  {showOnlyMissingExplanation && items.length > 0
+                    ? "No questions without explanation in this set."
+                    : "No questions found. Upload a CSV or adjust filters."}
                 </div>
               )}
             </div>
@@ -1614,32 +1533,68 @@ function Row({
   onDelete: (id: string) => Promise<void>;
 }) {
   const [edit, setEdit] = useState(false);
-  const [form, setForm] = useState({
-    subject_code: q.subject_code || "",
-    section_code: q.section_code || "",
-    prompt: q.prompt || "",
-    choicesText: Array.isArray(q.choices) ? q.choices.join("\n") : "",
-    answerIndex: q.answerIndex || 0,
-    explanation: q.explanation || "",
-    study_note: getStudyNoteFromQuestion(q) || "",
+  const [form, setForm] = useState(() => {
+    const choices = extractChoicesData(q);
+    return {
+      subject_code: q.subject_code || "",
+      section_code: q.section_code || "",
+      prompt: extractPromptText(q),
+      choiceA: choices.A,
+      choiceB: choices.B,
+      choiceC: choices.C,
+      choiceD: choices.D,
+      choiceE: choices.E,
+      answerIndex: q.answerIndex || 0,
+      explanation: q.explanation || "",
+      study_note: (q.test_slug ?? getStudyNoteFromQuestion(q) ?? "").trim() || "",
+    };
   });
 
+  useEffect(() => {
+    if (edit) {
+      const choices = extractChoicesData(q);
+      setForm({
+        subject_code: q.subject_code || "",
+        section_code: q.section_code || "",
+        prompt: extractPromptText(q),
+        choiceA: choices.A,
+        choiceB: choices.B,
+        choiceC: choices.C,
+        choiceD: choices.D,
+        choiceE: choices.E,
+        answerIndex: q.answerIndex || 0,
+        explanation: q.explanation || "",
+        study_note: (q.test_slug ?? getStudyNoteFromQuestion(q) ?? "").trim() || "",
+      });
+    }
+  }, [edit, q]);
+
   async function save() {
+    // Validate that all choices are filled
+    const choices = [
+      form.choiceA.trim(),
+      form.choiceB.trim(),
+      form.choiceC.trim(),
+      form.choiceD.trim(),
+      form.choiceE.trim()
+    ];
+
+    if (choices.some(choice => !choice)) {
+      toast.error("All 5 choices (A-E) must be filled");
+      return;
+    }
+
     const existingTags: string[] = q.tags || [];
     const otherTags = existingTags.filter((t) => typeof t !== "string" || !t.startsWith("study_note:"));
-    const updatedTags = [...otherTags, `study_note: ${form.study_note.trim()}`];
-
     const patch: Partial<Question> = {
       subject_code: form.subject_code,
       section_code: form.section_code,
       prompt: form.prompt,
-      choices: form.choicesText
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean),
+      choices: choices,
       answerIndex: Number(form.answerIndex),
       explanation: form.explanation,
-      tags: updatedTags,
+      test_slug: form.study_note.trim(),
+      tags: otherTags,
     };
     await onSave(q.id, patch);
     setEdit(false);
@@ -1651,7 +1606,7 @@ function Row({
         <div className="text-xs space-y-1 break-words">
           {q.prompt_blocks.map((block, idx) => {
             if (block.type === "text") {
-              return <div key={idx}>{block.value}</div>;
+              return <div key={idx}>{truncateText(block.value, 10)}</div>;
             } else if (block.type === "image") {
               const imgSrc = getImageUrl(block.url);
               return (
@@ -1706,7 +1661,7 @@ function Row({
             })}
           </div>
         )}
-        {hasText && <div>{q.prompt}</div>}
+        {hasText && <div>{truncateText(q.prompt, 10)}</div>}
       </div>
     );
   };
@@ -1718,7 +1673,7 @@ function Row({
         <div className="text-xs">
           {blocks.map((block, idx) => {
             if (block.type === "text") {
-              return <span key={idx}>{block.value}</span>;
+              return <span key={idx}>{truncateText(block.value, 8)}</span>;
             } else if (block.type === "image") {
               const imgSrc = getImageUrl(block.url);
               return (
@@ -1776,7 +1731,7 @@ function Row({
             })}
           </div>
         )}
-        {hasText && <span>{choice}</span>}
+        {hasText && <span>{truncateText(choice, 8)}</span>}
       </div>
     );
   };
@@ -1792,17 +1747,17 @@ function Row({
         </td>
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">{q.subject_code ? getSubjectDisplayName(q.subject_code) : "-"}</td>
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">{q.section_code || "-"}</td>
-        <td className="p-2 align-top min-w-[200px] max-w-[300px]">
+        <td className="p-2 align-top min-w-[150px] max-w-[200px]">
           <div className="flex items-start gap-1">
-            <div className="max-h-[240px] overflow-y-auto flex-1 min-w-0" title={q.prompt_blocks ? q.prompt_blocks.filter((b): b is Block => b.type === "text").map(b => (b as { value: string }).value).join(" ") : (q.prompt || "")}>
+            <div className="flex-1 min-w-0" title={q.prompt_blocks ? q.prompt_blocks.filter((b): b is Block => b.type === "text").map(b => (b as { value: string }).value).join(" ") : (q.prompt || "")}>
               {renderQuestionPrompt()}
             </div>
             <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
           </div>
         </td>
-        <td className="p-2 align-top min-w-[200px] max-w-[300px]">
+        <td className="p-2 align-top min-w-[150px] max-w-[200px]">
           <div className="flex items-start gap-1">
-            <div className="max-h-[240px] overflow-y-auto text-xs space-y-1 flex-1 min-w-0">
+            <div className="text-xs space-y-1 flex-1 min-w-0">
               {(['A', 'B', 'C', 'D', 'E'] as const).map((letter) => (
                 <div key={letter} className="break-words">
                   <span className="font-medium">{letter}.</span> {renderChoice(letter)}
@@ -1818,18 +1773,18 @@ function Row({
             <button type="button" onClick={() => setEdit(true)} className="p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
           </div>
         </td>
-        <td className="p-2 align-top text-xs break-words min-w-[200px] max-w-[300px]">
+        <td className="p-2 align-top text-xs break-words min-w-[150px] max-w-[220px]">
           <div className="flex items-start gap-1">
-            <div className="max-h-[240px] overflow-y-auto flex-1 min-w-0" title={q.explanation || ""}>
-              <span dangerouslySetInnerHTML={{ __html: renderSimpleMarkdownHtml(q.explanation || "-") }} />
+            <div className="flex-1 min-w-0" title={q.explanation || ""}>
+              <span dangerouslySetInnerHTML={{ __html: renderSimpleMarkdownHtml(truncateText(q.explanation || "-", 12)) }} />
             </div>
             <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
           </div>
         </td>
-        <td className="p-2 align-top text-xs break-words min-w-[200px] max-w-[320px]">
+        <td className="p-2 align-top text-xs break-words min-w-[150px] max-w-[220px]">
           <div className="flex items-start gap-1">
-            <div className="max-h-[240px] overflow-y-auto flex-1 min-w-0 text-slate-700 dark:text-slate-300 leading-relaxed">
-              <ExplanationMarkdown className="text-xs prose-p:my-0.5">{getStudyNoteFromQuestion(q) || "-"}</ExplanationMarkdown>
+            <div className="flex-1 min-w-0 text-slate-700 dark:text-slate-300 leading-relaxed" title={getStudyNoteFromQuestion(q) || ""}>
+              {truncateText(getStudyNoteFromQuestion(q) || "-", 12)}
             </div>
             <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
           </div>
@@ -1837,20 +1792,12 @@ function Row({
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">
           {getDifficultyFromQuestion(q) || "-"}
         </td>
-        <td className="p-2 align-top text-xs break-words dark:text-slate-300">
+        <td className="p-2 align-top text-xs break-words min-w-[120px] max-w-[180px]">
           <div className="flex items-start gap-1">
-            <div className="max-h-[240px] overflow-y-auto flex-1 min-w-0">
-              {getReasoningFromQuestion(q) || "-"}
-            </div>
-            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
-          </div>
-        </td>
-        <td className="p-2 align-top text-xs break-words">
-          <div className="flex items-start gap-1">
-            <div className="max-h-[240px] overflow-y-auto flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
               {(q.tags || []).includes("error_reported") ? (
-                <div className="text-red-600 dark:text-red-400 font-medium">
-                  {getErrorReasonFromQuestion(q) || "Reported"}
+                <div className="text-red-600 dark:text-red-400 font-medium" title={getErrorReasonFromQuestion(q) || "Reported"}>
+                  {truncateText(getErrorReasonFromQuestion(q) || "Reported", 10)}
                 </div>
               ) : (
                 <span className="text-slate-400">-</span>
@@ -1930,13 +1877,18 @@ function Row({
         />
       </td>
       <td className="p-2">
-        <textarea
-          className="w-full border rounded p-2 min-h-[80px] dark:bg-slate-800 dark:text-white dark:border-slate-700"
-          value={form.choicesText}
-          onChange={(e) =>
-            setForm((s) => ({ ...s, choicesText: e.target.value }))
-          }
-        />
+        <div className="space-y-2">
+          {(['A', 'B', 'C', 'D', 'E'] as const).map((letter) => (
+            <div key={letter} className="flex items-center gap-2">
+              <span className="font-medium text-xs w-4 shrink-0">{letter}:</span>
+              <Input
+                value={form[`choice${letter}` as keyof typeof form] as string}
+                onChange={(e) => setForm(s => ({ ...s, [`choice${letter}`]: e.target.value }))}
+                className="flex-1 text-xs h-8"
+              />
+            </div>
+          ))}
+        </div>
       </td>
       <td className="p-2 text-center">
         <Input
@@ -1957,7 +1909,7 @@ function Row({
           }
         />
       </td>
-      <td className="p-2 align-top text-xs min-w-[200px] max-w-[320px]">
+      <td className="p-2 align-top text-xs min-w-[150px] max-w-[220px]">
         <textarea
           className="w-full border rounded p-2 min-h-[80px] max-h-[240px] dark:bg-slate-800 dark:text-white dark:border-slate-700"
           value={form.study_note}
@@ -1967,9 +1919,6 @@ function Row({
       </td>
       <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
         {getDifficultyFromQuestion(q) || "-"}
-      </td>
-      <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400 max-h-[240px] overflow-y-auto">
-        {getReasoningFromQuestion(q) || "-"}
       </td>
       <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
         {getErrorReasonFromQuestion(q) || "-"}

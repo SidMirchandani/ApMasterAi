@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
+import { getStudyNoteFromQuestion } from "@/lib/studyNote";
 import { Calculator } from "lucide-react";
 import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
 import { useRouter } from "next/router";
@@ -44,6 +45,8 @@ interface Question {
     D?: string[];
     E?: string[];
   };
+  tags?: string[];
+  test_slug?: string | null;
 }
 
 export interface UnitQuizState {
@@ -63,6 +66,7 @@ interface PracticeQuizProps {
   lastSavedTestId?: string;
   onSaveAndExit?: (state: UnitQuizState) => void;
   savedState?: UnitQuizState | null;
+  enableStudyNotesPrimer?: boolean;
 }
 
 export function PracticeQuiz({
@@ -75,6 +79,7 @@ export function PracticeQuiz({
   lastSavedTestId,
   onSaveAndExit,
   savedState,
+  enableStudyNotesPrimer = false,
 }: PracticeQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -93,8 +98,11 @@ export function PracticeQuiz({
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [showCalculator, setShowCalculator] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showConceptPrimer, setShowConceptPrimer] = useState(false);
+  const [primerStepIndex, setPrimerStepIndex] = useState(0);
 
   const appliedSavedState = useRef(false);
+  const hasSetInitialPrimer = useRef(false);
   // Initialize from saved state when resuming a unit quiz (only once)
   useEffect(() => {
     if (savedState && questions.length > 0 && !appliedSavedState.current) {
@@ -105,8 +113,23 @@ export function PracticeQuiz({
       if (savedState.flaggedQuestions && savedState.flaggedQuestions.length > 0) {
         setFlaggedQuestions(new Set(savedState.flaggedQuestions));
       }
+      if (enableStudyNotesPrimer && idx % 5 === 0) {
+        setShowConceptPrimer(true);
+      }
     }
-  }, [savedState, questions.length]);
+  }, [savedState, questions.length, enableStudyNotesPrimer]);
+  // Show concept primer on fresh start (no saved state) when primer is enabled
+  useEffect(() => {
+    if (enableStudyNotesPrimer && questions.length > 0 && !savedState && !hasSetInitialPrimer.current) {
+      hasSetInitialPrimer.current = true;
+      setShowConceptPrimer(true);
+    }
+  }, [enableStudyNotesPrimer, questions.length, savedState]);
+
+  // Reset primer step when opening the primer (e.g. new chunk of 5)
+  useEffect(() => {
+    if (showConceptPrimer) setPrimerStepIndex(0);
+  }, [showConceptPrimer]);
 
   const router = useRouter();
   const { user } = useAuth();
@@ -225,10 +248,14 @@ export function PracticeQuiz({
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < orderedQuestions.length - 1) {
-      setCurrentQuestionIndex((i) => i + 1);
+    const nextIndex = currentQuestionIndex + 1;
+    if (nextIndex < orderedQuestions.length) {
+      setCurrentQuestionIndex(nextIndex);
       setSelectedAnswer(null);
       setIsAnswerSubmitted(false);
+      if (enableStudyNotesPrimer && nextIndex % 5 === 0) {
+        setShowConceptPrimer(true);
+      }
     } else {
       if (isFullLength && lastSavedTestId) {
         router.push(
@@ -265,6 +292,91 @@ export function PracticeQuiz({
         onClose={handleCloseReview}
         subjectId={subjectId}
       />
+    );
+  }
+
+  const CHUNK_SIZE = 5;
+  const chunkIndex = Math.floor(currentQuestionIndex / CHUNK_SIZE);
+  const chunkQuestions = orderedQuestions.slice(
+    chunkIndex * CHUNK_SIZE,
+    chunkIndex * CHUNK_SIZE + CHUNK_SIZE
+  );
+
+  if (showConceptPrimer && enableStudyNotesPrimer && chunkQuestions.length > 0) {
+    const currentPrimerQuestion = chunkQuestions[primerStepIndex];
+    const note = currentPrimerQuestion ? getStudyNoteFromQuestion(currentPrimerQuestion) : "";
+    const isLastStep = primerStepIndex >= chunkQuestions.length - 1;
+    const isFirstStep = primerStepIndex === 0;
+
+    // DEBUG: log test_slug and study note for all primer questions (open browser DevTools → Console)
+    if (typeof window !== "undefined") {
+      console.log("[Study Notes Primer DEBUG] chunkQuestions:", chunkQuestions.map((q, i) => ({
+        index: i,
+        id: q.id,
+        test_slug: q.test_slug,
+        test_slug_type: typeof q.test_slug,
+        test_slug_length: (q.test_slug && String(q.test_slug).length) || 0,
+        tags: q.tags,
+        extractedNote: getStudyNoteFromQuestion(q),
+        extractedNote_length: getStudyNoteFromQuestion(q).length,
+      })));
+      console.log("[Study Notes Primer DEBUG] current step:", primerStepIndex, "current question test_slug:", currentPrimerQuestion?.test_slug, "note length:", note.length);
+    }
+
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col text-slate-900 dark:text-slate-100">
+        <div className="flex-1 flex overflow-y-auto">
+          <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-3xl mx-auto">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2 text-center">
+              Concepts to know for the next 5 questions
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+              {primerStepIndex + 1} of {chunkQuestions.length}
+            </p>
+            <div className="w-full rounded-lg border-2 bg-gray-100 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 min-h-[200px] p-6 flex flex-col">
+              <div className="text-sm text-gray-800 dark:text-gray-200 prose prose-sm dark:prose-invert max-w-none flex-1">
+                {note ? (
+                  <PrettyExplanation className="text-sm">
+                    {note}
+                  </PrettyExplanation>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-400 italic">
+                    No study note for this question.
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="mt-8 flex items-center gap-3 w-full max-w-sm justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setPrimerStepIndex((i) => Math.max(0, i - 1))}
+                disabled={isFirstStep}
+                className="px-5 py-2.5 border-slate-300 dark:border-slate-600"
+              >
+                Previous
+              </Button>
+              {isLastStep ? (
+                <Button
+                  onClick={() => {
+                    setShowConceptPrimer(false);
+                    setPrimerStepIndex(0);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-6 py-2.5 text-white font-medium rounded-xl"
+                >
+                  I&apos;m ready
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setPrimerStepIndex((i) => Math.min(chunkQuestions.length - 1, i + 1))}
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-5 py-2.5 text-white font-medium rounded-xl"
+                >
+                  Next
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 

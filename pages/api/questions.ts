@@ -75,6 +75,12 @@ function canonicalSectionForAPCSA(sectionCode: string): string {
   return sectionCode;
 }
 
+/** Normalize tags to a string array so the client always receives a consistent shape (e.g. for study notes in micro-drills). */
+function normalizeTags(data: { tags?: unknown }): string[] {
+  if (!Array.isArray(data.tags)) return [];
+  return data.tags.filter((t: unknown) => typeof t === "string") as string[];
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -107,7 +113,8 @@ export default async function handler(
         const questions = idList
           .map((id, i) => {
             const doc = snapshots[i];
-            return doc?.exists ? { id: doc.id, ...doc.data() } : null;
+            const data = doc?.exists ? doc.data() : null;
+            return data ? { id: doc!.id, ...data, tags: normalizeTags(data) } : null;
           })
           .filter(Boolean);
         return res.status(200).json({
@@ -160,10 +167,10 @@ export default async function handler(
                   .where("section_code", "in", sectionCodesToQuery)
                   .get();
 
-          const sectionQuestions = sectionSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
+          const sectionQuestions = sectionSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { id: doc.id, ...data, tags: normalizeTags(data) };
+          });
 
           // Shuffle all questions and select the needed amount
           const shuffled = sectionQuestions.sort(() => Math.random() - 0.5);
@@ -285,10 +292,10 @@ export default async function handler(
       });
     }
 
-    const allQuestions = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const allQuestions = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return { id: doc.id, ...data, tags: normalizeTags(data) };
+    });
 
     const shuffled = allQuestions.sort(() => Math.random() - 0.5);
     const questions = shuffled.slice(0, questionLimit);

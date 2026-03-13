@@ -56,6 +56,19 @@ export default function DualPathPage() {
   const router = useRouter();
   const subjectId = router.query.subject as string | undefined;
   const [securedOpen, setSecuredOpen] = useState(false);
+  const [studyNotesPrimerEnabled, setStudyNotesPrimerEnabled] = useState(false);
+
+  const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean } }>({
+    queryKey: ["adminCheck"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/user/admin-check");
+      if (!res.ok) return { success: false, data: { isAdmin: false } };
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
+  const isAdmin = adminCheck?.data?.isAdmin ?? false;
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -243,6 +256,17 @@ export default function DualPathPage() {
             <Target className="w-6 h-6 text-khan-green" />
             {subjectDisplayName ? `${subjectDisplayName}: DualPath` : "DualPath"}
           </h1>
+          {isAdmin && subjectId && (
+            <label className="mt-2 flex items-center gap-2 cursor-pointer w-fit">
+              <input
+                type="checkbox"
+                checked={studyNotesPrimerEnabled}
+                onChange={(e) => setStudyNotesPrimerEnabled(e.target.checked)}
+                className="rounded border-gray-300 dark:border-gray-600 text-khan-green focus:ring-khan-green"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">Study Notes Primer (Micro-Drills)</span>
+            </label>
+          )}
         </div>
 
         {!subjectId ? (
@@ -384,6 +408,7 @@ export default function DualPathPage() {
                         unit={unit}
                         subjectId={subjectId!}
                         variant="primary"
+                        studyNotesPrimerEnabled={studyNotesPrimerEnabled}
                       />
                     ))}
                   </div>
@@ -412,6 +437,7 @@ export default function DualPathPage() {
                         unit={unit}
                         subjectId={subjectId!}
                         variant="secondary"
+                        studyNotesPrimerEnabled={studyNotesPrimerEnabled}
                       />
                     ))}
                   </div>
@@ -438,6 +464,7 @@ export default function DualPathPage() {
                         unit={unit}
                         subjectId={subjectId!}
                         variant="tertiary"
+                        studyNotesPrimerEnabled={studyNotesPrimerEnabled}
                       />
                     ))}
                   </div>
@@ -507,10 +534,12 @@ function UnitPhaseCard({
   unit,
   subjectId,
   variant,
+  studyNotesPrimerEnabled,
 }: {
   unit: UnitWithYield;
   subjectId: string;
   variant: "primary" | "secondary" | "tertiary";
+  studyNotesPrimerEnabled?: boolean;
 }) {
   const router = useRouter();
   const pointsLabel = unit.pointsAvailable > 0
@@ -545,7 +574,7 @@ function UnitPhaseCard({
       <Button
         className="w-full rounded-xl font-semibold"
         variant={variant === "primary" ? "default" : "outline"}
-        onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.unitId}&limit=10`)}
+        onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.unitId}&limit=10${studyNotesPrimerEnabled ? "&primer=1" : ""}`)}
       >
         <Play className="w-4 h-4 mr-2" />
         Start Micro-Drill

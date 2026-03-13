@@ -1,21 +1,31 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
-import { getModelName, getGeminiClientOptions } from "../../../lib/gemini-models";
-import { getSubjectDisplayName } from "../../../lib/subject-display-names";
-import { isAllowed, flattenPromptText, callWithRetry, STUDY_NOTE_PROMPT } from "../../../server/study-notes-helpers";
 
 export const config = {
   api: {
     responseLimit: false,
     externalResolver: true,
   },
-  maxDuration: 300,
+  maxDuration: 60,
 };
+
+function isAllowed(email?: string | null) {
+  const allow = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return !!email && allow.includes(email.toLowerCase());
+}
+
+function getStudyNoteFromTags(tags: string[] | undefined): string {
+  if (!Array.isArray(tags)) return "";
+  const tag = tags.find((t) => typeof t === "string" && t.startsWith("study_note:"));
+  return tag ? String(tag).replace(/^study_note:\s*/, "").trim() : "";
+}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse,
+  res: NextApiResponse
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -35,18 +45,10 @@ export default async function handler(
     return res.status(403).json({ error: "Not an admin" });
   }
 
-  const { questionIds, model = "2.5lite" } = req.body || {};
-
+  const { questionIds } = req.body || {};
   if (!questionIds || !Array.isArray(questionIds) || questionIds.length === 0) {
     return res.status(400).json({ error: "questionIds array is required" });
   }
-
-  const selectedModel = getModelName(model);
-  const opts = getGeminiClientOptions();
-  const ai = new GoogleGenAI({
-    apiKey: opts.apiKey,
-    ...(opts.httpOptions && { httpOptions: opts.httpOptions }),
-  });
 
   const firebaseAdmin = getFirebaseAdmin();
   if (!firebaseAdmin) {
@@ -58,7 +60,9 @@ export default async function handler(
   const total = questionIds.length;
 
   let aborted = false;
-  req.on("close", () => { aborted = true; });
+  req.on("close", () => {
+    aborted = true;
+  });
 
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -91,14 +95,14 @@ export default async function handler(
     updated: 0,
     skipped: 0,
     failed: 0,
-    message: `Starting study notes generation for ${total} questions...`,
+    message: `Moving study notes to test_slug for ${total} questions...`,
   });
 
   for (let i = 0; i < questionIds.length; i++) {
     const questionId = questionIds[i];
 
     if (aborted) {
-      console.log("Client disconnected, stopping study notes generation.");
+      console.log("Client disconnected, stopping move-study-notes.");
       break;
     }
 
@@ -119,9 +123,9 @@ export default async function handler(
         continue;
       }
 
-      const question = doc.data() as any;
-
-      if ((question.test_slug || "").trim() !== "") {
+      const data = doc.data() as { tags?: string[] };
+      const studyNoteText = getStudyNoteFromTags(data.tags);
+      if (!studyNoteText) {
         skipped++;
         sendEvent({
           type: "progress",
@@ -130,76 +134,17 @@ export default async function handler(
           updated,
           skipped,
           failed,
-          message: `Q${i + 1}/${total}: already has a study note, skipped`,
+          message: `Q${i + 1}/${total}: no study_note tag, skipped`,
         });
         continue;
       }
 
-      const questionText = question.prompt_blocks
-        ? flattenPromptText(question.prompt_blocks)
-        : (question.prompt || "");
-      const answer = question.correct_answer || (question.answerIndex != null ? String.fromCharCode(65 + Number(question.answerIndex)) : "");
-      const explanation = question.explanation || "";
-
-      sendEvent({
-        type: "progress",
-        current: i + 1,
-        total,
-        updated,
-        skipped,
-        failed,
-        message: `Generating study note for Q${i + 1}/${total}...`,
-      });
-
-      const subjectName = getSubjectDisplayName(question.subject_code || "") || "AP";
-      const promptText = STUDY_NOTE_PROMPT.replace("{{SUBJECT}}", subjectName)
-        .replace("{{QUESTION}}", questionText)
-        .replace("{{ANSWER}}", answer)
-        .replace("{{EXPLANATION}}", explanation);
-
-      const result = await callWithRetry(
-        () =>
-          ai.models.generateContent({
-            model: selectedModel,
-            contents: promptText,
-          }),
-        5,
-        5000,
-        (attempt, waitSec) => {
-          sendEvent({
-            type: "rate_limit",
-            current: i + 1,
-            total,
-            updated,
-            skipped,
-            failed,
-            message: `Rate limit hit — waiting ${waitSec}s before retry ${attempt}/5...`,
-          });
-        }
-      );
-
-      const paragraph = (result.text || "").trim();
-      if (!paragraph) {
-        failed++;
-        sendEvent({
-          type: "progress",
-          current: i + 1,
-          total,
-          updated,
-          skipped,
-          failed,
-          message: `Q${i + 1}: Empty response, skipped`,
-        });
-        continue;
-      }
-
-      const existingTags: string[] = question.tags || [];
-      const otherTags = existingTags.filter(
+      const otherTags = (data.tags || []).filter(
         (t: string) => typeof t !== "string" || !t.startsWith("study_note:")
       );
 
       await doc.ref.update({
-        test_slug: paragraph,
+        test_slug: studyNoteText,
         tags: otherTags,
         updatedAt: new Date(),
       });
@@ -212,7 +157,7 @@ export default async function handler(
         updated,
         skipped,
         failed,
-        message: `Generated ${updated}/${total - skipped} study notes`,
+        message: `Moved ${updated}/${total} study notes to test_slug`,
       });
     } catch (error: any) {
       failed++;
@@ -223,11 +168,9 @@ export default async function handler(
         updated,
         skipped,
         failed,
-        message: `Q${i + 1}: Failed — ${(error.message || "").substring(0, 80)}`,
+        message: `Q${i + 1}: Failed — ${(error?.message || "").substring(0, 80)}`,
       });
     }
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   sendEvent({
@@ -236,7 +179,7 @@ export default async function handler(
     updated,
     skipped,
     failed,
-    message: `Done! Generated ${updated} study notes. ${skipped} skipped, ${failed} failed.`,
+    message: `Done! Moved ${updated} study notes to test_slug. ${skipped} skipped, ${failed} failed.`,
   });
 
   res.end();
