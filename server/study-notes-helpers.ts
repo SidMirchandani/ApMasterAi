@@ -53,6 +53,7 @@ export const STUDY_NOTE_PROMPT = `You are an Expert AP Exam Tutor. Write a SHORT
 Subject: {{SUBJECT}}
 
 Guidelines:
+- **Wording:** Never say "This Question" or "This Problem." Avoid as much as possible, but only if absolutely necessary use "When the Question" or "When the Problem" instead (e.g., "When the question asks for X..." or "When the problem involves Y...").
 - **Core Insight (1-2 sentences):** State the key concept and why it matters. Be specific about what students need to recognize.
 - **The Formula/Method:** For quantitative subjects (Chem, Physics, Calc, Econ), give the formula in LaTeX ($...$ inline, $$...$$ display) and define variables. For qualitative subjects (History, Gov, Psych, Bio), explain the framework or logic pattern.
 - **How-To (2-3 sentences):** Outline the general steps. Use phrases like "First identify X, then apply Y, finally check Z." Do NOT use numbers from this question.
