@@ -1,19 +1,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
-import { ExplanationChat } from "@/components/ui/explanation-chat";
-import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
-import { BlockRenderer } from "@/components/quiz/BlockRenderer";
 import { QuizBottomBar } from "@/components/quiz/QuizBottomBar";
+import { ReviewQuestionDetail } from "@/components/quiz/ReviewQuestionDetail";
 import { ReviewQuestionPalette } from "@/components/quiz/ReviewQuestionPalette";
 import { getSectionInfo, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
-import { getDisplayChoicesAndCorrect, getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
+import { getDisplayCorrectLabel } from "@/lib/mcqDisplay";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
@@ -42,13 +37,15 @@ interface Question {
 export default function SectionReview() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const { subject: subjectId, testId, section: sectionCode } = router.query;
+  const { subject: subjectId, testId, section: sectionCode, mode } = router.query;
   const [questions, setQuestions] = useState<Question[]>([]);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [sectionData, setSectionData] = useState<any>(null);
   const [showQuestionPalette, setShowQuestionPalette] = useState(false);
+
+  const isReviewMode = mode === "review" || sectionCode === "all" || sectionCode === "incorrect";
 
   // Reset palette state when changing questions
   useEffect(() => {
@@ -79,7 +76,7 @@ export default function SectionReview() {
       }
 
       try {
-        if (sectionCode === "all") {
+        if (sectionCode === "all" || sectionCode === "incorrect") {
           const response = await apiRequest(
             "GET",
             `/api/user/subjects/${subjectId}/test-results/${testId}`,
@@ -88,8 +85,37 @@ export default function SectionReview() {
 
           const data = await response.json();
           setSectionData(data.data);
-          setQuestions(normalizeQuestions(data.data.questions));
-          setUserAnswers(data.data.userAnswers);
+          const allQuestions = normalizeQuestions(data.data.questions);
+          const allUserAnswers = data.data.userAnswers || {};
+
+          if (sectionCode === "incorrect") {
+            const subject = typeof subjectId === "string"
+              ? getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId)
+              : undefined;
+            const mcqOpts = subject?.metadata?.mcqOptionCount;
+            const incorrectWithIndex: { q: Question; originalIndex: number }[] = [];
+            allQuestions.forEach((q: Question, idx: number) => {
+              const correctLabel = getDisplayCorrectLabel(q, mcqOpts);
+              if (allUserAnswers[idx] !== correctLabel) {
+                incorrectWithIndex.push({
+                  q: { ...q, originalTestIndex: idx },
+                  originalIndex: idx,
+                });
+              }
+            });
+            incorrectWithIndex.sort((a, b) => a.originalIndex - b.originalIndex);
+            const filteredQuestions = incorrectWithIndex.map((x) => x.q);
+            const filteredUserAnswers: { [key: number]: string } = {};
+            filteredQuestions.forEach((q) => {
+              const orig = q.originalTestIndex ?? 0;
+              filteredUserAnswers[orig] = allUserAnswers[orig];
+            });
+            setQuestions(filteredQuestions);
+            setUserAnswers(filteredUserAnswers);
+          } else {
+            setQuestions(allQuestions);
+            setUserAnswers(allUserAnswers);
+          }
         } else {
           const response = await apiRequest(
             "GET",
@@ -135,24 +161,19 @@ export default function SectionReview() {
 
   const subject = typeof subjectId === "string" ? getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId) : undefined;
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
-  const { choiceLabels, getChoiceBlocks, displayCorrectLabel } = getDisplayChoicesAndCorrect(currentQuestion, mcqOptionCount);
-  const correctAnswerLabel = displayCorrectLabel;
+  // For "incorrect" mode userAnswers are keyed by global index; for "all" and specific section use current index
   const userAnswer = userAnswers[
-    currentQuestion.originalTestIndex !== undefined
-      ? currentQuestion.originalTestIndex
-      : currentQuestionIndex
+    sectionCode === "incorrect" ? (currentQuestion.originalTestIndex ?? currentQuestionIndex) : currentQuestionIndex
   ];
-  const isCorrect = userAnswer === correctAnswerLabel;
-  const choices = choiceLabels;
 
   const displayNumber = currentQuestion.originalTestIndex !== undefined
     ? currentQuestion.originalTestIndex + 1
     : currentQuestionIndex + 1;
 
-  // Create a map for palette to show only relevant questions
+  // Create a map for palette: "incorrect" uses global index keys; "all" and specific section use list index
   const userAnswersForPalette = questions.reduce((acc, q, idx) => {
-    const originalIdx = q.originalTestIndex !== undefined ? q.originalTestIndex : idx;
-    acc[idx] = userAnswers[originalIdx];
+    const key = sectionCode === "incorrect" ? (q.originalTestIndex ?? idx) : idx;
+    acc[idx] = userAnswers[key];
     return acc;
   }, {} as { [key: number]: string });
 
@@ -169,6 +190,17 @@ export default function SectionReview() {
     q.originalTestIndex !== undefined ? q.originalTestIndex : 0
   );
 
+  const apiCode = subject?.subjectCode ?? (typeof subjectId === "string" ? subjectId : "");
+  const unitLabel =
+    sectionCode === "all" && currentQuestion.section_code && sectionData?.sectionBreakdown
+      ? `UNIT ${sectionData.sectionBreakdown[currentQuestion.section_code]?.unitNumber ?? ""}`
+      : sectionCode !== "all" && sectionCode !== "incorrect"
+        ? (() => {
+            const info = getSectionInfo(apiCode, sectionCode);
+            return info ? `UNIT ${info.unitNumber ?? ""}` : undefined;
+          })()
+        : undefined;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Main Navigation with Breadcrumbs */}
@@ -176,117 +208,13 @@ export default function SectionReview() {
 
       <div className="flex-1 overflow-y-auto mb-14 pt-2">
         <div className="max-w-4xl mx-auto px-4 py-2">
-          <Card className="mb-3">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between border-b pb-2 -mx-4 px-4 -mt-4 pt-2 bg-gray-50">
-                <div className="flex items-center gap-3">
-                  <div className="bg-black text-white px-3 py-1 font-bold text-sm rounded">
-                    {displayNumber}
-                  </div>
-                  {sectionCode === "all" && currentQuestion.section_code && sectionData?.sectionBreakdown && (
-                    <span className="text-sm font-bold text-khan-green">
-                      UNIT {sectionData.sectionBreakdown[currentQuestion.section_code]?.unitNumber || ""}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-2 pt-2">
-              {/* Question Prompt */}
-              <div className="mb-3 text-sm leading-snug">
-                <BlockRenderer blocks={currentQuestion.prompt_blocks} />
-              </div>
-
-              {/* Choices */}
-              <div className="space-y-2">
-                {choices.map((label) => {
-                  const isUserAnswer = userAnswer === label;
-                  const isCorrectAnswer = label === correctAnswerLabel;
-                  const choiceBlocks = getChoiceBlocks(label as "A" | "B" | "C" | "D" | "E");
-
-                  let bgColor = "bg-white";
-                  let borderColor = "border-gray-200";
-                  let textColor = "text-gray-800";
-
-                  if (isCorrectAnswer) {
-                    bgColor = "bg-green-50";
-                    borderColor = "border-green-500";
-                    textColor = "text-green-900";
-                  } else if (isUserAnswer && !isCorrect) {
-                    bgColor = "bg-red-50";
-                    borderColor = "border-red-500";
-                    textColor = "text-red-900";
-                  }
-
-                  return (
-                    <div
-                      key={label}
-                      className={`flex items-start gap-2 p-2 rounded-lg border-2 ${bgColor} ${borderColor}`}
-                    >
-                      <div className={`flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center font-semibold text-sm ${
-                        isCorrectAnswer 
-                          ? 'border-green-600 bg-green-100 text-green-700'
-                          : isUserAnswer && !isCorrect
-                            ? 'border-red-600 bg-red-100 text-red-700'
-                            : 'border-gray-400 bg-white'
-                      }`}>
-                        {label}
-                      </div>
-                      <div className={`flex-1 pt-0.5 text-sm ${textColor}`}>
-                        <BlockRenderer blocks={choiceBlocks ?? []} />
-                        {isCorrectAnswer && (
-                          <div className="mt-1.5 text-xs font-semibold text-green-600 flex items-center gap-1">
-                            <CheckCircle className="h-3.5 w-3.5" />
-                            Correct Answer
-                          </div>
-                        )}
-                        {isUserAnswer && !isCorrect && (
-                          <div className="mt-1.5 text-xs font-semibold text-red-600 flex items-center gap-1">
-                            <XCircle className="h-3.5 w-3.5" />
-                            Your Answer
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className={`p-1.5 rounded-lg text-sm ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
-                <p className="font-semibold">
-                  Your answer: {userAnswer || "Not answered"}
-                  {isCorrect
-                    ? " ✓ Correct"
-                    : ` ✗ Incorrect (Correct: ${correctAnswerLabel})`}
-                </p>
-              </div>
-
-              {currentQuestion.explanation && (
-                <Card className="border-khan-blue bg-blue-50">
-                  <CardHeader className="pb-2 pt-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <CheckCircle className="text-khan-blue h-4 w-4" />
-                      Explanation
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 pb-3">
-                    <PrettyExplanation className="text-sm text-gray-700 prose prose-sm max-w-none dark:text-gray-300 dark:prose-invert">
-                      {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
-                    </PrettyExplanation>
-                  </CardContent>
-                </Card>
-              )}
-              {currentQuestion.explanation && (
-                <ExplanationChat
-                  questionPrompt={currentQuestion.prompt_blocks}
-                  explanation={getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
-                  correctAnswer={getChoiceBlocks(correctAnswerLabel as "A" | "B" | "C" | "D" | "E") ?? []}
-                  choices={currentQuestion.choices}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <ReviewQuestionDetail
+            question={currentQuestion}
+            userAnswer={userAnswer}
+            questionNumber={displayNumber}
+            unitLabel={unitLabel}
+            mcqOptionCount={mcqOptionCount}
+          />
         </div>
       </div>
 
@@ -294,15 +222,19 @@ export default function SectionReview() {
         <QuizBottomBar
           currentQuestion={currentQuestionIndex + 1}
           totalQuestions={questions.length}
-          onOpenPalette={() => setShowQuestionPalette(true)}
+          onOpenPalette={isReviewMode ? undefined : () => setShowQuestionPalette(true)}
           onPrevious={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
           onNext={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))}
           canGoPrevious={currentQuestionIndex > 0}
           canGoNext={currentQuestionIndex < questions.length - 1}
           isLastQuestion={currentQuestionIndex === questions.length - 1}
+          reviewOnly={isReviewMode}
+          onExit={handleBackNavigation}
+          exitLabel="Exit"
         />
       </div>
 
+      {!isReviewMode && (
       <ReviewQuestionPalette
         isOpen={showQuestionPalette}
         onClose={() => setShowQuestionPalette(false)}
@@ -314,9 +246,10 @@ export default function SectionReview() {
           setCurrentQuestionIndex(index);
           setShowQuestionPalette(false);
         }}
-        showOriginalNumbers={sectionCode !== "all"}
+        showOriginalNumbers={sectionCode !== "all" && sectionCode !== "incorrect"}
         originalIndices={originalIndices}
       />
+      )}
     </div>
   );
 }

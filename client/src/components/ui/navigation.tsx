@@ -17,6 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useTheme } from "@/contexts/theme-context";
+import { getSubjectShortName } from "../../../../lib/subject-display-names";
+import { getApiCodeForSubject } from "@/subjects";
 
 export default function Navigation() {
   const router = useRouter();
@@ -61,18 +63,6 @@ export default function Navigation() {
     enabled: isAuthenticated && !!user,
   });
 
-  const shortName = (id: string) => {
-    if (!id) return "Course";
-    const s = id.toLowerCase();
-    if (s.includes("macro")) return "AP MACRO";
-    if (s.includes("micro")) return "AP MICRO";
-    if (s.includes("csp") || s.includes("computer")) return "AP CSP";
-    if (s.includes("chem")) return "AP CHEM";
-    if (s.includes("gov")) return "AP GOV";
-    if (s.includes("psych")) return "AP PSYCH";
-    return "AP Course";
-  };
-
   const getBreadcrumbs = () => {
     const bc: { label: string; href: string }[] = [];
     bc.push({ label: "Dashboard", href: "/dashboard" });
@@ -81,38 +71,40 @@ export default function Navigation() {
 
     const subject = router.query.subject as string;
 
+    const courseLabel = subject ? getSubjectShortName(getApiCodeForSubject(subject) ?? subject) : "AP Course";
+
     if (location.startsWith("/study")) {
-      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      bc.push({ label: courseLabel, href: subject ? `/study?subject=${subject}` : "/study" });
     }
 
     if (location.startsWith("/quiz")) {
       const unit = router.query.unit as string;
-      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
       if (unit) bc.push({ label: unit.replace("unit", "Unit ").replace("bigidea", "Unit "), href: "#" });
     }
 
     if (location.startsWith("/bookmarks")) {
-      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
       bc.push({ label: "Saved Questions", href: "#" });
     }
 
     if (location.startsWith("/review")) {
-      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
       bc.push({ label: "Review Questions", href: "#" });
     }
 
     if (location.startsWith("/analytics")) {
-      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
       bc.push({ label: "Analytics", href: "#" });
     }
 
     if (location.startsWith("/full-length-history")) {
-      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
       bc.push({ label: "Test History", href: "#" });
     }
 
     if (location.startsWith("/full-length-results")) {
-      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
       bc.push({ label: "Test History", href: `/full-length-history?subject=${subject}` });
       bc.push({ label: "Test Results", href: "#" });
     }
@@ -120,7 +112,7 @@ export default function Navigation() {
     if (location.startsWith("/section-review")) {
       const testId = router.query.testId as string;
       const section = router.query.section as string;
-      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
       bc.push({ label: "Test History", href: `/full-length-history?subject=${subject}` });
       bc.push({ label: "Test Results", href: `/full-length-results?subject=${subject}&testId=${testId}` });
       bc.push({ label: section === "all" ? "Full Test Review" : "Unit Review", href: "#" });
@@ -131,12 +123,12 @@ export default function Navigation() {
     }
 
     if (location.startsWith("/diagnostic")) {
-      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
       bc.push({ label: "Diagnostic", href: "#" });
     }
 
     if (location.startsWith("/dualpath")) {
-      if (subject) bc.push({ label: shortName(subject), href: `/study?subject=${subject}` });
+      if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
       bc.push({ label: "DualPath", href: "#" });
     }
 

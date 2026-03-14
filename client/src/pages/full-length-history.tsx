@@ -177,7 +177,22 @@ export default function FullLengthHistoryPage() {
                 return (
                   <div
                     key={`${test.type}-${test.id}`}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      router.push(
+                        `/full-length-results?subject=${test.subjectId}&testId=${test.id}`,
+                      )
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        router.push(
+                          `/full-length-results?subject=${test.subjectId}&testId=${test.id}`,
+                        );
+                      }
+                    }}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="flex-shrink-0 w-6 text-sm font-semibold text-gray-500 dark:text-gray-400 tabular-nums">

@@ -25,6 +25,35 @@ export const SUBJECT_DISPLAY_NAMES: Record<string, string> = {
   APHUG: "AP Human Geography",
 };
 
+/** Commonly-used short names for breadcrumbs and compact UI. */
+export const SUBJECT_SHORT_NAMES: Record<string, string> = {
+  APMACRO: "AP Macro",
+  APMICRO: "AP Micro",
+  APCSP: "AP CSP",
+  APCHEM: "AP Chem",
+  APGOV: "AP Gov",
+  APPSYCH: "AP Psych",
+  APBIO: "AP Bio",
+  APCALCAB: "AP Calc AB",
+  APCALCBC: "AP Calc BC",
+  APCSA: "AP CSA",
+  APUSH: "APUSH",
+  APWH: "AP World",
+  APEURO: "AP Euro",
+  APLANG: "AP Lang",
+  APLIT: "AP Lit",
+  APSTATS: "AP Stats",
+  APPHYS1: "AP Physics 1",
+  APPHYS2: "AP Physics 2",
+  APES: "APES",
+  APHUG: "AP HuG",
+};
+
+export function getSubjectShortName(subjectCode: string): string {
+  const code = subjectCode?.toUpperCase?.() ?? subjectCode;
+  return SUBJECT_SHORT_NAMES[code] ?? subjectCode ?? "AP Course";
+}
+
 export function getSubjectDisplayName(subjectCode: string): string {
   const code = subjectCode?.toUpperCase?.() ?? subjectCode;
   return SUBJECT_DISPLAY_NAMES[code] ?? subjectCode ?? "—";

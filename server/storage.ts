@@ -911,6 +911,35 @@ export class Storage {
     return allTests;
   }
 
+  async getDiagnosticTestResult(
+    userId: string,
+    subjectId: string,
+    testId: string
+  ): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    const testDoc = await doc.ref.collection("diagnosticTests").doc(testId).get();
+
+    if (!testDoc.exists) {
+      return null;
+    }
+
+    return testDoc.data();
+  }
+
   async saveUnitQuizResult(
     userId: string,
     subjectId: string,
@@ -1017,6 +1046,35 @@ export class Storage {
       return aMs - bMs;
     });
     return allResults;
+  }
+
+  async getUnitQuizResult(
+    userId: string,
+    subjectId: string,
+    testId: string
+  ): Promise<any> {
+    await this.ensureConnection();
+    const db = this.getDbInstance();
+    if (!db) throw new Error("Firestore not available");
+
+    const subjectsRef = db.collection("user_subjects");
+    const snapshot = await subjectsRef
+      .where("userId", "==", userId)
+      .where("subjectId", "==", subjectId)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    const testDoc = await doc.ref.collection("unitQuizResults").doc(testId).get();
+
+    if (!testDoc.exists) {
+      return null;
+    }
+
+    return testDoc.data();
   }
 
   async saveDiagnosticProgress(

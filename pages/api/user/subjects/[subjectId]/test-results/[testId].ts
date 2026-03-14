@@ -50,7 +50,13 @@ export default async function handler(
       });
     }
 
-    const testResult = await storage.getFullLengthTestResult(userId, subjectId, testId);
+    let testResult = await storage.getFullLengthTestResult(userId, subjectId, testId);
+    if (!testResult && testId.startsWith("diag_")) {
+      testResult = await storage.getDiagnosticTestResult(userId, subjectId, testId);
+    }
+    if (!testResult && testId.startsWith("unit_")) {
+      testResult = await storage.getUnitQuizResult(userId, subjectId, testId);
+    }
 
     if (!testResult) {
       return res.status(404).json({

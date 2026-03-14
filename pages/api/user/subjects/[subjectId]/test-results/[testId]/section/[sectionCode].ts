@@ -58,12 +58,29 @@ export default async function handler(
       sectionCode,
     });
 
-    // Get the full test data
-    const testData = await storage.getFullLengthTestResult(
+    // Get the full test data (full-length, diagnostic, or unit quiz)
+    let testData = await storage.getFullLengthTestResult(
       userId,
       subjectId as string,
       testId as string,
     );
+    if (!testData && (testId as string).startsWith("diag_")) {
+      testData = await storage.getDiagnosticTestResult(
+        userId,
+        subjectId as string,
+        testId as string,
+      );
+    }
+    if (!testData && (testId as string).startsWith("unit_")) {
+      const unitResult = await storage.getUnitQuizResult(
+        userId,
+        subjectId as string,
+        testId as string,
+      );
+      if (unitResult && unitResult.sectionCode === sectionCode && Array.isArray(unitResult.questions)) {
+        testData = unitResult;
+      }
+    }
 
     console.log("📦 Full test data retrieved:", {
       exists: !!testData,

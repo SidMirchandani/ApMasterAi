@@ -7,8 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import { FullLengthQuiz } from "@/components/quiz/FullLengthQuiz";
 import { PracticeQuiz } from "@/components/quiz/PracticeQuiz";
-import { QuizResults } from "@/components/quiz/QuizResults";
-import { QuizReviewPage } from "@/components/quiz/QuizReviewPage";
+import { UnifiedQuizResultsReview } from "@/components/quiz/UnifiedQuizResultsReview";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -78,7 +77,6 @@ export default function Quiz() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quizCompleted, setQuizCompleted] = useState(false);
-  const [isReviewMode, setIsReviewMode] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [score, setScore] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
@@ -100,14 +98,14 @@ export default function Quiz() {
   // Warn before leaving page
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!quizCompleted && questions.length > 0 && !isReviewMode && isFullLength) {
+      if (!quizCompleted && questions.length > 0 && isFullLength) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [quizCompleted, questions.length, isReviewMode, isFullLength]);
+  }, [quizCompleted, questions.length, isFullLength]);
 
   // FETCH QUESTIONS
   useEffect(() => {
@@ -406,7 +404,6 @@ export default function Quiz() {
   const handleRetakeQuiz = () => {
     setScore(0);
     setQuizCompleted(false);
-    setIsReviewMode(false);
     setUserAnswers({});
     setTimeElapsed(0);
     setFlaggedQuestions(new Set());
@@ -783,35 +780,22 @@ export default function Quiz() {
     );
   }
 
-  if (quizCompleted && !isReviewMode) {
+  if (quizCompleted) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="container mx-auto px-4 py-4">
-          <QuizResults
-            score={score}
-            totalQuestions={questions.length}
-            questions={questions}
+        <div className="container mx-auto">
+          <UnifiedQuizResultsReview
+            questions={questions as any}
             userAnswers={userAnswers}
             subjectId={subjectId as string}
+            score={score}
+            totalQuestions={questions.length}
             isFullLength={isFullLength}
-            onReview={() => setIsReviewMode(true)}
-            onRetake={handleRetakeQuiz}
+            onCloseReview={handleExitQuiz}
           />
         </div>
       </div>
-    );
-  }
-
-  if (isReviewMode) {
-    return (
-      <QuizReviewPage
-        questions={questions}
-        userAnswers={userAnswers}
-        flaggedQuestions={flaggedQuestions}
-        subjectId={subjectId as string}
-        onBack={() => handleExitQuiz()}
-      />
     );
   }
 

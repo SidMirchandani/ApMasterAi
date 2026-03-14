@@ -7,6 +7,8 @@ import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QuizReviewPage } from "./QuizReviewPage";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
+import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useRouter } from "next/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -77,6 +79,8 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [cheatMode, setCheatMode] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showAutoAnswerDialog, setShowAutoAnswerDialog] = useState(false);
+  const { isAdmin } = useAdminCheck();
 
   useEffect(() => {
     const savedCheatMode = localStorage.getItem('adminCheatMode');
@@ -208,15 +212,15 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     }
   };
 
-  // Updated handleSubmitTest to format question data correctly
-  const handleSubmitTest = async () => {
+  // Updated handleSubmitTest to format question data correctly. Optional overrideAnswers for admin auto-answer.
+  const handleSubmitTest = async (overrideAnswers?: { [key: number]: string }) => {
     setShowSubmitConfirm(false);
     setIsSubmitting(true);
-    // Stay on review page during submit - don't change isReviewMode
+    const answersToUse = overrideAnswers ?? userAnswers;
 
     try {
       const correctCount = questions.reduce((count, question, index) => {
-        const userAnswer = userAnswers[index];
+        const userAnswer = answersToUse[index];
         const displayCorrectLabel = getDisplayCorrectLabel(question, mcqOptionCount);
         return userAnswer === displayCorrectLabel ? count + 1 : count;
       }, 0);
@@ -229,7 +233,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       const storedUserAnswers: { [key: number]: string } = {};
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
-        const displaySel = userAnswers[i];
+        const displaySel = answersToUse[i];
         storedUserAnswers[i] = getStoredAnswerForSubmit(displaySel ?? "", q, mcqOptionCount);
       }
 
@@ -270,7 +274,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       const trackPromises: Promise<unknown>[] = [];
       questions.forEach((q, idx) => {
         const displayCorrect = getDisplayCorrectLabel(q, mcqOptionCount);
-        const userAns = userAnswers[idx];
+        const userAns = answersToUse[idx];
         const isCorrect = userAns === displayCorrect;
         if (!isCorrect && q.id) {
           const sectionCode = (q as any).section_code || "";
@@ -379,13 +383,22 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           canGoPrevious={currentQuestionIndex > 0}
           canGoNext={currentQuestionIndex < questions.length - 1}
           isLastQuestion={currentQuestionIndex === questions.length - 1}
-          onSubmit={handleSubmitTest}
+          onSubmit={() => handleSubmitTest()}
           onReview={currentQuestionIndex === questions.length - 1 ? () => setIsReviewMode(true) : undefined}
           onSaveAndExit={handleExitExam}
           onReportError={() => setShowReportDialog(true)}
+          onAdminAutoAnswer={isAdmin ? () => setShowAutoAnswerDialog(true) : undefined}
           subjectId={subjectId}
         />
       </div>
+
+      <AdminAutoAnswerDialog
+        open={showAutoAnswerDialog}
+        onOpenChange={setShowAutoAnswerDialog}
+        questions={questions}
+        mcqOptionCount={mcqOptionCount}
+        onApply={(answers) => handleSubmitTest(answers)}
+      />
 
       <ReportQuestionDialog
         open={showReportDialog}

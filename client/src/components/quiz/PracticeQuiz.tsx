@@ -14,8 +14,10 @@ import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
 import { ExplanationPanel } from "./ExplanationPanel";
-import { CheckCircle, XCircle, LogOut, Flag } from "lucide-react";
+import { CheckCircle, XCircle, LogOut, Flag, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -100,7 +102,9 @@ export function PracticeQuiz({
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showConceptPrimer, setShowConceptPrimer] = useState(false);
   const [primerStepIndex, setPrimerStepIndex] = useState(0);
+  const [showAutoAnswerDialog, setShowAutoAnswerDialog] = useState(false);
 
+  const { isAdmin } = useAdminCheck();
   const appliedSavedState = useRef(false);
   const hasSetInitialPrimer = useRef(false);
   // Initialize from saved state when resuming a unit quiz (only once)
@@ -284,6 +288,17 @@ export function PracticeQuiz({
     onExit();
   };
 
+  const handleAdminAutoAnswerApply = (answers: { [key: number]: string }) => {
+    const correctCount = orderedQuestions.reduce((count, q, idx) => {
+      const correctLabel = getDisplayCorrectLabel(q, mcqOptionCount);
+      return answers[idx] === correctLabel ? count + 1 : count;
+    }, 0);
+    setFinalUserAnswers(answers);
+    setScore(correctCount);
+    setShowResults(true);
+    onComplete(correctCount);
+  };
+
   if (isReviewMode) {
     return (
       <PracticeQuizReview
@@ -445,7 +460,7 @@ export function PracticeQuiz({
       <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 fixed bottom-0 left-0 right-0 z-50">
         <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2.5">
           <div className="flex justify-between items-center gap-2 sm:gap-4">
-            <div className="flex flex-1 items-center min-w-0">
+            <div className="flex flex-1 items-center gap-2 min-w-0">
               {isCalculatorAllowed && (
                 <Button
                   variant={showCalculator ? "secondary" : "outline"}
@@ -455,6 +470,18 @@ export function PracticeQuiz({
                 >
                   <Calculator className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">{showCalculator ? "Hide Calculator" : "Show Calculator"}</span>
+                </Button>
+              )}
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAutoAnswerDialog(true)}
+                  className="text-amber-600 border-amber-300 dark:border-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-xs shrink-0"
+                  title="Admin: Auto-answer with target grade %"
+                >
+                  <Zap className="w-3.5 h-3.5 mr-1" />
+                  Auto-answer
                 </Button>
               )}
             </div>
@@ -522,6 +549,14 @@ export function PracticeQuiz({
         onOpenChange={setShowReportDialog}
         questionId={currentQuestion?.id}
         subjectId={subjectId}
+      />
+
+      <AdminAutoAnswerDialog
+        open={showAutoAnswerDialog}
+        onOpenChange={setShowAutoAnswerDialog}
+        questions={orderedQuestions}
+        mcqOptionCount={mcqOptionCount}
+        onApply={handleAdminAutoAnswerApply}
       />
 
       {showResults && (
