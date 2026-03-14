@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight } from "lucide-react";
 import { getSectionInfo, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayCorrectLabel } from "@/lib/mcqDisplay";
+import { percentageToAPScore } from "@/lib/ap-score-utils";
 import { QuizBottomBar } from "./QuizBottomBar";
 import { ReviewQuestionDetail } from "./ReviewQuestionDetail";
 
@@ -271,6 +272,18 @@ export function UnifiedQuizResultsReview({
               <div className="space-y-3">
                 {allSectionEntries.map(([code, sec]) => {
                   const hasQuestions = sec.total > 0;
+                  const apResult = hasQuestions ? percentageToAPScore(sec.percentage ?? 0, apiCode) : null;
+                  const barWidth = `${Math.min(100, Math.max(0, sec.percentage ?? 0))}%`;
+                  const barFillColor = !hasQuestions
+                    ? undefined
+                    : apResult
+                      ? apResult.color
+                      : undefined;
+                  const barFillClass = !hasQuestions
+                    ? "bg-slate-300 dark:bg-slate-600"
+                    : barFillColor
+                      ? ""
+                      : "bg-emerald-500 dark:bg-emerald-500";
                   return (
                     <button
                       key={code}
@@ -291,10 +304,10 @@ export function UnifiedQuizResultsReview({
                           {!hasQuestions && " (No questions)"}
                         </div>
                         <div className="mt-1.5 relative h-2 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
-                          {/* Neutral track; only the accuracy-reached portion is colored */}
+                          {/* Neutral track; fill colored by AP scale when has questions, else neutral */}
                           <div
-                            className="absolute inset-y-0 left-0 rounded-full min-w-[2px] bg-emerald-500 dark:bg-emerald-500"
-                            style={{ width: `${Math.min(100, Math.max(0, sec.percentage))}%` }}
+                            className={`absolute inset-y-0 left-0 rounded-full min-w-[2px] ${barFillClass}`}
+                            style={{ width: barWidth, ...(barFillColor ? { backgroundColor: barFillColor } : {}) }}
                           />
                         </div>
                       </div>
