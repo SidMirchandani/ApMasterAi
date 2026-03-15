@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   BarChart3,
-  AlertTriangle,
   CheckCircle,
   XCircle,
   Crown,
@@ -346,8 +345,7 @@ export default function AnalyticsPage() {
             {unitEntries.length > 0 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
-                    <AlertTriangle className="h-5 w-5 text-orange-500" />
+                  <CardTitle className="text-lg dark:text-gray-100">
                     {subjectDisplayName ? `${subjectDisplayName}: Performance by Unit` : "Performance by Unit"}
                   </CardTitle>
                 </CardHeader>
