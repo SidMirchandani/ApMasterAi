@@ -1,7 +1,12 @@
-
 import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../../server/db";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
+
+function isAdmin(email?: string | null): boolean {
+  const adminEmails = process.env.ADMIN_EMAILS || "";
+  const allow = adminEmails.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  return !!email && allow.includes((email as string).toLowerCase());
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -32,6 +37,7 @@ export default async function handler(
     }
 
     const userData = userDoc.data();
+    const experimentalFeaturesEnabled = userData?.experimentalFeaturesEnabled === true;
 
     return res.status(200).json({
       success: true,
@@ -42,6 +48,8 @@ export default async function handler(
         firstName: userData?.firstName,
         lastName: userData?.lastName,
         photoURL: userData?.photoURL,
+        experimentalFeaturesEnabled,
+        isAdmin: isAdmin(decodedToken.email ?? userData?.email),
       },
     });
   } catch (error) {

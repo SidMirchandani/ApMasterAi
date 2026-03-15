@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   BarChart3,
-  TrendingUp,
   AlertTriangle,
   CheckCircle,
   XCircle,
@@ -18,17 +17,6 @@ import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  Customized,
-} from "recharts";
 import { getApiCodeForSubject, getSectionByCode, getUnitWeightsBySectionCode } from "@/subjects";
 import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject, getUnitTierFromScore, getAPScoreColor, percentageToAPScore } from "@/lib/ap-score-utils";
 import { safeDateParse } from "@/lib/date";
@@ -58,51 +46,6 @@ interface TestHistoryEntry {
   };
 }
 
-function getQuizLabel(data: { type?: string; unitNumber?: number; sectionName?: string }): string {
-  if (data.type === "diagnostic") return "Diagnostic Quiz";
-  if (data.type === "full-length") return "Full Length MCQ Quiz";
-  if (data.type === "unit") {
-    const num = data.unitNumber;
-    const name = data.sectionName;
-    if (name != null && num != null) return `Unit Quiz: Unit ${num}: ${name}`;
-    if (num != null) return `Unit Quiz: Unit ${num}`;
-    return "Unit Quiz";
-  }
-  return "Quiz";
-}
-
-function StudentProgressTooltip({ active, payload }: any) {
-  if (!active || !payload || !payload.length) return null;
-
-  const data = payload[0]?.payload;
-  if (!data) return null;
-
-  const quizScore = data.quizScore ?? data.percentage;
-  const subjectScore = data.percentage;
-  const impact = typeof data.scoreImpact === "number" ? data.scoreImpact : null;
-  const impactLabel =
-    impact === null
-      ? null
-      : impact === 0
-      ? "No change"
-      : impact > 0
-      ? `+${impact}%`
-      : `${impact}%`;
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white/95 px-3 py-2 shadow-md text-xs dark:border-gray-700 dark:bg-gray-900/95">
-      <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1">
-        {getQuizLabel(data)}
-      </div>
-      <div className="text-gray-600 dark:text-gray-300 space-y-0.5">
-        <div>Quiz score: {quizScore}%</div>
-        <div>Student Score: {subjectScore}%</div>
-        {impactLabel && <div>Score Impact: {impactLabel}</div>}
-      </div>
-    </div>
-  );
-}
-
 export default function AnalyticsPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -129,6 +72,19 @@ export default function AnalyticsPage() {
     },
     enabled: isAuthenticated && !!user,
   });
+
+  const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean; experimentalFeaturesEnabled?: boolean } }>({
+    queryKey: ["adminCheck"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/user/admin-check");
+      if (!res.ok) return { success: false, data: { isAdmin: false, experimentalFeaturesEnabled: false } };
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
+  const isAdmin = adminCheck?.data?.isAdmin ?? false;
+  const showAdminFeatures = isAdmin && (adminCheck?.data?.experimentalFeaturesEnabled ?? false);
 
   const testHistory = testHistoryResponse?.data || [];
 
@@ -317,18 +273,18 @@ export default function AnalyticsPage() {
 
         {testHistory.length === 0 ? (
           <div className="text-center py-14 px-4">
-            <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center border border-red-200 dark:border-red-800/50">
-              <BarChart3 className="h-8 w-8 text-red-500" />
+            <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+              <BarChart3 className="h-8 w-8 text-slate-500" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Unlock Your Projected AP Score</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">No analytics yet</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto text-sm leading-relaxed">
-              Take our adaptive diagnostic to see your projected 1–5 score and identify your weakest units.
+              Start practice to see your projected score and performance.
             </p>
             <Button
-              onClick={() => router.push(subjectId ? `/diagnostic?subject=${subjectId}` : "/diagnostic")}
-              className="bg-rose-500 hover:bg-rose-600 text-white font-semibold px-6 h-11 rounded-xl shadow-md"
+              onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 h-11 rounded-xl shadow-md"
             >
-              Take Quick Diagnostic Test
+              Start practice
             </Button>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
               Projected score is a statistical estimate based on MCQ performance.
@@ -358,8 +314,8 @@ export default function AnalyticsPage() {
                 </CardContent>
               </Card>
               <Card
-                className="dark:bg-gray-900 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors"
-                onClick={() => subjectId && router.push(`/full-length-history?subject=${subjectId}`)}
+                className={`dark:bg-gray-900 dark:border-gray-700 ${showAdminFeatures ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors" : ""}`}
+                onClick={showAdminFeatures ? () => subjectId && router.push(`/full-length-history?subject=${subjectId}&from=analytics`) : undefined}
               >
                 <CardContent className="p-4 text-center">
                   <BarChart3 className="mx-auto h-8 w-8 text-purple-500 mb-2" />
@@ -386,169 +342,6 @@ export default function AnalyticsPage() {
                 </CardContent>
               </Card>
             </div>
-
-            {testChartData.length >= 1 && (
-              <Card className="dark:bg-gray-900 dark:border-gray-700">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center justify-between dark:text-gray-100">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-blue-500" />
-                    {subjectDisplayName ? `${subjectDisplayName}: Student Progress` : "Student Progress"}
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4 px-1">
-                    Track your performance across diagnostic, unit quizzes, and full-length tests
-                  </p>
-
-                  <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={testChartData} margin={{ top: 20, right: 30, left: 19, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" className="dark:opacity-10" />
-                        <XAxis
-                          dataKey="testNumber"
-                          tickFormatter={(value) => (value === 1 ? "Test 1" : String(value))}
-                          tick={{ fontSize: 11, fill: "#9ca3af" }}
-                          axisLine={{ stroke: "#e5e7eb" }}
-                          tickLine={false}
-                        />
-                        <YAxis
-                          domain={[0, 100]}
-                          ticks={[0, 20, 40, 60, 80, 100]}
-                          tick={{ fontSize: 12, fill: "#9ca3af" }}
-                          axisLine={false}
-                          tickLine={false}
-                      label={{ value: "Student Score %", angle: -90, position: "insideLeft", style: { fontSize: 12, fill: "#9ca3af", fontWeight: "bold" }, offset: 15 }}
-                        />
-                        <Tooltip
-                          cursor={{ strokeDasharray: "3 3" }}
-                          content={<StudentProgressTooltip subjectId={subjectId} />}
-                        />
-                        <ReferenceLine
-                          y={target4}
-                          stroke={getAPScoreColor(4)}
-                          strokeDasharray="5 5"
-                          strokeWidth={3}
-                          label={{ position: "top", value: `Score needed for 4: ~${Math.round(target4)}%`, fill: getAPScoreColor(4), fontSize: 14, fontWeight: 600, offset: 4 }}
-                        />
-                        <ReferenceLine
-                          y={target5}
-                          stroke={getAPScoreColor(5)}
-                          strokeDasharray="5 5"
-                          strokeWidth={3}
-                          label={{ position: "top", value: `Score needed for 5: ~${Math.round(target5)}%`, fill: getAPScoreColor(5), fontSize: 14, fontWeight: 600, offset: 4 }}
-                        />
-
-                        {/* Segment from last data point to right axis: current score line */}
-                        {testChartData.length >= 1 && (
-                          <Customized
-                            component={(props: any) => {
-                              const { offset } = props;
-                              if (!offset || offset.width == null) return null;
-                              const n = testChartData.length;
-                              const lastPct = testChartData[n - 1]?.percentage ?? 0;
-                              const y = offset.top + offset.height - (lastPct / 100) * offset.height;
-                              const xLast = offset.left + (offset.width * (n - 0.5)) / Math.max(n, 1);
-                              const xRight = offset.left + offset.width;
-                              const color = "#3b82f6";
-                              return (
-                                <g>
-                                  <line
-                                    x1={xLast}
-                                    y1={y}
-                                    x2={xRight}
-                                    y2={y}
-                                    stroke={color}
-                                    strokeWidth={1.5}
-                                    strokeDasharray="5 5"
-                                  />
-                                  <text
-                                    x={xRight}
-                                    y={y - 6}
-                                    textAnchor="end"
-                                    fill={color}
-                                    fontSize={12}
-                                    fontWeight={600}
-                                  >
-                                    Student Score: ~{Math.round(lastPct)}%
-                                  </text>
-                                </g>
-                              );
-                            }}
-                          />
-                        )}
-
-                        <Line
-                          type="natural"
-                          dataKey="percentage"
-                          stroke="#3b82f6"
-                          strokeWidth={3.5}
-                          dot={(props: any) => {
-                            const { cx, cy } = props;
-                            return (
-                              <circle
-                                key={`dot-${props.index}`}
-                                cx={cx}
-                                cy={cy}
-                                r={7}
-                                fill="#3b82f6"
-                                stroke="white"
-                                strokeWidth={3}
-                                style={{ cursor: "pointer" }}
-                              />
-                            );
-                          }}
-                          activeDot={(props: any) => {
-                            const { cx, cy } = props;
-                            return (
-                              <circle
-                                cx={cx}
-                                cy={cy}
-                                r={10}
-                                fill="#3b82f6"
-                                stroke="white"
-                                strokeWidth={3}
-                                style={{ filter: "drop-shadow(0 0 6px rgba(59,130,246,0.5))" }}
-                              />
-                            );
-                          }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-center gap-6 mt-3 text-xs text-gray-500 dark:text-gray-400">
-                    {testChartData.length >= 1 && (
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-0 border-t-[2px] border-dashed border-blue-500" />
-                        <span className="text-blue-500">Student Score: ~{Math.round(lastTestPercentage)}%</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-0 border-t-[3px] border-dashed" style={{ borderColor: getAPScoreColor(4) }} />
-                      Score needed for 4: ~{Math.round(target4)}%
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-0 border-t-[3px] border-dashed" style={{ borderColor: getAPScoreColor(5) }} />
-                      Score needed for 5: ~{Math.round(target5)}%
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {testChartData.length === 0 && (
-              <Card className="dark:bg-gray-900 dark:border-gray-700 border-dashed">
-                <CardContent className="p-6 text-center">
-                  <TrendingUp className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600 mb-3" />
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Test Score Progress</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Complete a full-length practice test to see your score progression. Head to your dashboard to start a test!
-                  </p>
-                </CardContent>
-              </Card>
-            )}
 
             {unitEntries.length > 0 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700">

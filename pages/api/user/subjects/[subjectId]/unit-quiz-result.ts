@@ -51,7 +51,7 @@ export default async function handler(
       });
     }
 
-    const { unitId, sectionCode, score, percentage, totalQuestions, sectionName, unitNumber } = req.body;
+    const { unitId, sectionCode, score, percentage, totalQuestions, sectionName, unitNumber, userAnswers, questions } = req.body;
 
     console.log("[unit-quiz-result API] POST payload", {
       userId,
@@ -63,6 +63,8 @@ export default async function handler(
       totalQuestions,
       sectionName,
       unitNumber,
+      hasUserAnswers: !!userAnswers && typeof userAnswers === "object",
+      questionsCount: Array.isArray(questions) ? questions.length : 0,
     });
 
     if (!unitId || typeof unitId !== "string") {
@@ -98,6 +100,8 @@ export default async function handler(
       totalQuestions,
       sectionName: typeof sectionName === "string" ? sectionName : undefined,
       unitNumber: typeof unitNumber === "number" ? unitNumber : undefined,
+      userAnswers: userAnswers && typeof userAnswers === "object" ? userAnswers : undefined,
+      questions: Array.isArray(questions) ? questions : undefined,
     });
 
     console.log("[unit-quiz-result API] saveUnitQuizResult OK", {

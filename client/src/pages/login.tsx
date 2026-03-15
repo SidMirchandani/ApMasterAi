@@ -83,7 +83,7 @@ export default function Login() {
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-950">
         {/* Animated mesh */}
         <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-emerald-500/20 rounded-full blur-[100px] animate-blob" style={{ animationDuration: "8s" }} />
+          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-[100px] animate-blob" style={{ animationDuration: "8s" }} />
           <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] bg-violet-500/15 rounded-full blur-[100px] animate-blob" style={{ animationDuration: "10s", animationDelay: "3s" }} />
           <div className="absolute top-1/2 right-1/3 w-[250px] h-[250px] bg-cyan-500/10 rounded-full blur-[80px] animate-blob" style={{ animationDuration: "12s", animationDelay: "5s" }} />
         </div>
@@ -98,7 +98,7 @@ export default function Login() {
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
           <div className="mb-10">
             <Link href="/" className="inline-flex items-center gap-2.5 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-glow">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-glow">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-display font-bold text-white">
@@ -124,8 +124,8 @@ export default function Login() {
               { icon: Zap, text: "Get instant, detailed feedback" },
             ].map(({ icon: Icon, text }, i) => (
               <div key={i} className="flex items-center gap-3 text-slate-300">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-emerald-400" />
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-blue-400" />
                 </div>
                 <span className="text-sm font-medium">{text}</span>
               </div>
@@ -147,7 +147,7 @@ export default function Login() {
           <div className="mb-8">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-emerald-600 transition-colors font-medium group"
+              className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors font-medium group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
               Back to home
@@ -157,7 +157,7 @@ export default function Login() {
           {/* Logo on mobile */}
           <div className="lg:hidden mb-8">
             <Link href="/" className="inline-flex items-center gap-2.5">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-glow-sm">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-glow-sm">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-display font-bold text-slate-900 dark:text-white">
@@ -189,7 +189,7 @@ export default function Login() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="pl-11 h-12 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all"
+                  className="pl-11 h-12 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-blue-500 focus:ring-blue-500/20 transition-all"
                   placeholder="you@example.com"
                 />
               </div>
@@ -208,7 +208,7 @@ export default function Login() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="pl-11 pr-11 h-12 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all"
+                  className="pl-11 pr-11 h-12 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-blue-500 focus:ring-blue-500/20 transition-all"
                   placeholder="Enter your password"
                 />
                 <button
@@ -232,7 +232,7 @@ export default function Login() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.35)] transition-all duration-300"
+              className="w-full h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-[0_4px_14px_rgba(59,130,246,0.25)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.35)] transition-all duration-300"
             >
               {loading ? (
                 <>
@@ -271,7 +271,7 @@ export default function Login() {
 
             <p className="text-center pt-4 text-sm text-slate-500 dark:text-slate-400">
               Don&apos;t have an account?{" "}
-              <Link href="/signup" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-semibold transition-colors">
+              <Link href="/signup" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold transition-colors">
                 Sign up free
               </Link>
             </p>

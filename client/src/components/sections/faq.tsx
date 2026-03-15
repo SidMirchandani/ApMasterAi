@@ -30,8 +30,33 @@ const faqs = [
   },
   {
     question: "How is my predicted AP score calculated?",
-    answer:
-      "Your predicted score (1–5) is calculated based on your overall accuracy across 25+ practice questions. Accuracy ≥85% predicts a 5, ≥70% predicts a 4, ≥55% predicts a 3, and so on. It updates automatically as you practice more.",
+    answer: (
+      <div className="space-y-4">
+        <p>
+          Your predicted AP score is an estimate based on your practice test results and the exam&apos;s scoring curve. Here&apos;s how we calculate it:
+        </p>
+        <ol className="list-decimal list-inside space-y-2 pl-0.5">
+          <li>
+            <strong className="text-slate-800 dark:text-slate-200">Your average %</strong> from your diagnostic test and full-length tests is treated as your multiple-choice (MCQ) performance.
+          </li>
+          <li>
+            <strong className="text-slate-800 dark:text-slate-200">We project free-response (FRQ) performance</strong> from that, using a subject-specific factor (FRQs are typically harder, so we scale down slightly).
+          </li>
+          <li>
+            <strong className="text-slate-800 dark:text-slate-200">We combine MCQ + projected FRQ</strong> using the exam&apos;s official weights (e.g. 67% MCQ / 33% FRQ) into a composite score.
+          </li>
+          <li>
+            <strong className="text-slate-800 dark:text-slate-200">That composite</strong> is compared to the subject&apos;s cutoffs (College Board–style curves) to get your 1–5 score.
+          </li>
+        </ol>
+        <p className="text-slate-500 dark:text-slate-500 text-[13px]">
+          Example: 80% average → projected FRQ ~68% → composite points → maps to a 4 or 5 depending on the subject&apos;s curve.
+        </p>
+        <p>
+          It updates automatically as you take more diagnostic and full-length tests.
+        </p>
+      </div>
+    ),
   },
 ];
 

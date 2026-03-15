@@ -202,24 +202,10 @@ export default function ReviewPage() {
 
   const handleNext = () => {
     if (!currentQuestion || !selectedAnswer) return;
-    const correctLetter =
-      currentQuestion.answerIndex !== undefined
-        ? getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, mcqOptionCount)
-        : null;
-    const wasCorrect = isSubmitted && selectedAnswer === correctLetter;
-
-    if (wasCorrect) {
-      const newIndex = reviewQuestions.length <= 1 ? 0 : Math.min(currentIndex, reviewQuestions.length - 2);
-      setCurrentIndex(newIndex);
+    if (currentIndex < reviewQuestions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
       setSelectedAnswer(null);
       setIsSubmitted(false);
-      refetch();
-    } else {
-      if (currentIndex < reviewQuestions.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-        setSelectedAnswer(null);
-        setIsSubmitted(false);
-      }
     }
   };
 

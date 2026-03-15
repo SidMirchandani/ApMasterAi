@@ -63,7 +63,7 @@ interface PracticeQuizProps {
   subjectId: string;
   timeElapsed: number;
   onExit: () => void;
-  onComplete: (score: number) => void;
+  onComplete: (score: number, userAnswers?: { [key: number]: string }) => void;
   isFullLength?: boolean;
   lastSavedTestId?: string;
   onSaveAndExit?: (state: UnitQuizState) => void;
@@ -267,7 +267,8 @@ export function PracticeQuiz({
         );
       } else {
         setShowResults(true);
-        onComplete(score);
+        const answersWithLast = { ...finalUserAnswers, [currentQuestionIndex]: selectedAnswer ?? '' };
+        onComplete(score, answersWithLast);
       }
     }
   };
@@ -296,7 +297,7 @@ export function PracticeQuiz({
     setFinalUserAnswers(answers);
     setScore(correctCount);
     setShowResults(true);
-    onComplete(correctCount);
+    onComplete(correctCount, answers);
   };
 
   if (isReviewMode) {

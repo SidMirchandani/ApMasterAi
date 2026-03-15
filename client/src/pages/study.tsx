@@ -77,6 +77,19 @@ export default function Study() {
     refetchOnMount: "always",
   });
 
+  const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean; experimentalFeaturesEnabled?: boolean } }>({
+    queryKey: ["adminCheck"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/user/admin-check");
+      if (!res.ok) return { success: false, data: { isAdmin: false, experimentalFeaturesEnabled: false } };
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
+  const isAdmin = adminCheck?.data?.isAdmin ?? false;
+  const showAdminFeatures = isAdmin && (adminCheck?.data?.experimentalFeaturesEnabled ?? false);
+
   const subjects: StudySubject[] = subjectsResponse?.data || [];
   const currentSubject: StudySubject | undefined = subjects.find(
     (s) => s.subjectId === subjectId
@@ -352,24 +365,42 @@ export default function Study() {
               </div>
             </button>
 
-            {/* Dual-Path Plan */}
-            <button
-              onClick={() => router.push(`/dualpath?subject=${subjectId}`)}
-              className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-white dark:bg-slate-900/70 border border-green-200 dark:border-green-800/50 hover:border-green-300 dark:hover:border-green-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
-            >
-              <div className="relative z-10 flex items-center gap-3">
-                <div className="w-9 h-9 bg-green-50 dark:bg-green-500/10 group-hover:bg-green-100 dark:group-hover:bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
-                  <Target className="w-4 h-4 text-green-600 dark:text-green-400" />
+            {/* DualPath (experimental) or Quiz/Test History */}
+            {showAdminFeatures ? (
+              <button
+                onClick={() => router.push(`/dualpath?subject=${subjectId}`)}
+                className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-white dark:bg-slate-900/70 border border-green-200 dark:border-green-800/50 hover:border-green-300 dark:hover:border-green-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+              >
+                <div className="relative z-10 flex items-center gap-3">
+                  <div className="w-9 h-9 bg-green-50 dark:bg-green-500/10 group-hover:bg-green-100 dark:group-hover:bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                    <Target className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">
+                      DualPath <span className="text-red-500 dark:text-red-400 font-bold">(experimental)</span>
+                    </p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Dual-path study plan</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">
-                    DualPath <span className="text-red-500 dark:text-red-400 font-bold">(experimental)</span>
-                  </p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Dual-path study plan</p>
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push(`/full-length-history?subject=${subjectId}&from=study`)}
+                className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-white dark:bg-slate-900/70 border border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+              >
+                <div className="relative z-10 flex items-center gap-3">
+                  <div className="w-9 h-9 bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                    <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">Quiz/Test History</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">View past test results</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-              </div>
-            </button>
+              </button>
+            )}
 
             {/* Review Questions */}
             <button

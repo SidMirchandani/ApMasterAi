@@ -4,10 +4,12 @@ import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
+import { Button } from "@/components/ui/button";
 import { QuizBottomBar } from "@/components/quiz/QuizBottomBar";
 import { ReviewQuestionDetail } from "@/components/quiz/ReviewQuestionDetail";
 import { ReviewQuestionPalette } from "@/components/quiz/ReviewQuestionPalette";
 import { getSectionInfo, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
+import { X } from "lucide-react";
 import { getDisplayCorrectLabel } from "@/lib/mcqDisplay";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
@@ -37,7 +39,7 @@ interface Question {
 export default function SectionReview() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const { subject: subjectId, testId, section: sectionCode, mode } = router.query;
+  const { subject: subjectId, testId, section: sectionCode, mode, returnTo } = router.query;
   const [questions, setQuestions] = useState<Question[]>([]);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -153,7 +155,19 @@ export default function SectionReview() {
   }
 
   const handleBackNavigation = () => {
-    router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
+    const subj =
+      typeof subjectId === "string" ? subjectId : Array.isArray(subjectId) ? subjectId[0] : undefined;
+    const returnToVal =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("returnTo")
+        : (typeof returnTo === "string" ? returnTo : Array.isArray(returnTo) ? returnTo[0] : undefined);
+
+    if (testId && subj) {
+      const from = returnToVal || "study";
+      router.push(`/full-length-history?subject=${subj}&from=${encodeURIComponent(from)}`);
+    } else {
+      router.push(`/full-length-results?subject=${subj ?? ""}&testId=${testId}`);
+    }
   };
 
   const currentQuestion = questions[currentQuestionIndex];
@@ -206,8 +220,24 @@ export default function SectionReview() {
       {/* Main Navigation with Breadcrumbs */}
       <Navigation />
 
+      {isReviewMode && (
+        <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 sticky top-0 z-40">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackNavigation}
+              className="shrink-0"
+            >
+              <X className="h-4 w-4 mr-1.5" />
+              Close Review
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto mb-14 pt-2">
-        <div className="max-w-4xl mx-auto px-4 py-2">
+        <div className="max-w-6xl mx-auto px-4 py-2">
           <ReviewQuestionDetail
             question={currentQuestion}
             userAnswer={userAnswer}
@@ -231,6 +261,7 @@ export default function SectionReview() {
           reviewOnly={isReviewMode}
           onExit={handleBackNavigation}
           exitLabel="Exit"
+          hideExitButton={isReviewMode}
         />
       </div>
 

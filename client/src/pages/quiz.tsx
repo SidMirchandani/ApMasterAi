@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Navigation from "@/components/ui/navigation";
 import { useAuth } from "@/contexts/auth-context";
@@ -85,6 +85,8 @@ export default function Quiz() {
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
+  /** Ref to hold completion payload so results view has answers on first paint (avoids stale empty userAnswers) */
+  const completionPayloadRef = useRef<{ score: number; userAnswers: { [key: number]: string } } | null>(null);
 
   // Determine quiz type early
   const isFullLength = unit === "full-length";
@@ -106,6 +108,14 @@ export default function Quiz() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [quizCompleted, questions.length, isFullLength]);
+
+  // When showing results, set review=1 so Navigation allows breadcrumbs and links (no lock)
+  useEffect(() => {
+    if (!quizCompleted || !router.isReady) return;
+    const q = { ...router.query, review: "1" };
+    if (router.query.review === "1") return;
+    router.replace({ pathname: "/quiz", query: q }, undefined, { shallow: true });
+  }, [quizCompleted, router.isReady, router.query.review]);
 
   // FETCH QUESTIONS
   useEffect(() => {
@@ -281,6 +291,7 @@ export default function Quiz() {
   }, [isAuthenticated, unit, subjectId, limitParam]);
 
   const handleExitQuiz = async () => {
+    completionPayloadRef.current = null;
     // Refetch subjects and unit progress so study page shows updated Mastered status immediately
     if (subjectId) {
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
@@ -396,12 +407,16 @@ export default function Quiz() {
     }
   };
 
-  const handleCompletePractice = (finalScore: number) => {
+  const handleCompletePractice = (finalScore: number, answers?: { [key: number]: string }) => {
+    const answersToStore = answers ?? {};
+    completionPayloadRef.current = { score: finalScore, userAnswers: answersToStore };
+    if (Object.keys(answersToStore).length > 0) setUserAnswers(answersToStore);
     setScore(finalScore);
     setQuizCompleted(true);
   };
 
   const handleRetakeQuiz = () => {
+    completionPayloadRef.current = null;
     setScore(0);
     setQuizCompleted(false);
     setUserAnswers({});
@@ -702,6 +717,7 @@ export default function Quiz() {
         );
         console.log("[quiz saveScore] unit-progress OK", putRes.status);
 
+        const answersToSave = completionPayloadRef.current?.userAnswers ?? {};
         const postRes = await apiRequest(
           "POST",
           `/api/user/subjects/${subj}/unit-quiz-result`,
@@ -713,6 +729,8 @@ export default function Quiz() {
             totalQuestions: questions.length,
             sectionName: sectionInfo?.name,
             unitNumber: sectionInfo?.unitNumber,
+            userAnswers: answersToSave,
+            questions,
           },
         );
         console.log("[quiz saveScore] unit-quiz-result OK", postRes.status);
@@ -731,7 +749,7 @@ export default function Quiz() {
         toast({
           variant: "destructive",
           title: "Score not saved",
-          description: "Your quiz score couldn't be saved. Your progress may not appear in Analytics or Test History.",
+          description: "Your quiz score couldn't be saved. Your progress may not appear in Analytics or Quiz/Test History.",
         });
         if (retryCount < 1) {
           setTimeout(() => saveScore(retryCount + 1), 2000);
@@ -781,13 +799,14 @@ export default function Quiz() {
   }
 
   if (quizCompleted) {
+    const resultsUserAnswers = completionPayloadRef.current?.userAnswers ?? userAnswers;
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
         <Navigation />
         <div className="container mx-auto">
           <UnifiedQuizResultsReview
             questions={questions as any}
-            userAnswers={userAnswers}
+            userAnswers={resultsUserAnswers}
             subjectId={subjectId as string}
             score={score}
             totalQuestions={questions.length}

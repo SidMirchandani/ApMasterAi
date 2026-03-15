@@ -1,16 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getDb } from "../../../server/db";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 
 function isAdmin(email?: string | null): boolean {
   const adminEmails = process.env.ADMIN_EMAILS || "";
   const allow = adminEmails.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  return !!email && allow.includes(email.toLowerCase());
+  return !!email && allow.includes((email as string).toLowerCase());
 }
 
 /**
  * GET /api/user/admin-check
- * Returns { success: true, data: { isAdmin: boolean } } for authenticated users.
- * Used by the dashboard to show/hide admin-only actions (e.g. delete subject).
+ * Returns { success: true, data: { isAdmin, experimentalFeaturesEnabled } } for authenticated users.
+ * experimentalFeaturesEnabled is read from the user doc (default false).
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -19,18 +20,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
-    return res.status(401).json({ success: false, data: { isAdmin: false } });
+    return res.status(401).json({ success: false, data: { isAdmin: false, experimentalFeaturesEnabled: false } });
   }
 
   try {
     const token = authHeader.split("Bearer ")[1];
     const decoded = await verifyFirebaseToken(token);
     if (!decoded) {
-      return res.status(401).json({ success: false, data: { isAdmin: false } });
+      return res.status(401).json({ success: false, data: { isAdmin: false, experimentalFeaturesEnabled: false } });
     }
     const admin = isAdmin(decoded.email);
-    return res.status(200).json({ success: true, data: { isAdmin: admin } });
+    let experimentalFeaturesEnabled = false;
+    if (decoded.uid) {
+      const db = getDb();
+      const userDoc = await db.collection("users").doc(decoded.uid).get();
+      experimentalFeaturesEnabled = userDoc.exists && userDoc.data()?.experimentalFeaturesEnabled === true;
+    }
+    return res.status(200).json({
+      success: true,
+      data: { isAdmin: admin, experimentalFeaturesEnabled },
+    });
   } catch {
-    return res.status(401).json({ success: false, data: { isAdmin: false } });
+    return res.status(401).json({ success: false, data: { isAdmin: false, experimentalFeaturesEnabled: false } });
   }
 }

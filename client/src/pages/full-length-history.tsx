@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, ArrowLeft, FileQuestion, ClipboardList, BookOpen } from "lucide-react";
+import { BarChart3, X, FileQuestion, ClipboardList, BookOpen } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
@@ -66,6 +66,7 @@ export default function FullLengthHistoryPage() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const subjectId = (router.query.subject as string) || undefined;
+  const from = (router.query.from as string) || undefined; // "analytics" | "study" – where we came from
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -123,25 +124,26 @@ export default function FullLengthHistoryPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <Navigation />
       <div className="container mx-auto px-4 py-4 max-w-3xl">
-        <div className="flex items-center gap-3 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push(subjectId ? `/analytics?subject=${subjectId}` : "/dashboard")}
-            className="rounded-full"
-            aria-label="Back"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <BarChart3 className="w-6 h-6 text-purple-500" />
-              Test History
+              <BarChart3 className="w-6 h-6 text-purple-500 flex-shrink-0" />
+              Quiz/Test History
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
               {subjectId ? `Subject: ${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId ?? "")}` : "All subjects"}
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/study")}
+            className="rounded-xl shrink-0"
+            aria-label="Close History"
+          >
+            <X className="h-4 w-4 mr-1.5" />
+            Close History
+          </Button>
         </div>
 
         {isLoading ? (
@@ -160,7 +162,7 @@ export default function FullLengthHistoryPage() {
               </p>
               <Button
                 className="mt-4"
-                onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
+                onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/study")}
               >
                 Go to study
               </Button>
@@ -181,14 +183,14 @@ export default function FullLengthHistoryPage() {
                     tabIndex={0}
                     onClick={() =>
                       router.push(
-                        `/full-length-results?subject=${test.subjectId}&testId=${test.id}`,
+                        `/full-length-results?subject=${test.subjectId}&testId=${test.id}&from=history${from ? `&returnTo=${from}` : ""}`,
                       )
                     }
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
                         router.push(
-                          `/full-length-results?subject=${test.subjectId}&testId=${test.id}`,
+                          `/full-length-results?subject=${test.subjectId}&testId=${test.id}&from=history${from ? `&returnTo=${from}` : ""}`,
                         );
                       }
                     }}

@@ -951,6 +951,8 @@ export class Storage {
       totalQuestions: number;
       sectionName?: string;
       unitNumber?: number;
+      userAnswers?: { [key: string]: string };
+      questions?: any[];
     }
   ): Promise<any> {
     await this.ensureConnection();
@@ -975,7 +977,7 @@ export class Storage {
       percentage: payload.percentage,
     };
 
-    const testData = {
+    const testData: Record<string, any> = {
       id: docId,
       type: "unit",
       date: timestamp,
@@ -987,6 +989,12 @@ export class Storage {
       sectionCode: payload.sectionCode,
       sectionBreakdown,
     };
+    if (payload.userAnswers != null && typeof payload.userAnswers === "object") {
+      testData.userAnswers = payload.userAnswers;
+    }
+    if (payload.questions != null && Array.isArray(payload.questions)) {
+      testData.questions = payload.questions;
+    }
 
     await this.ensureUserSubject(userId, subjectId);
 

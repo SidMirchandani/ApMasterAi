@@ -22,6 +22,8 @@ interface QuizBottomBarProps {
   onExit?: () => void;
   /** Label for Exit button when reviewOnly (default: "Exit") */
   exitLabel?: string;
+  /** When true, hide the Exit button (e.g. when a top "Close Review" is shown instead) */
+  hideExitButton?: boolean;
 }
 
 export function QuizBottomBar({
@@ -42,9 +44,10 @@ export function QuizBottomBar({
   reviewOnly = false,
   onExit,
   exitLabel = "Exit",
+  hideExitButton = false,
 }: QuizBottomBarProps) {
   const showPalette = !reviewOnly && onOpenPalette;
-  const showExit = !!onExit;
+  const showExit = !!onExit && !hideExitButton;
 
   return (
     <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">

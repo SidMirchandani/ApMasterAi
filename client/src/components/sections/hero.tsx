@@ -50,7 +50,7 @@ export function Hero() {
       {/* Background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
-          className="orb w-[700px] h-[700px] -top-40 -right-20 bg-emerald-400/20 dark:bg-emerald-500/10 animate-blob"
+          className="orb w-[700px] h-[700px] -top-40 -right-20 bg-blue-400/20 dark:bg-blue-500/10 animate-blob"
           style={{ animationDuration: "7s" }}
         />
         <div
@@ -81,12 +81,12 @@ export function Hero() {
             }`}
           >
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20 mb-8">
-              <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-              <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200/60 dark:border-blue-500/20 mb-8">
+              <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
                 AI-Powered AP Exam Prep
               </span>
-              <span className="bg-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full leading-none flex-shrink-0">
+              <span className="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full leading-none flex-shrink-0">
                 Free
               </span>
             </div>
@@ -111,7 +111,7 @@ export function Hero() {
             <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-lg mb-10 leading-relaxed font-medium">
               Personalized study plans, adaptive practice tests, and instant AI
               feedback — built to get you a{" "}
-              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+              <span className="font-extrabold text-blue-600 dark:text-blue-400">
                 perfect 5
               </span>
               .
@@ -122,7 +122,7 @@ export function Hero() {
               <Link href="/signup">
                 <Button
                   size="lg"
-                  className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-9 py-6 text-base font-bold group rounded-2xl transition-all duration-300 shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.45)] hover:-translate-y-0.5 active:translate-y-0"
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-9 py-6 text-base font-bold group rounded-2xl transition-all duration-300 shadow-[0_4px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_30px_rgba(59,130,246,0.45)] hover:-translate-y-0.5 active:translate-y-0"
                 >
                   Start Learning Free
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -132,7 +132,7 @@ export function Hero() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full sm:w-auto border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 px-9 py-6 text-base font-bold rounded-2xl transition-all duration-300"
+                  className="w-full sm:w-auto border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-700 px-9 py-6 text-base font-bold rounded-2xl transition-all duration-300"
                 >
                   Browse Courses
                 </Button>
@@ -149,7 +149,7 @@ export function Hero() {
                   key={label}
                   className="flex items-center gap-2 text-slate-500 dark:text-slate-400"
                 >
-                  <Icon className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                  <Icon className="w-4 h-4 text-blue-500 flex-shrink-0" />
                   <span className="text-sm font-semibold">{label}</span>
                 </div>
               ))}
@@ -168,7 +168,7 @@ export function Hero() {
               {/* Main card — matches dashboard subject card */}
               <div className="w-[340px] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-[0_24px_60px_rgba(0,0,0,0.1)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.4)] overflow-hidden">
                 {/* Colored top bar */}
-                <div className="h-1 w-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+                <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-blue-600" />
                 {/* Header: subject name + meta */}
                 <div className="px-4 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
                   <p className="text-base font-display font-bold text-slate-900 dark:text-white leading-tight">
@@ -188,19 +188,19 @@ export function Hero() {
                 </div>
                 {/* Two stat boxes */}
                 <div className="grid grid-cols-2 gap-2 p-4">
-                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-800/60">
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/60 dark:border-blue-800/60">
                     <p className="text-[9px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 mb-1 flex items-center gap-1">
                       <TrendingUp className="w-2.5 h-2.5" /> Predicted Score
                     </p>
-                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">5<span className="text-sm font-bold opacity-60">/5</span></p>
+                    <p className="text-2xl font-black text-blue-600 dark:text-blue-400">5<span className="text-sm font-bold opacity-60">/5</span></p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
                     <p className="text-[9px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 mb-1 flex items-center gap-1">
                       <Trophy className="w-2.5 h-2.5" /> Unit Mastery
                     </p>
-                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">6<span className="text-sm font-bold text-slate-400">/9</span></p>
+                    <p className="text-2xl font-black text-blue-600 dark:text-blue-400">6<span className="text-sm font-bold text-slate-400">/9</span></p>
                     <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full mt-1.5 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" style={{ width: "67%" }} />
+                      <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style={{ width: "67%" }} />
                     </div>
                   </div>
                 </div>
@@ -212,7 +212,7 @@ export function Hero() {
                       <div
                         key={i}
                         className={`w-4 h-4 rounded-md flex items-center justify-center ${
-                          i <= 6 ? "bg-emerald-500" : i <= 8 ? "bg-blue-400" : "bg-slate-200 dark:bg-slate-700"
+                          i <= 6 ? "bg-blue-500" : i <= 8 ? "bg-blue-400" : "bg-slate-200 dark:bg-slate-700"
                         }`}
                       >
                         {i <= 5 && (
@@ -226,7 +226,7 @@ export function Hero() {
                 </div>
                 {/* CTA */}
                 <div className="px-4 pb-4">
-                  <div className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(16,185,129,0.25)]">
+                  <div className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(59,130,246,0.25)]">
                     <Target className="w-3.5 h-3.5" />
                     Continue Practice
                     <TrendingUp className="w-3.5 h-3.5" />
@@ -251,8 +251,8 @@ export function Hero() {
 
               {/* Floating: session complete */}
               <div className="absolute -bottom-4 -left-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl px-4 py-3 flex items-center gap-2.5 animate-float-slow">
-                <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                <div className="w-9 h-9 bg-blue-100 dark:bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
                   <p className="text-xs font-black text-slate-900 dark:text-white leading-none">
@@ -415,11 +415,11 @@ export function HeroStats() {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-500 p-px shadow-[0_8px_32px_rgba(16,185,129,0.2)]">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-500 to-blue-600 p-px shadow-[0_8px_32px_rgba(59,130,246,0.2)]">
             <div className="bg-white dark:bg-slate-900 rounded-[calc(1.5rem-1px)] px-8 py-6 text-center">
               <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                 With{" "}
-                <span className="font-black text-emerald-600 dark:text-emerald-400">
+                <span className="font-black text-blue-600 dark:text-blue-400">
                   61% of teens
                 </span>{" "}
                 reporting grades as a significant stressor, APMaster.ai combines

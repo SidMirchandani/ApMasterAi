@@ -36,7 +36,7 @@ export default function Navigation() {
   }, []);
 
   const isInQuizMode =
-    (location === "/quiz" && router.query.unit) ||
+    (location === "/quiz" && router.query.unit && router.query.review !== "1") ||
     (location === "/diagnostic" && router.query.subject);
 
   const handleDisabledClick = (e: React.MouseEvent) => {
@@ -100,12 +100,12 @@ export default function Navigation() {
 
     if (location.startsWith("/full-length-history")) {
       if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
-      bc.push({ label: "Test History", href: "#" });
+      bc.push({ label: "Quiz/Test History", href: "#" });
     }
 
     if (location.startsWith("/full-length-results")) {
       if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
-      bc.push({ label: "Test History", href: `/full-length-history?subject=${subject}` });
+      bc.push({ label: "Quiz/Test History", href: `/full-length-history?subject=${subject}` });
       bc.push({ label: "Test Results", href: "#" });
     }
 
@@ -113,7 +113,7 @@ export default function Navigation() {
       const testId = router.query.testId as string;
       const section = router.query.section as string;
       if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
-      bc.push({ label: "Test History", href: `/full-length-history?subject=${subject}` });
+      bc.push({ label: "Quiz/Test History", href: `/full-length-history?subject=${subject}` });
       bc.push({ label: "Test Results", href: `/full-length-results?subject=${subject}&testId=${testId}` });
       bc.push({ label: section === "all" ? "Full Test Review" : "Unit Review", href: "#" });
     }

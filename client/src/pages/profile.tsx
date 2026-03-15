@@ -1,12 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Loader2, User, Mail } from "lucide-react";
+import { ArrowLeft, Loader2, User, Mail, FlaskConical } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
@@ -31,6 +29,8 @@ export default function Profile() {
       lastName: string;
       displayName: string;
       email: string;
+      experimentalFeaturesEnabled?: boolean;
+      isAdmin?: boolean;
     };
   }>({
     queryKey: ["userProfile"],
@@ -96,6 +96,39 @@ export default function Profile() {
       });
     },
   });
+
+  const experimentalFeaturesMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const response = await apiRequest("POST", "/api/user/profile", {
+        experimentalFeatures: enabled,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update experimental features");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      queryClient.invalidateQueries({ queryKey: ["adminCheck"] });
+      toast({
+        title: "Experimental features updated",
+        description: "Your preference has been saved.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating setting",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleExperimentalToggle = () => {
+    const next = !(userProfile?.data?.experimentalFeaturesEnabled ?? false);
+    experimentalFeaturesMutation.mutate(next);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,6 +274,49 @@ export default function Profile() {
               </form>
             </CardContent>
           </Card>
+
+          {userProfile?.data?.isAdmin && (
+            <Card className="mt-6 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                  <FlaskConical className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  Experimental features
+                </CardTitle>
+                <CardDescription className="text-slate-500 dark:text-slate-400">
+                  Enable admin-only features such as DualPath, Auto-answer, and subject deletion. Off by default.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between gap-4">
+                  <Label htmlFor="experimental-switch" className="text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                    Experimental features {userProfile?.data?.experimentalFeaturesEnabled ? "on" : "off"}
+                  </Label>
+                  <button
+                    id="experimental-switch"
+                    type="button"
+                    role="switch"
+                    aria-checked={userProfile?.data?.experimentalFeaturesEnabled ?? false}
+                    disabled={experimentalFeaturesMutation.isPending}
+                    onClick={handleExperimentalToggle}
+                    className={`
+                      relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
+                      transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                      disabled:cursor-not-allowed disabled:opacity-60
+                      ${userProfile?.data?.experimentalFeaturesEnabled ? "bg-blue-600 dark:bg-blue-500" : "bg-slate-200 dark:bg-slate-600"}
+                    `}
+                  >
+                    <span
+                      className={`
+                        pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0
+                        transition duration-200 ease-in-out
+                        ${userProfile?.data?.experimentalFeaturesEnabled ? "translate-x-5" : "translate-x-1"}
+                      `}
+                    />
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </main>
       <SimpleFooter />

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, X } from "lucide-react";
 import { getSectionInfo, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayCorrectLabel } from "@/lib/mcqDisplay";
 import { percentageToAPScore } from "@/lib/ap-score-utils";
@@ -36,6 +36,8 @@ export interface UnifiedQuizResultsReviewProps {
   onCloseReview: () => void;
   /** When set, unit row clicks navigate to section-review; otherwise we show question detail inline */
   testId?: string;
+  /** When navigating to section-review, pass this as `returnTo` on full-length-history (e.g. "study") */
+  sectionReviewReturnTo?: string;
 }
 
 export function UnifiedQuizResultsReview({
@@ -47,6 +49,7 @@ export function UnifiedQuizResultsReview({
   isFullLength,
   onCloseReview,
   testId,
+  sectionReviewReturnTo,
 }: UnifiedQuizResultsReviewProps) {
   const router = useRouter();
   const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
@@ -57,10 +60,22 @@ export function UnifiedQuizResultsReview({
 
   const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
+  // Resolve display correct label (handles missing answerIndex via correct_answer)
+  const getCorrectLabel = (q: Question): string => {
+    if (q.answerIndex !== undefined && q.answerIndex >= 0 && q.answerIndex < 5) {
+      return getDisplayCorrectLabel(q, mcqOptionCount);
+    }
+    const letter = (q as { correct_answer?: string }).correct_answer?.trim?.().toUpperCase?.();
+    if (!letter || !/^[A-E]$/.test(letter)) return "";
+    if (mcqOptionCount === 4 && letter === "E") return "D";
+    return letter;
+  };
+
   // Correct/incorrect per question (using display correct label for 4-option subjects)
   const correctMap = questions.reduce<Record<number, boolean>>((acc, q, i) => {
-    const correctLabel = getDisplayCorrectLabel(q, mcqOptionCount);
-    acc[i] = userAnswers[i] === correctLabel;
+    const correctLabel = getCorrectLabel(q);
+    const userAns = userAnswers[i] ?? userAnswers[String(i)];
+    acc[i] = userAns === correctLabel;
     return acc;
   }, {});
 
@@ -80,8 +95,9 @@ export function UnifiedQuizResultsReview({
       if (!map[code])
         map[code] = { name: info.name, unitNumber: info.unitNumber, correct: 0, total: 0, percentage: 0 };
       map[code].total++;
-      const correctLabel = getDisplayCorrectLabel(q, mcqOptionCount);
-      if (userAnswers[i] === correctLabel) map[code].correct++;
+      const correctLabel = getCorrectLabel(q);
+      const userAns = userAnswers[i] ?? userAnswers[String(i)];
+      if (userAns === correctLabel) map[code].correct++;
     });
     Object.values(map).forEach((s) => {
       s.percentage = s.total > 0 ? Math.round((s.correct / s.total) * 100) : 0;
@@ -117,8 +133,11 @@ export function UnifiedQuizResultsReview({
     if (total === 0) return;
     if (testId) {
       const mode = sectionCode === "all" || sectionCode === "incorrect" ? "&mode=review" : "";
+      const returnToParam = sectionReviewReturnTo
+        ? `&returnTo=${encodeURIComponent(sectionReviewReturnTo)}`
+        : "";
       router.push(
-        `/section-review?subject=${subjectId}&testId=${testId}&section=${sectionCode}${mode}`
+        `/section-review?subject=${subjectId}&testId=${testId}&section=${sectionCode}${mode}${returnToParam}`
       );
     } else {
       const firstIndex = questions.findIndex((q) => (q.section_code || "Unknown") === sectionCode);
@@ -126,16 +145,31 @@ export function UnifiedQuizResultsReview({
     }
   };
 
-  // Question detail view: same layout as section-review (ReviewQuestionDetail + QuizBottomBar)
+  // Question detail view: top "Close Review" bar + QuizBottomBar without Exit (single close action at top)
   if (selectedQuestionIndex !== null) {
     const q = questions[selectedQuestionIndex];
     if (!q) return null;
     const sec = q.section_code ? sectionPerformance[q.section_code] : null;
     const unitLabel = sec ? `UNIT ${sec.unitNumber}` : undefined;
+    const handleBackToResults = () => setSelectedQuestionIndex(null);
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900/30 flex flex-col">
+        <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 sticky top-0 z-50">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Question {selectedQuestionIndex + 1} of {questions.length}</h1>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackToResults}
+              className="shrink-0"
+            >
+              <X className="h-4 w-4 mr-1.5" />
+              Close Review
+            </Button>
+          </div>
+        </div>
         <div className="flex-1 overflow-y-auto mb-14 pt-2">
-          <div className="max-w-4xl mx-auto px-4 py-2">
+          <div className="max-w-6xl mx-auto px-4 py-2">
             <ReviewQuestionDetail
               question={q as any}
               userAnswer={userAnswers[selectedQuestionIndex]}
@@ -155,8 +189,9 @@ export function UnifiedQuizResultsReview({
             canGoNext={selectedQuestionIndex < questions.length - 1}
             isLastQuestion={selectedQuestionIndex === questions.length - 1}
             reviewOnly
-            onExit={() => setSelectedQuestionIndex(null)}
+            onExit={handleBackToResults}
             exitLabel="Back to results"
+            hideExitButton
           />
         </div>
       </div>
@@ -175,6 +210,7 @@ export function UnifiedQuizResultsReview({
             onClick={onCloseReview}
             className="shrink-0"
           >
+            <X className="h-4 w-4 mr-1.5" />
             Close Review
           </Button>
         </div>

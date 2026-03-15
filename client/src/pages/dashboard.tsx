@@ -19,7 +19,7 @@ import { APScoreCircle } from "@/components/ui/APScoreCircle";
 import Navigation from "@/components/ui/navigation";
 import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
-import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -84,17 +84,18 @@ export default function Dashboard() {
     gcTime: Infinity,
   });
 
-  const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean } }>({
+  const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean; experimentalFeaturesEnabled?: boolean } }>({
     queryKey: ["adminCheck"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/user/admin-check");
-      if (!res.ok) return { success: false, data: { isAdmin: false } };
+      if (!res.ok) return { success: false, data: { isAdmin: false, experimentalFeaturesEnabled: false } };
       return res.json();
     },
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
   });
   const isAdmin = adminCheck?.data?.isAdmin ?? false;
+  const showAdminFeatures = isAdmin && (adminCheck?.data?.experimentalFeaturesEnabled ?? false);
 
   const {
     data: subjectsResponse,
@@ -121,75 +122,15 @@ export default function Dashboard() {
   );
 
   const activeList = useMemo(() => subjects.filter((s) => !s.archived), [subjects]);
-  const activeSubjectIds = useMemo(() => activeList.map((s) => s.subjectId), [activeList]);
-
-  const testHistoryQueries = useQueries({
-    queries: activeSubjectIds.map((subjectId) => ({
-      queryKey: ["testHistory", subjectId],
-      queryFn: async () => {
-        const res = await apiRequest("GET", `/api/user/test-history?subjectId=${subjectId}`);
-        if (!res.ok) throw new Error("Failed");
-        return res.json();
-      },
-      staleTime: 60000,
-      enabled: isAuthenticated && activeSubjectIds.length > 0,
-    })),
-  });
-
-  const unitProgressQueries = useQueries({
-    queries: activeSubjectIds.map((subjectId) => ({
-      queryKey: ["unitProgress", subjectId],
-      queryFn: async () => {
-        const res = await apiRequest("GET", `/api/user/subjects/${subjectId}/unit-progress`);
-        if (!res.ok) throw new Error("Failed");
-        return res.json();
-      },
-      staleTime: 60000,
-      enabled: isAuthenticated && activeSubjectIds.length > 0,
-    })),
-  });
-
-  const hasProjectedScoreMap = useMemo(() => {
-    const map: Record<string, boolean> = {};
-    activeSubjectIds.forEach((subjectId, i) => {
-      const thRes = testHistoryQueries[i]?.data as {
-        data?: { percentage: number; sectionBreakdown?: Record<string, { correct: number; total: number }> }[];
-      } | undefined;
-      const testHistory = Array.isArray(thRes?.data) ? thRes.data : [];
-      const upRes = unitProgressQueries[i]?.data as {
-        data?: Record<string, { highestScore?: number; mcqScore?: number }>;
-      } | undefined;
-      const unitProgressMap =
-        upRes?.data && typeof upRes.data === "object" && !Array.isArray(upRes.data) ? upRes.data : {};
-      const { hasEnoughForPrediction } = computeStudentScoreForPrediction({
-        unitProgressMap,
-        testHistory,
-        subjectId,
-      });
-      map[subjectId] = hasEnoughForPrediction;
-    });
-    return map;
-  }, [activeSubjectIds, testHistoryQueries, unitProgressQueries]);
-
-  const scoreDataReady = useMemo(() => {
-    if (activeSubjectIds.length === 0) return true;
-    const thReady = testHistoryQueries.every((q) => q.isSuccess || q.isError);
-    const upReady = unitProgressQueries.every((q) => q.isSuccess || q.isError);
-    return thReady && upReady;
-  }, [activeSubjectIds.length, testHistoryQueries, unitProgressQueries]);
 
   const activeSubjects = useMemo(() => {
-    const sorted = [...activeList].sort((a, b) => {
-      const aHas = hasProjectedScoreMap[a.subjectId] ?? false;
-      const bHas = hasProjectedScoreMap[b.subjectId] ?? false;
-      if (aHas && !bHas) return -1;
-      if (!aHas && bHas) return 1;
-      return (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" });
-    });
+    const sorted = [...activeList].sort((a, b) =>
+      (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
+    );
     const q = subjectSearch.trim().toLowerCase();
     if (!q) return sorted;
     return sorted.filter((s) => (s.name || "").toLowerCase().includes(q) || (s.description || "").toLowerCase().includes(q));
-  }, [activeList, subjectSearch, hasProjectedScoreMap]);
+  }, [activeList, subjectSearch]);
   const archivedSubjects = useMemo(() => {
     const archived = subjects.filter((s) => s.archived);
     const q = subjectSearch.trim().toLowerCase();
@@ -319,8 +260,6 @@ export default function Dashboard() {
           <CenteredLoader />
         ) : subjects.length === 0 ? (
           <EmptyState router={router} />
-        ) : !scoreDataReady ? (
-          <CenteredLoader />
         ) : (
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -355,10 +294,10 @@ export default function Dashboard() {
                 <SubjectCard
                   key={subject.id}
                   subject={subject}
-                  isAdmin={isAdmin}
+                  isAdmin={showAdminFeatures}
                   onArchive={() => setSubjectToArchive(subject)}
                   onDelete={
-                    isAdmin
+                    showAdminFeatures
                       ? () => {
                           setSubjectToRemove(subject);
                           setShowRemoveDialog(true);
@@ -384,8 +323,8 @@ export default function Dashboard() {
         )}
       </main>
 
-      {/* Delete dialog (only relevant when user is admin) */}
-      {isAdmin && (
+      {/* Delete dialog (only relevant when experimental features are on) */}
+      {showAdminFeatures && (
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="rounded-2xl max-w-md">
           <AlertDialogHeader>
@@ -767,29 +706,17 @@ const SubjectCard = ({
                 {units.length > 10 && <span className="text-[10px] text-slate-400 self-center font-semibold">+{units.length - 10}</span>}
               </div>
             </div>
-            {!predicted ? (
+            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
               <Button
-                onClick={() => router.push(`/diagnostic?subject=${subject.subjectId}`)}
-                title="Take the diagnostic test to get your projected AP score and identify units to focus on"
-                className="flex-shrink-0 bg-rose-500 hover:bg-rose-600 text-white py-2.5 h-9 px-3 sm:px-4 text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] group"
+                onClick={onStudy}
+                title={testHistory.length === 0 ? "Start practice" : "Continue practice"}
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-2.5 h-9 px-3 sm:px-4 text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] group"
               >
-                <Sparkles className="w-4 h-4 mr-1.5 flex-shrink-0" aria-hidden />
-                <span className="md:hidden">Diagnostic</span>
-                <span className="hidden md:inline">Take Diagnostic Test</span>
+                <span className="md:hidden">{testHistory.length === 0 ? "Start" : "Practice"}</span>
+                <span className="hidden md:inline">{testHistory.length === 0 ? "Start practice" : "Continue practice"}</span>
+                <ArrowRight className="w-4 h-4 ml-1.5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" aria-hidden />
               </Button>
-            ) : (
-              <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-                <Button
-                  onClick={onStudy}
-                  title="Continue Practice"
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-2.5 h-9 px-3 sm:px-4 text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] group"
-                >
-                  <span className="md:hidden">Practice</span>
-                  <span className="hidden md:inline">Continue Practice</span>
-                  <ArrowRight className="w-4 h-4 ml-1.5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" aria-hidden />
-                </Button>
-              </div>
-            )}
+            </div>
           </div>
         </CardContent>
       </div>

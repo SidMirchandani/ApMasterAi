@@ -2,11 +2,17 @@ import { useState, useEffect } from "react";
 import { getAuthHeaders } from "@/lib/queryClient";
 
 /**
- * Returns whether the current user is an admin (for admin-only UI like auto-answer).
- * Uses GET /api/user/admin-check with the current auth token.
+ * Returns admin and experimental feature flags from GET /api/user/admin-check.
+ * showAdminFeatures = isAdmin && experimentalFeaturesEnabled (gates admin-only UI).
  */
-export function useAdminCheck(): { isAdmin: boolean; loading: boolean } {
+export function useAdminCheck(): {
+  isAdmin: boolean;
+  experimentalFeaturesEnabled: boolean;
+  showAdminFeatures: boolean;
+  loading: boolean;
+} {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [experimentalFeaturesEnabled, setExperimentalFeaturesEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,6 +24,7 @@ export function useAdminCheck(): { isAdmin: boolean; loading: boolean } {
         if (!headers?.Authorization) {
           if (!cancelled) {
             setIsAdmin(false);
+            setExperimentalFeaturesEnabled(false);
             setLoading(false);
           }
           return;
@@ -25,10 +32,16 @@ export function useAdminCheck(): { isAdmin: boolean; loading: boolean } {
         const res = await fetch("/api/user/admin-check", { headers });
         const data = await res.json().catch(() => ({}));
         if (!cancelled) {
-          setIsAdmin(!!data?.data?.isAdmin);
+          const admin = !!data?.data?.isAdmin;
+          const experimental = !!data?.data?.experimentalFeaturesEnabled;
+          setIsAdmin(admin);
+          setExperimentalFeaturesEnabled(experimental);
         }
       } catch {
-        if (!cancelled) setIsAdmin(false);
+        if (!cancelled) {
+          setIsAdmin(false);
+          setExperimentalFeaturesEnabled(false);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -40,5 +53,7 @@ export function useAdminCheck(): { isAdmin: boolean; loading: boolean } {
     };
   }, []);
 
-  return { isAdmin, loading };
+  const showAdminFeatures = isAdmin && experimentalFeaturesEnabled;
+
+  return { isAdmin, experimentalFeaturesEnabled, showAdminFeatures, loading };
 }
