@@ -14,6 +14,15 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: "/__/auth/:path*",
+        destination:
+          "https://gen-lang-client-0260042933.firebaseapp.com/__/auth/:path*",
+      },
+    ];
+  },
   experimental: {
     esmExternals: true,
   },
