@@ -5,6 +5,7 @@ import { getFirestore, Firestore } from "firebase/firestore";
 // Check if all required Firebase config is available
 const hasFirebaseConfig = !!(
   process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+  process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
   process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
   process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 );
@@ -41,6 +42,17 @@ function initializeFirebase(): { app: FirebaseApp | null, auth: Auth | null, db:
   }
 
   try {
+    if (typeof window !== "undefined") {
+      const currentHost = window.location.hostname;
+      const configuredAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+      if (configuredAuthDomain && configuredAuthDomain !== currentHost) {
+        console.warn(
+          `Firebase authDomain (${configuredAuthDomain}) does not match current host (${currentHost}). ` +
+            `Redirect-based sign-in can fail with "missing initial state" if these differ.`
+        );
+      }
+    }
+
     // Initialize Firebase app (ensure single instance)
     const existingApps = getApps();
     app = existingApps.length > 0 ? existingApps[0] : initializeApp(firebaseConfig);
