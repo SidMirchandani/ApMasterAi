@@ -1,14 +1,12 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
   signOut,
   User,
   UserCredential,
-  browserPopupRedirectResolver,
 } from "firebase/auth";
 import { auth, isFirebaseEnabled } from "./firebase";
 
@@ -76,8 +74,8 @@ export const loginWithEmail = async ({
   }
 };
 
-// Sign in with Google — tries popup first; if blocked, uses redirect
-export const signInWithGoogle = async (): Promise<UserCredential | void> => {
+// Sign in with Google — redirect-only (no popups)
+export const signInWithGoogle = async (): Promise<void> => {
   if (!isFirebaseEnabled || !auth) {
     throw new Error(
       "Authentication is not configured. Please contact support.",
@@ -87,19 +85,11 @@ export const signInWithGoogle = async (): Promise<UserCredential | void> => {
   const provider = new GoogleAuthProvider();
 
   try {
-    return await signInWithPopup(auth, provider, browserPopupRedirectResolver);
-  } catch (err: unknown) {
-    const code = err && typeof err === "object" && "code" in err ? (err as { code: string }).code : "";
-    const isPopupBlocked =
-      code === "auth/popup-blocked" ||
-      code === "auth/cancelled-popup-request" ||
-      code === "auth/popup-closed-by-user";
-
-    if (isPopupBlocked) {
-      await signInWithRedirect(auth, provider);
-      return; // Page will redirect; result handled by getGoogleRedirectResult on return
-    }
-    throw err;
+    await signInWithRedirect(auth, provider);
+    return; // Page will redirect; result handled by getGoogleRedirectResult on return
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to login with Google";
+    throw new Error(errorMessage);
   }
 };
 
@@ -108,8 +98,10 @@ export const getGoogleRedirectResult = async (): Promise<UserCredential | null> 
   if (!auth) return null;
   try {
     return await getRedirectResult(auth);
-  } catch {
-    return null;
+  } catch (error: unknown) {
+    // Surface redirect errors to the UI layer so it can message the user.
+    const errorMessage = error instanceof Error ? error.message : "Google sign-in redirect failed";
+    throw new Error(errorMessage);
   }
 };
 

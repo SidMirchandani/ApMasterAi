@@ -25,11 +25,21 @@ export default function Login() {
 
   useEffect(() => {
     let cancelled = false;
-    getGoogleRedirectResult().then((result) => {
-      if (cancelled || !result) return;
-      toast({ title: "Welcome back!", description: "You have successfully logged in with Google." });
-      router.replace("/dashboard");
-    });
+    getGoogleRedirectResult()
+      .then((result) => {
+        if (cancelled || !result) return;
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in with Google.",
+        });
+        router.replace("/dashboard");
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : "Google sign-in failed";
+        setError(message);
+        toast({ title: "Google sign-in failed", description: message, variant: "destructive" });
+      });
     return () => { cancelled = true; };
   }, [router, toast]);
 
@@ -65,11 +75,8 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      const result = await signInWithGoogle();
-      if (result) {
-        toast({ title: "Welcome back!", description: "You have successfully logged in with Google." });
-        router.push("/dashboard");
-      }
+      await signInWithGoogle();
+      // Redirect will navigate away; on return we handle it via getGoogleRedirectResult().
     } catch (error: any) {
       setError(error.message);
     } finally {
