@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Loader2, Mail, Lock, ArrowLeft, Sparkles, Brain, Zap, Target } from "lucide-react";
 import { loginWithEmail, signInWithGoogle, getGoogleRedirectResult } from "@/lib/auth";
+import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -25,10 +26,11 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
-    const auth = getAuth();
     let cancelled = false;
 
     // 1. Immediate Session Check: If Firebase already has a user, move them now
+    if (!auth) return;
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && !cancelled) {
         console.log("Session detected, redirecting...");
