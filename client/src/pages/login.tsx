@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,18 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
+    const auth = getAuth();
     let cancelled = false;
+
+    // 1. Immediate Session Check: If Firebase already has a user, move them now
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && !cancelled) {
+        console.log("Session detected, redirecting...");
+        router.replace("/dashboard");
+      }
+    });
+
+    // 2. Handle Redirect Result: Catch the data coming back from the Google redirect
     getGoogleRedirectResult()
       .then((result) => {
         if (cancelled || !result) return;
@@ -36,11 +48,18 @@ export default function Login() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const message = err instanceof Error ? err.message : "Google sign-in failed";
-        setError(message);
-        toast({ title: "Google sign-in failed", description: message, variant: "destructive" });
+        const message = err instanceof Error ? err.message : "Sign-in failed";
+        console.error("Redirect error:", err);
+        // Only show error if it's a real failure, not just a fresh page load
+        if (!message.includes("auth/operation-not-supported")) {
+          setError(message);
+        }
       });
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [router, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +82,7 @@ export default function Login() {
     try {
       await loginWithEmail({ email: formData.email, password: formData.password });
       toast({ title: "Welcome back!", description: "You have successfully logged in." });
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (error: any) {
       setError(error.message);
     } finally {

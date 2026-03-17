@@ -83,6 +83,7 @@ export const signInWithGoogle = async (): Promise<void> => {
   }
 
   const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
 
   try {
     await signInWithRedirect(auth, provider);
