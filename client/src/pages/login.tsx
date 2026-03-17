@@ -20,6 +20,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [authChecked, setAuthChecked] = useState(false);
+  const [redirectPending, setRedirectPending] = useState(false);
+  const [redirectResultChecked, setRedirectResultChecked] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
@@ -29,19 +32,40 @@ export default function Login() {
     let cancelled = false;
 
     // 1. Immediate Session Check: If Firebase already has a user, move them now
-    if (!auth) return;
+    if (!auth) {
+      setAuthChecked(true);
+      setRedirectPending(false);
+      setRedirectResultChecked(true);
+      return;
+    }
+
+    const hasPendingRedirectFlag =
+      typeof window !== "undefined" &&
+      sessionStorage.getItem("googleRedirectPending") === "1";
+    setRedirectPending(hasPendingRedirectFlag);
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && !cancelled) {
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("googleRedirectPending");
+        }
+        setRedirectPending(false);
         console.log("Session detected, redirecting...");
         router.replace("/dashboard");
+        return;
       }
+      if (!cancelled) setAuthChecked(true);
     });
 
     // 2. Handle Redirect Result: Catch the data coming back from the Google redirect
     getGoogleRedirectResult()
       .then((result) => {
+        if (!cancelled) setRedirectResultChecked(true);
         if (cancelled || !result) return;
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("googleRedirectPending");
+        }
+        setRedirectPending(false);
         toast({
           title: "Welcome back!",
           description: "You have successfully logged in with Google.",
@@ -49,6 +73,7 @@ export default function Login() {
         router.replace("/dashboard");
       })
       .catch((err: unknown) => {
+        if (!cancelled) setRedirectResultChecked(true);
         if (cancelled) return;
         const message = err instanceof Error ? err.message : "Sign-in failed";
         console.error("Redirect error:", err);
@@ -56,6 +81,10 @@ export default function Login() {
         if (!message.includes("auth/operation-not-supported")) {
           setError(message);
         }
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("googleRedirectPending");
+        }
+        setRedirectPending(false);
       });
 
     return () => {
@@ -63,6 +92,20 @@ export default function Login() {
       unsubscribe();
     };
   }, [router, toast]);
+
+  const shouldShowAuthGate =
+    loading || !authChecked || (redirectPending && !redirectResultChecked);
+
+  if (shouldShowAuthGate) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
+        <div className="flex flex-col items-center gap-3 text-slate-700 dark:text-slate-200">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <div className="text-sm font-medium">Signing you in…</div>
+        </div>
+      </div>
+    );
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

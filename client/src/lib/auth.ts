@@ -86,6 +86,9 @@ export const signInWithGoogle = async (): Promise<void> => {
   provider.setCustomParameters({ prompt: "select_account" });
 
   try {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("googleRedirectPending", "1");
+    }
     await signInWithRedirect(auth, provider);
     return; // Page will redirect; result handled by getGoogleRedirectResult on return
   } catch (error: unknown) {
