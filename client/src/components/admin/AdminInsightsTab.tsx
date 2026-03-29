@@ -6,7 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
 import { Users, Activity, MessageCircle, TrendingUp, Loader2, Calendar, BookOpen } from "lucide-react";
-import { SUBJECT_DISPLAY_NAMES, getSubjectDisplayName } from "../../../../lib/subject-display-names";
+import {
+  SUBJECT_DISPLAY_NAMES,
+  getSubjectDisplayName,
+  getSubjectShortName,
+} from "../../../../lib/subject-display-names";
 
 type DateRangeKey = "7d" | "30d" | "90d" | "all";
 
@@ -57,22 +61,48 @@ const RANGE_OPTIONS: { value: DateRangeKey; label: string }[] = [
 
 function formatChartDate(dateStr: string) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: d.getFullYear() !== new Date().getFullYear() ? "2-digit" : undefined });
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: d.getFullYear() !== new Date().getFullYear() ? "2-digit" : undefined,
+  });
 }
 
-/** First-of-month dates in range for x-axis ticks (one marker per month). */
-function getMonthlyTicks(dates: string[]): string[] {
-  if (dates.length === 0) return [];
-  const first = new Date(dates[0]);
-  const last = new Date(dates[dates.length - 1]);
-  const ticks: string[] = [];
-  const cur = new Date(first.getFullYear(), first.getMonth(), 1);
-  const end = new Date(last.getFullYear(), last.getMonth(), 1);
-  while (cur <= end) {
-    ticks.push(cur.toISOString().slice(0, 10));
-    cur.setMonth(cur.getMonth() + 1);
+/** Shorter x-axis labels to avoid overlap on dense series / narrow widths. */
+function formatAxisDate(dateStr: string, compact: boolean) {
+  const d = new Date(dateStr);
+  if (compact) {
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   }
-  return ticks;
+  return formatChartDate(dateStr);
+}
+
+/**
+ * Picks dates that actually exist in the series so Recharts category/time axes align.
+ * When there are many points, limits tick count for readability.
+ */
+function getXAxisTicks(dates: string[], maxTicks: number): string[] | undefined {
+  if (dates.length === 0) return undefined;
+  if (dates.length <= maxTicks) return undefined;
+  const last = dates.length - 1;
+  const picked = new Set<string>();
+  for (let i = 0; i < maxTicks; i++) {
+    const idx = Math.round((i / Math.max(1, maxTicks - 1)) * last);
+    picked.add(dates[idx]);
+  }
+  return [...picked].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+}
+
+function useNarrowInsights(width = 640) {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${width - 1}px)`);
+    const upd = () => setNarrow(mq.matches);
+    upd();
+    mq.addEventListener("change", upd);
+    return () => mq.removeEventListener("change", upd);
+  }, [width]);
+  return narrow;
 }
 
 /** Chart/tooltip label: use shared student-friendly display name. */
@@ -107,6 +137,7 @@ function useCountUp(end: number, durationMs = 1200, enabled = true): number {
 }
 
 export function AdminInsightsTab({ token }: { token: string }) {
+  const narrow = useNarrowInsights(640);
   const [data, setData] = useState<InsightsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -163,12 +194,11 @@ export function AdminInsightsTab({ token }: { token: string }) {
   const hasEnrollmentData =
     enrollmentsOverTime.length > 0 &&
     enrollmentsOverTime.some((p) => p.cumulative > 0);
-  const enrollmentMonthlyTicks =
-    enrollmentsOverTime.length > 0
-      ? getMonthlyTicks(enrollmentsOverTime.map((p) => p.date))
-      : [];
-
-  const monthlyTicks = getMonthlyTicks(data.signUpsOverTime.map((p) => p.date));
+  const signupDates = data.signUpsOverTime.map((p) => p.date);
+  const enrollmentDates = enrollmentsOverTime.map((p) => p.date);
+  const axisTickBudget = narrow ? 6 : 11;
+  const signupXTicks = getXAxisTicks(signupDates, axisTickBudget);
+  const enrollmentXTicks = getXAxisTicks(enrollmentDates, axisTickBudget);
 
   return (
     <div className="space-y-4">
@@ -262,11 +292,11 @@ export function AdminInsightsTab({ token }: { token: string }) {
             {hasSignupData ? (
               <ChartContainer
                 config={chartConfig}
-                className="h-[320px] w-full [&_.recharts-cartesian-grid_line]:stroke-muted/50"
+                className="aspect-auto h-[320px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
               >
                 <AreaChart
                   data={data.signUpsOverTime}
-                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                  margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 36 : 28 }}
                 >
                   <defs>
                     <linearGradient id="cumulativeGradient" x1="0" y1="0" x2="0" y2="1">
@@ -277,12 +307,15 @@ export function AdminInsightsTab({ token }: { token: string }) {
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis
                     dataKey="date"
-                    ticks={monthlyTicks}
-                    interval={0}
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={formatChartDate}
+                    {...(signupXTicks ? { ticks: signupXTicks, interval: 0 as const } : { minTickGap: 28 })}
+                    tick={{ fontSize: narrow ? 10 : 11 }}
+                    tickMargin={6}
+                    tickFormatter={(v) => formatAxisDate(String(v), narrow)}
+                    angle={narrow && signupDates.length > 18 ? -35 : 0}
+                    textAnchor={narrow && signupDates.length > 18 ? "end" : "middle"}
+                    height={narrow && signupDates.length > 18 ? 48 : 28}
                   />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 40 : 52} />
                   <ChartTooltip
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
@@ -332,17 +365,26 @@ export function AdminInsightsTab({ token }: { token: string }) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[220px] w-full [&_.recharts-cartesian-grid_line]:stroke-muted/50">
-                <BarChart data={data.signUpsOverTime} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <ChartContainer
+                config={chartConfig}
+                className="aspect-auto h-[220px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
+              >
+                <BarChart
+                  data={data.signUpsOverTime}
+                  margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 40 : 32 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis
                     dataKey="date"
-                    ticks={monthlyTicks}
-                    interval={0}
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={formatChartDate}
+                    {...(signupXTicks ? { ticks: signupXTicks, interval: 0 as const } : { minTickGap: 32 })}
+                    tick={{ fontSize: narrow ? 10 : 11 }}
+                    tickMargin={6}
+                    tickFormatter={(v) => formatAxisDate(String(v), narrow)}
+                    angle={narrow && signupDates.length > 14 ? -40 : 0}
+                    textAnchor={narrow && signupDates.length > 14 ? "end" : "middle"}
+                    height={narrow && signupDates.length > 14 ? 52 : 30}
                   />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 36 : 48} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="count" fill="var(--color-signups)" radius={[4, 4, 0, 0]} name="New signups" />
                 </BarChart>
@@ -372,11 +414,11 @@ export function AdminInsightsTab({ token }: { token: string }) {
             {hasEnrollmentData ? (
               <ChartContainer
                 config={chartConfig}
-                className="h-[320px] w-full [&_.recharts-cartesian-grid_line]:stroke-muted/50"
+                className="aspect-auto h-[320px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
               >
                 <AreaChart
                   data={enrollmentsOverTime}
-                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                  margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 36 : 28 }}
                 >
                   <defs>
                     <linearGradient id="enrollmentCumulativeGradient" x1="0" y1="0" x2="0" y2="1">
@@ -387,12 +429,15 @@ export function AdminInsightsTab({ token }: { token: string }) {
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis
                     dataKey="date"
-                    ticks={enrollmentMonthlyTicks}
-                    interval={0}
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={formatChartDate}
+                    {...(enrollmentXTicks ? { ticks: enrollmentXTicks, interval: 0 as const } : { minTickGap: 28 })}
+                    tick={{ fontSize: narrow ? 10 : 11 }}
+                    tickMargin={6}
+                    tickFormatter={(v) => formatAxisDate(String(v), narrow)}
+                    angle={narrow && enrollmentDates.length > 18 ? -35 : 0}
+                    textAnchor={narrow && enrollmentDates.length > 18 ? "end" : "middle"}
+                    height={narrow && enrollmentDates.length > 18 ? 48 : 28}
                   />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 40 : 52} />
                   <ChartTooltip
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
@@ -442,17 +487,26 @@ export function AdminInsightsTab({ token }: { token: string }) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[220px] w-full [&_.recharts-cartesian-grid_line]:stroke-muted/50">
-                <BarChart data={enrollmentsOverTime} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <ChartContainer
+                config={chartConfig}
+                className="aspect-auto h-[220px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
+              >
+                <BarChart
+                  data={enrollmentsOverTime}
+                  margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 40 : 32 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis
                     dataKey="date"
-                    ticks={enrollmentMonthlyTicks}
-                    interval={0}
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={formatChartDate}
+                    {...(enrollmentXTicks ? { ticks: enrollmentXTicks, interval: 0 as const } : { minTickGap: 32 })}
+                    tick={{ fontSize: narrow ? 10 : 11 }}
+                    tickMargin={6}
+                    tickFormatter={(v) => formatAxisDate(String(v), narrow)}
+                    angle={narrow && enrollmentDates.length > 14 ? -40 : 0}
+                    textAnchor={narrow && enrollmentDates.length > 14 ? "end" : "middle"}
+                    height={narrow && enrollmentDates.length > 14 ? 52 : 30}
                   />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 36 : 48} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="count" fill="hsl(200, 70%, 40%)" radius={[4, 4, 0, 0]} name="New enrollments" />
                 </BarChart>
@@ -479,27 +533,39 @@ export function AdminInsightsTab({ token }: { token: string }) {
             <CardContent>
               <ChartContainer
                 config={chartConfig}
-                className="w-full"
-                style={{ height: Math.max(400, data.courseEnrollments.length * 36) }}
+                className="w-full aspect-auto min-h-0 [&_.recharts-wrapper]:min-w-0"
+                style={{ height: Math.max(320, data.courseEnrollments.length * (narrow ? 32 : 36)) }}
               >
                 <BarChart
                   data={data.courseEnrollments.map((e) => ({
-                      ...e,
-                      label: chartLabelForSubject(e.displayName, e.subjectId),
-                      fullName: fullSubjectName(e.displayName, e.subjectId),
-                    }))}
-                  margin={{ top: 10, right: 10, left: 8, bottom: 0 }}
+                    ...e,
+                    label: chartLabelForSubject(e.displayName, e.subjectId),
+                    labelCompact: getSubjectShortName(e.subjectId),
+                    fullName: fullSubjectName(e.displayName, e.subjectId),
+                  }))}
+                  margin={{
+                    top: 12,
+                    right: narrow ? 8 : 16,
+                    left: narrow ? 4 : 8,
+                    bottom: 44,
+                  }}
                   layout="vertical"
                 >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis type="number" tick={{ fontSize: 12 }} />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: narrow ? 10 : 12 }}
+                    tickMargin={10}
+                    allowDecimals={false}
+                    domain={[0, "auto"]}
+                  />
                   <YAxis
                     type="category"
-                    dataKey="label"
-                    width={260}
+                    dataKey={narrow ? "labelCompact" : "label"}
+                    width={narrow ? 118 : 200}
                     interval={0}
-                    tick={{ fontSize: 12 }}
-                    tickMargin={8}
+                    tick={{ fontSize: narrow ? 10 : 12 }}
+                    tickMargin={4}
                   />
                   <ChartTooltip
                     content={({ active, payload }) => {
