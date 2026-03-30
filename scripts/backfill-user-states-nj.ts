@@ -2,9 +2,10 @@
  * Optional manual full backfill (same data as automatic migration).
  * Production: opening Admin → Insights runs chunked backfill in the API (no script needed).
  * Use this locally if you want everything in one run:
- *   npx tsx scripts/backfill-user-states-nj.ts
- * Requires Firebase Admin credentials.
+ *   npm run backfill:user-states-nj
+ * Loads `.env.local` via `load-dotenv-local`. Requires Firebase Admin credentials.
  */
+import "./load-dotenv-local";
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "../server/firebase-admin";
 

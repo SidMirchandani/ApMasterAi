@@ -3,6 +3,13 @@ import pLimit from "p-limit";
 import { computeProjectedAPScore } from "./diagnostic-grading";
 import { getApiCodeForSubject } from "./subjects-helper";
 
+export type ApScoreLiftBySubject = {
+  subjectId: string;
+  averageLift: number;
+  /** Enrollments with a computable lift for this subject */
+  count: number;
+};
+
 const CONCURRENCY = 12;
 
 async function getLatestPredictedScore(
@@ -59,18 +66,55 @@ async function improvementForEnrollment(
 }
 
 /**
+ * Overall average lift and per-subject averages (same enrollment criteria as overall).
+ */
+export async function computeApScoreLiftBreakdown(
+  firestore: Firestore,
+  enrollmentDocs: QueryDocumentSnapshot[]
+): Promise<{ average: number | null; bySubject: ApScoreLiftBySubject[] }> {
+  if (enrollmentDocs.length === 0) return { average: null, bySubject: [] };
+  const limit = pLimit(CONCURRENCY);
+  const rows = await Promise.all(
+    enrollmentDocs.map((doc) =>
+      limit(async () => {
+        const data = doc.data();
+        const subjectIdRaw = data.subjectId as string | undefined;
+        if (!subjectIdRaw) return null;
+        const subjectId = getApiCodeForSubject(subjectIdRaw) ?? subjectIdRaw.toUpperCase();
+        const delta = await improvementForEnrollment(firestore, doc);
+        if (delta == null) return null;
+        return { subjectId, delta };
+      })
+    )
+  );
+  const improvements: number[] = [];
+  const bySubjectDeltas: Record<string, number[]> = {};
+  for (const row of rows) {
+    if (!row) continue;
+    improvements.push(row.delta);
+    (bySubjectDeltas[row.subjectId] ??= []).push(row.delta);
+  }
+  const average =
+    improvements.length > 0
+      ? improvements.reduce((a, b) => a + b, 0) / improvements.length
+      : null;
+  const bySubject = Object.entries(bySubjectDeltas)
+    .map(([subjectId, lifts]) => ({
+      subjectId,
+      averageLift: lifts.reduce((a, b) => a + b, 0) / lifts.length,
+      count: lifts.length,
+    }))
+    .sort((a, b) => b.averageLift - a.averageLift);
+  return { average, bySubject };
+}
+
+/**
  * Average AP score lift (1–5 scale points) per enrollment that has a first diagnostic and a later score signal.
  */
 export async function computeAverageApScoreLift(
   firestore: Firestore,
   enrollmentDocs: QueryDocumentSnapshot[]
 ): Promise<number | null> {
-  if (enrollmentDocs.length === 0) return null;
-  const limit = pLimit(CONCURRENCY);
-  const deltas = await Promise.all(
-    enrollmentDocs.map((doc) => limit(() => improvementForEnrollment(firestore, doc)))
-  );
-  const improvements = deltas.filter((d): d is number => d != null && d >= 0);
-  if (improvements.length === 0) return null;
-  return improvements.reduce((a, b) => a + b, 0) / improvements.length;
+  const { average } = await computeApScoreLiftBreakdown(firestore, enrollmentDocs);
+  return average;
 }

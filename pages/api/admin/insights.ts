@@ -4,7 +4,7 @@ import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../../lib/subje
 import { getAllSubjectCodes, getApiCodeForSubject } from "../../../server/subjects-helper";
 import { getDb } from "../../../server/db";
 import { isPlatformAdmin } from "../../../server/platform-admin";
-import { computeAverageApScoreLift } from "../../../server/insights-score-lift";
+import { computeApScoreLiftBreakdown } from "../../../server/insights-score-lift";
 import { runNjBackfillChunkIfNeeded } from "../../../server/nj-backfill-migration";
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
@@ -220,7 +220,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     // Average AP score lift: first diagnostic vs latest score_history or latest full-length (see insights-score-lift.ts).
-    const averageApScoreLift = await computeAverageApScoreLift(firestore, userSubjectsSnap.docs);
+    const { average: averageApScoreLift, bySubject: averageApScoreLiftBySubject } =
+      await computeApScoreLiftBreakdown(firestore, userSubjectsSnap.docs);
 
     const usersByStateMap: Record<string, number> = {};
     usersSnap.docs.forEach((doc) => {
@@ -251,6 +252,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         /** @deprecated Use averageApScoreLift; kept for older clients. */
         platformAccuracyRate: averageApScoreLift ?? 0,
         averageScoreImprovement: averageApScoreLift,
+        averageApScoreLiftBySubject,
         usersByState,
         signUpsOverTime,
         enrollmentsOverTime,

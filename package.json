@@ -9,6 +9,7 @@
     "start": "next start",
     "check": "tsc",
     "backfill:user-states-nj": "tsx scripts/backfill-user-states-nj.ts",
+    "seed:demo-user-regions": "tsx scripts/seed-demo-user-regions.ts",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
@@ -114,6 +115,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^17.3.1",
     "esbuild": "^0.25.0",
     "playwright": "^1.58.2",
     "postcss": "^8.4.47",
