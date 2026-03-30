@@ -1,12 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../../server/db";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
-
-function isAdmin(email?: string | null): boolean {
-  const adminEmails = process.env.ADMIN_EMAILS || "";
-  const allow = adminEmails.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  return !!email && allow.includes((email as string).toLowerCase());
-}
+import { isPlatformAdmin } from "../../../server/platform-admin";
 
 export default async function handler(
   req: NextApiRequest,
@@ -47,8 +42,7 @@ export default async function handler(
     const userRef = db.collection("users").doc(userId);
 
     if (isExperimentalOnly) {
-      const admin = isAdmin(decodedToken.email);
-      if (!admin) {
+      if (!(await isPlatformAdmin(db, decodedToken.email, decodedToken.uid))) {
         return res.status(403).json({ success: false, message: "Only admins can update experimental features" });
       }
       const userDoc = await userRef.get();
@@ -82,7 +76,7 @@ export default async function handler(
       firebaseUid: userId,
       updatedAt: new Date().toISOString(),
     };
-    if (experimentalFeatures !== undefined && isAdmin(decodedToken.email)) {
+    if (experimentalFeatures !== undefined && (await isPlatformAdmin(db, decodedToken.email, decodedToken.uid))) {
       userData.experimentalFeaturesEnabled = experimentalFeatures === true;
     }
 

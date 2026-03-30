@@ -3,7 +3,9 @@ import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getModelName, getGeminiClientOptions } from "../../../lib/gemini-models";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
-import { isAllowed, flattenPromptText, callWithRetry, STUDY_NOTE_PROMPT } from "../../../server/study-notes-helpers";
+import { flattenPromptText, callWithRetry, STUDY_NOTE_PROMPT } from "../../../server/study-notes-helpers";
+import { getDb } from "../../../server/db";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 
 export const config = {
   api: {
@@ -25,13 +27,14 @@ export default async function handler(
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ error: "Missing token" });
 
-  let decoded: { email?: string | null };
+  let decoded: { email?: string | null; uid?: string };
   try {
     decoded = await verifyFirebaseToken(token);
   } catch {
     return res.status(401).json({ error: "Invalid token" });
   }
-  if (!isAllowed(decoded.email)) {
+  const db = getDb();
+  if (!(await isPlatformAdmin(db, decoded.email, decoded.uid ?? null))) {
     return res.status(403).json({ error: "Not an admin" });
   }
 

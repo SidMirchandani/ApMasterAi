@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, MoreVertical, User, Key, Ban, Loader2, Users } from "lucide-react";
+import { Search, MoreVertical, User, Key, Ban, Loader2, Users, Shield, ShieldOff } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface AdminUser {
@@ -29,6 +29,9 @@ interface AdminUser {
   lastLogin: string | null;
   totalCoursesEnrolled: number;
   status: "active" | "banned";
+  isAdmin: boolean;
+  hasEnvAdmin: boolean;
+  hasDbAdmin: boolean;
 }
 
 export function AdminUsersTab({ token }: { token: string }) {
@@ -65,6 +68,38 @@ export function AdminUsersTab({ token }: { token: string }) {
 
   function handleBanUser(user: AdminUser) {
     toast.success(`Ban User: ${user.email} (shell action)`);
+  }
+
+  async function setUserDbAdmin(user: AdminUser, isAdmin: boolean) {
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(user.id)}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isAdmin }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(typeof json?.error === "string" ? json.error : "Failed to update admin");
+        return;
+      }
+      toast.success(isAdmin ? `Admin granted: ${user.email}` : `Admin revoked (DB): ${user.email}`);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? {
+                ...u,
+                hasDbAdmin: isAdmin,
+                isAdmin: u.hasEnvAdmin || isAdmin,
+              }
+            : u,
+        ),
+      );
+    } catch {
+      toast.error("Failed to update admin");
+    }
   }
 
   function formatDate(iso: string) {
@@ -118,6 +153,7 @@ export function AdminUsersTab({ token }: { token: string }) {
                   <TableHead className="font-semibold">Last Login</TableHead>
                   <TableHead className="font-semibold">Courses Enrolled</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold">Admin</TableHead>
                   <TableHead className="w-[70px] font-semibold text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -150,6 +186,18 @@ export function AdminUsersTab({ token }: { token: string }) {
                         {user.status}
                       </span>
                     </TableCell>
+                    <TableCell className="text-slate-300 text-sm">
+                      {user.isAdmin ? (
+                        <span className="text-emerald-700 dark:text-emerald-400">
+                          Yes
+                          {user.hasEnvAdmin && user.hasDbAdmin && " (env+DB)"}
+                          {user.hasEnvAdmin && !user.hasDbAdmin && " (env)"}
+                          {!user.hasEnvAdmin && user.hasDbAdmin && " (DB)"}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">No</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -173,6 +221,20 @@ export function AdminUsersTab({ token }: { token: string }) {
                             <Ban className="mr-2 h-4 w-4" />
                             Ban User
                           </DropdownMenuItem>
+                          {!user.hasDbAdmin && (
+                            <DropdownMenuItem onClick={() => setUserDbAdmin(user, true)}>
+                              <Shield className="mr-2 h-4 w-4" />
+                              Grant admin (DB)
+                            </DropdownMenuItem>
+                          )}
+                          {user.hasDbAdmin && (
+                            <DropdownMenuItem onClick={() => setUserDbAdmin(user, false)}>
+                              <ShieldOff className="mr-2 h-4 w-4" />
+                              {user.hasEnvAdmin
+                                ? "Clear DB admin (still admin if on ADMIN_EMAILS)"
+                                : "Revoke admin (DB)"}
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

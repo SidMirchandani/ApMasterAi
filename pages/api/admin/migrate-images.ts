@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
+import { getDb } from "../../../server/db";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 
 export const config = {
   api: {
@@ -15,12 +17,6 @@ const FIREBASE_STORAGE_PREFIXES = [
   "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0260042933.appspot.com/o/",
 ];
 const BUCKET_NAME = "gen-lang-client-0260042933.firebasestorage.app";
-
-function isAllowed(email?: string | null) {
-  const adminEmails = process.env.ADMIN_EMAILS || "";
-  const allow = adminEmails.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
-  return !!email && allow.includes(email.toLowerCase());
-}
 
 function extractFirebasePath(url: string): string | null {
   for (const prefix of FIREBASE_STORAGE_PREFIXES) {
@@ -74,13 +70,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: "Missing token" });
   }
 
+  let decoded: { email?: string | null; uid?: string };
   try {
-    const decoded = await verifyFirebaseToken(authHeader.slice(7));
-    if (!isAllowed(decoded.email)) {
-      return res.status(403).json({ error: "Not authorized" });
-    }
+    decoded = await verifyFirebaseToken(authHeader.slice(7));
   } catch {
     return res.status(401).json({ error: "Invalid token" });
+  }
+  const db = getDb();
+  if (!(await isPlatformAdmin(db, decoded.email, decoded.uid ?? null))) {
+    return res.status(403).json({ error: "Not authorized" });
   }
 
   const { subjectCode } = req.body || {};

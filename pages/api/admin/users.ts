@@ -1,11 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
-
-function isAllowed(email?: string | null) {
-  const adminEmails = process.env.ADMIN_EMAILS || "";
-  const allow = adminEmails.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  return !!email && allow.includes(email.toLowerCase());
-}
+import { getDb } from "../../../server/db";
+import { isAdminEmailFromEnv, isPlatformAdmin } from "../../../server/platform-admin";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -19,7 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const token = authHeader.split("Bearer ")[1];
   const decoded = await verifyFirebaseToken(token);
-  if (!decoded || !isAllowed(decoded.email)) {
+  const db = getDb();
+  if (!decoded || !(await isPlatformAdmin(db, decoded.email, decoded.uid))) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
@@ -33,7 +30,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const emailQuery = (req.query.email as string) || "";
     let usersSnap = await firestore.collection("users").get();
 
-    // Optional: filter by email on server
     const users: {
       id: string;
       name: string | null;
@@ -42,6 +38,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       lastLogin: string | null;
       totalCoursesEnrolled: number;
       status: "active" | "banned";
+      isAdmin: boolean;
+      hasEnvAdmin: boolean;
+      hasDbAdmin: boolean;
     }[] = [];
 
     const authUids = new Map<string, { lastLogin: string | null }>();
@@ -72,14 +71,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .count()
         .get();
       const totalCoursesEnrolled = courseCountSnap.data().count || 0;
+      const emailStr = email || "(no email)";
+      const hasDbAdmin = data.isAdmin === true;
+      const hasEnvAdmin = isAdminEmailFromEnv(emailStr);
       users.push({
         id,
         name: data.displayName || data.username || null,
-        email: email || "(no email)",
+        email: emailStr,
         joinDate,
         lastLogin,
         totalCoursesEnrolled,
         status: "active",
+        isAdmin: hasEnvAdmin || hasDbAdmin,
+        hasEnvAdmin,
+        hasDbAdmin,
       });
     }
 

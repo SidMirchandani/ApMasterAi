@@ -1,11 +1,3 @@
-export function isAllowed(email?: string | null) {
-  const allow = (process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  return !!email && allow.includes(email.toLowerCase());
-}
-
 export function flattenPromptText(blocks: any[]): string {
   if (!blocks || !Array.isArray(blocks)) return "";
   return blocks

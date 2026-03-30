@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
+import { getDb } from "../../../server/db";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 
 export const config = {
   api: {
@@ -8,14 +10,6 @@ export const config = {
   },
   maxDuration: 60,
 };
-
-function isAllowed(email?: string | null) {
-  const allow = (process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  return !!email && allow.includes(email.toLowerCase());
-}
 
 function getStudyNoteFromTags(tags: string[] | undefined): string {
   if (!Array.isArray(tags)) return "";
@@ -35,13 +29,14 @@ export default async function handler(
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ error: "Missing token" });
 
-  let decoded: { email?: string | null };
+  let decoded: { email?: string | null; uid?: string };
   try {
     decoded = await verifyFirebaseToken(token);
   } catch {
     return res.status(401).json({ error: "Invalid token" });
   }
-  if (!isAllowed(decoded.email)) {
+  const dbMove = getDb();
+  if (!(await isPlatformAdmin(dbMove, decoded.email, decoded.uid ?? null))) {
     return res.status(403).json({ error: "Not an admin" });
   }
 

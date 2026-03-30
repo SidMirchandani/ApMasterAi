@@ -3,6 +3,8 @@ import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getSubjectConfig } from "../../../server/subjects-helper";
 import { getGeminiClientOptions } from "../../../lib/gemini-models";
+import { getDb } from "../../../server/db";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 
 const BATCH_SIZE = 8;
 
@@ -13,12 +15,6 @@ export const config = {
   },
   maxDuration: 300,
 };
-
-function isAllowed(email?: string | null) {
-  const adminEmails = process.env.ADMIN_EMAILS || "";
-  const allow = adminEmails.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  return !!email && allow.includes(email.toLowerCase());
-}
 
 function flattenChoiceText(blocks: any[]): string {
   if (!blocks || !Array.isArray(blocks)) return "";
@@ -63,13 +59,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const token = authHeader.slice(7);
-  let decoded: { email?: string | null };
+  let decoded: { email?: string | null; uid?: string };
   try {
     decoded = await verifyFirebaseToken(token);
   } catch {
     return res.status(401).json({ error: "Invalid token" });
   }
-  if (!decoded || !isAllowed(decoded.email)) {
+  const db = getDb();
+  if (!decoded || !(await isPlatformAdmin(db, decoded.email, decoded.uid ?? null))) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

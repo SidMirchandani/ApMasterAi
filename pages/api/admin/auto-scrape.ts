@@ -1,13 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
+import { getDb } from "../../../server/db";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 import { uploadExternalImagesInQuestion } from "../../../server/upload-image-from-url";
 import * as cheerio from "cheerio";
-
-function isAllowed(email?: string | null) {
-  const adminEmails = process.env.ADMIN_EMAILS || "";
-  const allow = adminEmails.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
-  return !!email && allow.includes(email.toLowerCase());
-}
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
@@ -271,13 +267,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ error: "Missing token" });
 
+  let decoded: { email?: string | null; uid?: string };
   try {
-    const decoded = await verifyFirebaseToken(token);
-    if (!isAllowed(decoded.email)) {
-      return res.status(403).json({ error: "Not an admin" });
-    }
+    decoded = await verifyFirebaseToken(token);
   } catch {
     return res.status(401).json({ error: "Invalid token" });
+  }
+  const db = getDb();
+  if (!(await isPlatformAdmin(db, decoded.email, decoded.uid ?? null))) {
+    return res.status(403).json({ error: "Not an admin" });
   }
 
   const { subject, startId, endId } = req.body;

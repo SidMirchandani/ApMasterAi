@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
+import { getDb } from "../../../server/db";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 import { uploadImageFromUrl, isFirebaseStorageUrl } from "../../../server/upload-image-from-url";
 
 export const config = {
@@ -11,12 +13,6 @@ export const config = {
 };
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
-
-function isAllowed(email?: string | null) {
-  const adminEmails = process.env.ADMIN_EMAILS || "";
-  const allow = adminEmails.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  return !!email && allow.includes(email.toLowerCase());
-}
 
 function getBlocksFromQuestion(data: any): { blocks: Block[]; key: string }[] {
   const out: { blocks: Block[]; key: string }[] = [];
@@ -44,13 +40,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: "Missing token" });
   }
 
+  let decoded: { email?: string | null; uid?: string };
   try {
-    const decoded = await verifyFirebaseToken(authHeader.slice(7));
-    if (!isAllowed(decoded.email)) {
-      return res.status(403).json({ error: "Not authorized" });
-    }
+    decoded = await verifyFirebaseToken(authHeader.slice(7));
   } catch {
     return res.status(401).json({ error: "Invalid token" });
+  }
+  const dbExt = getDb();
+  if (!(await isPlatformAdmin(dbExt, decoded.email, decoded.uid ?? null))) {
+    return res.status(403).json({ error: "Not authorized" });
   }
 
   const { subjectCode } = req.body || {};

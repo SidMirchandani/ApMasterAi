@@ -1,11 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
-
-function isAllowed(email?: string | null) {
-  const adminEmails = process.env.ADMIN_EMAILS || "";
-  const allow = adminEmails.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  return !!email && allow.includes(email.toLowerCase());
-}
+import { getDb } from "../../../server/db";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 
 function getDatesBetween(start: Date, end: Date): string[] {
   const out: string[] = [];
@@ -46,7 +42,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const token = authHeader.split("Bearer ")[1];
   const decoded = await verifyFirebaseToken(token);
-  if (!decoded || !isAllowed(decoded.email)) {
+  const db = getDb();
+  if (!decoded || !(await isPlatformAdmin(db, decoded.email, decoded.uid))) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

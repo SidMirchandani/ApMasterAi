@@ -1,11 +1,8 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../server/firebase-admin";
-
-function isAllowed(email?: string | null) {
-  const allow = (process.env.ADMIN_EMAILS || "").split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
-  return !!email && allow.includes(email.toLowerCase());
-}
+import { getDb } from "../../../../server/db";
+import { isPlatformAdmin } from "../../../../server/platform-admin";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -14,7 +11,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!token) return res.status(401).json({ error: "Missing token" });
 
     const decoded = await verifyFirebaseToken(token);
-    if (!isAllowed(decoded.email)) return res.status(403).json({ error: "Forbidden" });
+    const db = getDb();
+    if (!(await isPlatformAdmin(db, decoded.email, decoded.uid))) return res.status(403).json({ error: "Forbidden" });
 
     const { id } = req.query as { id: string };
     const firebaseAdmin = getFirebaseAdmin();

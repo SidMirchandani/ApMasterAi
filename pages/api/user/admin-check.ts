@@ -1,12 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../../server/db";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
-
-function isAdmin(email?: string | null): boolean {
-  const adminEmails = process.env.ADMIN_EMAILS || "";
-  const allow = adminEmails.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  return !!email && allow.includes((email as string).toLowerCase());
-}
+import { isAdminEmailFromEnv } from "../../../server/platform-admin";
 
 /**
  * GET /api/user/admin-check
@@ -29,13 +24,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!decoded) {
       return res.status(401).json({ success: false, data: { isAdmin: false, experimentalFeaturesEnabled: false } });
     }
-    const admin = isAdmin(decoded.email);
     let experimentalFeaturesEnabled = false;
+    let docIsAdmin = false;
     if (decoded.uid) {
       const db = getDb();
       const userDoc = await db.collection("users").doc(decoded.uid).get();
       experimentalFeaturesEnabled = userDoc.exists && userDoc.data()?.experimentalFeaturesEnabled === true;
+      docIsAdmin = userDoc.exists && userDoc.data()?.isAdmin === true;
     }
+    const admin = isAdminEmailFromEnv(decoded.email) || docIsAdmin;
     return res.status(200).json({
       success: true,
       data: { isAdmin: admin, experimentalFeaturesEnabled },
