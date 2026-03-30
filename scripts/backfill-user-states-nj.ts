@@ -1,7 +1,9 @@
 /**
- * One-time: set inferredState=NJ for users missing inferredState (legacy backfill).
- * Run from repo root: npx tsx scripts/backfill-user-states-nj.ts
- * Requires Firebase Admin credentials (e.g. FIREBASE_SERVICE_ACCOUNT_KEY or default credentials).
+ * Optional manual full backfill (same data as automatic migration).
+ * Production: opening Admin → Insights runs chunked backfill in the API (no script needed).
+ * Use this locally if you want everything in one run:
+ *   npx tsx scripts/backfill-user-states-nj.ts
+ * Requires Firebase Admin credentials.
  */
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "../server/firebase-admin";

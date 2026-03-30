@@ -5,6 +5,7 @@ import { getAllSubjectCodes, getApiCodeForSubject } from "../../../server/subjec
 import { getDb } from "../../../server/db";
 import { isPlatformAdmin } from "../../../server/platform-admin";
 import { computeAverageApScoreLift } from "../../../server/insights-score-lift";
+import { runNjBackfillChunkIfNeeded } from "../../../server/nj-backfill-migration";
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
 
@@ -71,6 +72,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { firestore } = firebaseAdmin;
 
   try {
+    await runNjBackfillChunkIfNeeded(firestore);
+
     // Total students: count users in Firestore
     const usersSnap = await firestore.collection("users").get();
     const totalStudents = usersSnap.size;

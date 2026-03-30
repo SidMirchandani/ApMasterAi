@@ -294,7 +294,8 @@ export function AdminInsightsTab({ token }: { token: string }) {
                 Users by state
               </CardTitle>
               <CardDescription className="dark:text-slate-400">
-                Inferred from IP (or NJ backfill until refreshed). Updates at most once per 30 days per user.
+                NJ is filled automatically for users without a state when this page loads (a few hundred users per refresh until done).
+                IP-based state refreshes at most once every 30 days per user.
               </CardDescription>
             </CardHeader>
             <CardContent>
