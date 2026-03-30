@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../../server/db";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { isAdminEmailFromEnv } from "../../../server/platform-admin";
+import { maybeUpdateUserGeoState } from "../../../server/user-geo-state";
 
 export default async function handler(
   req: NextApiRequest,
@@ -33,6 +34,8 @@ export default async function handler(
 
     const userData = userDoc.data();
     const experimentalFeaturesEnabled = userData?.experimentalFeaturesEnabled === true;
+
+    await maybeUpdateUserGeoState(db, userId, req);
 
     return res.status(200).json({
       success: true,

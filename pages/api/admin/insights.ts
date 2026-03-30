@@ -4,6 +4,7 @@ import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../../lib/subje
 import { getAllSubjectCodes, getApiCodeForSubject } from "../../../server/subjects-helper";
 import { getDb } from "../../../server/db";
 import { isPlatformAdmin } from "../../../server/platform-admin";
+import { computeAverageApScoreLift } from "../../../server/insights-score-lift";
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
 
@@ -215,25 +216,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return { date, count, cumulative: runningEnrollments };
     });
 
-    // Average score improvement: average of (latest projected AP score − first diagnostic projected score) per user/subject.
-    // Expects user_subjects (or a scores collection) to have first diagnostic and latest projected score (e.g. lower/higher range).
-    let averageScoreImprovement: number | null = null;
-    const improvements: number[] = [];
-    userSubjectsSnap.docs.forEach((doc) => {
-      const d = doc.data();
-      const firstLow = d.firstProjectedScoreLower ?? d.first_projected_score_lower ?? d.firstDiagnosticLower;
-      const firstHigh = d.firstProjectedScoreHigher ?? d.first_projected_score_higher ?? d.firstDiagnosticHigher;
-      const latestLow = d.latestProjectedScoreLower ?? d.latest_projected_score_lower ?? d.projectedScoreLower ?? d.projected_score_lower;
-      const latestHigh = d.latestProjectedScoreHigher ?? d.latest_projected_score_higher ?? d.projectedScoreHigher ?? d.projected_score_higher;
-      const first = typeof firstLow === "number" && typeof firstHigh === "number" ? (firstLow + firstHigh) / 2 : typeof firstHigh === "number" ? firstHigh : typeof firstLow === "number" ? firstLow : null;
-      const latest = typeof latestLow === "number" && typeof latestHigh === "number" ? (latestLow + latestHigh) / 2 : typeof latestHigh === "number" ? latestHigh : typeof latestLow === "number" ? latestLow : null;
-      if (typeof first === "number" && typeof latest === "number" && latest >= first) {
-        improvements.push(latest - first);
-      }
+    // Average AP score lift: first diagnostic vs latest score_history or latest full-length (see insights-score-lift.ts).
+    const averageApScoreLift = await computeAverageApScoreLift(firestore, userSubjectsSnap.docs);
+
+    const usersByStateMap: Record<string, number> = {};
+    usersSnap.docs.forEach((doc) => {
+      const st = doc.data().inferredState;
+      const key =
+        typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim()) ? st.trim().toUpperCase() : "Unknown";
+      usersByStateMap[key] = (usersByStateMap[key] || 0) + 1;
     });
-    if (improvements.length > 0) {
-      averageScoreImprovement = improvements.reduce((a, b) => a + b, 0) / improvements.length;
-    }
+    const usersByState = Object.entries(usersByStateMap)
+      .map(([stateCode, count]) => ({ stateCode, count }))
+      .sort((a, b) => b.count - a.count);
 
     // DAU/MAU: would require activity logs; placeholder
     const activeUsersDAU = 0;
@@ -247,8 +242,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         activeUsersMAU,
         totalSubjectsEnrolled,
         totalQuestionsAnswered,
-        platformAccuracyRate: averageScoreImprovement ?? 0,
-        averageScoreImprovement: averageScoreImprovement,
+        /** Same as totalQuestionsAnswered — size of the MCQ content library per subject (not attempts). */
+        questionBankTotal: totalQuestionsAnswered,
+        averageApScoreLift,
+        /** @deprecated Use averageApScoreLift; kept for older clients. */
+        platformAccuracyRate: averageApScoreLift ?? 0,
+        averageScoreImprovement: averageApScoreLift,
+        usersByState,
         signUpsOverTime,
         enrollmentsOverTime,
         courseEnrollments: courseEnrollmentsDistribution,

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
-import { Users, Activity, MessageCircle, TrendingUp, Loader2, Calendar, BookOpen } from "lucide-react";
+import { Users, Activity, MessageCircle, TrendingUp, Loader2, Calendar, BookOpen, MapPin } from "lucide-react";
 import {
   SUBJECT_DISPLAY_NAMES,
   getSubjectDisplayName,
@@ -26,13 +26,22 @@ interface CourseEnrollment {
   displayName?: string;
 }
 
+interface StateCount {
+  stateCode: string;
+  count: number;
+}
+
 interface InsightsData {
   totalStudents: number;
   activeUsersDAU: number;
   activeUsersMAU: number;
   totalSubjectsEnrolled: number;
+  /** Question bank size (content library), not student attempts */
   totalQuestionsAnswered: number;
+  questionBankTotal?: number;
+  averageApScoreLift?: number | null;
   platformAccuracyRate: number;
+  usersByState?: StateCount[];
   signUpsOverTime: SignUpPoint[];
   enrollmentsOverTime: SignUpPoint[];
   courseEnrollments: CourseEnrollment[];
@@ -145,8 +154,9 @@ export function AdminInsightsTab({ token }: { token: string }) {
 
   // Hooks must run unconditionally before any early return
   const totalStudents = data?.totalStudents ?? 0;
-  const totalQuestions = data?.totalQuestionsAnswered ?? 0;
+  const totalQuestions = data?.questionBankTotal ?? data?.totalQuestionsAnswered ?? 0;
   const totalSubjects = data?.totalSubjectsEnrolled ?? 0;
+  const avgLift = data?.averageApScoreLift ?? null;
   const countUpStudents = useCountUp(totalStudents);
   const countUpQuestions = useCountUp(totalQuestions);
   const countUpSubjects = useCountUp(totalSubjects);
@@ -200,34 +210,48 @@ export function AdminInsightsTab({ token }: { token: string }) {
   const signupXTicks = getXAxisTicks(signupDates, axisTickBudget);
   const enrollmentXTicks = getXAxisTicks(enrollmentDates, axisTickBudget);
 
+  const usersByState = data.usersByState ?? [];
+  const hasUsersByState = usersByState.some((s) => s.count > 0);
+
   return (
     <div className="space-y-4">
       {/* KPI strip at top */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {[
           {
             key: "students",
             label: "Total Students",
             display: countUpStudents.toLocaleString(),
             icon: Users,
+            sub: null as string | null,
           },
           {
             key: "active",
-            label: "Active Users (MAU)",
+            label: "Active Users",
             display: data.activeUsersDAU > 0 ? `${data.activeUsersDAU} / ${data.activeUsersMAU}` : String(data.activeUsersMAU),
             icon: Activity,
+            sub: null as string | null,
           },
           {
             key: "subjects",
             label: "Total Subject Enrollments",
             display: countUpSubjects.toLocaleString(),
             icon: BookOpen,
+            sub: null as string | null,
           },
           {
             key: "questions",
-            label: "Total Questions",
+            label: "Question bank",
             display: countUpQuestions.toLocaleString(),
             icon: MessageCircle,
+            sub: "MCQs in the content library (not attempts)",
+          },
+          {
+            key: "lift",
+            label: "Avg AP score lift",
+            display: avgLift != null && !Number.isNaN(avgLift) ? avgLift.toFixed(2) : "—",
+            icon: TrendingUp,
+            sub: "First diagnostic → latest snapshot or full-length (enrollments with data)",
           },
         ].map((item, i) => (
           <motion.div
@@ -247,11 +271,77 @@ export function AdminInsightsTab({ token }: { token: string }) {
                 <div className="text-2xl font-bold text-slate-900 dark:text-white">
                   {item.display}
                 </div>
+                {item.sub ? (
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-snug">{item.sub}</p>
+                ) : null}
               </CardContent>
             </Card>
           </motion.div>
         ))}
       </div>
+
+      {/* Users by inferred US state */}
+      {hasUsersByState && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+            <CardHeader>
+              <CardTitle className="dark:text-white flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-blue-500" />
+                Users by state
+              </CardTitle>
+              <CardDescription className="dark:text-slate-400">
+                Inferred from IP (or NJ backfill until refreshed). Updates at most once per 30 days per user.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={chartConfig}
+                className="w-full aspect-auto min-h-0 [&_.recharts-wrapper]:min-w-0"
+                style={{ height: Math.max(280, usersByState.length * (narrow ? 28 : 32)) }}
+              >
+                <BarChart
+                  data={usersByState.map((s) => ({
+                    ...s,
+                    label: s.stateCode === "Unknown" ? "Unknown / unset" : s.stateCode,
+                  }))}
+                  layout="vertical"
+                  margin={{
+                    top: 12,
+                    right: narrow ? 8 : 16,
+                    left: narrow ? 4 : 8,
+                    bottom: 24,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: narrow ? 10 : 12 }}
+                    allowDecimals={false}
+                    domain={[0, "auto"]}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="label"
+                    width={narrow ? 100 : 140}
+                    interval={0}
+                    tick={{ fontSize: narrow ? 10 : 12 }}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Users">
+                    {usersByState.map((_, index) => (
+                      <Cell key={index} fill={getEnrollmentBarShade(index)} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Date range selector */}
       <div className="flex flex-wrap items-center gap-2">
