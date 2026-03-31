@@ -1,6 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { NextApiRequest } from "next";
+import type { IncomingHttpHeaders } from "node:http";
 import { getClientIp } from "./client-ip";
 import { lookupUsStateFromIpWithReason } from "./us-state-from-ip";
 
@@ -47,11 +48,13 @@ function shouldRunGeoLookup(opts: {
 /**
  * Resolves US state from IP and updates Firestore.
  * Exported for user creation paths that only have a raw IP string (no Request).
+ * Pass `headers` from the incoming request when available so Vercel geo headers are used (avoids geoip-lite on serverless).
  */
 export async function maybeUpdateUserGeoStateFromIp(
   firestore: Firestore,
   userId: string,
-  ip: string | null
+  ip: string | null,
+  headers?: IncomingHttpHeaders
 ): Promise<void> {
   try {
     const ref = firestore.collection("users").doc(userId);
@@ -79,7 +82,7 @@ export async function maybeUpdateUserGeoStateFromIp(
       return;
     }
 
-    const { state, reason } = lookupUsStateFromIpWithReason(ip);
+    const { state, reason, inferenceSource } = lookupUsStateFromIpWithReason(ip, headers);
     const now = FieldValue.serverTimestamp();
 
     const update: Record<string, unknown> = {
@@ -89,7 +92,7 @@ export async function maybeUpdateUserGeoStateFromIp(
 
     if (state) {
       update.inferredState = state;
-      update.inferenceSource = "ip";
+      update.inferenceSource = inferenceSource === "vercel_geo" ? "vercel_geo" : "ip";
       update.inferredStateAt = now;
       update.lastIpGeoSuccessAt = now;
     }
@@ -116,5 +119,5 @@ export async function maybeUpdateUserGeoState(
   req: NextApiRequest
 ): Promise<void> {
   const ip = getClientIp(req);
-  await maybeUpdateUserGeoStateFromIp(firestore, userId, ip);
+  await maybeUpdateUserGeoStateFromIp(firestore, userId, ip, req.headers);
 }
