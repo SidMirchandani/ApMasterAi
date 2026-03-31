@@ -247,6 +247,7 @@ export default function AdminPage() {
   const [showOnlyMissingExplanation, setShowOnlyMissingExplanation] = useState(false);
   const [showOnlyErrorReports, setShowOnlyErrorReports] = useState(false);
   const [showOnlyUnverified, setShowOnlyUnverified] = useState(false);
+  const [showOnlyVerificationFailed, setShowOnlyVerificationFailed] = useState(false);
 
   const allApSubjectsRef = AP_SUBJECT_CODES.map((code) => ({
     code,
@@ -266,8 +267,14 @@ export default function AdminPage() {
     if (showOnlyUnverified) {
       list = list.filter((q) => !q.lastVerification?.status);
     }
+    if (showOnlyVerificationFailed) {
+      list = list.filter((q) => {
+        const s = q.lastVerification?.status;
+        return s === "fail" || s === "error";
+      });
+    }
     return list;
-  }, [items, showOnlyMissingExplanation, showOnlyErrorReports, showOnlyUnverified]);
+  }, [items, showOnlyMissingExplanation, showOnlyErrorReports, showOnlyUnverified, showOnlyVerificationFailed]);
 
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
@@ -1442,6 +1449,16 @@ export default function AdminPage() {
                   Unverified Questions
                 </Label>
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="verification-failed-only"
+                  checked={showOnlyVerificationFailed}
+                  onCheckedChange={(v) => setShowOnlyVerificationFailed(!!v)}
+                />
+                <Label htmlFor="verification-failed-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
+                  Verification Failed Questions
+                </Label>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1458,6 +1475,7 @@ export default function AdminPage() {
                   {showOnlyMissingExplanation && items.length > 0 && "Filter: UnExplained Questions. "}
                   {showOnlyErrorReports && items.length > 0 && "Filter: Errorneous Questions. "}
                   {showOnlyUnverified && items.length > 0 && "Filter: Unverified Questions. "}
+                  {showOnlyVerificationFailed && items.length > 0 && "Filter: Verification Failed Questions. "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
               </div>
@@ -1576,7 +1594,7 @@ export default function AdminPage() {
               {displayedItems.length === 0 && (
                 <div className="p-8 text-center text-slate-500 dark:text-slate-400">
                   {items.length > 0 &&
-                  (showOnlyMissingExplanation || showOnlyErrorReports || showOnlyUnverified)
+                  (showOnlyMissingExplanation || showOnlyErrorReports || showOnlyUnverified || showOnlyVerificationFailed)
                     ? "No questions match the current filters."
                     : "No questions found. Upload a CSV or adjust filters."}
                 </div>
