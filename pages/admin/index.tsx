@@ -289,8 +289,10 @@ export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  /** Admin access: derived from API (subject-status). No client-side admin list. */
+  /** Admin access: derived from `/api/admin/session`. */
   const [adminStatus, setAdminStatus] = useState<"pending" | "allowed" | "forbidden">("pending");
+  /** True when email is on ADMIN_EMAILS (env admin). */
+  const [isEnvAdmin, setIsEnvAdmin] = useState(false);
 
   // Data
   const [items, setItems] = useState<Question[]>([]);
@@ -406,27 +408,55 @@ export default function AdminPage() {
   const availableToAdd = allApSubjectsRef.filter(s => !subjectStatus[s.code]?.hasQuestions);
   const alreadyAdded = allApSubjectsRef.filter(s => subjectStatus[s.code]?.hasQuestions);
 
-  async function fetchSubjectStatus() {
+  async function loadSubjectStatus() {
     if (!token) return;
     setLoadingStatus(true);
     try {
       const res = await fetch("/api/admin/subject-status", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.status === 403) {
-        setAdminStatus("forbidden");
-      } else if (res.ok) {
-        setAdminStatus("allowed");
+      if (res.ok) {
         const data = await res.json();
         setSubjectStatus(data.data || {});
-      } else {
-        setAdminStatus("forbidden");
       }
     } catch (err) {
       console.error("Failed to fetch subject status:", err);
-      setAdminStatus("forbidden");
     } finally {
       setLoadingStatus(false);
+    }
+  }
+
+  async function loadAdminSession() {
+    if (!token) return;
+    setAdminStatus("pending");
+    try {
+      const res = await fetch("/api/admin/session", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 403) {
+        setAdminStatus("forbidden");
+        setIsEnvAdmin(false);
+        return;
+      }
+      if (!res.ok) {
+        setAdminStatus("forbidden");
+        setIsEnvAdmin(false);
+        return;
+      }
+      const json = await res.json();
+      setAdminStatus("allowed");
+      const env = json.data?.isEnvAdmin === true;
+      setIsEnvAdmin(env);
+      if (env) {
+        await loadSubjectStatus();
+      } else {
+        setSubjectStatus({});
+        setLoadingStatus(false);
+      }
+    } catch (err) {
+      console.error("Failed to verify admin session:", err);
+      setAdminStatus("forbidden");
+      setIsEnvAdmin(false);
     }
   }
 
@@ -501,7 +531,7 @@ export default function AdminPage() {
             }
             if (event.type === "complete") {
               toast.success(event.message);
-              fetchSubjectStatus();
+              loadSubjectStatus();
               setAddSubjectCode("");
             }
           } catch {}
@@ -541,7 +571,7 @@ export default function AdminPage() {
       if (res.ok) {
         const data = await res.json();
         toast.success(`Removed ${data.deleted} questions for ${code}`);
-        fetchSubjectStatus();
+        loadSubjectStatus();
       } else {
         const err = await res.json();
         toast.error(err.error || "Failed to remove subject");
@@ -752,6 +782,7 @@ export default function AdminPage() {
       } else {
         setToken("");
         setAdminStatus("pending");
+        setIsEnvAdmin(false);
       }
       setLoading(false);
     });
@@ -759,7 +790,7 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (token) fetchSubjectStatus();
+    if (token) loadAdminSession();
   }, [token]);
 
   useEffect(() => {
@@ -804,7 +835,6 @@ export default function AdminPage() {
     setSection("all"); // Reset section when subject changes
   }, [subject]);
 
-  /** Admin access is determined by API (subject-status); no client-exposed admin list. */
   const isAllowed = adminStatus === "allowed";
 
   const router = useRouter();
@@ -814,6 +844,9 @@ export default function AdminPage() {
       ? (tabFromQuery as AdminTab)
       : "insights";
 
+  const layoutTab: AdminTab = tab === "library" && !isEnvAdmin ? "insights" : tab;
+  const showInsights = tab === "insights" || (tab === "library" && !isEnvAdmin);
+
   useEffect(() => {
     if (!router.isReady) return;
     const q = router.query.tab;
@@ -821,6 +854,13 @@ export default function AdminPage() {
       router.replace("/admin?tab=insights", undefined, { shallow: true });
     }
   }, [router.isReady, router.query.tab]);
+
+  useEffect(() => {
+    if (!router.isReady || adminStatus !== "allowed") return;
+    if (!isEnvAdmin && router.query.tab === "library") {
+      router.replace("/admin?tab=insights", undefined, { shallow: true });
+    }
+  }, [router.isReady, router.query.tab, adminStatus, isEnvAdmin, router]);
 
   async function fetchFiltered() {
     if (!token) return;
@@ -1197,13 +1237,14 @@ export default function AdminPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
       <Toaster position="top-right" />
       <AdminDashboardLayout
-        tab={tab}
+        tab={layoutTab}
+        showContentLibraryTab={isEnvAdmin}
         userEmail={user?.email ?? null}
         cheatMode={cheatMode}
         onCheatModeChange={handleCheatModeToggle}
       >
-        {tab === "insights" && <AdminInsightsTab token={token} />}
-        {tab === "library" && (
+        {showInsights && <AdminInsightsTab token={token} />}
+        {tab === "library" && isEnvAdmin && (
       <div className="space-y-4">
         {/* Subjects Overview */}
         <Card className="dark:bg-slate-900/60 dark:border-slate-800">
@@ -1776,7 +1817,7 @@ export default function AdminPage() {
         </Card>
       </div>
         )}
-        {tab === "users" && <AdminUsersTab token={token} />}
+        {tab === "users" && <AdminUsersTab token={token} canMutateUsers={isEnvAdmin} />}
       </AdminDashboardLayout>
     </div>
   );

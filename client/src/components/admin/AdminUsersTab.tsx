@@ -35,7 +35,14 @@ interface AdminUser {
   hasDbAdmin: boolean;
 }
 
-export function AdminUsersTab({ token }: { token: string }) {
+export function AdminUsersTab({
+  token,
+  canMutateUsers,
+}: {
+  token: string;
+  /** Ban, grant/revoke DB admin, set state — env admins only */
+  canMutateUsers: boolean;
+}) {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchEmail, setSearchEmail] = useState("");
@@ -227,7 +234,9 @@ export function AdminUsersTab({ token }: { token: string }) {
                   <TableHead className="font-semibold">Courses Enrolled</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Admin</TableHead>
-                  <TableHead className="w-[70px] font-semibold text-right">Actions</TableHead>
+                  {canMutateUsers && (
+                    <TableHead className="w-[70px] font-semibold text-right">Actions</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -272,56 +281,58 @@ export function AdminUsersTab({ token }: { token: string }) {
                         <span className="text-slate-500">No</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52">
-                          <DropdownMenuItem onClick={() => handleViewProfile(user)}>
-                            <User className="mr-2 h-4 w-4" />
-                            View Profile
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => promptAndSetUserState(user)}>
-                            <MapPin className="mr-2 h-4 w-4" />
-                            {user.state ? "Update/Clear State" : "Set State"}
-                          </DropdownMenuItem>
-                          {user.status === "active" ? (
-                            <DropdownMenuItem
-                              onClick={() => setUserBanned(user, true)}
-                              className="text-red-600 focus:text-red-600 dark:text-red-400"
-                            >
-                              <Ban className="mr-2 h-4 w-4" />
-                              Ban User
+                    {canMutateUsers && (
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuItem onClick={() => handleViewProfile(user)}>
+                              <User className="mr-2 h-4 w-4" />
+                              View Profile
                             </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={() => setUserBanned(user, false)}
-                              className="text-emerald-700 focus:text-emerald-700 dark:text-emerald-400"
-                            >
-                              <Ban className="mr-2 h-4 w-4" />
-                              Unban User
+                            <DropdownMenuItem onClick={() => promptAndSetUserState(user)}>
+                              <MapPin className="mr-2 h-4 w-4" />
+                              {user.state ? "Update/Clear State" : "Set State"}
                             </DropdownMenuItem>
-                          )}
-                          {!user.hasDbAdmin && (
-                            <DropdownMenuItem onClick={() => setUserDbAdmin(user, true)}>
-                              <Shield className="mr-2 h-4 w-4" />
-                              Grant admin (DB)
-                            </DropdownMenuItem>
-                          )}
-                          {user.hasDbAdmin && (
-                            <DropdownMenuItem onClick={() => setUserDbAdmin(user, false)}>
-                              <ShieldOff className="mr-2 h-4 w-4" />
-                              {user.hasEnvAdmin
-                                ? "Clear DB admin (still admin if on ADMIN_EMAILS)"
-                                : "Revoke admin (DB)"}
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                            {user.status === "active" ? (
+                              <DropdownMenuItem
+                                onClick={() => setUserBanned(user, true)}
+                                className="text-red-600 focus:text-red-600 dark:text-red-400"
+                              >
+                                <Ban className="mr-2 h-4 w-4" />
+                                Ban User
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => setUserBanned(user, false)}
+                                className="text-emerald-700 focus:text-emerald-700 dark:text-emerald-400"
+                              >
+                                <Ban className="mr-2 h-4 w-4" />
+                                Unban User
+                              </DropdownMenuItem>
+                            )}
+                            {!user.hasDbAdmin && (
+                              <DropdownMenuItem onClick={() => setUserDbAdmin(user, true)}>
+                                <Shield className="mr-2 h-4 w-4" />
+                                Grant admin (DB)
+                              </DropdownMenuItem>
+                            )}
+                            {user.hasDbAdmin && (
+                              <DropdownMenuItem onClick={() => setUserDbAdmin(user, false)}>
+                                <ShieldOff className="mr-2 h-4 w-4" />
+                                {user.hasEnvAdmin
+                                  ? "Clear DB admin (still admin if on ADMIN_EMAILS)"
+                                  : "Revoke admin (DB)"}
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

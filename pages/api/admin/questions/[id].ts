@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../server/firebase-admin";
 import { getDb } from "../../../../server/db";
-import { isPlatformAdmin } from "../../../../server/platform-admin";
+import { isEnvAdminEmail, isPlatformAdmin } from "../../../../server/platform-admin";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -13,6 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const decoded = await verifyFirebaseToken(token);
     const db = getDb();
     if (!(await isPlatformAdmin(db, decoded.email, decoded.uid))) return res.status(403).json({ error: "Forbidden" });
+    if (!isEnvAdminEmail(decoded.email)) return res.status(403).json({ error: "Forbidden" });
 
     const { id } = req.query as { id: string };
     const firebaseAdmin = getFirebaseAdmin();

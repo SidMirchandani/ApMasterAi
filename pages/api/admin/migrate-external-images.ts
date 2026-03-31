@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getDb } from "../../../server/db";
-import { isPlatformAdmin } from "../../../server/platform-admin";
+import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
 import { uploadImageFromUrl, isFirebaseStorageUrl } from "../../../server/upload-image-from-url";
 
 export const config = {
@@ -49,6 +49,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const dbExt = getDb();
   if (!(await isPlatformAdmin(dbExt, decoded.email, decoded.uid ?? null))) {
     return res.status(403).json({ error: "Not authorized" });
+  }
+  if (!isEnvAdminEmail(decoded.email)) {
+    return res.status(403).json({ error: "Forbidden" });
   }
 
   const { subjectCode } = req.body || {};

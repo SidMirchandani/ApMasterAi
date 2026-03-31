@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getDb } from "../../../server/db";
-import { isPlatformAdmin } from "../../../server/platform-admin";
+import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
 import { getSubjectConfig, getAllSubjectCodes, assignSectionAPCSA } from "../../../server/subjects-helper";
 import { uploadExternalImagesInQuestion } from "../../../server/upload-image-from-url";
 import * as cheerio from "cheerio";
@@ -266,6 +266,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const decoded = await verifyFirebaseToken(token);
   const db = getDb();
   if (!decoded || !(await isPlatformAdmin(db, decoded.email, decoded.uid))) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  if (!isEnvAdminEmail(decoded.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

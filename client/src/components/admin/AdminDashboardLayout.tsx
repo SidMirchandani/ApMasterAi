@@ -19,6 +19,8 @@ export type AdminTabId = (typeof TABS)[number]["id"];
 interface AdminDashboardLayoutProps {
   children: React.ReactNode;
   tab: AdminTabId;
+  /** When false, Content Library tab is hidden (DB-only admins). */
+  showContentLibraryTab?: boolean;
   userEmail: string | null;
   cheatMode: boolean;
   onCheatModeChange: (checked: boolean) => void;
@@ -27,10 +29,12 @@ interface AdminDashboardLayoutProps {
 export function AdminDashboardLayout({
   children,
   tab,
+  showContentLibraryTab = true,
   userEmail,
   cheatMode,
   onCheatModeChange,
 }: AdminDashboardLayoutProps) {
+  const tabs = showContentLibraryTab ? TABS : TABS.filter((t) => t.id !== "library");
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
       {/* Header with tab nav — stacks on small screens; tabs scroll horizontally when needed */}
@@ -82,7 +86,7 @@ export function AdminDashboardLayout({
               className="-mx-3 px-3 sm:mx-0 sm:px-0 flex gap-0 sm:gap-1 border-b border-slate-200 dark:border-slate-800 overflow-x-auto overscroll-x-contain [scrollbar-width:thin]"
               aria-label="Admin sections"
             >
-              {TABS.map(({ id, label, shortLabel, icon: Icon }) => {
+              {tabs.map(({ id, label, shortLabel, icon: Icon }) => {
                 const isActive = tab === id;
                 return (
                   <Link

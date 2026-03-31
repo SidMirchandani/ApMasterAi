@@ -3,6 +3,7 @@ import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../server/fireba
 import { getDb } from "../../../../server/db";
 import {
   isAdminEmailFromEnv,
+  isEnvAdminEmail,
   isPlatformAdmin,
 } from "../../../../server/platform-admin";
 
@@ -31,6 +32,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const db = getDb();
   if (!(await isPlatformAdmin(db, decoded.email, decoded.uid ?? null))) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  if (!isEnvAdminEmail(decoded.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

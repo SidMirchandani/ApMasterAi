@@ -12,6 +12,14 @@ export function isAdminEmailFromEnv(email?: string | null): boolean {
 }
 
 /**
+ * Alias for call sites that distinguish env admins from Firestore-only (`isAdmin`) admins.
+ * Content library and user mutations require this, not just `isPlatformAdmin`.
+ */
+export function isEnvAdminEmail(email?: string | null): boolean {
+  return isAdminEmailFromEnv(email);
+}
+
+/**
  * Platform admin: env list OR Firestore users/{uid}.isAdmin === true.
  */
 export async function isPlatformAdmin(
