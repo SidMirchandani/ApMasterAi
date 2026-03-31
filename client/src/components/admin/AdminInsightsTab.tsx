@@ -50,6 +50,8 @@ interface InsightsData {
   platformAccuracyRate: number;
   averageApScoreLiftBySubject?: ApScoreLiftBySubjectRow[];
   usersByState?: StateCount[];
+  /** Count of users with no inferred US state (monitoring). */
+  unknownRegionCount?: number;
   signUpsOverTime: SignUpPoint[];
   enrollmentsOverTime: SignUpPoint[];
   courseEnrollments: CourseEnrollment[];
@@ -421,6 +423,13 @@ export function AdminInsightsTab({ token }: { token: string }) {
                   {totalAttributedUsers.toLocaleString()} {totalAttributedUsers === 1 ? "User" : "Users"}
                 </span>{" "}
                 across {statePieData.length} {statePieData.length === 1 ? "State" : "States"}
+                {(data.unknownRegionCount ?? 0) > 0 ? (
+                  <span className="text-slate-500 dark:text-slate-500">
+                    {" "}
+                    · {(data.unknownRegionCount ?? 0).toLocaleString()} unknown region
+                    {(data.unknownRegionCount ?? 0) === 1 ? "" : "s"}
+                  </span>
+                ) : null}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2 overflow-visible">

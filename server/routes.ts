@@ -5,6 +5,7 @@ import { insertWaitlistEmailSchema, insertUserSubjectSchema } from "@shared/sche
 import { z } from "zod";
 import { DatabaseRetryHandler, ensureDatabaseHealth } from "./db-retry-handler";
 import { verifyFirebaseToken } from "./firebase-admin";
+import { getClientIp } from "./client-ip";
 
 declare global {
   namespace Express {
@@ -33,12 +34,12 @@ async function requireFirebaseAuth(req: Request, res: Response, next: NextFuncti
 }
 
 /** Get or create user by Firebase UID; returns user id (string). Placeholder password is not used for login (Firebase only). */
-async function getOrCreateUser(firebaseUid: string): Promise<string> {
+async function getOrCreateUser(firebaseUid: string, req: Request): Promise<string> {
   return DatabaseRetryHandler.withRetry(async () => {
     await ensureDatabaseHealth();
     let user = await storage.getUserByFirebaseUid(firebaseUid);
     if (!user) {
-      user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid);
+      user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid, getClientIp(req));
     }
     return user.id;
   });
@@ -49,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user/subjects", requireFirebaseAuth, async (req, res) => {
     try {
       const firebaseUid = res.locals.firebaseUid!;
-      const userId = await getOrCreateUser(firebaseUid);
+      const userId = await getOrCreateUser(firebaseUid, req);
       const subjects = await storage.getUserSubjects(userId);
       
       res.json({ 
@@ -68,7 +69,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/user/subjects", requireFirebaseAuth, async (req, res) => {
     try {
       const firebaseUid = res.locals.firebaseUid!;
-      const userId = await getOrCreateUser(firebaseUid);
+      const userId = await getOrCreateUser(firebaseUid, req);
       
       // Check if user already has this subject
       const hasSubject = await storage.hasUserSubject(userId, req.body.subjectId);
@@ -110,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/user/subjects/:subjectId", requireFirebaseAuth, async (req, res) => {
     try {
       const firebaseUid = res.locals.firebaseUid!;
-      const userId = await getOrCreateUser(firebaseUid);
+      const userId = await getOrCreateUser(firebaseUid, req);
       await storage.removeUserSubject(userId, req.params.subjectId);
       
       res.json({ 
@@ -135,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Mastery level must be 3, 4, or 5",
         });
       }
-      const userId = await getOrCreateUser(firebaseUid);
+      const userId = await getOrCreateUser(firebaseUid, req);
       const updatedSubject = await storage.updateSubjectMasteryLevel(userId, req.params.subjectId, masteryLevel);
       
       if (!updatedSubject) {
@@ -312,7 +313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!questionId || !subjectId || !reason) {
         return res.status(400).json({ success: false, message: "Missing required fields" });
       }
-      const userId = await getOrCreateUser(firebaseUid);
+      const userId = await getOrCreateUser(firebaseUid, req);
 
       const report = await storage.createQuestionReport({
         userId, // storage.ts expects userId as string (doc ID)

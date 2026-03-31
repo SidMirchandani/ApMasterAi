@@ -1,10 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { assertNotBanned } from "../../../../../server/api-user-auth";
 import { storage } from "../../../../../server/storage";
+import { getClientIp } from "../../../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string): Promise<string> {
+async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`);
+    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, undefined, getClientIp(req));
   }
   return user.id;
 }
@@ -27,7 +29,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return;
     }
 
-    const userId = await getOrCreateUser(decodedToken.uid);
+    if (!(await assertNotBanned(res, decodedToken.uid))) return;
+
+    const userId = await getOrCreateUser(decodedToken.uid, req);
     const { subjectId } = req.query;
     if (!subjectId || typeof subjectId !== "string") {
       res.status(400).json({ success: false, message: "Valid subject ID is required" });
@@ -35,13 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === "GET") {
-      // #region agent log
-      fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'diagnostic-progress.ts:GET:entry',message:'GET handler',data:{subjectId},hypothesisId:'A',timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       const progress = await storage.getDiagnosticProgress(userId, subjectId);
-      // #region agent log
-      fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'diagnostic-progress.ts:GET:send',message:'sending GET response',data:{hasProgress:!!progress},hypothesisId:'B',timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       res.status(200).json({ success: true, data: progress });
       return;
     }

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { verifyFirebaseToken } from "../../../../server/firebase-admin";
+import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../server/firebase-admin";
 import { getDb } from "../../../../server/db";
 import {
   isAdminEmailFromEnv,
@@ -34,9 +34,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const { isAdmin: wantAdmin } = req.body || {};
-  if (typeof wantAdmin !== "boolean") {
-    return res.status(400).json({ error: "Body must include isAdmin: boolean" });
+  const body = req.body || {};
+  const wantAdmin = body.isAdmin;
+  const wantBanned = body.banned;
+  if (typeof wantAdmin !== "boolean" && typeof wantBanned !== "boolean") {
+    return res.status(400).json({ error: "Body must include isAdmin and/or banned as boolean" });
   }
 
   const userRef = db.collection("users").doc(id);
@@ -47,8 +49,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const targetData = targetSnap.data()!;
   const targetEmail = (targetData.email || targetData.username || "") as string;
+  const authUid = ((targetData.firebaseUid as string) || id) as string;
 
-  if (wantAdmin === false) {
+  if (typeof wantAdmin === "boolean" && wantAdmin === false) {
     if (id === decoded.uid && !isAdminEmailFromEnv(decoded.email)) {
       return res.status(403).json({
         error: "You cannot remove your own Firestore admin flag without being on ADMIN_EMAILS.",
@@ -56,20 +59,54 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  await userRef.update({
-    isAdmin: wantAdmin,
-    updatedAt: new Date().toISOString(),
-  });
+  if (wantBanned === true) {
+    if (authUid === decoded.uid) {
+      return res.status(403).json({ error: "You cannot ban your own account." });
+    }
+  }
 
+  const firebaseAdmin = getFirebaseAdmin();
+  const patch: Record<string, unknown> = {
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (typeof wantAdmin === "boolean") {
+    patch.isAdmin = wantAdmin;
+  }
+  if (typeof wantBanned === "boolean") {
+    patch.banned = wantBanned;
+  }
+
+  if (typeof wantBanned === "boolean") {
+    if (!firebaseAdmin) {
+      return res.status(500).json({ error: "Firebase Admin not initialized" });
+    }
+    try {
+      await firebaseAdmin.auth.updateUser(authUid, { disabled: wantBanned });
+    } catch (e: unknown) {
+      const code = e && typeof e === "object" && "code" in e ? String((e as { code?: string }).code) : "";
+      if (code !== "auth/user-not-found") {
+        const msg = e instanceof Error ? e.message : "Auth update failed";
+        return res.status(500).json({ error: msg });
+      }
+    }
+  }
+
+  await userRef.update(patch);
+
+  const refreshed = (await userRef.get()).data()!;
+  const hasDbAdmin = refreshed.isAdmin === true;
   const hasEnv = isAdminEmailFromEnv(targetEmail);
-  const hasDb = wantAdmin;
+  const isBanned = refreshed.banned === true;
+
   return res.status(200).json({
     success: true,
     data: {
       id,
-      isAdmin: hasEnv || hasDb,
+      isAdmin: hasEnv || hasDbAdmin,
       hasEnvAdmin: hasEnv,
-      hasDbAdmin: hasDb,
+      hasDbAdmin: hasDbAdmin,
+      status: isBanned ? "banned" : "active",
     },
   });
 }

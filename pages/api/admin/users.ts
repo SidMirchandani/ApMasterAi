@@ -34,6 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       id: string;
       name: string | null;
       email: string;
+      state: string | null;
       joinDate: string;
       lastLogin: string | null;
       totalCoursesEnrolled: number;
@@ -72,16 +73,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .get();
       const totalCoursesEnrolled = courseCountSnap.data().count || 0;
       const emailStr = email || "(no email)";
+      if (emailStr.toLowerCase().endsWith("@firebase.user")) {
+        continue;
+      }
+      const inferred =
+        typeof data.inferredState === "string" && data.inferredState.trim() !== ""
+          ? data.inferredState.trim()
+          : null;
       const hasDbAdmin = data.isAdmin === true;
       const hasEnvAdmin = isAdminEmailFromEnv(emailStr);
+      const isBanned = data.banned === true;
       users.push({
         id,
         name: data.displayName || data.username || null,
         email: emailStr,
+        state: inferred,
         joinDate,
         lastLogin,
         totalCoursesEnrolled,
-        status: "active",
+        status: isBanned ? "banned" : "active",
         isAdmin: hasEnvAdmin || hasDbAdmin,
         hasEnvAdmin,
         hasDbAdmin,

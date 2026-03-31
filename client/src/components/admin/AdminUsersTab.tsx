@@ -18,13 +18,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, MoreVertical, User, Key, Ban, Loader2, Users, Shield, ShieldOff } from "lucide-react";
+import { Search, MoreVertical, User, Ban, Loader2, Users, Shield, ShieldOff } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface AdminUser {
   id: string;
   name: string | null;
   email: string;
+  state: string | null;
   joinDate: string;
   lastLogin: string | null;
   totalCoursesEnrolled: number;
@@ -62,12 +63,36 @@ export function AdminUsersTab({ token }: { token: string }) {
     toast.success(`View Profile: ${user.email} (shell action)`);
   }
 
-  function handleResetPassword(user: AdminUser) {
-    toast.success(`Reset Password: ${user.email} (shell action)`);
-  }
-
-  function handleBanUser(user: AdminUser) {
-    toast.success(`Ban User: ${user.email} (shell action)`);
+  async function setUserBanned(user: AdminUser, banned: boolean) {
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(user.id)}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ banned }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(typeof json?.error === "string" ? json.error : "Failed to update ban status");
+        return;
+      }
+      const status = json.data?.status === "banned" ? "banned" : "active";
+      toast.success(banned ? `Banned: ${user.email}` : `Unbanned: ${user.email}`);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? {
+                ...u,
+                status,
+              }
+            : u,
+        ),
+      );
+    } catch {
+      toast.error("Failed to update ban status");
+    }
   }
 
   async function setUserDbAdmin(user: AdminUser, isAdmin: boolean) {
@@ -149,6 +174,7 @@ export function AdminUsersTab({ token }: { token: string }) {
                 <TableRow className="bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                   <TableHead className="font-semibold">Name</TableHead>
                   <TableHead className="font-semibold">Email</TableHead>
+                  <TableHead className="font-semibold">State</TableHead>
                   <TableHead className="font-semibold">Join Date</TableHead>
                   <TableHead className="font-semibold">Last Login</TableHead>
                   <TableHead className="font-semibold">Courses Enrolled</TableHead>
@@ -164,6 +190,7 @@ export function AdminUsersTab({ token }: { token: string }) {
                       {user.name || "—"}
                     </TableCell>
                     <TableCell className="dark:text-slate-300">{user.email}</TableCell>
+                    <TableCell className="dark:text-slate-300">{user.state || "—"}</TableCell>
                     <TableCell className="dark:text-slate-300">
                       {formatDate(user.joinDate)}
                     </TableCell>
@@ -205,22 +232,28 @@ export function AdminUsersTab({ token }: { token: string }) {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuContent align="end" className="w-52">
                           <DropdownMenuItem onClick={() => handleViewProfile(user)}>
                             <User className="mr-2 h-4 w-4" />
                             View Profile
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleResetPassword(user)}>
-                            <Key className="mr-2 h-4 w-4" />
-                            Reset Password
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleBanUser(user)}
-                            className="text-red-600 focus:text-red-600 dark:text-red-400"
-                          >
-                            <Ban className="mr-2 h-4 w-4" />
-                            Ban User
-                          </DropdownMenuItem>
+                          {user.status === "active" ? (
+                            <DropdownMenuItem
+                              onClick={() => setUserBanned(user, true)}
+                              className="text-red-600 focus:text-red-600 dark:text-red-400"
+                            >
+                              <Ban className="mr-2 h-4 w-4" />
+                              Ban User
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => setUserBanned(user, false)}
+                              className="text-emerald-700 focus:text-emerald-700 dark:text-emerald-400"
+                            >
+                              <Ban className="mr-2 h-4 w-4" />
+                              Unban User
+                            </DropdownMenuItem>
+                          )}
                           {!user.hasDbAdmin && (
                             <DropdownMenuItem onClick={() => setUserDbAdmin(user, true)}>
                               <Shield className="mr-2 h-4 w-4" />

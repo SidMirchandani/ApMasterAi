@@ -1,6 +1,7 @@
 import { getDb, databaseManager } from './db';
 import { DatabaseRetryHandler } from './db-retry-handler';
 import * as admin from 'firebase-admin'; // Assuming admin is needed for FieldValue
+import { maybeUpdateUserGeoStateFromIp } from './user-geo-state';
 
 export interface UserSubject {
   id: string;
@@ -167,7 +168,7 @@ export class Storage {
     });
   }
 
-  async createUser(firebaseUid: string, email: string, username?: string): Promise<User> {
+  async createUser(firebaseUid: string, email: string, username?: string, clientIp?: string | null): Promise<User> {
     if (isDevelopmentMode()) {
       // Development mode fallback
       const userId = `dev-user-${devStorage.nextUserId++}`;
@@ -210,6 +211,8 @@ export class Storage {
       };
 
       await docRef.set(user);
+
+      await maybeUpdateUserGeoStateFromIp(db, firebaseUid, clientIp ?? null).catch(() => undefined);
 
       return {
         id: firebaseUid,

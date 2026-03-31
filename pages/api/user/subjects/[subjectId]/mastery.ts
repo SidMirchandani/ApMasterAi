@@ -1,14 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { assertNotBanned } from "../../../../../server/api-user-auth";
 import { storage } from "../../../../../server/storage";
+import { getClientIp } from "../../../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string) {
-  let user = await storage.getUserByUsername(firebaseUid);
+async function getOrCreateUser(firebaseUid: string, req: NextApiRequest) {
+  let user = await storage.getUserByFirebaseUid(firebaseUid);
 
   if (!user) {
-    user = await storage.createUser({
-      username: firebaseUid,
-      password: "firebase_auth", // placeholder since Firebase handles auth
-    });
+    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid, getClientIp(req));
     console.log(
       "[mastery API] Created new user for Firebase UID:",
       firebaseUid,
@@ -41,8 +40,10 @@ export default async function handler(
       return res.status(401).json({ success: false, message: "Invalid token" });
     }
 
+    if (!(await assertNotBanned(res, decodedToken.uid))) return;
+
     const firebaseUid = decodedToken.uid;
-    const user = await getOrCreateUser(firebaseUid);
+    const user = await getOrCreateUser(firebaseUid, req);
 
     const { subjectId } = req.query;
     if (!subjectId || typeof subjectId !== "string") {

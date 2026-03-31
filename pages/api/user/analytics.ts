@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { storage } from "../../../server/storage";
 import { getApiCodeForSubject } from "../../../server/subjects-helper";
@@ -20,6 +21,7 @@ export default async function handler(
 
     const token = authHeader.split("Bearer ")[1];
     const decodedToken = await verifyFirebaseToken(token);
+    if (!(await assertNotBanned(res, decodedToken.uid))) return;
     const userId = decodedToken.uid;
 
     const subjectId = req.query.subjectId as string | undefined;

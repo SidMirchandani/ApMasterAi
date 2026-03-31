@@ -1,10 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { assertNotBanned } from "../../../../../server/api-user-auth";
 import { storage } from "../../../../../server/storage";
+import { getClientIp } from "../../../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string): Promise<string> {
+async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`);
+    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, undefined, getClientIp(req));
   }
   return user.id;
 }
@@ -27,7 +29,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return;
     }
 
-    const userId = await getOrCreateUser(decodedToken.uid);
+    if (!(await assertNotBanned(res, decodedToken.uid))) return;
+
+    const userId = await getOrCreateUser(decodedToken.uid, req);
     const { subjectId } = req.query;
     if (!subjectId || typeof subjectId !== "string") {
       res.status(400).json({ success: false, message: "Valid subject ID is required" });

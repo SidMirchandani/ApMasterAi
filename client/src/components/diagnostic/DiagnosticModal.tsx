@@ -194,23 +194,14 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
     let cancelled = false;
 
     async function init() {
-      // #region agent log
-      fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'DiagnosticModal.tsx:init:start',message:'init started',data:{subjectId,subjectApiCode},hypothesisId:'D',timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       // Check resume
       try {
         const res = await apiRequest("GET", `/api/user/subjects/${subjectId}/diagnostic-progress`);
-        // #region agent log
-        fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'DiagnosticModal.tsx:after-progress',message:'diagnostic-progress response',data:{ok:res.ok,status:res.status},hypothesisId:'A',timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.data && data.data.questionIndex != null) {
             const saved = data.data;
             const restoredQuestions: DiagnosticQuestion[] = (saved.questions || []).map(normalizeQuestion);
-            // #region agent log
-            fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'DiagnosticModal.tsx:resume-state',message:'resume state snapshot',data:{questionIndex:saved.questionIndex,restoredLen:restoredQuestions.length},hypothesisId:'F',timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
 
             // Also load the pool (needed for remaining questions after resume)
             const poolRes = await apiRequest(
@@ -220,9 +211,6 @@ export function DiagnosticModal({ subjectId, onClose, onComplete, onContinuePrac
             if (!poolRes.ok) throw new Error("Failed to load question pool");
             const poolData = await poolRes.json();
             if (!poolData.success) throw new Error(poolData.message || "Pool fetch failed");
-            // #region agent log
-            fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'DiagnosticModal.tsx:pool-resume',message:'pool loaded (resume path)',data:{success:poolData.success,restoredLen:restoredQuestions.length},hypothesisId:'B',timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if (!cancelled) {
               poolRef.current = poolData.data.pool;
               const plan = buildSectionPlan(poolData.data.distribution);
@@ -303,9 +291,6 @@ setQuestionSequence(seq);
           }
         }
       } catch (e) {
-        // #region agent log
-        fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'DiagnosticModal.tsx:progress-catch',message:'progress check failed or no resume',data:{err:String(e)},hypothesisId:'C',timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         // No saved progress — fall through
       }
 
@@ -315,9 +300,6 @@ setQuestionSequence(seq);
           "GET",
           `/api/questions/diagnostic?subject=${subjectApiCode}&mode=pool`
         );
-        // #region agent log
-        fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'DiagnosticModal.tsx:pool-fresh',message:'pool response (fresh)',data:{ok:poolRes.ok,status:poolRes.status},hypothesisId:'A',timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         if (!poolRes.ok) throw new Error("Failed to load question pool");
         const poolData = await poolRes.json();
         if (!poolData.success) throw new Error(poolData.message || "Pool fetch failed");
@@ -337,14 +319,8 @@ setQuestionSequence(seq);
           }
 
           setIsLoadingPool(false);
-          // #region agent log
-          fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'DiagnosticModal.tsx:loading-false',message:'setIsLoadingPool(false)',data:{},hypothesisId:'D',timestamp:Date.now()})}).catch(()=>{});
-          // #endregion
         }
       } catch (e: any) {
-        // #region agent log
-        fetch('http://127.0.0.1:7495/ingest/9e6d0451-2aaf-4679-a4b6-ab9d4ffddacc',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'20f80a'},body:JSON.stringify({sessionId:'20f80a',location:'DiagnosticModal.tsx:pool-catch',message:'pool fetch error',data:{err:String(e?.message||e)},hypothesisId:'E',timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         if (!cancelled) setError(e.message || "Failed to load diagnostic questions.");
       }
     }

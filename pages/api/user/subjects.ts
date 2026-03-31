@@ -1,8 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../server/storage";
+import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { z } from "zod";
 import { UserSubject } from "../../../shared/schema";
+import { getClientIp } from "../../../server/client-ip";
 
 // Define the schema inline since the shared schema import is not working
 const insertUserSubjectSchema = z.object({
@@ -17,12 +19,12 @@ const insertUserSubjectSchema = z.object({
   masteryLevel: z.number().min(0).max(100).optional().default(0),
 });
 
-async function getOrCreateUser(firebaseUid: string): Promise<string> {
+async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
   try {
     let user = await storage.getUserByFirebaseUid(firebaseUid);
 
     if (!user) {
-      user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid);
+      user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid, getClientIp(req));
       console.log(
         "[subjects API] Created new user for Firebase UID:",
         firebaseUid,
@@ -63,10 +65,12 @@ export default async function handler(
     });
   }
 
+  if (!(await assertNotBanned(res, decodedToken.uid))) return;
+
   const firebaseUid = decodedToken.uid;
 
   try {
-    const userId = await getOrCreateUser(firebaseUid);
+    const userId = await getOrCreateUser(firebaseUid, req);
 
     switch (method) {
       case "GET": {

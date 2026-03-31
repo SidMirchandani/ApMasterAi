@@ -1,11 +1,13 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { storage } from "../../../server/storage";
+import { getClientIp } from "../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string): Promise<string> {
+async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`);
+    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, undefined, getClientIp(req));
   }
   return user.id;
 }
@@ -26,7 +28,8 @@ export default async function handler(
 
     const token = authHeader.split("Bearer ")[1];
     const decodedToken = await verifyFirebaseToken(token);
-    const userId = await getOrCreateUser(decodedToken.uid);
+    if (!(await assertNotBanned(res, decodedToken.uid))) return;
+    const userId = await getOrCreateUser(decodedToken.uid, req);
 
     const subjectId = req.query.subjectId as string | undefined;
 

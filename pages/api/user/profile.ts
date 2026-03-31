@@ -1,7 +1,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../../server/db";
+import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { isPlatformAdmin } from "../../../server/platform-admin";
+import { maybeUpdateUserGeoState } from "../../../server/user-geo-state";
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,6 +22,7 @@ export default async function handler(
 
     const token = authHeader.split("Bearer ")[1];
     const decodedToken = await verifyFirebaseToken(token);
+    if (!(await assertNotBanned(res, decodedToken.uid))) return;
     const userId = decodedToken.uid;
 
     const { displayName, email, photoURL, experimentalFeatures } = req.body;
@@ -90,6 +93,8 @@ export default async function handler(
     } else {
       await userRef.update(userData);
     }
+
+    await maybeUpdateUserGeoState(db, userId, req);
 
     return res.status(200).json({
       success: true,

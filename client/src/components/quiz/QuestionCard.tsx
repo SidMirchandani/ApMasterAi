@@ -5,7 +5,7 @@ import { Flag, Bookmark, XCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { BlockRenderer } from "./BlockRenderer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getDisplayChoicesAndCorrect } from "@/lib/mcqDisplay";
 
 type Block =
@@ -68,9 +68,13 @@ export function QuestionCard({
   cheatMode = false,
   isBookmarked = false,
   onToggleBookmark,
-  mcqOptionCount,
+  mcqOptionCount,   
 }: QuestionCardProps) {
   const [crossedOut, setCrossedOut] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setCrossedOut(new Set());
+  }, [question?.id, questionNumber]);
 
   if (!question) {
     return null;

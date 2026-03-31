@@ -1,12 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../../server/storage";
+import { assertNotBanned } from "../../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../../server/firebase-admin";
+import { getClientIp } from "../../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string): Promise<string> {
+async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
 
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid);
+    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid, getClientIp(req));
     console.log("[subjectId API] Created new user for Firebase UID:", firebaseUid);
   }
 
@@ -32,8 +34,10 @@ export default async function handler(
       return res.status(401).json({ success: false, message: "Invalid token" });
     }
 
+    if (!(await assertNotBanned(res, decodedToken.uid))) return;
+
     const firebaseUid = decodedToken.uid;
-    const userId = await getOrCreateUser(firebaseUid);
+    const userId = await getOrCreateUser(firebaseUid, req);
 
     const { subjectId } = req.query;
     if (!subjectId || typeof subjectId !== "string") {

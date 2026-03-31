@@ -1,12 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { assertNotBanned } from "../../../../../server/api-user-auth";
 import { storage } from "../../../../../server/storage";
 import { getSectionByCode, getApiCodeForSubject } from "../../../../../server/subjects-helper";
 import { computeAdjustedMCQPercentage, computeProjectedAPScore } from "../../../../../server/diagnostic-grading";
+import { getClientIp } from "../../../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string): Promise<string> {
+async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
   const user = await storage.getUserByFirebaseUid(firebaseUid);
   if (!user) {
-    const newUser = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`);
+    const newUser = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, undefined, getClientIp(req));
     return newUser.id;
   }
   return user.id;
@@ -39,7 +41,9 @@ export default async function handler(
       return res.status(401).json({ success: false, message: "Invalid token" });
     }
 
-    const userId = await getOrCreateUser(decodedToken.uid);
+    if (!(await assertNotBanned(res, decodedToken.uid))) return;
+
+    const userId = await getOrCreateUser(decodedToken.uid, req);
 
     const { subjectId } = req.query;
     if (!subjectId || typeof subjectId !== "string") {

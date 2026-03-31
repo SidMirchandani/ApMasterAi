@@ -233,6 +233,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const usersByState = Object.entries(usersByStateMap)
       .map(([stateCode, count]) => ({ stateCode, count }))
       .sort((a, b) => b.count - a.count);
+    const unknownRegionCount = usersByStateMap["Unknown"] ?? 0;
 
     // DAU/MAU: would require activity logs; placeholder
     const activeUsersDAU = 0;
@@ -254,6 +255,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         averageScoreImprovement: averageApScoreLift,
         averageApScoreLiftBySubject,
         usersByState,
+        /** Users with missing or unresolvable inferred US state (same bucket as stateCode "Unknown"). */
+        unknownRegionCount,
         signUpsOverTime,
         enrollmentsOverTime,
         courseEnrollments: courseEnrollmentsDistribution,

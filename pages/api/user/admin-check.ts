@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../../server/db";
+import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { isAdminEmailFromEnv } from "../../../server/platform-admin";
 
@@ -24,6 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!decoded) {
       return res.status(401).json({ success: false, data: { isAdmin: false, experimentalFeaturesEnabled: false } });
     }
+    if (!(await assertNotBanned(res, decoded.uid, "adminCheck"))) return;
     let experimentalFeaturesEnabled = false;
     let docIsAdmin = false;
     if (decoded.uid) {

@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { assertNotBanned } from "../../../server/api-user-auth";
 import { getDb } from "../../../server/db";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -16,13 +17,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const token = authHeader.split(" ")[1];
+    let decoded: { uid: string };
     try {
       const { verifyFirebaseToken } = await import("../../../server/firebase-admin");
-      await verifyFirebaseToken(token);
+      decoded = await verifyFirebaseToken(token);
     } catch {
       res.status(401).json({ success: false, message: "Invalid token" });
       return;
     }
+    if (!(await assertNotBanned(res, decoded.uid))) return;
 
     const { questionId, subjectId, reason, details } = req.body;
 

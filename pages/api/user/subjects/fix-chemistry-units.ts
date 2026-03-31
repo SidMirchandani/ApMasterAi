@@ -1,6 +1,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { storage } from '../../../../server/storage';
+import { assertNotBanned } from '../../../../server/api-user-auth';
 import { verifyFirebaseToken } from '../../../../server/firebase-admin';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -16,6 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const token = authHeader.substring(7);
     const decodedToken = await verifyFirebaseToken(token);
+    if (!(await assertNotBanned(res, decodedToken.uid))) return;
     const firebaseUid = decodedToken.uid;
 
     // Get user

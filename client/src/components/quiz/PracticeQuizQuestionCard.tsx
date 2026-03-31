@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { BlockRenderer } from "./BlockRenderer";
 import { BookmarkCheck, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getDisplayChoicesAndCorrect } from "@/lib/mcqDisplay";
 
 type Block =
@@ -59,6 +59,10 @@ export function PracticeQuizQuestionCard({
   mcqOptionCount,
 }: PracticeQuizQuestionCardProps) {
   const [crossedOut, setCrossedOut] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setCrossedOut(new Set());
+  }, [question?.id, questionNumber]);
 
   if (!question) {
     return null;

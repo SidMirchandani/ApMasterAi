@@ -9,7 +9,9 @@
     "start": "next start",
     "check": "tsc",
     "backfill:user-states-nj": "tsx scripts/backfill-user-states-nj.ts",
+    "backfill:inferred-state-retry": "tsx scripts/backfill-inferred-state-retry.ts",
     "seed:demo-user-regions": "tsx scripts/seed-demo-user-regions.ts",
+    "test:geo": "tsx --test server/ip-utils.test.ts",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"

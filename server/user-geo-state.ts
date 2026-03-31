@@ -2,27 +2,56 @@ import type { Firestore } from "firebase-admin/firestore";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { NextApiRequest } from "next";
 import { getClientIp } from "./client-ip";
-import { lookupUsStateFromIp } from "./us-state-from-ip";
+import { lookupUsStateFromIpWithReason } from "./us-state-from-ip";
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-function shouldRunGeoLookup(lastResolve: Timestamp | Date | undefined | null): boolean {
-  if (lastResolve == null) return true;
-  const ms =
-    typeof (lastResolve as Timestamp).toMillis === "function"
-      ? (lastResolve as Timestamp).toMillis()
-      : new Date(lastResolve as Date).getTime();
-  return Date.now() - ms >= THIRTY_DAYS_MS;
+function timestampToMs(t: Timestamp | Date | undefined | null): number | null {
+  if (t == null) return null;
+  if (typeof (t as Timestamp).toMillis === "function") {
+    return (t as Timestamp).toMillis();
+  }
+  return new Date(t as Date).getTime();
+}
+
+function hasValidInferredState(st: unknown): boolean {
+  return typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim());
 }
 
 /**
- * Resolves US state from IP at most once per 30 days per user.
- * Always sets lastIpGeoResolveAt on attempt (success or failure) to avoid retry storms.
+ * Whether we should run a new GeoIP lookup.
+ * - No state yet: retry at most once per day (faster recovery than 30d lockout).
+ * - Has state: refresh at most once per 30 days from last successful inference.
  */
-export async function maybeUpdateUserGeoState(
+function shouldRunGeoLookup(opts: {
+  hasState: boolean;
+  lastAttemptMs: number | null;
+  lastSuccessMs: number | null;
+}): boolean {
+  const { hasState, lastAttemptMs, lastSuccessMs } = opts;
+  const now = Date.now();
+
+  if (lastAttemptMs == null) {
+    return true;
+  }
+
+  if (hasState) {
+    const baseline = lastSuccessMs ?? lastAttemptMs;
+    return now - baseline >= THIRTY_DAYS_MS;
+  }
+
+  return now - lastAttemptMs >= ONE_DAY_MS;
+}
+
+/**
+ * Resolves US state from IP and updates Firestore.
+ * Exported for user creation paths that only have a raw IP string (no Request).
+ */
+export async function maybeUpdateUserGeoStateFromIp(
   firestore: Firestore,
   userId: string,
-  req: NextApiRequest
+  ip: string | null
 ): Promise<void> {
   try {
     const ref = firestore.collection("users").doc(userId);
@@ -30,14 +59,31 @@ export async function maybeUpdateUserGeoState(
     if (!snap.exists) return;
 
     const data = snap.data() ?? {};
-    const last = data.lastIpGeoResolveAt as Timestamp | undefined;
-    if (!shouldRunGeoLookup(last)) return;
+    const inferredState = data.inferredState;
+    const hasState = hasValidInferredState(inferredState);
 
-    const ip = getClientIp(req);
-    const state = lookupUsStateFromIp(ip);
+    const lastAttempt =
+      data.lastIpGeoAttemptAt ?? data.lastIpGeoResolveAt;
+    const lastSuccess = data.lastIpGeoSuccessAt;
+
+    const lastAttemptMs = timestampToMs(lastAttempt as Timestamp | undefined);
+    const lastSuccessMs = timestampToMs(lastSuccess as Timestamp | undefined);
+
+    if (
+      !shouldRunGeoLookup({
+        hasState,
+        lastAttemptMs,
+        lastSuccessMs,
+      })
+    ) {
+      return;
+    }
+
+    const { state, reason } = lookupUsStateFromIpWithReason(ip);
     const now = FieldValue.serverTimestamp();
 
     const update: Record<string, unknown> = {
+      lastIpGeoAttemptAt: now,
       lastIpGeoResolveAt: now,
     };
 
@@ -45,10 +91,30 @@ export async function maybeUpdateUserGeoState(
       update.inferredState = state;
       update.inferenceSource = "ip";
       update.inferredStateAt = now;
+      update.lastIpGeoSuccessAt = now;
     }
 
     await ref.update(update);
+
+    if (!state) {
+      console.info(
+        `[maybeUpdateUserGeoState] userId=${userId} reason=${reason} ip=${ip ?? "none"}`
+      );
+    }
   } catch (e) {
-    console.warn("[maybeUpdateUserGeoState]", e);
+    console.warn("[maybeUpdateUserGeoStateFromIp]", e);
   }
+}
+
+/**
+ * Resolves US state from the request IP (see getClientIp).
+ * Delegates to maybeUpdateUserGeoStateFromIp.
+ */
+export async function maybeUpdateUserGeoState(
+  firestore: Firestore,
+  userId: string,
+  req: NextApiRequest
+): Promise<void> {
+  const ip = getClientIp(req);
+  await maybeUpdateUserGeoStateFromIp(firestore, userId, ip);
 }
