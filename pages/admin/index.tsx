@@ -1651,7 +1651,17 @@ export default function AdminPage() {
                     className="h-2"
                   />
                   <div className="flex flex-wrap gap-4 text-xs text-slate-500">
-                    <span className="text-green-600 font-medium">Done: {explanationProgress.updated}</span>
+                    <span className="text-green-600 font-medium">
+                      Done:{" "}
+                      {typeof explanationProgress.passed === "number"
+                        ? explanationProgress.passed +
+                          (explanationProgress.flagged ?? 0) +
+                          (explanationProgress.verifyFailed ?? 0) +
+                          explanationProgress.skipped
+                        : explanationProgress.updated +
+                          explanationProgress.skipped +
+                          explanationProgress.failed}
+                    </span>
                     <span className="text-amber-500">Skipped: {explanationProgress.skipped}</span>
                     <span className="text-red-600">Failed: {explanationProgress.failed}</span>
                     {typeof explanationProgress.passed === "number" && (
