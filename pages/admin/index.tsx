@@ -246,6 +246,7 @@ export default function AdminPage() {
   const [section, setSection] = useState("");
   const [showOnlyMissingExplanation, setShowOnlyMissingExplanation] = useState(false);
   const [showOnlyErrorReports, setShowOnlyErrorReports] = useState(false);
+  const [showOnlyUnverified, setShowOnlyUnverified] = useState(false);
 
   const allApSubjectsRef = AP_SUBJECT_CODES.map((code) => ({
     code,
@@ -262,8 +263,11 @@ export default function AdminPage() {
     if (showOnlyErrorReports) {
       list = list.filter(q => (q.tags || []).includes("error_reported"));
     }
+    if (showOnlyUnverified) {
+      list = list.filter((q) => !q.lastVerification?.status);
+    }
     return list;
-  }, [items, showOnlyMissingExplanation, showOnlyErrorReports]);
+  }, [items, showOnlyMissingExplanation, showOnlyErrorReports, showOnlyUnverified]);
 
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
@@ -1415,7 +1419,7 @@ export default function AdminPage() {
                   onCheckedChange={(v) => setShowOnlyMissingExplanation(!!v)}
                 />
                 <Label htmlFor="missing-explanation-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
-                  Only show questions without explanation
+                  UnExplained Questions
                 </Label>
               </div>
               <div className="flex items-center gap-2">
@@ -1425,7 +1429,17 @@ export default function AdminPage() {
                   onCheckedChange={(v) => setShowOnlyErrorReports(!!v)}
                 />
                 <Label htmlFor="error-reports-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
-                  Only show questions with error reports
+                  Errorneous Questions
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="unverified-only"
+                  checked={showOnlyUnverified}
+                  onCheckedChange={(v) => setShowOnlyUnverified(!!v)}
+                />
+                <Label htmlFor="unverified-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
+                  Unverified Questions
                 </Label>
               </div>
             </div>
@@ -1441,8 +1455,9 @@ export default function AdminPage() {
                   Questions ({displayedItems.length})
                 </CardTitle>
                 <CardDescription>
-                  {showOnlyMissingExplanation && items.length > 0 && "Showing questions without explanation. "}
-                  {showOnlyErrorReports && items.length > 0 && "Showing questions with error reports. "}
+                  {showOnlyMissingExplanation && items.length > 0 && "Filter: UnExplained Questions. "}
+                  {showOnlyErrorReports && items.length > 0 && "Filter: Errorneous Questions. "}
+                  {showOnlyUnverified && items.length > 0 && "Filter: Unverified Questions. "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
               </div>
@@ -1560,8 +1575,9 @@ export default function AdminPage() {
               </table>
               {displayedItems.length === 0 && (
                 <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                  {showOnlyMissingExplanation && items.length > 0
-                    ? "No questions without explanation in this set."
+                  {items.length > 0 &&
+                  (showOnlyMissingExplanation || showOnlyErrorReports || showOnlyUnverified)
+                    ? "No questions match the current filters."
                     : "No questions found. Upload a CSV or adjust filters."}
                 </div>
               )}
