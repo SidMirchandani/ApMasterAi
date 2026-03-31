@@ -11,12 +11,11 @@ export type SectionDef = {
 
 export type SubjectSections = Record<string, SectionDef[]>;
 
-/** Canonical unit/section definitions per AP subject.
- * Keep this in sync with:
- * - scripts/subjects/*/sections.ts (scraping + content scripts)
- * - EXAM_WEIGHTS in pages/api/questions.ts
- * - DIAGNOSTIC_UNIT_WEIGHTS / DIAGNOSTIC_UNIT_DIFFICULTIES in server/ap-subject-config.ts
- */
+// Canonical unit/section definitions per AP subject.
+// Keep this in sync with:
+// - scripts/subjects/*/sections.ts (scraping + content scripts)
+// - EXAM_WEIGHTS in pages/api/questions.ts
+// - DIAGNOSTIC_UNIT_WEIGHTS / DIAGNOSTIC_UNIT_DIFFICULTIES in server/ap-subject-config.ts
 export const SUBJECT_SECTIONS: SubjectSections = {
   APMACRO: [
     { code: "BEC", name: "Basic Economic Concepts", examWeightMid: 7.5, diagnosticWeight: 5 },
