@@ -75,6 +75,18 @@ type Question = {
     D?: string[];
     E?: string[];
   };
+  lastVerification?: {
+    verifiedAt?: { seconds?: number; nanoseconds?: number } | Date | string;
+    source?: string;
+    model?: string | null;
+    status?: string;
+    lintErrors?: string[];
+    lintWarnings?: string[];
+    imageErrors?: string[];
+    issues?: string[];
+    checks?: Record<string, boolean>;
+    confidence?: string | null;
+  };
 };
 
 function getDifficultyFromQuestion(q: Question): string {
@@ -91,6 +103,33 @@ function getReasoningFromQuestion(q: Question): string {
 function getErrorReasonFromQuestion(q: Question): string {
   const tag = (q.tags || []).find(t => typeof t === "string" && t.startsWith("error_reason:"));
   return tag ? String(tag).replace(/^error_reason:/, "").trim() : "";
+}
+
+function renderVerificationStatus(q: Question) {
+  const v = q.lastVerification;
+  if (!v?.status) {
+    return <span className="text-slate-400 dark:text-slate-500">—</span>;
+  }
+  const label =
+    v.status === "pass"
+      ? "OK"
+      : v.status === "needs_review"
+        ? "Review"
+        : v.status === "fail" || v.status === "error"
+          ? "Fail"
+          : v.status;
+  const title = (v.issues && v.issues.length > 0 ? v.issues : [v.status]).join("\n");
+  const cls =
+    v.status === "pass"
+      ? "text-green-600 dark:text-green-400"
+      : v.status === "needs_review"
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-red-600 dark:text-red-400";
+  return (
+    <span className={`font-medium text-xs ${cls}`} title={title}>
+      {label}
+    </span>
+  );
 }
 
 function getStudyNoteFromQuestion(q: Question): string {
@@ -241,6 +280,9 @@ export default function AdminPage() {
     skipped: number;
     failed: number;
     message: string;
+    passed?: number;
+    flagged?: number;
+    verifyFailed?: number;
   } | null>(null);
 
   // Add Subject state
@@ -791,6 +833,9 @@ export default function AdminPage() {
       case "re-generate-study-notes":
         endpoint = "/api/admin/re-generate-study-notes";
         break;
+      case "verify-questions":
+        endpoint = "/api/admin/verify-questions";
+        break;
     }
 
     const actionLabel = selectedAction === "explanations" ? "Explanation Generation"
@@ -798,6 +843,7 @@ export default function AdminPage() {
       : selectedAction === "fix-prompts" ? "Prompt Fixing"
       : selectedAction === "study-notes" ? "Study Notes Generation"
       : selectedAction === "re-generate-study-notes" ? "Study Notes Re-Generation"
+      : selectedAction === "verify-questions" ? "Question Verification"
       : "Difficulty Tagging";
 
     setExplanationProgress({
@@ -806,6 +852,9 @@ export default function AdminPage() {
       updated: 0,
       skipped: 0,
       failed: 0,
+      passed: selectedAction === "verify-questions" ? 0 : undefined,
+      flagged: selectedAction === "verify-questions" ? 0 : undefined,
+      verifyFailed: selectedAction === "verify-questions" ? 0 : undefined,
       message: `Starting ${actionLabel} for ${questionIds.length} questions...`,
     });
 
@@ -866,9 +915,26 @@ export default function AdminPage() {
                 skipped: event.skipped || 0,
                 failed: event.failed || 0,
                 message: event.message || "",
+                passed: typeof event.passed === "number" ? event.passed : undefined,
+                flagged: typeof event.flagged === "number" ? event.flagged : undefined,
+                verifyFailed: typeof event.verifyFailed === "number" ? event.verifyFailed : undefined,
               });
             }
             if (event.type === "complete") {
+              setExplanationProgress((prev) =>
+                prev && typeof event.passed === "number"
+                  ? {
+                      ...prev,
+                      current: event.total || prev.total,
+                      skipped: event.skipped ?? prev.skipped,
+                      failed: event.failed ?? prev.failed,
+                      passed: event.passed,
+                      flagged: event.flagged ?? prev.flagged,
+                      verifyFailed: event.verifyFailed ?? prev.verifyFailed,
+                      message: event.message || prev.message,
+                    }
+                  : prev,
+              );
               toast.success(event.message);
               fetchFiltered();
             }
@@ -1392,6 +1458,7 @@ export default function AdminPage() {
                     <SelectItem value="study-notes">Generate Study Notes</SelectItem>
                     <SelectItem value="re-generate-study-notes">Re-Generate Study Notes</SelectItem>
                     <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
+                    <SelectItem value="verify-questions">Verify Questions</SelectItem>
                   </SelectContent>
                 </Select>
                 {generatingExplanations ? (
@@ -1424,10 +1491,17 @@ export default function AdminPage() {
                     value={(explanationProgress.current / Math.max(explanationProgress.total, 1)) * 100}
                     className="h-2"
                   />
-                  <div className="flex gap-4 text-xs text-slate-500">
+                  <div className="flex flex-wrap gap-4 text-xs text-slate-500">
                     <span className="text-green-600 font-medium">Done: {explanationProgress.updated}</span>
                     <span className="text-amber-500">Skipped: {explanationProgress.skipped}</span>
                     <span className="text-red-600">Failed: {explanationProgress.failed}</span>
+                    {typeof explanationProgress.passed === "number" && (
+                      <>
+                        <span className="text-green-700 dark:text-green-400 font-medium">Pass: {explanationProgress.passed}</span>
+                        <span className="text-amber-700 dark:text-amber-400 font-medium">Review: {explanationProgress.flagged}</span>
+                        <span className="text-red-700 dark:text-red-400 font-medium">Fail: {explanationProgress.verifyFailed}</span>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -1446,6 +1520,7 @@ export default function AdminPage() {
                   <col style={{ minWidth: 150, maxWidth: 220 }} />
                   <col style={{ minWidth: 150, maxWidth: 220 }} />
                   <col className="w-20" />
+                  <col className="w-16" />
                   <col style={{ minWidth: 120, maxWidth: 180 }} />
                   <col style={{ width: '13%' }} />
                 </colgroup>
@@ -1465,6 +1540,7 @@ export default function AdminPage() {
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Explanation</th>
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Study Notes</th>
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Difficulty</th>
+                    <th className="p-2 text-center font-semibold text-slate-900 dark:text-slate-300 text-xs">Verify</th>
                     <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">Error reason</th>
                     <th className="p-2 text-center font-semibold text-slate-900 dark:text-slate-300 text-xs">Actions</th>
                   </tr>
@@ -1792,6 +1868,7 @@ function Row({
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">
           {getDifficultyFromQuestion(q) || "-"}
         </td>
+        <td className="p-2 text-center align-top text-xs">{renderVerificationStatus(q)}</td>
         <td className="p-2 align-top text-xs break-words min-w-[120px] max-w-[180px]">
           <div className="flex items-start gap-1">
             <div className="flex-1 min-w-0">
@@ -1920,6 +1997,7 @@ function Row({
       <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
         {getDifficultyFromQuestion(q) || "-"}
       </td>
+      <td className="p-2 text-center align-top text-xs">{renderVerificationStatus(q)}</td>
       <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
         {getErrorReasonFromQuestion(q) || "-"}
       </td>
