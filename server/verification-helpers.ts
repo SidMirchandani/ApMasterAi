@@ -1,32 +1,9 @@
 import { flattenChoiceText, fetchImageAsBase64 } from "./explanation-helpers";
 import { isQuotaError, callWithRetry } from "./study-notes-helpers";
 import { getSubjectDisplayName } from "../lib/subject-display-names";
+import { SUBJECT_SECTIONS } from "./subject-sections";
 
 export { isQuotaError, callWithRetry };
-
-/** Section codes per subject — keep in sync with Admin Library filters. */
-export const SECTION_CODES_BY_SUBJECT: Record<string, string[]> = {
-  APMACRO: ["BEC", "EI", "NI", "FS", "LR", "OT"],
-  APMICRO: ["BEC", "SD", "PC", "IMP", "FM", "MF"],
-  APCSP: ["CRD", "DAT", "AAP", "CSN", "IOC"],
-  APCHEM: ["AMS", "MIP", "IMF", "CR", "KIN", "THE", "EQ", "AB", "ATD"],
-  APGOV: ["FOP", "ILR", "CLR", "APB", "PPP"],
-  APPSYCH: ["BIO", "COG", "DEV", "SOC", "MPH"],
-  APBIO: ["CL", "CSF", "CE", "CCC", "HER", "GER", "NS", "ECO"],
-  APCALCAB: ["LIM", "DDF", "DCI", "CAD", "AAD", "IAC", "DE", "AI"],
-  APCALCBC: ["LIM", "DDF", "DCI", "CAD", "AAD", "IAC", "DE", "AI", "PPV", "ISS"],
-  APCSA: ["U1", "U2", "U3", "U4"],
-  APUSH: ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9"],
-  APWH: ["GT", "NE", "LBE", "TI", "REV", "COI", "GC", "CWD", "GLO"],
-  APEURO: ["RE", "AR", "AC", "SPP", "CRR", "IND", "NPP", "GCF", "CCE"],
-  APLANG: ["CRE", "SS", "RS", "OC", "ARG"],
-  APLIT: ["SF1", "PO1", "LF1", "SF2", "PO2", "LF2", "SF3", "PO3", "LF3"],
-  APSTATS: ["EOV", "ETV", "CD", "PRD", "SD", "ICP", "IQM", "ICC", "IQS"],
-  APPHYS1: ["KIN", "FTD", "WEP", "LMO", "TRD", "EMR", "OSC", "FLU"],
-  APPHYS2: ["THD", "EFP", "EC", "MEI", "GPO", "WPO", "MOD"],
-  APES: ["LWE", "LWB", "POP", "ESR", "LWU", "ERC", "APL", "ATP", "GCH"],
-  APHUG: ["TG", "PMP", "CPP", "PPP", "ARL", "CUL", "IED"],
-};
 
 export type VerificationAiChecks = {
   questionSound: boolean;
@@ -122,8 +99,9 @@ export function lintQuestion(question: any): LintResult {
   const section = typeof question.section_code === "string" ? question.section_code.trim() : "";
   if (!section) {
     errors.push("Missing section_code");
-  } else if (subject && SECTION_CODES_BY_SUBJECT[subject]) {
-    if (!SECTION_CODES_BY_SUBJECT[subject].includes(section)) {
+  } else if (subject && SUBJECT_SECTIONS[subject]) {
+    const allowedCodes = SUBJECT_SECTIONS[subject].map((s) => s.code);
+    if (!allowedCodes.includes(section)) {
       errors.push(`section_code "${section}" is not in allowed list for ${subject}`);
     }
   }

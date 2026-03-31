@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../server/db";
+import { SUBJECT_SECTION_CODES } from "../../server/subject-sections";
 
 // Exam weight distribution for different subjects
 const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
@@ -59,6 +60,25 @@ const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
     "U4": 35,      // Unit 4 Data Collections: 30–40% (mid 35%)
   },
 };
+
+if (process.env.NODE_ENV !== "production") {
+  for (const [subjectCode, weights] of Object.entries(EXAM_WEIGHTS)) {
+    const canonical = SUBJECT_SECTION_CODES[subjectCode];
+    if (!canonical) continue;
+    const weightKeys = Object.keys(weights).sort();
+    const canonicalKeys = [...canonical].sort();
+    const mismatched =
+      weightKeys.length !== canonicalKeys.length ||
+      weightKeys.some((k, i) => k !== canonicalKeys[i]);
+    if (mismatched) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[EXAM_WEIGHTS] Section codes for ${subjectCode} do not match SUBJECT_SECTION_CODES. ` +
+          `weights=${JSON.stringify(weightKeys)}, canonical=${JSON.stringify(canonicalKeys)}`,
+      );
+    }
+  }
+}
 
 // Legacy AP CSA section codes mapped to 2026 unit IDs (for backward compatibility)
 const APCSA_SECTION_QUERY_MAP: Record<string, string[]> = {

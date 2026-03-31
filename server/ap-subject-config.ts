@@ -1,3 +1,5 @@
+import { SUBJECT_SECTION_CODES } from "./subject-sections";
+
 /**
  * AP Subject configurations for universal grading (projected AP score 1-5).
  * Used by diagnostic test grading and projected score calculation.
@@ -390,6 +392,7 @@ export const DIAGNOSTIC_UNIT_WEIGHTS: Record<string, Record<string, number>> = {
   },
 };
 
+
 /**
  * Unit/section difficulties for diagnostic test question distribution (20 questions).
  */
@@ -551,6 +554,35 @@ export const DIAGNOSTIC_UNIT_DIFFICULTIES: Record<string, Record<string, number>
     IQS: 4.5, // Inference for Slopes
   },
 };
+
+if (process.env.NODE_ENV !== "production") {
+  const maps: Array<{
+    name: string;
+    bySubject: Record<string, Record<string, number>>;
+  }> = [
+    { name: "DIAGNOSTIC_UNIT_WEIGHTS", bySubject: DIAGNOSTIC_UNIT_WEIGHTS },
+    { name: "DIAGNOSTIC_UNIT_DIFFICULTIES", bySubject: DIAGNOSTIC_UNIT_DIFFICULTIES },
+  ];
+
+  for (const { name, bySubject } of maps) {
+    for (const [subjectCode, entries] of Object.entries(bySubject)) {
+      const canonical = SUBJECT_SECTION_CODES[subjectCode];
+      if (!canonical) continue;
+      const mapKeys = Object.keys(entries).sort();
+      const canonicalKeys = [...canonical].sort();
+      const mismatched =
+        mapKeys.length !== canonicalKeys.length ||
+        mapKeys.some((k, i) => k !== canonicalKeys[i]);
+      if (mismatched) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[${name}] Section codes for ${subjectCode} do not match SUBJECT_SECTION_CODES. ` +
+            `map=${JSON.stringify(mapKeys)}, canonical=${JSON.stringify(canonicalKeys)}`,
+        );
+      }
+    }
+  }
+}
 
 export function getDiagnosticWeightsForSubject(subjectCode: string): Record<string, number> | null {
   return DIAGNOSTIC_UNIT_WEIGHTS[subjectCode] ?? null;

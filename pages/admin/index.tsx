@@ -44,6 +44,7 @@ import { AdminUsersTab } from "../../client/src/components/admin/AdminUsersTab";
 import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../lib/subject-display-names";
 import { ExplanationMarkdown } from "../../client/src/components/ui/ExplanationMarkdown";
 import { AdminQuestionQuizPreviewDialog } from "@/components/admin/AdminQuestionQuizPreviewDialog";
+import { SUBJECT_SECTION_CODES } from "../../lib/subject-sections-client";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -808,30 +809,7 @@ export default function AdminPage() {
       return;
     }
 
-    const subjectSections: Record<string, string[]> = {
-      APMACRO: ["BEC", "EI", "NI", "FS", "LR", "OT"],
-      APMICRO: ["BEC", "SD", "PC", "IMP", "FM", "MF"],
-      APCSP: ["CRD", "DAT", "AAP", "CSN", "IOC"],
-      APCHEM: ["AMS", "MIP", "IMF", "CR", "KIN", "THE", "EQ", "AB", "ATD"],
-      APGOV: ["FOP", "ILR", "CLR", "APB", "PPP"],
-      APPSYCH: ["BIO", "COG", "DEV", "SOC", "MPH"],
-      APBIO: ["CL", "CSF", "CE", "CCC", "HER", "GER", "NS", "ECO"],
-      APCALCAB: ["LIM", "DDF", "DCI", "CAD", "AAD", "IAC", "DE", "AI"],
-      APCALCBC: ["LIM", "DDF", "DCI", "CAD", "AAD", "IAC", "DE", "AI", "PPV", "ISS"],
-      APCSA: ["U1", "U2", "U3", "U4"],
-      APUSH: ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9"],
-      APWH: ["GT", "NE", "LBE", "TI", "REV", "COI", "GC", "CWD", "GLO"],
-      APEURO: ["RE", "AR", "AC", "SPP", "CRR", "IND", "NPP", "GCF", "CCE"],
-      APLANG: ["CRE", "SS", "RS", "OC", "ARG"],
-      APLIT: ["SF1", "PO1", "LF1", "SF2", "PO2", "LF2", "SF3", "PO3", "LF3"],
-      APSTATS: ["EOV", "ETV", "CD", "PRD", "SD", "ICP", "IQM", "ICC", "IQS"],
-      APPHYS1: ["KIN", "FTD", "WEP", "LMO", "TRD", "EMR", "OSC", "FLU"],
-      APPHYS2: ["THD", "EFP", "EC", "MEI", "GPO", "WPO", "MOD"],
-      APES: ["LWE", "LWB", "POP", "ESR", "LWU", "ERC", "APL", "ATP", "GCH"],
-      APHUG: ["TG", "PMP", "CPP", "PPP", "ARL", "CUL", "IED"],
-    };
-
-    setAvailableSections(subjectSections[subject] || []);
+    setAvailableSections(SUBJECT_SECTION_CODES[subject] || []);
     setSection("all"); // Reset section when subject changes
   }, [subject]);
 
