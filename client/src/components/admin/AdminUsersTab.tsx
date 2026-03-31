@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, MoreVertical, User, Ban, Loader2, Users, Shield, ShieldOff } from "lucide-react";
+import { Search, MoreVertical, User, Ban, Loader2, Users, Shield, ShieldOff, MapPin } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface AdminUser {
@@ -125,6 +125,53 @@ export function AdminUsersTab({ token }: { token: string }) {
     } catch {
       toast.error("Failed to update admin");
     }
+  }
+
+  async function setUserState(user: AdminUser, nextState: string | null) {
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(user.id)}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inferredState: nextState }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(typeof json?.error === "string" ? json.error : "Failed to update state");
+        return;
+      }
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? {
+                ...u,
+                state: json.data?.state ?? null,
+              }
+            : u,
+        ),
+      );
+      const label = json.data?.state || "cleared";
+      toast.success(`State updated: ${user.email} (${label})`);
+    } catch {
+      toast.error("Failed to update state");
+    }
+  }
+
+  async function promptAndSetUserState(user: AdminUser) {
+    const next = window.prompt("Set 2-letter state code (e.g. NJ). Leave blank to clear.", user.state ?? "");
+    if (next == null) return;
+    const normalized = next.trim().toUpperCase();
+    if (normalized === "") {
+      await setUserState(user, null);
+      return;
+    }
+    if (!/^[A-Z]{2}$/.test(normalized)) {
+      toast.error("Enter a valid 2-letter state code (example: CA)");
+      return;
+    }
+    await setUserState(user, normalized);
   }
 
   function formatDate(iso: string) {
@@ -236,6 +283,10 @@ export function AdminUsersTab({ token }: { token: string }) {
                           <DropdownMenuItem onClick={() => handleViewProfile(user)}>
                             <User className="mr-2 h-4 w-4" />
                             View Profile
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => promptAndSetUserState(user)}>
+                            <MapPin className="mr-2 h-4 w-4" />
+                            {user.state ? "Update/Clear State" : "Set State"}
                           </DropdownMenuItem>
                           {user.status === "active" ? (
                             <DropdownMenuItem

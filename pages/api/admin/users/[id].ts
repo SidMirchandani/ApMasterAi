@@ -37,8 +37,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const body = req.body || {};
   const wantAdmin = body.isAdmin;
   const wantBanned = body.banned;
-  if (typeof wantAdmin !== "boolean" && typeof wantBanned !== "boolean") {
-    return res.status(400).json({ error: "Body must include isAdmin and/or banned as boolean" });
+  const rawInferredState = body.inferredState;
+  const hasInferredStateUpdate = Object.prototype.hasOwnProperty.call(body, "inferredState");
+  let normalizedInferredState: string | null = null;
+  if (hasInferredStateUpdate) {
+    if (typeof rawInferredState === "string") {
+      const trimmed = rawInferredState.trim().toUpperCase();
+      if (trimmed === "") {
+        normalizedInferredState = null;
+      } else if (!/^[A-Z]{2}$/.test(trimmed)) {
+        return res.status(400).json({ error: "inferredState must be a 2-letter US state code or empty" });
+      } else {
+        normalizedInferredState = trimmed;
+      }
+    } else if (rawInferredState == null) {
+      normalizedInferredState = null;
+    } else {
+      return res.status(400).json({ error: "inferredState must be a string or null" });
+    }
+  }
+  if (typeof wantAdmin !== "boolean" && typeof wantBanned !== "boolean" && !hasInferredStateUpdate) {
+    return res.status(400).json({
+      error: "Body must include isAdmin and/or banned as boolean, or inferredState",
+    });
   }
 
   const userRef = db.collection("users").doc(id);
@@ -76,6 +97,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (typeof wantBanned === "boolean") {
     patch.banned = wantBanned;
   }
+  if (hasInferredStateUpdate) {
+    patch.inferredState = normalizedInferredState;
+    patch.inferredStateAt = new Date().toISOString();
+    patch.inferenceSource = normalizedInferredState ? "admin" : null;
+  }
 
   if (typeof wantBanned === "boolean") {
     if (!firebaseAdmin) {
@@ -107,6 +133,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       hasEnvAdmin: hasEnv,
       hasDbAdmin: hasDbAdmin,
       status: isBanned ? "banned" : "active",
+      state: typeof refreshed.inferredState === "string" ? refreshed.inferredState : null,
     },
   });
 }

@@ -487,9 +487,9 @@ export function AdminInsightsTab({ token }: { token: string }) {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-center">
+                <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:items-start min-w-0">
                   <div
-                    className="mx-auto w-full max-w-[440px] shrink-0 pt-1"
+                    className="mx-auto w-full max-w-[440px] shrink-0 pt-1 min-w-0"
                     style={{ height: regionChartHeight }}
                   >
                     <ChartContainer
@@ -549,7 +549,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
                     </ChartContainer>
                   </div>
                   <ul
-                    className="flex-1 min-w-0 space-y-2 max-h-[min(320px,50vh)] overflow-y-auto pr-1"
+                    className="flex-1 min-w-0 list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 content-start"
                     aria-label="Users by region breakdown"
                   >
                     {statePieData.map((row) => {
@@ -558,33 +558,33 @@ export function AdminInsightsTab({ token }: { token: string }) {
                       return (
                         <li
                           key={row.code}
-                          className="rounded-lg border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20 px-3 py-2.5"
+                          className="min-w-0 rounded-md border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20 px-2 py-1.5"
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <span
-                                className="h-2.5 w-2.5 shrink-0 rounded-full shadow-sm"
+                                className="h-2 w-2 shrink-0 rounded-full shadow-sm"
                                 style={{ backgroundColor: row.fill }}
                                 aria-hidden
                               />
                               <span
-                                className="font-medium text-slate-900 dark:text-slate-100 truncate"
+                                className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate"
                                 title={row.code === "Unknown" ? row.fullName : `${row.fullName} (${row.abbr})`}
                               >
                                 {row.fullName}
                               </span>
                             </div>
-                            <div className="text-right shrink-0 tabular-nums">
-                              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            <div className="flex items-baseline gap-1.5 shrink-0 tabular-nums text-xs">
+                              <span className="font-semibold text-slate-800 dark:text-slate-200">
                                 {row.value.toLocaleString()}
                               </span>
-                              <span className="text-xs text-muted-foreground ml-2">
+                              <span className="text-muted-foreground">
                                 {pct >= 0.1 ? `${pct.toFixed(1)}%` : "<0.1%"}
                               </span>
                             </div>
                           </div>
                           <div
-                            className="mt-2 h-1.5 rounded-full bg-slate-200/80 dark:bg-slate-700/80 overflow-hidden"
+                            className="mt-1 h-1 rounded-full bg-slate-200/80 dark:bg-slate-700/80 overflow-hidden"
                             role="presentation"
                           >
                             <div
