@@ -12,7 +12,7 @@ import {
   browserPopupRedirectResolver,
 } from "firebase/auth";
 import toast, { Toaster } from "react-hot-toast";
-import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square, Pencil, Trash2 } from "lucide-react";
+import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square, Pencil, Trash2, Eye } from "lucide-react";
 import { Progress } from "../../client/src/components/ui/progress";
 import Link from "next/link";
 import { Button } from "../../client/src/components/ui/button";
@@ -43,6 +43,7 @@ import { AdminInsightsTab } from "../../client/src/components/admin/AdminInsight
 import { AdminUsersTab } from "../../client/src/components/admin/AdminUsersTab";
 import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../lib/subject-display-names";
 import { ExplanationMarkdown } from "../../client/src/components/ui/ExplanationMarkdown";
+import { AdminQuestionQuizPreviewDialog } from "@/components/admin/AdminQuestionQuizPreviewDialog";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -114,30 +115,74 @@ function getErrorReasonFromQuestion(q: Question): string {
   return tag ? String(tag).replace(/^error_reason:/, "").trim() : "";
 }
 
-function renderVerificationStatus(q: Question) {
+type AdminVerifyStatus = "pass" | "needs_review" | "fail";
+
+/** Merge with existing question verification and apply admin-selected status for PUT. */
+function buildLastVerificationForStatus(
+  q: Question,
+  status: AdminVerifyStatus,
+): NonNullable<Question["lastVerification"]> {
+  const base = q.lastVerification || {};
+  return {
+    verifiedAt: new Date().toISOString(),
+    source: "admin",
+    model: base.model ?? null,
+    status,
+    lintErrors: Array.isArray(base.lintErrors) ? base.lintErrors : [],
+    lintWarnings: Array.isArray(base.lintWarnings) ? base.lintWarnings : [],
+    imageErrors: Array.isArray(base.imageErrors) ? base.imageErrors : [],
+    issues: Array.isArray(base.issues) ? base.issues : [],
+    checks: base.checks !== undefined ? base.checks : null,
+    confidence: base.confidence !== undefined ? base.confidence : null,
+  };
+}
+
+function verificationStatusSelectValue(q: Question): AdminVerifyStatus | undefined {
+  const raw = q.lastVerification?.status;
+  if (raw === "pass" || raw === "needs_review" || raw === "fail") return raw;
+  if (raw === "error") return "fail";
+  return undefined;
+}
+
+function VerificationStatusSelect({
+  q,
+  onSave,
+}: {
+  q: Question;
+  onSave: (id: string, patch: Partial<Question>) => Promise<void>;
+}) {
   const v = q.lastVerification;
-  if (!v?.status) {
-    return <span className="text-slate-400 dark:text-slate-500">—</span>;
-  }
-  const label =
-    v.status === "pass"
-      ? "OK"
-      : v.status === "needs_review"
-        ? "Review"
-        : v.status === "fail" || v.status === "error"
-          ? "Fail"
-          : v.status;
-  const title = (v.issues && v.issues.length > 0 ? v.issues : [v.status]).join("\n");
-  const cls =
-    v.status === "pass"
-      ? "text-green-600 dark:text-green-400"
-      : v.status === "needs_review"
-        ? "text-amber-600 dark:text-amber-400"
-        : "text-red-600 dark:text-red-400";
+  const selectValue = verificationStatusSelectValue(q);
+  const title =
+    v?.issues && v.issues.length > 0 ? v.issues.join("\n") : v?.status ? String(v.status) : "";
+
   return (
-    <span className={`font-medium text-xs ${cls}`} title={title}>
-      {label}
-    </span>
+    <div className="flex justify-center" title={title || undefined}>
+      <Select
+        value={selectValue}
+        onValueChange={(val) => {
+          if (val !== "pass" && val !== "needs_review" && val !== "fail") return;
+          void onSave(q.id, {
+            lastVerification: buildLastVerificationForStatus(q, val),
+          });
+        }}
+      >
+        <SelectTrigger className="h-7 w-[5.75rem] text-xs px-2 py-0 dark:border-slate-600 dark:bg-slate-800">
+          <SelectValue placeholder="—" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="pass" className="text-xs">
+            OK
+          </SelectItem>
+          <SelectItem value="needs_review" className="text-xs">
+            Review
+          </SelectItem>
+          <SelectItem value="fail" className="text-xs">
+            Fail
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
@@ -1760,6 +1805,7 @@ function Row({
   onDelete: (id: string) => Promise<void>;
 }) {
   const [edit, setEdit] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [form, setForm] = useState(() => {
     const choices = extractChoicesData(q);
     return {
@@ -2019,7 +2065,9 @@ function Row({
         <td className="p-2 align-top text-xs break-words dark:text-slate-300">
           {getDifficultyFromQuestion(q) || "-"}
         </td>
-        <td className="p-2 text-center align-top text-xs">{renderVerificationStatus(q)}</td>
+        <td className="p-2 text-center align-top text-xs">
+          <VerificationStatusSelect q={q} onSave={onSave} />
+        </td>
         <td className="p-2 align-top text-xs break-words min-w-[120px] max-w-[180px]">
           <div className="flex items-start gap-1">
             <div className="flex-1 min-w-0">
@@ -2036,6 +2084,15 @@ function Row({
         </td>
         <td className="p-2 text-center align-top">
           <div className="flex gap-1 justify-center flex-col">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPreviewOpen(true)}
+              className="text-xs px-2 h-7"
+            >
+              <Eye className="h-3.5 w-3.5 mr-1 inline" />
+              Preview
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -2068,6 +2125,11 @@ function Row({
               Delete
             </Button>
           </div>
+          <AdminQuestionQuizPreviewDialog
+            open={previewOpen}
+            onOpenChange={setPreviewOpen}
+            question={q}
+          />
         </td>
       </tr>
     );
@@ -2148,7 +2210,9 @@ function Row({
       <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
         {getDifficultyFromQuestion(q) || "-"}
       </td>
-      <td className="p-2 text-center align-top text-xs">{renderVerificationStatus(q)}</td>
+      <td className="p-2 text-center align-top text-xs">
+        <VerificationStatusSelect q={q} onSave={onSave} />
+      </td>
       <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
         {getErrorReasonFromQuestion(q) || "-"}
       </td>
