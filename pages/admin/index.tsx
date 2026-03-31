@@ -12,7 +12,7 @@ import {
   browserPopupRedirectResolver,
 } from "firebase/auth";
 import toast, { Toaster } from "react-hot-toast";
-import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square, Pencil } from "lucide-react";
+import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square, Pencil, Trash2 } from "lucide-react";
 import { Progress } from "../../client/src/components/ui/progress";
 import Link from "next/link";
 import { Button } from "../../client/src/components/ui/button";
@@ -29,6 +29,15 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "../../client/src/components/ui/switch";
 import { Label } from "../../client/src/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AdminDashboardLayout } from "../../client/src/components/admin/AdminDashboardLayout";
 import { AdminInsightsTab } from "../../client/src/components/admin/AdminInsightsTab";
 import { AdminUsersTab } from "../../client/src/components/admin/AdminUsersTab";
@@ -248,6 +257,9 @@ export default function AdminPage() {
   const [showOnlyErrorReports, setShowOnlyErrorReports] = useState(false);
   const [showOnlyUnverified, setShowOnlyUnverified] = useState(false);
   const [showOnlyVerificationFailed, setShowOnlyVerificationFailed] = useState(false);
+  const [showOnlyVerificationReview, setShowOnlyVerificationReview] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const allApSubjectsRef = AP_SUBJECT_CODES.map((code) => ({
     code,
@@ -273,8 +285,18 @@ export default function AdminPage() {
         return s === "fail" || s === "error";
       });
     }
+    if (showOnlyVerificationReview) {
+      list = list.filter((q) => q.lastVerification?.status === "needs_review");
+    }
     return list;
-  }, [items, showOnlyMissingExplanation, showOnlyErrorReports, showOnlyUnverified, showOnlyVerificationFailed]);
+  }, [
+    items,
+    showOnlyMissingExplanation,
+    showOnlyErrorReports,
+    showOnlyUnverified,
+    showOnlyVerificationFailed,
+    showOnlyVerificationReview,
+  ]);
 
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
@@ -788,6 +810,41 @@ export default function AdminPage() {
     });
 
     await updatePromise.then(() => fetchFiltered()).catch(() => {});
+  }
+
+  async function bulkDeleteDisplayedQuestions() {
+    if (!token) return;
+    const ids = displayedItems.map((q) => q.id);
+    if (ids.length === 0) return;
+    setBulkDeleting(true);
+    try {
+      const res = await fetch("/api/admin/questions/bulk-delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ids }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error((data as { error?: string }).error || "Bulk delete failed");
+      }
+      const deleted = (data as { deleted?: number }).deleted ?? ids.length;
+      const deletedSet = new Set(ids);
+      setItems((prev) => prev.filter((q) => !deletedSet.has(q.id)));
+      setSelectedQuestions((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+      toast.success(`Deleted ${deleted} question(s).`);
+      setBulkDeleteDialogOpen(false);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Bulk delete failed");
+    } finally {
+      setBulkDeleting(false);
+    }
   }
 
   async function deleteQuestion(id: string) {
@@ -1426,7 +1483,7 @@ export default function AdminPage() {
                   onCheckedChange={(v) => setShowOnlyMissingExplanation(!!v)}
                 />
                 <Label htmlFor="missing-explanation-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
-                  UnExplained Questions
+                  No Explaination
                 </Label>
               </div>
               <div className="flex items-center gap-2">
@@ -1436,7 +1493,7 @@ export default function AdminPage() {
                   onCheckedChange={(v) => setShowOnlyErrorReports(!!v)}
                 />
                 <Label htmlFor="error-reports-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
-                  Errorneous Questions
+                  Error Reported
                 </Label>
               </div>
               <div className="flex items-center gap-2">
@@ -1446,7 +1503,7 @@ export default function AdminPage() {
                   onCheckedChange={(v) => setShowOnlyUnverified(!!v)}
                 />
                 <Label htmlFor="unverified-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
-                  Unverified Questions
+                  Un-Verified
                 </Label>
               </div>
               <div className="flex items-center gap-2">
@@ -1456,7 +1513,17 @@ export default function AdminPage() {
                   onCheckedChange={(v) => setShowOnlyVerificationFailed(!!v)}
                 />
                 <Label htmlFor="verification-failed-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
-                  Verification Failed Questions
+                  Verification Failed
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="verification-review-only"
+                  checked={showOnlyVerificationReview}
+                  onCheckedChange={(v) => setShowOnlyVerificationReview(!!v)}
+                />
+                <Label htmlFor="verification-review-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
+                  Verification Review
                 </Label>
               </div>
             </div>
@@ -1466,16 +1533,30 @@ export default function AdminPage() {
         {/* Questions Table Card */}
         <Card className="dark:bg-slate-900/60 dark:border-slate-800">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="dark:text-white">
-                  Questions ({displayedItems.length})
-                </CardTitle>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <CardTitle className="dark:text-white">
+                    Questions ({displayedItems.length})
+                  </CardTitle>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="shrink-0"
+                    disabled={displayedItems.length === 0 || !token || bulkDeleting}
+                    onClick={() => setBulkDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1.5" />
+                    Bulk Delete
+                  </Button>
+                </div>
                 <CardDescription>
-                  {showOnlyMissingExplanation && items.length > 0 && "Filter: UnExplained Questions. "}
-                  {showOnlyErrorReports && items.length > 0 && "Filter: Errorneous Questions. "}
-                  {showOnlyUnverified && items.length > 0 && "Filter: Unverified Questions. "}
-                  {showOnlyVerificationFailed && items.length > 0 && "Filter: Verification Failed Questions. "}
+                  {showOnlyMissingExplanation && items.length > 0 && "Filter: No Explaination. "}
+                  {showOnlyErrorReports && items.length > 0 && "Filter: Error Reported. "}
+                  {showOnlyUnverified && items.length > 0 && "Filter: Un-Verified. "}
+                  {showOnlyVerificationFailed && items.length > 0 && "Filter: Verification Failed. "}
+                  {showOnlyVerificationReview && items.length > 0 && "Filter: Verification Review. "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
               </div>
@@ -1540,6 +1621,38 @@ export default function AdminPage() {
               )}
             </div>
           </CardHeader>
+          <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={(open) => !bulkDeleting && setBulkDeleteDialogOpen(open)}>
+            <AlertDialogContent className="dark:bg-slate-900 dark:border-slate-700">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="dark:text-white">Delete questions in this view?</AlertDialogTitle>
+                <AlertDialogDescription className="dark:text-slate-400">
+                  This will permanently delete {displayedItems.length} question
+                  {displayedItems.length !== 1 ? "s" : ""} currently shown in the table (after your subject, section, and
+                  filter settings). This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={bulkDeleting} className="dark:border-slate-600 dark:text-slate-200">
+                  Cancel
+                </AlertDialogCancel>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={bulkDeleting || displayedItems.length === 0}
+                  onClick={() => void bulkDeleteDisplayedQuestions()}
+                >
+                  {bulkDeleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Deleting…
+                    </>
+                  ) : (
+                    `Delete ${displayedItems.length} question${displayedItems.length !== 1 ? "s" : ""}`
+                  )}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm table-fixed">
@@ -1594,7 +1707,11 @@ export default function AdminPage() {
               {displayedItems.length === 0 && (
                 <div className="p-8 text-center text-slate-500 dark:text-slate-400">
                   {items.length > 0 &&
-                  (showOnlyMissingExplanation || showOnlyErrorReports || showOnlyUnverified || showOnlyVerificationFailed)
+                  (showOnlyMissingExplanation ||
+                    showOnlyErrorReports ||
+                    showOnlyUnverified ||
+                    showOnlyVerificationFailed ||
+                    showOnlyVerificationReview)
                     ? "No questions match the current filters."
                     : "No questions found. Upload a CSV or adjust filters."}
                 </div>
