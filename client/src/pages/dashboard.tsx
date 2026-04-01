@@ -305,6 +305,7 @@ export default function Dashboard() {
                       : undefined
                   }
                   onStudy={() => router.push(`/study?subject=${subject.subjectId}`)}
+                  unitProgressOverride={(subject as any).unitProgress}
                 />
               ))}
             </div>
@@ -568,12 +569,15 @@ const SubjectCard = ({
   onArchive,
   onDelete,
   onStudy,
+  unitProgressOverride,
 }: {
   subject: DashboardSubject;
   isAdmin?: boolean;
   onArchive: () => void;
   onDelete?: () => void;
   onStudy: () => void;
+  /** Optional unit progress map passed from parent to avoid extra network calls. */
+  unitProgressOverride?: Record<string, { highestScore?: number; mcqScore?: number }>;
 }) => {
   const router = useRouter();
   const subjectMeta = getSubjectByCode(subject.subjectId);
@@ -594,17 +598,10 @@ const SubjectCard = ({
   });
   const testHistory = testHistoryResponse?.data || [];
 
-  const { data: unitProgressResponse } = useQuery<{ success: boolean; data: any }>({
-    queryKey: ["unitProgress", subject.subjectId],
-    queryFn: async () => {
-      const res = await apiRequest("GET", `/api/user/subjects/${subject.subjectId}/unit-progress`);
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
-    },
-    staleTime: 60000,
-  });
+  // Prefer unit progress that is already embedded on the subject (from /api/user/subjects)
+  // to avoid an extra request per subject. Fall back to an empty map.
   const unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }> =
-    unitProgressResponse?.data || {};
+    unitProgressOverride || (subject as any).unitProgress || {};
 
   const subjectCode = getApiCodeForSubject(subject.subjectId);
   const targets = getTargetPercentagesForSubject(subjectCode);

@@ -1956,17 +1956,18 @@ function Row({
   }, [edit, q]);
 
   async function save() {
-    // Validate that all choices are filled
+    // Validate that required choices are filled (A-D required, E optional)
     const choices = [
       form.choiceA.trim(),
       form.choiceB.trim(),
       form.choiceC.trim(),
       form.choiceD.trim(),
-      form.choiceE.trim()
+      form.choiceE.trim(),
     ];
 
-    if (choices.some(choice => !choice)) {
-      toast.error("All 5 choices (A-E) must be filled");
+    const requiredChoices = choices.slice(0, 4);
+    if (requiredChoices.some((choice) => !choice)) {
+      toast.error("Choices A-D must be filled");
       return;
     }
 
