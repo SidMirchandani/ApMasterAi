@@ -7,10 +7,10 @@ Verification: [“Edison Students Secure Second Place in 2025 Congressional App 
 
 APMaster is an **AI-assisted AP exam prep platform** built for students who care about **speed, clear feedback, and staying in the loop** as they learn.
 
-The product is designed like a careful study coach:
+APMaster is engineered to solve the primary friction points of AI study tools: slow generation times, hallucinated context, and unsustainable API costs. By treating LLM token usage as a strict constraint, we built an architecture that scales efficiently, allowing us to provide the platform entirely free of charge.
 - **Personalized practice and diagnostics** across multiple AP subjects.
 - **AI-generated explanations and contextual hints** that feel like a good TA, not a black box.
-- **Latency-aware backend** that batches, retries, and streams results so students see the **first token fast** instead of waiting on a spinner.
+- **Highly efficient backend** that utilizes strict caching, batching, and stream processing to minimize API token costs, ensuring the platform remains scalable and entirely free.
 
 ---
 
@@ -20,7 +20,7 @@ The product is designed like a careful study coach:
 - **Practice by unit or topic** with a quiz engine that tracks accuracy, attempts, and timing.
 - **Get AI explanations and extra context on demand**, including “why this is wrong” and “what you should review next.”
 - **Bookmark and review** questions, maintain **score history**, and see patterns over time.
-- **Operate powerful admin tools** to import, clean, and bulk-fix question banks using AI.
+- **Admin-side content QC**: structured imports, cleaning and normalization, AI-backed explanations and remediation, and explicit verification so the live bank stays accurate and consistent.
 
 APMaster is both a **student-facing study experience** and a **latency-aware AI system** that uses batching, streaming, and cost controls built on top of Firestore.
 
@@ -28,12 +28,12 @@ APMaster is both a **student-facing study experience** and a **latency-aware AI 
 
 ### 2. Tech Stack (High-Level)
 
-- **Frontend (Beauty)**
+- **Frontend**
   - **Next.js + React** UI, using a modern component system (shadcn-style, Tailwind CSS).
   - **React Query + Contexts** for data fetching, cache, and app-wide state.
   - **Firebase client SDK** for auth + lightweight Firestore access where appropriate.
 
-- **Backend & Infrastructure (Brains)**
+- **Backend & Infrastructure**
   - **Next.js API routes** in `pages/api/**` for user-facing HTTP/JSON and SSE endpoints.
   - **Express server** in `server/**` for long-lived infrastructure, Firestore connection management, and certain batch/utility flows.
   - **Firebase Admin SDK** for privileged Firestore + Storage access (`server/firebase-admin.ts`).
@@ -56,7 +56,7 @@ APMaster is not “just a Next.js app” and not “just an Express backend” �
   - Handles **all user-facing routes**: dashboard, study views, quizzes, auth flows.
   - Exposes **REST- and SSE-style API endpoints** under:
     - `pages/api/user/**` – student-facing APIs (profile, subjects, tests, state).
-    - `pages/api/admin/**` – admin tooling (question imports, AI-backed maintenance).
+    - `pages/api/admin/**` – content QC (imports, cleaning, AI-backed regeneration, question verification).
     - Specialized AI endpoints like:
       - `pages/api/generateExplanations.ts`
       - `pages/api/generateContext.ts`
@@ -95,7 +95,7 @@ flowchart LR
 ```
 
 - The browser talks to the **Next.js client app**, which calls **Next.js API routes** for most user flows.
-- For batchy, infra-style operations, the API routes or admin tools rely on the **Express server**, which already has **warm Firestore and Gemini connections**.
+- For batchy, infra-style operations, the API routes or **admin QC** endpoints rely on the **Express server**, which already has **warm Firestore and Gemini connections**.
 - Both layers ultimately converge on **Firestore, Cloud Storage, and Gemini**, but with **different lifecycles**:
   - Next.js routes: request–response oriented.
   - Express server: longer-lived, connection-aware processes.
@@ -155,7 +155,7 @@ This data modeling strategy lets APMaster handle **frequent quiz state updates**
 
 ---
 
-### 6. Latency, TTFT, and Cost Strategy
+### 6. Unit Economics, Cost Architecture, & Latency
 
 Latency isn’t an afterthought here—it is a **core design constraint**. APMaster treats AI calls as expensive (time and money) and is built around that fact.
 
@@ -179,11 +179,10 @@ Latency isn’t an afterthought here—it is a **core design constraint**. APMas
     - Keep the **Firestore “pipes” warm**, so when Gemini finishes a batch and we persist results, we’re not paying additional cold-start penalties.
   - This connection reuse also indirectly helps **Gemini flows**: the less time we spend reconciling DB connections, the more of our latency budget can be dedicated to **model inference and streaming tokens**.
 
-- **Prefetching and caching**
-  - **React Query + contexts** (under `client/src/contexts` and `client/src/lib/hooks`) aggressively **cache per-user state** such as progress, bookmarks, and question metadata.
-  - Combined with Firestore connection reuse on the backend, this means:
-    - We often already **have the instructional context** needed for an AI call locally.
-    - We avoid redundant AI calls and shrink the prompt footprint, cutting **both cost and latency**.
+- **Cache-First Architecture & Cost Avoidance**
+  - We utilize React Query + Contexts to aggressively pre-fetch and cache per-user state (progress, bookmarks, question metadata) locally.
+  - **How it saves AI costs:** By ensuring the client and backend already hold the necessary instructional context via low-cost Firestore reads, we eliminate redundant LLM calls. The AI is only triggered for net-new generative tasks, rather than re-evaluating existing state.
+  - **Scalability impact:** This strict caching layer acts as a firewall against unnecessary API token consumption. It decouples user growth from our AI billing curve, ensuring the system remains financially sustainable and permanently free for students at any scale.
 
 ---
 
@@ -200,20 +199,17 @@ Latency isn’t an afterthought here—it is a **core design constraint**. APMas
     - `pages/api/generateContext.ts`
     - `pages/api/chat-explanation.ts`
 
-- **Admin/content flows**
-  - `/admin/**` pages (under `pages/admin`) expose tools for:
-    - Importing question banks (`pages/api/admin/import-questions.ts` and siblings).
-    - Editing and retiring questions.
-    - Running **bulk AI operations** (e.g., regenerating explanations, fixing prompts or choices).
-  - Many of these UI actions are backed by:
-    - **Batch helpers** in `server/replit_integrations/batch/**`.
-    - **Firestore + Storage** utilities in `server/db.ts` and `server/storage.ts`.
+- **Admin / content quality (QC)**
+  - **Features on `/admin/**`** (`pages/admin`): bank imports (`pages/api/admin/import-questions.ts` and related routes), per-question and bulk edits (`pages/api/admin/questions/**`), retirement and deletion, plus migration-style passes (images, study notes, slugs) when the corpus needs a controlled update.
+  - **How cleaning works**: repair and normalization routes (e.g. unit assignment, recategorization, difficulty tagging) and bulk jobs use the same **concurrency-limited, retry-aware batch processors** (`server/replit_integrations/batch/**`) as student-facing AI flows, with writes flowing through **Firebase Admin** and **`server/db.ts` / `server/storage.ts`** so changes are predictable and traceable.
+  - **How explanations and study content are generated for the bank**: admin endpoints (e.g. `pages/api/admin/generate-study-notes.ts`, `re-generate-study-notes.ts`) reuse the shared **Gemini** setup and Firestore persistence patterns as the study UI, so regenerated text becomes the **canonical, reviewed** copy students see.
+  - **How verification fits in**: `pages/api/admin/verify-questions.ts` supports dedicated checks on items; **server-side admin gating** (env-configured operators, not client flags—see `SECURITY_AUDIT.md`) and logging guidance for imports and bulk writes keep QC actions **scoped and auditable**.
 
 Together, these flows show how to wire **end-to-end AI features** (from UX to LLM to Firestore) in a way that is **easy to observe, resilient under load, and mindful of cost**.
 
 ---
 
-### 8. Enterprise-Grade Security Architecture
+### 8. Security & Production Readiness
 
 APMaster is designed with a **production-grade security posture** suitable for handling student data and AI credentials on the server side.
 
@@ -242,4 +238,4 @@ APMaster is designed with a **production-grade security posture** suitable for h
 - **Pluggable model backends**, allowing us to swap Gemini for other providers with the same batching/streaming guarantees.
 - **Teacher-facing tooling**: class dashboards, assignment flows, and shared test libraries.
 
-APMaster represents our commitment to solving real-world educational challenges through solid software engineering, efficient algorithms, and user-centric design.
+APMaster demonstrates how applying rigorous algorithmic principles—like concurrency control, stream processing, and cache-first state management—can transform a standard AI wrapper into a fast, cost-efficient, production-ready system.
