@@ -994,6 +994,9 @@ export default function AdminPage() {
         endpoint = "/api/reGenerateExplanations";
         break;
       case "fix-prompts":
+        endpoint = "/api/prettyPrintPromptsChoices";
+        break;
+      case "fix-mixed-media-prompts":
         endpoint = "/api/fixPromptsChoices";
         break;
       case "grade-difficulty":
@@ -1012,7 +1015,8 @@ export default function AdminPage() {
 
     const actionLabel = selectedAction === "explanations" ? "Explanation Generation"
       : selectedAction === "re-generate-explanations" ? "Explanation Re-Generation"
-      : selectedAction === "fix-prompts" ? "Prompt Fixing"
+      : selectedAction === "fix-prompts" ? "Prompt & Choices Pretty Print"
+      : selectedAction === "fix-mixed-media-prompts" ? "Mixed Media Prompt Fixing"
       : selectedAction === "study-notes" ? "Study Notes Generation"
       : selectedAction === "re-generate-study-notes" ? "Study Notes Re-Generation"
       : selectedAction === "verify-questions" ? "Question Verification"
@@ -1113,10 +1117,10 @@ export default function AdminPage() {
               toast.success(event.message);
               // Refresh questions after primary action (fix prompts, explanations, etc.).
               fetchFiltered();
-              // If we just ran Fix Prompts & Choices, automatically kick off verification
+              // If we just ran Fix Mixed Media Prompts, automatically kick off verification
               // for the same question IDs in the background so any accidental key changes
               // or broken questions get flagged.
-              if (selectedAction === "fix-prompts" && questionIds.length > 0) {
+              if (selectedAction === "fix-mixed-media-prompts" && questionIds.length > 0) {
                 void fetch("/api/admin/verify-questions", {
                   method: "POST",
                   headers: {
@@ -1723,8 +1727,9 @@ export default function AdminPage() {
                   <SelectTrigger className="w-[250px] bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
                     <SelectValue placeholder="Select Action" />
                   </SelectTrigger>
-                <SelectContent>
+                  <SelectContent>
                     <SelectItem value="fix-prompts">Fix Prompts & Choices</SelectItem>
+                    <SelectItem value="fix-mixed-media-prompts">Fix Mixed Media Prompts</SelectItem>
                     <SelectItem value="explanations">Generate Explanations</SelectItem>
                     <SelectItem value="re-generate-explanations">Re-Generate Explanations</SelectItem>
                     <SelectItem value="study-notes">Generate Study Notes</SelectItem>
