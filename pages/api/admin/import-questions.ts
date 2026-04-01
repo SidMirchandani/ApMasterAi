@@ -5,6 +5,7 @@ import AdmZip from 'adm-zip';
 import fs from 'fs/promises';
 import path from 'path';
 import { getFirebaseAdmin } from '../../../server/firebase-admin';
+import { requireAdmin } from '../../../server/next-api-auth';
 
 // Disable Next.js body parsing for file uploads
 export const config = {
@@ -203,6 +204,9 @@ export default async function handler(
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
 
   const tmpDir = path.join(process.cwd(), 'tmp_import');
   let uploadedFilePath = '';

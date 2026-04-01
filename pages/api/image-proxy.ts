@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
+import { requireUser } from "../../server/next-api-auth";
 
 const urlCache = new Map<string, { url: string; expires: number }>();
 
@@ -25,6 +26,9 @@ export default async function handler(
     return res.status(400).json({ error: "Invalid path parameter" });
   }
 
+  const user = await requireUser(req, res);
+  if (!user) return;
+
   try {
     const cached = urlCache.get(path);
     if (cached && cached.expires > Date.now()) {
@@ -36,7 +40,11 @@ export default async function handler(
       return res.status(500).json({ error: "Firebase Admin not initialized" });
     }
 
-    const bucket = firebaseAdmin.storage.bucket("gen-lang-client-0260042933.firebasestorage.app");
+    const bucketName =
+      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+      process.env.FIREBASE_STORAGE_BUCKET ||
+      "gen-lang-client-0260042933.firebasestorage.app";
+    const bucket = firebaseAdmin.storage.bucket(bucketName);
     const file = bucket.file(path);
 
     const [signedUrl] = await file.getSignedUrl({

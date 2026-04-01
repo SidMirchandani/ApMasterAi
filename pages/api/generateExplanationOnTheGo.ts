@@ -1,6 +1,8 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
+import { getGeminiClientOptions } from "../../lib/gemini-models";
+import { requireUser } from "../../server/next-api-auth";
 
 export default async function handler(
   req: NextApiRequest,
@@ -9,6 +11,9 @@ export default async function handler(
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  const user = await requireUser(req, res);
+  if (!user) return;
 
   try {
     const {
@@ -21,12 +26,10 @@ export default async function handler(
       return res.status(400).json({ error: "Missing required fields" });
     }
 
+    const opts = getGeminiClientOptions();
     const ai = new GoogleGenAI({
-      apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
-      httpOptions: {
-        apiVersion: "",
-        baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
-      },
+      apiKey: opts.apiKey,
+      ...(opts.httpOptions && { httpOptions: opts.httpOptions }),
     });
 
     const choicesText = choices.map((choice: string, i: number) => 

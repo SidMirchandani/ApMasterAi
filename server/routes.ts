@@ -5,6 +5,8 @@ import { insertWaitlistEmailSchema, insertUserSubjectSchema } from "../shared/sc
 import { z } from "zod";
 import { DatabaseRetryHandler, ensureDatabaseHealth } from "./db-retry-handler";
 import { verifyFirebaseToken } from "./firebase-admin";
+import { getDb } from "./db";
+import { isPlatformAdmin } from "./platform-admin";
 import { getClientIp } from "./client-ip";
 import {
   addToWaitlist,
@@ -46,6 +48,29 @@ async function requireFirebaseAuth(req: Request, res: Response, next: NextFuncti
   const token = authHeader.slice(7);
   try {
     const decoded = await verifyFirebaseToken(token);
+    res.locals = res.locals || {};
+    res.locals.firebaseUid = decoded.uid;
+    next();
+  } catch {
+    res.status(401).json({ success: false, message: "Invalid authentication token" });
+  }
+}
+
+/** Admin-only: verified Firebase user must be a platform admin (env list or Firestore isAdmin). */
+async function requirePlatformAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ success: false, message: "Authentication required" });
+    return;
+  }
+  const token = authHeader.slice(7);
+  try {
+    const decoded = await verifyFirebaseToken(token);
+    const db = getDb();
+    if (!(await isPlatformAdmin(db, decoded.email, decoded.uid))) {
+      res.status(403).json({ success: false, message: "Forbidden" });
+      return;
+    }
     res.locals = res.locals || {};
     res.locals.firebaseUid = decoded.uid;
     next();
@@ -210,8 +235,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get waitlist stats (optional - for admin purposes)
-  app.get("/api/waitlist/stats", async (req, res) => {
+  // Get waitlist stats (admin only)
+  app.get("/api/waitlist/stats", requirePlatformAdmin, async (req, res) => {
     try {
       const stats = await getWaitlistStats();
       res.json({

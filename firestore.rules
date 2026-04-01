@@ -1,3 +1,6 @@
+// NOTE: Many collections (e.g. user_subjects, questions, user_bookmarks) are accessed only via
+// Firebase Admin SDK from Next.js / Express. Client SDK usage must have matching rules below;
+// paths with no rule match are denied by default.
 
 rules_version = '2';
 

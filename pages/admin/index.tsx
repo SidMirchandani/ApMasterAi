@@ -46,6 +46,7 @@ import { ExplanationMarkdown } from "../../client/src/components/ui/ExplanationM
 import { AdminQuestionQuizPreviewDialog } from "@/components/admin/AdminQuestionQuizPreviewDialog";
 import { SUBJECT_SECTION_CODES } from "../../lib/subject-sections-client";
 import { hasMixedTextAndImageChoices } from "../../lib/mixed-choice-helpers";
+import { AuthProxiedImg } from "@/components/ui/AuthProxiedImg";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -309,6 +310,11 @@ export default function AdminPage() {
   const [showOnlyVerificationReview, setShowOnlyVerificationReview] = useState(false);
   /** Answer choices mix plain text and image (formula) choices — for Fix image choices workflow. */
   const [showOnlyMixedPrompts, setShowOnlyMixedPrompts] = useState(false);
+  /**
+   * When Mixed Prompts is on, we filter by this ID list — refreshed only on Search or when toggling Mixed Prompts,
+   * so rows stay visible after Fix Image Choices until you search/toggle again.
+   */
+  const [mixedPromptsPinnedIds, setMixedPromptsPinnedIds] = useState<string[] | null>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
@@ -339,8 +345,9 @@ export default function AdminPage() {
     if (showOnlyVerificationReview) {
       list = list.filter((q) => q.lastVerification?.status === "needs_review");
     }
-    if (showOnlyMixedPrompts) {
-      list = list.filter((q) => hasMixedTextAndImageChoices(q.choices));
+    if (showOnlyMixedPrompts && mixedPromptsPinnedIds !== null) {
+      const pin = new Set(mixedPromptsPinnedIds);
+      list = list.filter((q) => pin.has(q.id));
     }
     return list;
   }, [
@@ -351,6 +358,7 @@ export default function AdminPage() {
     showOnlyVerificationFailed,
     showOnlyVerificationReview,
     showOnlyMixedPrompts,
+    mixedPromptsPinnedIds,
   ]);
 
   // AI explanation generation state
@@ -859,16 +867,27 @@ export default function AdminPage() {
     }
   }, [router.isReady, router.query.tab, adminStatus, isEnvAdmin, router]);
 
-  async function fetchFiltered() {
-    if (!token) return;
+  async function fetchFiltered(): Promise<Question[] | undefined> {
+    if (!token) return undefined;
     const sectionParam = section === "all" ? "" : section;
     const res = await fetch(
       `/api/admin/questions/query?subject=${subject}&section=${sectionParam}`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
     const data = await res.json();
-    setItems(data.items || []);
+    const nextItems: Question[] = data.items || [];
+    setItems(nextItems);
     setSelectedQuestions(new Set());
+    return nextItems;
+  }
+
+  async function handleSearchClick() {
+    const nextItems = await fetchFiltered();
+    if (showOnlyMixedPrompts && nextItems) {
+      setMixedPromptsPinnedIds(
+        nextItems.filter((q) => hasMixedTextAndImageChoices(q.choices)).map((q) => q.id),
+      );
+    }
   }
 
   async function updateQuestion(id: string, patch: Partial<Question>) {
@@ -1577,7 +1596,7 @@ export default function AdminPage() {
               </Select>
 
               <Button
-                onClick={fetchFiltered}
+                onClick={() => void handleSearchClick()}
                 disabled={!subject}
                 className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -1640,9 +1659,23 @@ export default function AdminPage() {
                 <Checkbox
                   id="mixed-prompts-only"
                   checked={showOnlyMixedPrompts}
-                  onCheckedChange={(v) => setShowOnlyMixedPrompts(!!v)}
+                  onCheckedChange={(v) => {
+                    const on = !!v;
+                    setShowOnlyMixedPrompts(on);
+                    if (on) {
+                      setMixedPromptsPinnedIds(
+                        items.filter((q) => hasMixedTextAndImageChoices(q.choices)).map((q) => q.id),
+                      );
+                    } else {
+                      setMixedPromptsPinnedIds(null);
+                    }
+                  }}
                 />
-                <Label htmlFor="mixed-prompts-only" className="text-sm font-medium cursor-pointer dark:text-slate-300" title="Some answer choices are plain text and others are images (e.g. math formulas).">
+                <Label
+                  htmlFor="mixed-prompts-only"
+                  className="text-sm font-medium cursor-pointer dark:text-slate-300"
+                  title="Some choices are text and others are images. Who is listed updates when you Search or toggle this off/on — not after each AI refresh, so fixed rows stay visible."
+                >
                   Mixed Prompts
                 </Label>
               </div>
@@ -1888,6 +1921,7 @@ export default function AdminPage() {
                       onToggleSelect={() => toggleQuestion(q.id)}
                       onSave={updateQuestion}
                       onDelete={deleteQuestion}
+                      authToken={token}
                     />
                   ))}
                 </tbody>
@@ -1941,12 +1975,14 @@ function Row({
   onToggleSelect,
   onSave,
   onDelete,
+  authToken,
 }: {
   q: Question;
   selected: boolean;
   onToggleSelect: () => void;
   onSave: (id: string, patch: Partial<Question>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  authToken: string;
 }) {
   const [edit, setEdit] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -2029,14 +2065,16 @@ function Row({
               const imgSrc = getImageUrl(block.url);
               return (
                 <div key={idx} className="group relative inline-block">
-                  <img
+                  <AuthProxiedImg
                     src={imgSrc}
                     alt={`Question image ${idx + 1}`}
+                    bearerToken={authToken}
                     className="h-8 w-auto rounded border border-slate-300 cursor-pointer"
                   />
-                  <img
+                  <AuthProxiedImg
                     src={imgSrc}
                     alt={`Question image ${idx + 1} enlarged`}
+                    bearerToken={authToken}
                     className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
@@ -2064,14 +2102,16 @@ function Row({
               const imgSrc = getImageUrl(url);
               return (
                 <div key={idx} className="group relative inline-block">
-                  <img
+                  <AuthProxiedImg
                     src={imgSrc}
                     alt={`Question image ${idx + 1}`}
+                    bearerToken={authToken}
                     className="h-8 w-auto rounded border border-slate-300 cursor-pointer"
                   />
-                  <img
+                  <AuthProxiedImg
                     src={imgSrc}
                     alt={`Question image ${idx + 1} enlarged`}
+                    bearerToken={authToken}
                     className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
@@ -2096,14 +2136,16 @@ function Row({
               const imgSrc = getImageUrl(block.url);
               return (
                 <div key={idx} className="group relative inline-block mr-1">
-                  <img
+                  <AuthProxiedImg
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1}`}
+                    bearerToken={authToken}
                     className="h-6 w-auto rounded border border-slate-300 cursor-pointer"
                   />
-                  <img
+                  <AuthProxiedImg
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
+                    bearerToken={authToken}
                     className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
@@ -2134,14 +2176,16 @@ function Row({
               const imgSrc = getImageUrl(url);
               return (
                 <div key={idx} className="group relative inline-block">
-                  <img
+                  <AuthProxiedImg
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1}`}
+                    bearerToken={authToken}
                     className="h-6 w-auto rounded border border-slate-300 cursor-pointer"
                   />
-                  <img
+                  <AuthProxiedImg
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
+                    bearerToken={authToken}
                     className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>

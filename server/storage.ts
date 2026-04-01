@@ -168,6 +168,39 @@ export class Storage {
     });
   }
 
+  /** Admin-only: aggregate waitlist size and most recent signup (no full list). */
+  async getWaitlistAdminSummary(): Promise<{ total: number; latest: string | null }> {
+    if (isDevelopmentMode()) {
+      const entries = Array.from(devStorage.waitlist_emails.values()).sort(
+        (a, b) => b.signedUpAt.getTime() - a.signedUpAt.getTime(),
+      );
+      return {
+        total: devStorage.waitlist_emails.size,
+        latest: entries[0]?.email ?? null,
+      };
+    }
+
+    return DatabaseRetryHandler.withRetry(async () => {
+      await this.ensureConnection();
+      const db = this.getDbInstance();
+      if (!db) throw new Error("Firestore not available");
+      const col = db.collection("waitlist_emails");
+      const totalSnap = await col.count().get();
+      const total = totalSnap.data().count ?? 0;
+      let latest: string | null = null;
+      try {
+        const recent = await col.orderBy("signedUpAt", "desc").limit(1).get();
+        if (!recent.empty) {
+          const em = recent.docs[0].data()?.email;
+          latest = typeof em === "string" ? em : null;
+        }
+      } catch {
+        // Missing index or field: still return total
+      }
+      return { total, latest };
+    });
+  }
+
   async createUser(firebaseUid: string, email: string, username?: string, clientIp?: string | null): Promise<User> {
     if (isDevelopmentMode()) {
       // Development mode fallback

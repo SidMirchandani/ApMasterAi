@@ -1,7 +1,7 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { storage } from "../../../server/storage";
 import { getDb } from "../../../server/db";
+import { requireAdmin } from "../../../server/next-api-auth";
 
 // Mapping of old unit IDs to new section codes
 const unitMappings: { [subjectId: string]: { [oldKey: string]: string } } = {
@@ -37,6 +37,9 @@ export default async function handler(
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
 
   try {
     const db = getDb();

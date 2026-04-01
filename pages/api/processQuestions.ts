@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 import { getModelName, getGeminiClientOptions } from "../../lib/gemini-models";
+import { requireAdmin } from "../../server/next-api-auth";
 
 export const config = {
   api: {
@@ -129,6 +130,9 @@ export default async function handler(
   if (!questionIds || !Array.isArray(questionIds) || questionIds.length === 0) {
     return res.status(400).json({ error: "questionIds array is required" });
   }
+
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
 
   const selectedModel = getModelName(model);
   console.log(`[ProcessQuestions] Using model: ${selectedModel}, processing ${questionIds.length} questions`);

@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../server/storage";
+import { requireAdmin } from "../../../server/next-api-auth";
 
 export default async function handler(
   req: NextApiRequest,
@@ -8,13 +9,10 @@ export default async function handler(
   switch (req.method) {
     case "GET":
       try {
-        const emails = await storage.getWaitlistEmails();
+        const admin = await requireAdmin(req, res);
+        if (!admin) return;
 
-        const stats = {
-          total: emails.length,
-          latest: emails.length > 0 ? emails[0].email : null, // assuming descending order in storage
-          all: emails,
-        };
+        const stats = await storage.getWaitlistAdminSummary();
 
         return res.status(200).json({
           success: true,
