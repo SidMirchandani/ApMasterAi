@@ -32,13 +32,13 @@ function removeDuplicateBlocks(blocks: any[]): any[] {
       key = `image:${block.url}`;
       if (!seen.has(key)) {
         seen.add(key);
-        uniqueBlocks.push(block);
+        uniqueBlocks.push({ ...block });
       }
     } else {
       key = JSON.stringify(block);
       if (!seen.has(key)) {
         seen.add(key);
-        uniqueBlocks.push(block);
+        uniqueBlocks.push({ ...block });
       }
     }
   }
@@ -78,13 +78,31 @@ async function callWithRetry(
   throw lastError;
 }
 
-/** Match client MarkdownWithMath so KaTeX/remark-math do not choke on double-escapes or empty $ $. */
+/** Heuristic: content looks like LaTeX (e.g. \int, \frac, \sqrt). */
+function looksLikeLatexServer(content: string): boolean {
+  const t = content.trim();
+  return t.startsWith("\\") || /\\[a-zA-Z]+|\\[{}^_]|\^{|_\{/.test(content);
+}
+
+/** Normalize math text to something our MarkdownWithMath pipeline will render cleanly. */
 function normalizeChoiceTextForRender(text: string): string {
-  return String(text)
-    .trim()
-    .replace(/\\\\/g, "\\")
-    .replace(/\$\$\s*\$\$/g, " ")
-    .replace(/\$\s*\$/g, " ");
+  let out = String(text).trim();
+  if (!out) return out;
+
+  // Match client: collapse double backslashes that sneak in from JSON/LLM.
+  out = out.replace(/\\\\/g, "\\");
+  // Remove empty math delimiters that can crash remark-math / rehype-katex.
+  out = out.replace(/\$\$\s*\$\$/g, " ").replace(/\$\s*\$/g, " ");
+
+  // If it already has $...$, trust the model.
+  if (/\$[^$]+\$/.test(out)) return out;
+
+  // If it looks like pure LaTeX with no delimiters, wrap it once.
+  if (looksLikeLatexServer(out)) {
+    return `$${out}$`;
+  }
+
+  return out;
 }
 
 const LETTERS = ["A", "B", "C", "D", "E"] as const;
