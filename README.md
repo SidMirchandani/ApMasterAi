@@ -1,8 +1,13 @@
 ### APMaster – Latency-Aware AI Study Companion for AP Exams
 
-APMaster is an **AI-assisted AP exam prep platform** built for students who care about **speed, feedback quality, and staying in the loop** as they learn.
+**Founders & Recognition**  
+Founded & Engineered by: **Siddharth Mirchandani** and **Vivana Satiani**.  
+Award: **2nd Place, 2025 Congressional App Challenge**.  
+Verification: [“Edison Students Secure Second Place in 2025 Congressional App Challenge.”](https://www.tapinto.net/towns/edison/milestones/edison-students-secure-second-place-in-2025-congressional-app-challenge)
 
-The product is designed like an engineer’s study coach:
+APMaster is an **AI-assisted AP exam prep platform** built for students who care about **speed, clear feedback, and staying in the loop** as they learn.
+
+The product is designed like a careful study coach:
 - **Personalized practice and diagnostics** across multiple AP subjects.
 - **AI-generated explanations and contextual hints** that feel like a good TA, not a black box.
 - **Latency-aware backend** that batches, retries, and streams results so students see the **first token fast** instead of waiting on a spinner.
@@ -17,7 +22,7 @@ The product is designed like an engineer’s study coach:
 - **Bookmark and review** questions, maintain **score history**, and see patterns over time.
 - **Operate powerful admin tools** to import, clean, and bulk-fix question banks using AI.
 
-APMaster is both a **student-facing study experience** and a **developer-grade playground** for building latency- and cost-aware AI features on top of Firestore.
+APMaster is both a **student-facing study experience** and a **latency-aware AI system** that uses batching, streaming, and cost controls built on top of Firestore.
 
 ---
 
@@ -39,7 +44,7 @@ APMaster is both a **student-facing study experience** and a **developer-grade p
   - **Google Gemini** via `@google/genai` / `@google/generative-ai` with shared configuration in `lib/gemini-models.ts`.
   - **Server-only LLM access**, wrapped in **batch processors**, **retry logic**, and **SSE-based streaming**.
 
-The hybrid Next.js + Express architecture exists **on purpose**: Next.js focuses on **user-facing APIs and pages**, while Express hosts longer-lived services and connection management that benefit from **warm, stateful processes**.
+The hybrid Next.js + Express architecture is intentional: Next.js focuses on **user-facing APIs and pages**, while Express runs longer-lived services and connection management that benefit from **warm, stateful processes**.
 
 ---
 
@@ -122,7 +127,7 @@ flowchart LR
 
 ### 5. Data Modeling & Firestore Strategy
 
-APMaster’s Firestore schema is optimized for **per-user, high-frequency writes** and **low-latency reads**.
+APMaster’s Firestore schema is designed for **per-user, frequent writes** and **fast reads**.
 
 - **Core collections** (from `SECURITY_AUDIT.md` and implementation):
   - `users` – core user profile, roles, and high-level settings.
@@ -146,20 +151,20 @@ APMaster’s Firestore schema is optimized for **per-user, high-frequency writes
     - Centralized in `server/firebase-admin.ts` and `server/db.ts`.
     - Used for AI pipelines, administrative operations, and anything that must be **trusted, validated, and not exposed to the client**.
 
-This data modeling strategy is what lets APMaster support **frequent quiz state updates** and **AI-enriched content writes** without melting Firestore or compromising security.
+This data modeling strategy lets APMaster handle **frequent quiz state updates** and **AI-enriched content writes** without overloading Firestore or weakening security.
 
 ---
 
 ### 6. Latency, TTFT, and Cost Strategy
 
-Latency isn’t an afterthought here—it’s a **first-class constraint**. APMaster assumes that AI calls are expensive (time and money), and designs around that.
+Latency isn’t an afterthought here—it is a **core design constraint**. APMaster treats AI calls as expensive (time and money) and is built around that fact.
 
 - **Time To First Token (TTFT) via SSE**
   - Endpoints like `pages/api/generateExplanations.ts` and `pages/api/generateContext.ts` are implemented with **Server-Sent Events**.
   - The goal is not just to “show a spinner with progress”; it is to **minimize TTFT** by:
     - Streaming **the earliest available explanations** as soon as Gemini returns them.
     - Allowing the UI to show **partial results and per-question status** instead of blocking until the entire batch completes.
-  - Users see the system “breathing” with them, which dramatically improves perceived speed.
+  - Students see the system respond quickly, which makes the product feel fast even on large workloads.
 
 - **Batching & concurrency caps**
   - Shared batch helpers (e.g. `server/replit_integrations/batch/utils.ts`) encapsulate:
@@ -204,132 +209,37 @@ Latency isn’t an afterthought here—it’s a **first-class constraint**. APMa
     - **Batch helpers** in `server/replit_integrations/batch/**`.
     - **Firestore + Storage** utilities in `server/db.ts` and `server/storage.ts`.
 
-Together, these flows demonstrate how to wire **end-to-end AI features** (from UX to LLM to Firestore) in a way that is **observable, resilient, and cost-aware**.
+Together, these flows show how to wire **end-to-end AI features** (from UX to LLM to Firestore) in a way that is **easy to observe, resilient under load, and mindful of cost**.
 
 ---
 
-### 8. Getting Started (Local Development)
+### 8. Enterprise-Grade Security Architecture
 
-#### 8.1 Project Map – Where Things Live
+APMaster is designed with a **production-grade security posture** suitable for handling student data and AI credentials on the server side.
 
-Think of the repo in two halves: **beauty** (frontend) and **brains** (backend/AI).
+- **Secrets isolation**
+  - All **high-privilege credentials** (e.g. Firestore service accounts, AI API keys) are loaded **only in server runtimes** (Next.js API routes and the Express layer), never in the browser.
+  - The client receives **scoped, least-privilege Firebase configuration**, while write paths that touch AI and PII are mediated by backend services.
 
-- **Beauty – Frontend**
-  - `client/src/components/**` – quiz engine UI, landing sections, shared UI kit.
-  - `client/src/pages/**` – user-facing pages and routing.
-  - `client/src/contexts/**` – auth, React Query, and app-wide state.
-  - `client/src/subjects/**` – subject metadata (units, sections, lessons).
+- **Data segmentation & PII handling**
+  - Per-user state is **partitioned by user** in Firestore, with security rules that scope access to the authenticated user’s documents.
+  - PII and performance data are modeled so that **AI pipelines operate on opaque IDs and derived features** wherever possible, not raw identifiers.
 
-- **Brains – Backend & AI**
-  - `pages/api/**` – Next.js API routes (user/admin/waitlist + AI endpoints).
-  - `server/**` – Express server, Firestore admin, storage, and batch utilities.
-  - `lib/gemini-models.ts` – Gemini model configuration and selection.
-  - `dataconnect/**` & `dataconnect-generated/**` – Firestore DataConnect schemas + generated clients.
+- **Defense-in-depth**
+  - Firestore and Storage security rules enforce **role-aware access** (student vs. admin) and tight scoping of read/write operations.
+  - Server-side enforcement layers validate payloads, rate-limit sensitive operations, and centralize AI key usage behind narrow interfaces.
 
-Once you have that mental map, it’s straightforward to drop into a feature and know **which side to modify**.
-
-#### 8.2 Prerequisites
-
-- Node.js (LTS recommended).
-- `pnpm`, `npm`, or `yarn`.
-- A **Firebase project** with Firestore + Storage enabled.
-- A **Gemini API key** (or compatible AI integration that matches the environment variable interface).
-
-#### 8.3 Environment Setup
-
-Create a `.env.local` (for Next.js) and `.env` (for Express) with, at minimum:
-
-- Firebase configuration:
-  - `FIREBASE_PROJECT_ID`
-  - `FIREBASE_API_KEY`
-  - `FIREBASE_AUTH_DOMAIN`
-  - `FIREBASE_STORAGE_BUCKET`
-  - Any other fields used in `client/src/lib/firebase.ts` and `server/firebase-admin.ts`.
-- AI configuration:
-  - `GEMINI_API_KEY` **or** `AI_INTEGRATIONS_GEMINI_API_KEY`
-  - Optional: `AI_INTEGRATIONS_GEMINI_BASE_URL`
-
-You can inspect `lib/gemini-models.ts`, `server/firebase-admin.ts`, and `client/src/lib/firebase.ts` for the exact variables used in your branch.
-
-#### 8.4 Running the App
-
-From the repo root (`ApMasterAi`):
-
-```bash
-# Install dependencies
-pnpm install
-
-# OR
-npm install
-
-# Run the Next.js app (pages + API routes)
-pnpm dev
-
-# In another terminal, if you use the Express server independently:
-pnpm dev:server   # or the corresponding script in package.json
-```
-
-Then open the URL printed by the dev server (typically `http://localhost:3000`) to access the UI.
-
-> **Note**: Without valid Firebase and Gemini credentials, the UI will load, but many data- and AI-driven flows will either be disabled or return mocked/error responses.
+- **Operational rigor**
+  - A dedicated `SECURITY_AUDIT.md` documents threat models, how secrets are stored, and what classes of logs are retained or deliberately dropped.
+  - The batch + SSE architecture is designed so that **long-running AI jobs never expose raw secrets or unguarded PII to the client**, even under failure modes.
 
 ---
 
-### 9. Environment, Security & Safety
-
-- **Key environment variables**
-  - Firebase:
-    - `FIREBASE_PROJECT_ID`, `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_STORAGE_BUCKET`, etc.
-  - Admin / backend:
-    - `FIREBASE_SERVICE_ACCOUNT` (JSON or path used by `server/firebase-admin.ts`).
-  - AI:
-    - `GEMINI_API_KEY` or `AI_INTEGRATIONS_GEMINI_API_KEY`.
-    - Optional `AI_INTEGRATIONS_GEMINI_BASE_URL`.
-
-- **Client vs. server**
-  - Anything that grants **privileged access** (e.g. `FIREBASE_SERVICE_ACCOUNT`, `GEMINI_API_KEY`) must be treated as **server-only**.
-  - Client-visible Firebase config uses the usual restricted keys safe for browser initialization.
-
-> **Security Warning**
->
-> - **Never** expose `FIREBASE_SERVICE_ACCOUNT`, `GEMINI_API_KEY`, or any equivalent secrets in client-side `.env` files, frontend code, or public repos.
-> - In this project, AI keys and service accounts are intended to live **only on the server side**:
->   - `.env` consumed by the Express server.
->   - Server-side Next.js environment variables (not prefixed for client exposure).
-> - If you’re unsure whether an env var is safe to expose, **assume it is not** and wire it through the backend instead.
-
-- **Rules & audits**
-  - `firestore.rules` and `storage.rules` define security posture for data and files.
-  - `SECURITY_AUDIT.md` documents:
-    - PII considerations.
-    - How AI keys are handled.
-    - Logging and monitoring constraints.
-
----
-
-### 10. Contributing & Extending
-
-- **Good first extensions**
-  - Add a new AP subject by wiring a subject definition in `client/src/subjects` and extending relevant question collections.
-  - Introduce a new AI-powered helper endpoint (e.g. explanation variant, hint generator) by:
-    - Creating a new `pages/api/**` route.
-    - Reusing the **batch + retry utilities** from `server/replit_integrations/batch/utils.ts`.
-  - Build a small analytics panel in `/admin` for instructors or admins.
-
-- **Guidelines**
-  - Keep **AI calls server-side**, always passed through a thin, testable abstraction.
-  - When in doubt, **opt for streaming (SSE) over blocking responses** for anything that might take longer than a second.
-  - Follow existing TypeScript patterns and use shared types from `shared/**` where possible.
-
-PRs, architectural experiments, and “what if we tried X?” ideas are welcome. This codebase is intentionally structured to be a **teaching tool for AI + latency-aware design**, not just a closed-box product.
-
----
-
-### 11. Roadmap (Aspirational)
+### 9. Future Vision & Product Evolution
 
 - **More subjects & deeper coverage** for each AP exam.
 - **Richer analytics**: per-skill mastery, timing breakdowns, and recommendation loops.
-- **Pluggable model backends**, allowing you to swap Gemini for other providers with the same batching/streaming guarantees.
+- **Pluggable model backends**, allowing us to swap Gemini for other providers with the same batching/streaming guarantees.
 - **Teacher-facing tooling**: class dashboards, assignment flows, and shared test libraries.
 
-If you’re reading this on the repo’s front page, you’re exactly the kind of person this README was written for—someone who cares about how things are built, not just that they work.
+APMaster represents our commitment to solving real-world educational challenges through solid software engineering, efficient algorithms, and user-centric design.
