@@ -383,6 +383,26 @@ export default async function handler(
       sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Fixed ${updated}/${total - skipped} prompts` });
     } catch (error: any) {
       failed++;
+      try {
+        await questionsRef.doc(questionId).set(
+          {
+            lastVerification: {
+              verifiedAt: new Date(),
+              source: "prompt_fix",
+              model: selectedModel,
+              status: "fail",
+              lintErrors: [],
+              lintWarnings: [],
+              imageErrors: [],
+              issues: [(error?.message || "Prompt/choice fix failed").slice(0, 500)],
+              checks: null,
+              confidence: null,
+            },
+            updatedAt: new Date(),
+          },
+          { merge: true },
+        );
+      } catch {}
       sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Q${i + 1}: Failed — ${(error.message || "").substring(0, 80)}` });
     }
 

@@ -347,6 +347,26 @@ export default async function handler(
       });
     } catch (error: any) {
       failed++;
+      try {
+        await questionsRef.doc(questionId).set(
+          {
+            lastVerification: {
+              verifiedAt: new Date(),
+              source: "prompt_fix_pretty_print",
+              model: selectedModel,
+              status: "fail",
+              lintErrors: [],
+              lintWarnings: [],
+              imageErrors: [],
+              issues: [(error?.message || "Prompt/choice pretty-print failed").slice(0, 500)],
+              checks: null,
+              confidence: null,
+            },
+            updatedAt: new Date(),
+          },
+          { merge: true },
+        );
+      } catch {}
       sendEvent({
         type: "progress",
         current: i + 1,

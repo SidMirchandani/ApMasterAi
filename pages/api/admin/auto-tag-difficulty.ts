@@ -297,6 +297,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (err: any) {
       failed++;
       console.error(`Auto-tag difficulty failed for question ${questionId}:`, err?.message || err);
+      try {
+        await questionsRef.doc(questionId).set(
+          {
+            lastVerification: {
+              verifiedAt: new Date(),
+              source: "difficulty_tagging",
+              model: selectedModel,
+              status: "fail",
+              lintErrors: [],
+              lintWarnings: [],
+              imageErrors: [],
+              issues: [(err?.message || "Difficulty tagging failed").slice(0, 500)],
+              checks: null,
+              confidence: null,
+            },
+            updatedAt: new Date(),
+          },
+          { merge: true },
+        );
+      } catch {}
       sendEvent({
         type: "progress",
         current: i + 1,

@@ -208,6 +208,26 @@ export default async function handler(
       });
     } catch (error: any) {
       failed++;
+      try {
+        await questionsRef.doc(questionId).set(
+          {
+            lastVerification: {
+              verifiedAt: new Date(),
+              source: "study_notes_regen",
+              model: selectedModel,
+              status: "fail",
+              lintErrors: [],
+              lintWarnings: [],
+              imageErrors: [],
+              issues: [(error?.message || "Study notes re-generation failed").slice(0, 500)],
+              checks: null,
+              confidence: null,
+            },
+            updatedAt: new Date(),
+          },
+          { merge: true },
+        );
+      } catch {}
       sendEvent({
         type: "progress",
         current: i + 1,

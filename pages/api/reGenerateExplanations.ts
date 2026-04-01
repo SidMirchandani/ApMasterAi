@@ -106,6 +106,7 @@ export default async function handler(
     skipIfExplanationExists: false,
     isRegenerate: true,
     onAborted: () => aborted,
+    markVerificationFailOnError: true,
   });
 
   if (process.env.NODE_ENV !== "production") {

@@ -104,6 +104,7 @@ export type RunExplanationGenerationParams = {
   skipIfExplanationExists: boolean;
   isRegenerate: boolean;
   onAborted: () => boolean;
+  markVerificationFailOnError?: boolean;
 };
 
 export async function runExplanationGeneration({
@@ -115,6 +116,7 @@ export async function runExplanationGeneration({
   skipIfExplanationExists,
   isRegenerate,
   onAborted,
+  markVerificationFailOnError = false,
 }: RunExplanationGenerationParams): Promise<{ updated: number; skipped: number; failed: number }> {
   const total = questionIds.length;
   let updated = 0;
@@ -227,6 +229,34 @@ export async function runExplanationGeneration({
         `✗ Failed to ${isRegenerate ? "re-" : ""}generate explanation for ${questionId}:`,
         isQuota ? "Quota exhausted after retries" : error.message
       );
+
+      if (markVerificationFailOnError) {
+        try {
+          await questionsRef.doc(questionId).set(
+            {
+              lastVerification: {
+                verifiedAt: new Date(),
+                source: isRegenerate ? "explanation_regen" : "explanation_gen",
+                model,
+                status: "fail",
+                lintErrors: [],
+                lintWarnings: [],
+                imageErrors: [],
+                issues: [
+                  isQuota
+                    ? "Explanation generation quota exhausted after retries"
+                    : (error?.message || "Explanation generation failed").slice(0, 500),
+                ],
+                checks: null,
+                confidence: null,
+              },
+              updatedAt: new Date(),
+            },
+            { merge: true },
+          );
+        } catch {}
+      }
+
       sendEvent({
         type: "progress",
         current: i + 1,
