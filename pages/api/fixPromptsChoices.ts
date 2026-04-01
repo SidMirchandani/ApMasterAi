@@ -288,9 +288,17 @@ export default async function handler(
       
       const corrected = JSON.parse(responseText);
 
-      const imageBlocks = (question.prompt_blocks || []).filter((b: any) => b.type !== "text");
+      const imageBlocks = (question.prompt_blocks || []).filter((b: any) => b.type === "image");
       const updatedPromptBlocks = [
-        { type: "text", value: corrected.question },
+        {
+          type: "text",
+          // Prefer model-cleaned question text; fall back to original flattened stem.
+          value: normalizeChoiceTextForRender(
+            typeof corrected.question === "string" && corrected.question.trim().length > 0
+              ? corrected.question
+              : flattenChoiceText(question.prompt_blocks || []),
+          ),
+        },
         ...imageBlocks,
       ];
 

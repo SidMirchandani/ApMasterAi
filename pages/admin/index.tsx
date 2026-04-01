@@ -1111,7 +1111,23 @@ export default function AdminPage() {
                 return next;
               });
               toast.success(event.message);
+              // Refresh questions after primary action (fix prompts, explanations, etc.).
               fetchFiltered();
+              // If we just ran Fix Prompts & Choices, automatically kick off verification
+              // for the same question IDs in the background so any accidental key changes
+              // or broken questions get flagged.
+              if (selectedAction === "fix-prompts" && questionIds.length > 0) {
+                void fetch("/api/admin/verify-questions", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ questionIds, model: "2.5lite" }),
+                }).catch(() => {
+                  // Silent failure; admins can still run manual verify if needed.
+                });
+              }
             }
           } catch {}
         }
