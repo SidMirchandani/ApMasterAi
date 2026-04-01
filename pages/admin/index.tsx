@@ -307,6 +307,7 @@ export default function AdminPage() {
   const [showOnlyUnverified, setShowOnlyUnverified] = useState(false);
   const [showOnlyVerificationFailed, setShowOnlyVerificationFailed] = useState(false);
   const [showOnlyVerificationReview, setShowOnlyVerificationReview] = useState(false);
+  const [showOnlyVerificationIncomplete, setShowOnlyVerificationIncomplete] = useState(false);
   /** Answer choices mix plain text and image (formula) choices — for Fix image choices workflow. */
   const [showOnlyMixedPrompts, setShowOnlyMixedPrompts] = useState(false);
   /**
@@ -341,6 +342,16 @@ export default function AdminPage() {
         return s === "fail" || s === "error";
       });
     }
+    if (showOnlyVerificationIncomplete) {
+      list = list.filter((q) => {
+        const v = q.lastVerification;
+        if (!v || v.status !== "fail") return false;
+        const issues = Array.isArray(v.issues) ? v.issues.join(" ").toLowerCase() : "";
+        return issues.includes("stem has no text and no images") ||
+          issues.includes("stem appears incomplete") ||
+          issues.includes("incomplete question");
+      });
+    }
     if (showOnlyVerificationReview) {
       list = list.filter((q) => q.lastVerification?.status === "needs_review");
     }
@@ -356,6 +367,7 @@ export default function AdminPage() {
     showOnlyUnverified,
     showOnlyVerificationFailed,
     showOnlyVerificationReview,
+    showOnlyVerificationIncomplete,
     showOnlyMixedPrompts,
     mixedPromptsPinnedIds,
   ]);
@@ -1665,6 +1677,20 @@ export default function AdminPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox
+                  id="verification-incomplete-only"
+                  checked={showOnlyVerificationIncomplete}
+                  onCheckedChange={(v) => setShowOnlyVerificationIncomplete(!!v)}
+                />
+                <Label
+                  htmlFor="verification-incomplete-only"
+                  className="text-sm font-medium cursor-pointer dark:text-slate-300"
+                  title="Questions where verification failed because the stem looks incomplete or missing required chart/graph/cartoon/paragraph content."
+                >
+                  Verification Failed - Incomplete
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
                   id="mixed-prompts-only"
                   checked={showOnlyMixedPrompts}
                   onCheckedChange={(v) => {
@@ -1717,6 +1743,7 @@ export default function AdminPage() {
                   {showOnlyErrorReports && items.length > 0 && "Filter: Error Reported. "}
                   {showOnlyUnverified && items.length > 0 && "Filter: Un-Verified. "}
                   {showOnlyVerificationFailed && items.length > 0 && "Filter: Verification Failed. "}
+                  {showOnlyVerificationIncomplete && items.length > 0 && "Filter: Verification Failed - Incomplete. "}
                   {showOnlyVerificationReview && items.length > 0 && "Filter: Verification Review. "}
                   {showOnlyMixedPrompts && items.length > 0 && "Filter: Mixed Prompts (text + image choices). "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}

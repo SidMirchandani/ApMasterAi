@@ -136,6 +136,20 @@ export function lintQuestion(question: any): LintResult {
   const expl = typeof question.explanation === "string" ? question.explanation.trim() : "";
   if (!expl) warnings.push("Explanation is empty");
 
+  // Flag clearly incomplete questions for deletion workflows:
+  // - Missing any stem text and any images.
+  // - Or stem text that looks like a placeholder (e.g. 'Graph', 'Chart', 'Cartoon', 'Paragraph') with no supporting images.
+  const lowerStem = stemT.toLowerCase();
+  const incompleteKeywords = ["graph", "chart", "cartoon", "diagram", "figure", "image", "picture", "paragraph", "para"];
+  const stemLooksPlaceholder =
+    !!lowerStem &&
+    lowerStem.length <= 80 &&
+    incompleteKeywords.some((kw) => lowerStem.includes(kw)) &&
+    stemImages.length === 0;
+  if (stemLooksPlaceholder) {
+    errors.push("Stem appears incomplete (placeholder text without chart/graph/cartoon/paragraph content)");
+  }
+
   for (const url of collectAllImageUrls(question)) {
     if (looksLikeBareFilename(url)) {
       errors.push(`Image URL looks like a bare filename (not uploaded): ${url.slice(0, 80)}`);
