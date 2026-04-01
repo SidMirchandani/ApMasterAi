@@ -45,6 +45,7 @@ import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../lib/subject-
 import { ExplanationMarkdown } from "../../client/src/components/ui/ExplanationMarkdown";
 import { AdminQuestionQuizPreviewDialog } from "@/components/admin/AdminQuestionQuizPreviewDialog";
 import { SUBJECT_SECTION_CODES } from "../../lib/subject-sections-client";
+import { hasMixedTextAndImageChoices } from "../../lib/mixed-choice-helpers";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -306,6 +307,8 @@ export default function AdminPage() {
   const [showOnlyUnverified, setShowOnlyUnverified] = useState(false);
   const [showOnlyVerificationFailed, setShowOnlyVerificationFailed] = useState(false);
   const [showOnlyVerificationReview, setShowOnlyVerificationReview] = useState(false);
+  /** Answer choices mix plain text and image (formula) choices — for Fix image choices workflow. */
+  const [showOnlyMixedPrompts, setShowOnlyMixedPrompts] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
@@ -336,6 +339,9 @@ export default function AdminPage() {
     if (showOnlyVerificationReview) {
       list = list.filter((q) => q.lastVerification?.status === "needs_review");
     }
+    if (showOnlyMixedPrompts) {
+      list = list.filter((q) => hasMixedTextAndImageChoices(q.choices));
+    }
     return list;
   }, [
     items,
@@ -344,6 +350,7 @@ export default function AdminPage() {
     showOnlyUnverified,
     showOnlyVerificationFailed,
     showOnlyVerificationReview,
+    showOnlyMixedPrompts,
   ]);
 
   // AI explanation generation state
@@ -952,6 +959,13 @@ export default function AdminPage() {
       return;
     }
 
+    if (selectedAction === "fix-image-choices" && !showOnlyMixedPrompts) {
+      toast(
+        "Tip: turn on Mixed Prompts to list questions whose choices mix text and images. Others will be skipped.",
+        { icon: "ℹ️", duration: 4500 },
+      );
+    }
+
     // Clear any previous summary when starting a new run so the next
     // execution owns the sticky row contents.
     setLastExplanationSummary(null);
@@ -983,6 +997,9 @@ export default function AdminPage() {
       case "verify-questions":
         endpoint = "/api/admin/verify-questions";
         break;
+      case "fix-image-choices":
+        endpoint = "/api/fixImageChoices";
+        break;
     }
 
     const actionLabel = selectedAction === "explanations" ? "Explanation Generation"
@@ -991,6 +1008,7 @@ export default function AdminPage() {
       : selectedAction === "study-notes" ? "Study Notes Generation"
       : selectedAction === "re-generate-study-notes" ? "Study Notes Re-Generation"
       : selectedAction === "verify-questions" ? "Question Verification"
+      : selectedAction === "fix-image-choices" ? "Fix Image Choices"
       : "Difficulty Tagging";
 
     setExplanationProgress({
@@ -1618,6 +1636,16 @@ export default function AdminPage() {
                   Verification Review
                 </Label>
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="mixed-prompts-only"
+                  checked={showOnlyMixedPrompts}
+                  onCheckedChange={(v) => setShowOnlyMixedPrompts(!!v)}
+                />
+                <Label htmlFor="mixed-prompts-only" className="text-sm font-medium cursor-pointer dark:text-slate-300" title="Some answer choices are plain text and others are images (e.g. math formulas).">
+                  Mixed Prompts
+                </Label>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1649,6 +1677,7 @@ export default function AdminPage() {
                   {showOnlyUnverified && items.length > 0 && "Filter: Un-Verified. "}
                   {showOnlyVerificationFailed && items.length > 0 && "Filter: Verification Failed. "}
                   {showOnlyVerificationReview && items.length > 0 && "Filter: Verification Review. "}
+                  {showOnlyMixedPrompts && items.length > 0 && "Filter: Mixed Prompts (text + image choices). "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
               </div>
@@ -1665,6 +1694,7 @@ export default function AdminPage() {
                     <SelectItem value="re-generate-study-notes">Re-Generate Study Notes</SelectItem>
                     <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
                     <SelectItem value="verify-questions">Verify Questions</SelectItem>
+                    <SelectItem value="fix-image-choices">Fix Image Choices</SelectItem>
                   </SelectContent>
                 </Select>
                 {generatingExplanations ? (
@@ -1869,7 +1899,8 @@ export default function AdminPage() {
                     showOnlyErrorReports ||
                     showOnlyUnverified ||
                     showOnlyVerificationFailed ||
-                    showOnlyVerificationReview)
+                    showOnlyVerificationReview ||
+                    showOnlyMixedPrompts)
                     ? "No questions match the current filters."
                     : "No questions found. Upload a CSV or adjust filters."}
                 </div>
