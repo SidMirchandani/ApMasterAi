@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
 import { getAuthHeaders } from "@/lib/api";
+import { auth } from "@/lib/firebase";
 
 export type AuthAwareImageStatus = "loading" | "ready" | "error";
 
@@ -7,7 +9,7 @@ export type AuthAwareImageStatus = "loading" | "ready" | "error";
  * Resolves `/api/image-proxy?...` URLs using a Bearer token (img tags cannot send headers).
  * Non-proxy URLs are passed through unchanged.
  * @param bearerToken When provided (e.g. admin page), only that token is used; empty string means still loading.
- *   When omitted, uses `getAuthHeaders()` (student client Firebase).
+ *   When omitted, waits for Firebase `onAuthStateChanged` then uses `getAuthHeaders()` so images load after auth restores.
  */
 export function useAuthAwareImageSrc(
   src: string,
@@ -31,29 +33,14 @@ export function useAuthAwareImageSrc(
 
     let cancelled = false;
 
-    (async () => {
+    const fetchWithHeaders = async (headers: Record<string, string>) => {
+      if (cancelled) return;
+      if (!headers.Authorization) {
+        setStatus("error");
+        setDisplaySrc(null);
+        return;
+      }
       try {
-        const headers: Record<string, string> = {};
-        if (bearerToken !== undefined) {
-          if (!bearerToken.trim()) {
-            if (!cancelled) {
-              setStatus("loading");
-              setDisplaySrc(null);
-            }
-            return;
-          }
-          headers.Authorization = `Bearer ${bearerToken}`;
-        } else {
-          Object.assign(headers, await getAuthHeaders());
-        }
-        if (!headers.Authorization) {
-          if (!cancelled) {
-            setStatus("error");
-            setDisplaySrc(null);
-          }
-          return;
-        }
-
         const res = await fetch(src, {
           headers,
           redirect: "manual",
@@ -74,10 +61,42 @@ export function useAuthAwareImageSrc(
           setDisplaySrc(null);
         }
       }
-    })();
+    };
+
+    if (bearerToken !== undefined) {
+      if (!bearerToken.trim()) {
+        setStatus("loading");
+        setDisplaySrc(null);
+        return () => {
+          cancelled = true;
+        };
+      }
+      void fetchWithHeaders({ Authorization: `Bearer ${bearerToken}` });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!auth) {
+      setStatus("error");
+      setDisplaySrc(null);
+      return;
+    }
+
+    setStatus("loading");
+    setDisplaySrc(null);
+
+    const unsub = onAuthStateChanged(auth, () => {
+      void (async () => {
+        if (cancelled) return;
+        const headers = await getAuthHeaders();
+        await fetchWithHeaders(headers);
+      })();
+    });
 
     return () => {
       cancelled = true;
+      unsub();
     };
   }, [src, bearerToken]);
 
