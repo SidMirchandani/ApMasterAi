@@ -114,6 +114,21 @@ function hasInlineMathOrLatex(text: string): boolean {
   return looksLikeLatexServer(t);
 }
 
+function countImageAndTextChoices(question: any): { imageChoices: number; textChoices: number } {
+  let imageChoices = 0;
+  let textChoices = 0;
+  const choices = question.choices || {};
+  for (const letter of LETTERS) {
+    const blocks = choices[letter];
+    if (!Array.isArray(blocks)) continue;
+    const hasImage = blocks.some((b: any) => b?.type === "image");
+    const text = flattenChoiceText(blocks).trim();
+    if (hasImage) imageChoices++;
+    if (text.length > 0) textChoices++;
+  }
+  return { imageChoices, textChoices };
+}
+
 async function buildFixPromptsParts(question: any): Promise<any[]> {
   const parts: any[] = [];
 
@@ -323,17 +338,33 @@ export default async function handler(
       const deduplicatedPromptBlocks = removeDuplicateBlocks(updatedPromptBlocks);
 
       const updatedChoices: any = {};
+      const { imageChoices, textChoices } = countImageAndTextChoices(question);
+      const imageHeavyMixed =
+        imageChoices >= 3 && textChoices <= 2; // e.g., 3–4 image options + 1 text meta-option
+
       for (const letter of LETTERS) {
         const existingBlocks = question.choices?.[letter];
         if (!existingBlocks) continue;
+
         const newText = corrected.choices?.[letter];
+        const hasImage = Array.isArray(existingBlocks) && existingBlocks.some((b: any) => b?.type === "image");
+        const flattenedExisting = flattenChoiceText(existingBlocks);
         const finalText =
           typeof newText === "string" && newText.trim().length > 0
             ? normalizeChoiceTextForRender(newText)
-            : normalizeChoiceTextForRender(flattenChoiceText(existingBlocks));
-        updatedChoices[letter] = removeDuplicateBlocks([
-          { type: "text", value: finalText },
-        ]);
+            : normalizeChoiceTextForRender(flattenedExisting);
+
+        if (imageHeavyMixed && hasImage) {
+          // For CSP/Chem style items where most options are images (code, diagrams, structures)
+          // and only a meta-text option like "All of the above" is plain text, keep the
+          // image-based choices as image blocks so we don't mangle rich content.
+          updatedChoices[letter] = removeDuplicateBlocks(existingBlocks as any[]);
+        } else {
+          // Normal path: collapse into a single text block so math renders cleanly.
+          updatedChoices[letter] = removeDuplicateBlocks([
+            { type: "text", value: finalText },
+          ]);
+        }
       }
 
       const existingTags = question.tags || [];
