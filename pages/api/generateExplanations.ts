@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 import { getModelName, getGeminiClientOptions } from "../../lib/gemini-models";
 import { runExplanationGeneration } from "../../server/explanation-helpers";
-import { requireUser } from "../../server/next-api-auth";
+import { requireAdmin } from "../../server/next-api-auth";
 
 export const config = {
   api: {
@@ -21,8 +21,8 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const user = await requireUser(req, res);
-  if (!user) return;
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
 
   const { questionIds, model = "2.5lite" } = req.body || {};
 

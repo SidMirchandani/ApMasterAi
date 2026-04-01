@@ -10,7 +10,7 @@ import { isPlatformAdmin } from "./platform-admin";
 import { getClientIp } from "./client-ip";
 import {
   addToWaitlist,
-  getWaitlistStats,
+  getWaitlistAdminSummary,
 } from "./services/waitlist-service";
 import {
   getUserSubjectsForUser,
@@ -238,11 +238,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get waitlist stats (admin only)
   app.get("/api/waitlist/stats", requirePlatformAdmin, async (req, res) => {
     try {
-      const stats = await getWaitlistStats();
+      const stats = await getWaitlistAdminSummary();
       res.json({
         success: true,
         count: stats.total,
-        latestSignup: null,
+        latestSignup: stats.latest,
       });
     } catch (error) {
       res.status(500).json({ 
