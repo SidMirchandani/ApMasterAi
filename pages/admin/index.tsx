@@ -46,7 +46,6 @@ import { ExplanationMarkdown } from "../../client/src/components/ui/ExplanationM
 import { AdminQuestionQuizPreviewDialog } from "@/components/admin/AdminQuestionQuizPreviewDialog";
 import { SUBJECT_SECTION_CODES } from "../../lib/subject-sections-client";
 import { hasMixedTextAndImageChoices } from "../../lib/mixed-choice-helpers";
-import { AuthProxiedImg } from "@/components/ui/AuthProxiedImg";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -1921,7 +1920,6 @@ export default function AdminPage() {
                       onToggleSelect={() => toggleQuestion(q.id)}
                       onSave={updateQuestion}
                       onDelete={deleteQuestion}
-                      authToken={token}
                     />
                   ))}
                 </tbody>
@@ -1950,22 +1948,7 @@ export default function AdminPage() {
   );
 }
 
-const FIREBASE_STORAGE_PREFIXES = [
-  "https://storage.googleapis.com/gen-lang-client-0260042933.firebasestorage.app/",
-  "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0260042933.firebasestorage.app/o/",
-  "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0260042933.appspot.com/o/",
-];
-
 function getImageUrl(url: string): string {
-  if (!url) return url;
-  for (const prefix of FIREBASE_STORAGE_PREFIXES) {
-    if (url.startsWith(prefix)) {
-      let storagePath = url.slice(prefix.length);
-      storagePath = storagePath.split("?")[0];
-      storagePath = decodeURIComponent(storagePath);
-      return `/api/image-proxy?path=${encodeURIComponent(storagePath)}`;
-    }
-  }
   return url;
 }
 
@@ -1975,14 +1958,12 @@ function Row({
   onToggleSelect,
   onSave,
   onDelete,
-  authToken,
 }: {
   q: Question;
   selected: boolean;
   onToggleSelect: () => void;
   onSave: (id: string, patch: Partial<Question>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  authToken: string;
 }) {
   const [edit, setEdit] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -2065,16 +2046,14 @@ function Row({
               const imgSrc = getImageUrl(block.url);
               return (
                 <div key={idx} className="group relative inline-block">
-                  <AuthProxiedImg
+                  <img
                     src={imgSrc}
                     alt={`Question image ${idx + 1}`}
-                    bearerToken={authToken}
                     className="h-8 w-auto rounded border border-slate-300 cursor-pointer"
                   />
-                  <AuthProxiedImg
+                  <img
                     src={imgSrc}
                     alt={`Question image ${idx + 1} enlarged`}
-                    bearerToken={authToken}
                     className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
@@ -2102,16 +2081,14 @@ function Row({
               const imgSrc = getImageUrl(url);
               return (
                 <div key={idx} className="group relative inline-block">
-                  <AuthProxiedImg
+                  <img
                     src={imgSrc}
                     alt={`Question image ${idx + 1}`}
-                    bearerToken={authToken}
                     className="h-8 w-auto rounded border border-slate-300 cursor-pointer"
                   />
-                  <AuthProxiedImg
+                  <img
                     src={imgSrc}
                     alt={`Question image ${idx + 1} enlarged`}
-                    bearerToken={authToken}
                     className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
@@ -2136,16 +2113,14 @@ function Row({
               const imgSrc = getImageUrl(block.url);
               return (
                 <div key={idx} className="group relative inline-block mr-1">
-                  <AuthProxiedImg
+                  <img
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1}`}
-                    bearerToken={authToken}
                     className="h-6 w-auto rounded border border-slate-300 cursor-pointer"
                   />
-                  <AuthProxiedImg
+                  <img
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
-                    bearerToken={authToken}
                     className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
@@ -2176,16 +2151,14 @@ function Row({
               const imgSrc = getImageUrl(url);
               return (
                 <div key={idx} className="group relative inline-block">
-                  <AuthProxiedImg
+                  <img
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1}`}
-                    bearerToken={authToken}
                     className="h-6 w-auto rounded border border-slate-300 cursor-pointer"
                   />
-                  <AuthProxiedImg
+                  <img
                     src={imgSrc}
                     alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
-                    bearerToken={authToken}
                     className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
                   />
                 </div>
