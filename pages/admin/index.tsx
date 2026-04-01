@@ -1098,15 +1098,24 @@ export default function AdminPage() {
     } finally {
       setGeneratingExplanations(false);
       aiActionAbortRef.current = null;
-      setTimeout(() => setExplanationProgress(null), 5000);
+      // When the run finishes (successfully or with an error), clear the
+      // live progress object immediately. The final stats have already been
+      // snapshotted into `lastExplanationSummary` on "complete", so the
+      // status bar remains visible until the user dismisses it.
+      setExplanationProgress(null);
     }
   }
 
   function stopAIAction() {
+    // Snapshot whatever progress we have so far so the user still sees
+    // the partial results in the sticky status bar after aborting.
+    setLastExplanationSummary(prev => explanationProgress ?? prev);
     aiActionAbortRef.current?.abort();
     setGeneratingExplanations(false);
     toast("AI action cancelled");
-    setTimeout(() => setExplanationProgress(null), 2000);
+    // Clear live progress; the sticky summary (if any) remains until
+    // the user clicks the close button.
+    setExplanationProgress(null);
   }
 
   function toggleQuestion(id: string) {
