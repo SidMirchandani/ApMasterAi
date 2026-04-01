@@ -51,8 +51,8 @@ const googleProvider = new GoogleAuthProvider();
 
 const AP_SUBJECT_CODES: string[] = [
   "APMACRO", "APMICRO", "APCSP", "APCHEM", "APGOV", "APPSYCH", "APBIO",
-  "APCALCAB", "APCALCBC", "APCSA", "APUSH", "APWH", "APEURO",
-  "APLANG", "APLIT", "APSTATS", "APPHYS1", "APPHYS2", "APES", "APHUG",
+  "APCALCAB", "APCALCBC", "APCSA", "APUSH", "APWORLD", "APEURO",
+  "APLANG", "APLIT", "APSTATS", "APPHYS1", "APPHYS2",
 ];
 
 const VALID_TABS = ["insights", "library", "users"] as const;
@@ -404,7 +404,7 @@ export default function AdminPage() {
     verifyFailed?: number;
   } | null>(null);
 
-  // Add Subject state
+  // Add Subject state (CrackAP)
   const [addSubjectCode, setAddSubjectCode] = useState("");
   const [addingSubject, setAddingSubject] = useState(false);
   const [addSubjectProgress, setAddSubjectProgress] = useState<{
@@ -418,8 +418,32 @@ export default function AdminPage() {
   } | null>(null);
   const [addSubjectLog, setAddSubjectLog] = useState<string[]>([]);
   const addSubjectAbortRef = useRef<AbortController | null>(null);
-  const [subjectStatus, setSubjectStatus] = useState<Record<string, { hasQuestions: boolean; questionCount: number }>>({});
+  const [subjectStatus, setSubjectStatus] = useState<
+    Record<
+      string,
+      {
+        hasQuestions: boolean;
+        questionCount: number;
+        crackApCount?: number;
+        varsityCount?: number;
+      }
+    >
+  >({});
   const [loadingStatus, setLoadingStatus] = useState(false);
+
+  // Add Subject from Varsity Tutors state
+  const [varsitySubjectCode, setVarsitySubjectCode] = useState("");
+  const [addingVarsitySubject, setAddingVarsitySubject] = useState(false);
+  const [varsitySubjectProgress, setVarsitySubjectProgress] = useState<{
+    current: number;
+    total: number;
+    imported: number;
+    skipped: number;
+    errors: number;
+    message: string;
+    phase: string;
+  } | null>(null);
+  const varsitySubjectAbortRef = useRef<AbortController | null>(null);
 
   const [migratingImages, setMigratingImages] = useState(false);
   const [migrateSubjectCode, setMigrateSubjectCode] = useState("");
@@ -444,8 +468,13 @@ export default function AdminPage() {
     message: string;
   } | null>(null);
 
-  const availableToAdd = allApSubjectsRef.filter(s => !subjectStatus[s.code]?.hasQuestions);
-  const alreadyAdded = allApSubjectsRef.filter(s => subjectStatus[s.code]?.hasQuestions);
+  const availableToAddCrackAp = allApSubjectsRef.filter(
+    (s) => !(subjectStatus[s.code]?.crackApCount && subjectStatus[s.code].crackApCount > 0)
+  );
+  const availableToAddVarsity = allApSubjectsRef.filter(
+    (s) => !(subjectStatus[s.code]?.varsityCount && subjectStatus[s.code].varsityCount > 0)
+  );
+  const alreadyAdded = allApSubjectsRef.filter((s) => subjectStatus[s.code]?.hasQuestions);
 
   async function loadSubjectStatus() {
     if (!token) return;
@@ -590,6 +619,113 @@ export default function AdminPage() {
     addSubjectAbortRef.current?.abort();
     setAddingSubject(false);
     toast("Import cancelled");
+  }
+
+  async function startVarsityAddSubject() {
+    if (!token || !varsitySubjectCode) return;
+    setAddingVarsitySubject(true);
+    const subjectLabel = allApSubjectsRef.find(s => s.code === varsitySubjectCode)?.label || varsitySubjectCode;
+    setVarsitySubjectProgress({
+      current: 0,
+      total: 0,
+      imported: 0,
+      skipped: 0,
+      errors: 0,
+      message: `Starting Varsity Tutors import for ${subjectLabel}...`,
+      phase: "scraping",
+    });
+
+    const controller = new AbortController();
+    varsitySubjectAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/varsity-add-subject", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subjectCode: varsitySubjectCode }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Failed to add Varsity Tutors subject");
+        setAddingVarsitySubject(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        toast.error("No response stream");
+        setAddingVarsitySubject(false);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "progress" || event.type === "batch" || event.type === "status") {
+              setVarsitySubjectProgress({
+                current: event.current || 0,
+                total: event.total || 0,
+                imported: event.imported || 0,
+                skipped: event.skipped || 0,
+                errors: event.errors || 0,
+                message: event.message || "",
+                phase: event.phase || "scraping",
+              });
+            }
+            if (event.type === "complete") {
+              toast.success(event.message);
+              loadSubjectStatus();
+              setVarsitySubjectCode("");
+              return;
+            }
+            if (event.type === "error") {
+              const msg = event.message || "Varsity import failed";
+              setVarsitySubjectProgress((prev) => ({
+                current: prev?.current || 0,
+                total: prev?.total || 0,
+                imported: prev?.imported || 0,
+                skipped: prev?.skipped || 0,
+                errors: (prev?.errors || 0) + 1,
+                message: msg,
+                phase: prev?.phase || "scraping",
+              }));
+              toast.error(msg);
+              return;
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Varsity import failed: " + err.message);
+      }
+    } finally {
+      setAddingVarsitySubject(false);
+      varsitySubjectAbortRef.current = null;
+    }
+  }
+
+  function stopVarsityAddSubject() {
+    varsitySubjectAbortRef.current?.abort();
+    setAddingVarsitySubject(false);
+    toast("Varsity import cancelled");
   }
 
   const [removingSubject, setRemovingSubject] = useState<string | null>(null);
@@ -1337,10 +1473,20 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {allApSubjectsRef.map(s => {
+              {allApSubjectsRef.map(s => {
                   const status = subjectStatus[s.code];
                   const hasQuestions = status?.hasQuestions;
                   const count = status?.questionCount || 0;
+
+                  const sourceLabels: string[] = [];
+                  if (status?.crackApCount && status.crackApCount > 0) {
+                    sourceLabels.push("CA");
+                  }
+                  if (status?.varsityCount && status.varsityCount > 0) {
+                    sourceLabels.push("VT");
+                  }
+                  const sourceDisplay = sourceLabels.length > 0 ? ` (${sourceLabels.join(", ")})` : "";
+
                   return (
                     <div
                       key={s.code}
@@ -1369,7 +1515,10 @@ export default function AdminPage() {
                         {s.label.replace("AP ", "")}
                       </div>
                       {hasQuestions ? (
-                        <div className="text-lg font-bold text-green-700 dark:text-green-400">{count.toLocaleString()}</div>
+                        <div className="text-lg font-bold text-green-700 dark:text-green-400">
+                          {count.toLocaleString()}
+                          {sourceDisplay}
+                        </div>
                       ) : (
                         <div className="text-xs text-slate-400 dark:text-slate-500 italic">Not imported</div>
                       )}
@@ -1381,12 +1530,12 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* Add Subject Card */}
+        {/* Add Subject from CrackAP Card */}
         <Card className="border-2 border-dashed border-blue-500/30 dark:bg-slate-900/60 dark:border-blue-600/30 rounded-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 dark:text-white">
               <Zap className="w-5 h-5 text-blue-500" />
-              Add Subject
+              Add Subject from CrackAP
             </CardTitle>
             <CardDescription className="dark:text-slate-400">
               Select an AP subject to automatically scrape questions from CrackAP, classify by unit, and import
@@ -1398,10 +1547,18 @@ export default function AdminPage() {
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Subject to Add</label>
                 <Select value={addSubjectCode} onValueChange={setAddSubjectCode} disabled={addingSubject}>
                   <SelectTrigger className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
-                    <SelectValue placeholder={loadingStatus ? "Loading subjects..." : availableToAdd.length > 0 ? "Select AP Subject" : "All subjects imported"} />
+                    <SelectValue
+                      placeholder={
+                        loadingStatus
+                          ? "Loading subjects..."
+                          : availableToAddCrackAp.length > 0
+                          ? "Select AP Subject"
+                          : "All subjects imported from CrackAP"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableToAdd.map((s) => (
+                    {availableToAddCrackAp.map((s) => (
                       <SelectItem key={s.code} value={s.code}>
                         {s.label}
                       </SelectItem>
@@ -1442,6 +1599,81 @@ export default function AdminPage() {
                   <span className="text-green-600 font-medium">Imported: {addSubjectProgress.imported}</span>
                   <span className="text-amber-500">Skipped: {addSubjectProgress.skipped}</span>
                   <span className="text-red-600">Errors: {addSubjectProgress.errors}</span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Add Subject from Varsity Tutors Card */}
+        <Card className="border-2 border-dashed border-indigo-500/30 dark:bg-slate-900/60 dark:border-indigo-600/30 rounded-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 dark:text-white">
+              <Zap className="w-5 h-5 text-indigo-500" />
+              Add Subject from Varsity Tutors
+            </CardTitle>
+            <CardDescription className="dark:text-slate-400">
+              Select an AP subject to scrape stimulus-based MCQs from Varsity Tutors, map them to units, and import
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 items-end">
+              <div className="flex-1">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Subject to Add</label>
+                <Select value={varsitySubjectCode} onValueChange={setVarsitySubjectCode} disabled={addingVarsitySubject}>
+                  <SelectTrigger className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
+                    <SelectValue
+                      placeholder={
+                        loadingStatus
+                          ? "Loading subjects..."
+                          : availableToAddVarsity.length > 0
+                          ? "Select AP Subject"
+                          : "All subjects imported from Varsity Tutors"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableToAddVarsity.map((s) => (
+                      <SelectItem key={s.code} value={s.code}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {addingVarsitySubject ? (
+                <Button onClick={stopVarsityAddSubject} variant="destructive" className="min-w-[140px]">
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop Import
+                </Button>
+              ) : (
+                <Button
+                  onClick={startVarsityAddSubject}
+                  disabled={!varsitySubjectCode || loadingStatus}
+                  className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white min-w-[140px]"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Add Subject
+                </Button>
+              )}
+            </div>
+
+            {varsitySubjectProgress && (
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
+                  <span>{varsitySubjectProgress.message}</span>
+                  {varsitySubjectProgress.total > 0 && (
+                    <span>{Math.round((varsitySubjectProgress.current / Math.max(varsitySubjectProgress.total, 1)) * 100)}%</span>
+                  )}
+                </div>
+                <Progress
+                  value={(varsitySubjectProgress.current / Math.max(varsitySubjectProgress.total, 1)) * 100}
+                  className="h-2"
+                />
+                <div className="flex gap-4 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="text-green-600 font-medium">Imported: {varsitySubjectProgress.imported}</span>
+                  <span className="text-amber-500">Skipped: {varsitySubjectProgress.skipped}</span>
+                  <span className="text-red-600">Errors: {varsitySubjectProgress.errors}</span>
                 </div>
               </div>
             )}

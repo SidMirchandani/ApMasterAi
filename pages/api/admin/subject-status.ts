@@ -32,28 +32,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const allCodes = getAllSubjectCodes();
-    const status: Record<string, { hasQuestions: boolean; questionCount: number }> = {};
+    const status: Record<
+      string,
+      {
+        hasQuestions: boolean;
+        questionCount: number;
+        crackApCount: number;
+        varsityCount: number;
+      }
+    > = {};
 
     for (const code of allCodes) {
-      const snapshot = await firestore
+      const totalSnapshot = await firestore
         .collection("questions")
         .where("subject_code", "==", code)
-        .limit(1)
+        .count()
         .get();
+      const totalCount = totalSnapshot.data().count || 0;
 
-      if (!snapshot.empty) {
-        const countSnapshot = await firestore
-          .collection("questions")
-          .where("subject_code", "==", code)
-          .count()
-          .get();
-        status[code] = {
-          hasQuestions: true,
-          questionCount: countSnapshot.data().count || 0,
-        };
-      } else {
-        status[code] = { hasQuestions: false, questionCount: 0 };
-      }
+      const varsitySnapshot = await firestore
+        .collection("questions")
+        .where("subject_code", "==", code)
+        .where("tags", "array-contains", "Source:VarsityTutor")
+        .count()
+        .get();
+      const varsityCount = varsitySnapshot.data().count || 0;
+
+      const crackApCount = Math.max(totalCount - varsityCount, 0);
+
+      status[code] = {
+        hasQuestions: totalCount > 0,
+        questionCount: totalCount,
+        crackApCount,
+        varsityCount,
+      };
     }
 
     return res.status(200).json({ success: true, data: status });

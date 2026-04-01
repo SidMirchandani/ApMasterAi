@@ -264,8 +264,8 @@ const SUBJECT_REGISTRY: Record<string, SubjectMeta> = {
       P9: ["reagan", "globalization", "terrorism", "technology", "9/11", "conservative", "clinton", "obama"],
     },
   },
-  'APWH': {
-    subjectCode: 'APWH',
+  'APWORLD': {
+    subjectCode: 'APWORLD',
     displayName: 'AP World History: Modern',
     crackApPath: 'world-history',
     units: [

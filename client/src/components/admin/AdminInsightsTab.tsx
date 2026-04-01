@@ -320,9 +320,15 @@ export function AdminInsightsTab({ token }: { token: string }) {
   const hasLiftBySubject =
     SHOW_AVERAGE_AP_SCORE_LIFT_UI && (data.averageApScoreLiftBySubject?.length ?? 0) > 0;
 
-  const courseEnrollmentsOrdered = [...data.courseEnrollments].sort((a, b) =>
-    compareSubjectsByShortName(a.subjectId, b.subjectId)
-  );
+  const HIDDEN_SUBJECTS = new Set(["APES", "APHUG"]);
+  const courseEnrollmentsOrdered = [...data.courseEnrollments]
+    .map((e) => {
+      const id = e.subjectId?.toUpperCase?.() ?? e.subjectId;
+      const normalizedId = id === "APWH" ? "APWORLD" : id;
+      return { ...e, subjectId: normalizedId };
+    })
+    .filter((e) => !HIDDEN_SUBJECTS.has(e.subjectId))
+    .sort((a, b) => compareSubjectsByShortName(a.subjectId, b.subjectId));
 
   const usersByState = data.usersByState ?? [];
   const hasUsersByState = usersByState.some((s) => s.count > 0);

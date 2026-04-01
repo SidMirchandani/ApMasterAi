@@ -44,9 +44,8 @@ const EXAM_CONFIGS: { [key: string]: { questions: number; timeMinutes: number } 
   APCSP: { questions: 70, timeMinutes: 120 },
   APPHYS1: { questions: 40, timeMinutes: 80 },
   APPHYS2: { questions: 40, timeMinutes: 80 },
-  APES: { questions: 80, timeMinutes: 90 },
   APUSH: { questions: 55, timeMinutes: 55 },
-  APWH: { questions: 55, timeMinutes: 55 },
+  APWORLD: { questions: 55, timeMinutes: 55 },
   APEURO: { questions: 55, timeMinutes: 55 },
   APCALCAB: { questions: 45, timeMinutes: 105 },
   APCALCBC: { questions: 45, timeMinutes: 105 },
@@ -56,7 +55,6 @@ const EXAM_CONFIGS: { [key: string]: { questions: number; timeMinutes: number } 
   APMACRO: { questions: 60, timeMinutes: 70 },
   APMICRO: { questions: 60, timeMinutes: 70 },
   APGOV: { questions: 55, timeMinutes: 55 },
-  APHUG: { questions: 60, timeMinutes: 60 },
 };
 
 // Helper to get exam config by legacy subject ID
