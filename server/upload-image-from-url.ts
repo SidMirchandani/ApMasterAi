@@ -66,6 +66,8 @@ export async function uploadImageFromUrl(
 
   const res = await fetch(imageUrl, {
     signal: controller.signal,
+    // Constrain redirects to limit SSRF surface; callers should only pass trusted hosts.
+    redirect: "follow",
     headers: { "User-Agent": "Mozilla/5.0 (compatible; APMaster/1.0)" },
   });
   clearTimeout(timeoutId);

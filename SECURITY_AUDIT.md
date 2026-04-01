@@ -1,3 +1,54 @@
+## APMaster Security & Operations Overview
+
+### Auth & identity
+
+- **Primary auth**: Firebase Authentication (client) with ID tokens verified server-side via `server/firebase-admin.ts`.
+- **User mapping**: Firebase UID → internal user document, created on first use by helpers in `server/routes.ts` and Next.js API routes (`pages/api/user/*`).
+- **Admin access**:
+  - Determined strictly on the server using `platform-admin` helpers and environment-configured admin emails.
+  - Admin checks are never based on `NEXT_PUBLIC_*` values or client-provided flags.
+
+### Data boundaries & storage
+
+- **User data**:
+  - Stored in Firestore collections such as `users`, `user_subjects`, `user_bookmarks`, `user_question_state`, and `score_history`.
+  - Storage helpers and services encapsulate queries to always scope by `userId` and `subjectId`.
+- **Assessments**:
+  - Full-length, unit, and diagnostic results live under each `user_subjects` document (subcollections like `fullLengthTests`, `unitQuizResults`, `diagnosticTests`).
+  - Aggregated analytics are computed via `user_question_state` but read back using per-user filters.
+
+### Logging & PII
+
+- Production logs are limited to:
+  - High-level error messages and IDs.
+  - Occasional debug fields (subject codes, test IDs) that avoid raw emails or tokens.
+- Sensitive values (Firebase service account keys, AI keys, admin email lists) are **never** logged.
+
+### External integrations
+
+- **AI/LLM**:
+  - Requests originate from server-only modules and strip or minimize user-identifying content where possible.
+  - API keys are stored in environment variables and read only from Node contexts.
+- **Image proxy / URL fetching**:
+  - Implemented in Next.js API routes with host and scheme validation, response size limits, and content-type checks to reduce SSRF risk.
+
+### Deployment / runtime assumptions
+
+- App must be served over **HTTPS** in all user-facing environments.
+- Reverse proxy (or hosting platform) should:
+  - Enable HSTS and standard security headers.
+  - Terminate TLS and forward real client IPs via `X-Forwarded-For` for geo/state detection.
+- Access to production environment variables is restricted to deployment pipelines and operators.
+
+### Incident response & monitoring
+
+- Firestore and server logs should be retained long enough to:
+  - Investigate auth misuse or privilege-escalation bugs.
+  - Reconstruct critical write paths (admin bulk operations, question imports).
+- Recommended:
+  - Alerting on repeated 5xx responses on auth-protected routes.
+  - Periodic review of `question_reports` to catch content issues surfaced by students.
+
 # Security Audit: Credentials & Deployment (Edison Public Schools)
 
 **Scope:** Credential handling, authentication, and deployment safety for K-12 use.  

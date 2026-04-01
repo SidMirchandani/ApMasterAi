@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { assertNotBanned } from "../../../../../server/api-user-auth";
 import { storage } from "../../../../../server/storage";
+import { saveFullLengthTestForUser } from "../../../../../server/services/assessments-service";
 import { getClientIp } from "../../../../../server/client-ip";
 
 async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
@@ -64,14 +65,14 @@ export default async function handler(
       });
     }
 
-    const testResult = await storage.saveFullLengthTest(
+    const testResult = await saveFullLengthTestForUser(
       userId,
       subjectId,
       score,
       percentage,
       totalQuestions,
       questions,
-      userAnswers
+      userAnswers,
     );
 
     console.log("✅ [full-length-test API] Test saved successfully");

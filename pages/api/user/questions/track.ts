@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { assertNotBanned } from "../../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../../server/firebase-admin";
 import { storage } from "../../../../server/storage";
+import { trackQuestionForUser } from "../../../../server/services/spaced-repetition-service";
 
 export default async function handler(
   req: NextApiRequest,
@@ -27,7 +28,7 @@ export default async function handler(
       return res.status(400).json({ success: false, message: "questionId and subjectId are required" });
     }
 
-    await storage.trackQuestionPerformance(userId, {
+    await trackQuestionForUser(userId, {
       questionId, subjectId, unitId: unitId || '',
       correct: !!correct, timeSpentSec: timeSpentSec || 0,
       sectionCode, prompt, choices, answerIndex, explanation,

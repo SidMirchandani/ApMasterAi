@@ -31,7 +31,10 @@ export default async function handler(
   }
 
   const selectedModel = getModelName(model);
-  console.log(`Using model: ${selectedModel} (from selection: ${model})`);
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console
+    console.log(`Using model: ${selectedModel} (from selection: ${model})`);
+  }
 
   const opts = getGeminiClientOptions();
   const ai = new GoogleGenAI({
@@ -48,7 +51,10 @@ export default async function handler(
   const questionsRef = firestore.collection("questions");
   const total = questionIds.length;
 
-  console.log(`Generating explanations for ${total} selected questions...`);
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console
+    console.log(`Generating explanations for ${total} selected questions...`);
+  }
 
   let aborted = false;
   req.on("close", () => {
@@ -96,9 +102,12 @@ export default async function handler(
     onAborted: () => aborted,
   });
 
-  console.log(
-    `✅ Completed: Generated ${updated}/${total} explanations (${skipped} not found, ${failed} failed)`
-  );
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console
+    console.log(
+      `✅ Completed: Generated ${updated}/${total} explanations (${skipped} not found, ${failed} failed)`,
+    );
+  }
 
   sendEvent({
     type: "complete",

@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../server/storage";
+import { getUserSubjectsForUser, hasUserSubjectForUser, addUserSubjectForUser } from "../../../server/services/user-subjects-service";
 import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { z } from "zod";
@@ -75,7 +76,7 @@ export default async function handler(
     switch (method) {
       case "GET": {
         try {
-          const subjects = await storage.getUserSubjects(userId);
+          const subjects = await getUserSubjectsForUser(userId);
           res.setHeader(
             "Cache-Control",
             "public, s-maxage=60, stale-while-revalidate=300",
@@ -92,8 +93,7 @@ export default async function handler(
 
       case "POST": {
         try {
-          const existingSubjects = await storage.getUserSubjects(userId);
-          const hasSubject = existingSubjects.some(s => s.subjectId === req.body.subjectId);
+          const hasSubject = await hasUserSubjectForUser(userId, req.body.subjectId);
           if (hasSubject) {
             return res.status(409).json({
               success: false,
@@ -106,7 +106,7 @@ export default async function handler(
             userId,
           });
 
-          const subject = await storage.addUserSubject(validatedData);
+          const subject = await addUserSubjectForUser(validatedData);
 
           return res.json({
             success: true,

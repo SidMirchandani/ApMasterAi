@@ -1,7 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
+import { getFirebaseAdmin } from "../../../server/firebase-admin";
 import { getDb } from "../../../server/db";
 import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
+import { requireAdmin } from "../../../server/next-api-auth";
 import { getSubjectConfig, getAllSubjectCodes, assignSectionAPCSA } from "../../../server/subjects-helper";
 import { uploadExternalImagesInQuestion } from "../../../server/upload-image-from-url";
 import * as cheerio from "cheerio";
@@ -257,18 +258,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
 
-  const token = authHeader.split("Bearer ")[1];
-  const decoded = await verifyFirebaseToken(token);
   const db = getDb();
-  if (!decoded || !(await isPlatformAdmin(db, decoded.email, decoded.uid))) {
+  if (!(await isPlatformAdmin(db, admin.email, admin.uid))) {
     return res.status(403).json({ error: "Forbidden" });
   }
-  if (!isEnvAdminEmail(decoded.email)) {
+  if (!isEnvAdminEmail(admin.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

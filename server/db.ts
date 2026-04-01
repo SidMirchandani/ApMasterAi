@@ -41,6 +41,15 @@ export class DatabaseManager {
     return this.db;
   }
 
+  /**
+   * Force a reconnect to Firestore, used by health monitors after repeated failures.
+   */
+  async forceReconnect(): Promise<void> {
+    console.warn("Forcing Firestore reconnect...");
+    this.db = null;
+    this.initializeConnection();
+  }
+
   async healthCheck(): Promise<boolean> {
     try {
       if (!this.db) {

@@ -30,7 +30,8 @@ export interface SubjectMetadata {
     details: string;
     description: string;
   }>;
-  breakdown?: string[];
+  /** Breakdown of exam sections. Can be simple strings or named weights. */
+  breakdown?: string[] | { name: string; weight: string }[];
 }
 
 export interface APSubject {

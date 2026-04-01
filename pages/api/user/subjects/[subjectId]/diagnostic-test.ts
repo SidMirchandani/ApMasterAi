@@ -3,6 +3,7 @@ import { assertNotBanned } from "../../../../../server/api-user-auth";
 import { storage } from "../../../../../server/storage";
 import { getSectionByCode, getApiCodeForSubject } from "../../../../../server/subjects-helper";
 import { computeAdjustedMCQPercentage, computeProjectedAPScore } from "../../../../../server/diagnostic-grading";
+import { saveDiagnosticTestForUser } from "../../../../../server/services/assessments-service";
 import { getClientIp } from "../../../../../server/client-ip";
 
 async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
@@ -112,7 +113,7 @@ export default async function handler(
     const adjustedMCQPercent = computeAdjustedMCQPercentage(questions, userAnswers);
     const { projectedScore } = computeProjectedAPScore(apiCode, adjustedMCQPercent);
 
-    const testResult = await storage.saveDiagnosticTest(
+    const testResult = await saveDiagnosticTestForUser(
       userId,
       subjectId,
       score,
@@ -121,7 +122,7 @@ export default async function handler(
       questions,
       userAnswers,
       sectionBreakdown,
-      projectedScore
+      projectedScore,
     );
 
     return res.status(200).json({

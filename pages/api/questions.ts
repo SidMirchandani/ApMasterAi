@@ -150,11 +150,14 @@ export default async function handler(
       const questionsRef = db.collection('questions');
       const selectedQuestions: any[] = [];
 
-      console.log("🔍 Fetching proportional questions for full-length test:", {
-        subject,
-        totalQuestions: questionLimit,
-        weights
-      });
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.log("🔍 Fetching proportional questions for full-length test:", {
+          subject,
+          totalQuestions: questionLimit,
+          weights,
+        });
+      }
 
       // Calculate questions per section based on weights
       const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
@@ -206,17 +209,20 @@ export default async function handler(
       const finalQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
 
       const isAPCSA = (subject as string) === "APCSA";
-      console.log("✅ Returning proportional questions:", {
-        requested: questionLimit,
-        returning: finalQuestions.length,
-        breakdown: Object.entries(weights).map(([section, weight]) => ({
-          section,
-          count: isAPCSA
-            ? finalQuestions.filter(q => canonicalSectionForAPCSA(q.section_code) === section).length
-            : finalQuestions.filter(q => q.section_code === section).length,
-          weight: `${weight}%`
-        }))
-      });
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.log("✅ Returning proportional questions:", {
+          requested: questionLimit,
+          returning: finalQuestions.length,
+          breakdown: Object.entries(weights).map(([section, weight]) => ({
+            section,
+            count: isAPCSA
+              ? finalQuestions.filter(q => canonicalSectionForAPCSA(q.section_code) === section).length
+              : finalQuestions.filter(q => q.section_code === section).length,
+            weight: `${weight}%`,
+          })),
+        });
+      }
 
       return res.status(200).json({
         success: true,
@@ -227,16 +233,19 @@ export default async function handler(
     // Regular query logic for unit quizzes or subjects without weight config
     const fetchLimit = questionLimit * 4;
 
-    console.log("🔍 [API/questions] Querying questions with:", {
-      subject,
-      section: section || "ALL",
-      requestedLimit: questionLimit,
-      fetchLimit,
-      queryFields: {
-        subject_code: subject,
-        section_code: section || 'not filtering'
-      }
-    });
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.log("🔍 [API/questions] Querying questions with:", {
+        subject,
+        section: section || "ALL",
+        requestedLimit: questionLimit,
+        fetchLimit,
+        queryFields: {
+          subject_code: subject,
+          section_code: section || "not filtering",
+        },
+      });
+    }
 
     const questionsRef = db.collection('questions');
     let query = questionsRef.where('subject_code', '==', subject as string);
@@ -246,10 +255,13 @@ export default async function handler(
         (subject as string) === "APCSA" && APCSA_SECTION_QUERY_MAP[section as string]
           ? APCSA_SECTION_QUERY_MAP[section as string]
           : [section as string];
-      console.log("📍 [API/questions] Adding section filter:", {
-        field: 'section_code',
-        value: sectionCodesToQuery.length === 1 ? section : sectionCodesToQuery
-      });
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.log("📍 [API/questions] Adding section filter:", {
+          field: "section_code",
+          value: sectionCodesToQuery.length === 1 ? section : sectionCodesToQuery,
+        });
+      }
       if (sectionCodesToQuery.length === 1) {
         query = query.where('section_code', '==', section as string);
       } else {
@@ -261,48 +273,58 @@ export default async function handler(
       .limit(fetchLimit)
       .get();
 
-    console.log("📊 [API/questions] Firestore query result:", {
-      isEmpty: snapshot.empty,
-      size: snapshot.size,
-      queriedFor: { 
-        subject_code: subject, 
-        section_code: section || "ALL" 
-      },
-      actualResults: snapshot.docs.length
-    });
-
-    // If no results and section was specified, log sample documents for debugging
-    if (snapshot.empty && section) {
-      console.log("❌ [API/questions] No questions found with filters - fetching sample docs for debugging");
-      const sampleQuery = await questionsRef
-        .where('subject_code', '==', subject as string)
-        .limit(5)
-        .get();
-
-      const samples = sampleQuery.docs.map(doc => ({
-        id: doc.id,
-        subject_code: doc.data().subject_code,
-        section_code: doc.data().section_code
-      }));
-      console.log("📋 [API/questions] Sample questions for subject (showing actual DB field values):", {
-        requestedSubject: subject,
-        requestedSection: section,
-        sampleCount: samples.length,
-        samples
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.log("📊 [API/questions] Firestore query result:", {
+        isEmpty: snapshot.empty,
+        size: snapshot.size,
+        queriedFor: {
+          subject_code: subject,
+          section_code: section || "ALL",
+        },
+        actualResults: snapshot.docs.length,
       });
-      console.log("📋 [API/questions] Available section codes in DB for this subject:", 
-        [...new Set(samples.map(s => s.section_code))]
-      );
     }
 
-    // Also log if we found results but fewer than expected
-    if (!snapshot.empty && snapshot.size < questionLimit) {
-      console.log("⚠️ [API/questions] Found fewer questions than requested:", {
-        requested: questionLimit,
-        found: snapshot.size,
-        subject_code: subject,
-        section_code: section || 'ALL'
-      });
+    // If no results and section was specified, log sample documents for debugging
+    if (process.env.NODE_ENV !== "production") {
+      if (snapshot.empty && section) {
+        // eslint-disable-next-line no-console
+        console.log("❌ [API/questions] No questions found with filters - fetching sample docs for debugging");
+        const sampleQuery = await questionsRef
+          .where("subject_code", "==", subject as string)
+          .limit(5)
+          .get();
+
+        const samples = sampleQuery.docs.map(doc => ({
+          id: doc.id,
+          subject_code: doc.data().subject_code,
+          section_code: doc.data().section_code,
+        }));
+        // eslint-disable-next-line no-console
+        console.log("📋 [API/questions] Sample questions for subject (showing actual DB field values):", {
+          requestedSubject: subject,
+          requestedSection: section,
+          sampleCount: samples.length,
+          samples,
+        });
+        // eslint-disable-next-line no-console
+        console.log(
+          "📋 [API/questions] Available section codes in DB for this subject:",
+          [...new Set(samples.map(s => s.section_code))],
+        );
+      }
+
+      // Also log if we found results but fewer than expected
+      if (!snapshot.empty && snapshot.size < questionLimit) {
+        // eslint-disable-next-line no-console
+        console.log("⚠️ [API/questions] Found fewer questions than requested:", {
+          requested: questionLimit,
+          found: snapshot.size,
+          subject_code: subject,
+          section_code: section || "ALL",
+        });
+      }
     }
 
     if (snapshot.empty) {
@@ -320,13 +342,16 @@ export default async function handler(
     const shuffled = allQuestions.sort(() => Math.random() - 0.5);
     const questions = shuffled.slice(0, questionLimit);
 
-    console.log("✅ Returning questions:", {
-      totalFound: allQuestions.length,
-      returning: questions.length,
-      firstQuestionId: questions[0]?.id,
-      firstQuestionSubject: questions[0]?.subject_code,
-      firstQuestionSection: questions[0]?.section_code
-    });
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.log("✅ Returning questions:", {
+        totalFound: allQuestions.length,
+        returning: questions.length,
+        firstQuestionId: questions[0]?.id,
+        firstQuestionSubject: questions[0]?.subject_code,
+        firstQuestionSection: questions[0]?.section_code,
+      });
+    }
 
     return res.status(200).json({
       success: true,

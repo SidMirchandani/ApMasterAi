@@ -8,10 +8,8 @@ async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promis
 
   if (!user) {
     user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, undefined, getClientIp(req));
-    console.log("[section API] Created new user for Firebase UID:", firebaseUid);
   }
 
-  console.log("[section API] Resolved user:", { firebaseUid, userId: user.id });
   return user.id;
 }
 
@@ -55,13 +53,6 @@ export default async function handler(
       });
     }
 
-    console.log("📥 Section API Request:", {
-      userId: decodedToken.uid,
-      subjectId,
-      testId,
-      sectionCode,
-    });
-
     // Get the full test data (full-length, diagnostic, or unit quiz)
     let testData = await storage.getFullLengthTestResult(
       userId,
@@ -86,16 +77,7 @@ export default async function handler(
       }
     }
 
-    console.log("📦 Full test data retrieved:", {
-      exists: !!testData,
-      totalQuestions: testData?.questions?.length,
-      hasUserAnswers: !!testData?.userAnswers,
-      sectionCodes: testData?.questions?.map((q: any) => q.section_code).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i)
-    });
-
     if (!testData) {
-      console.log("❌ Test data not found for:", { userId, subjectId, testId });
-      console.log("⚠️ This might be a user mismatch. Check if you're logged in with the correct account that took this test.");
       return res.status(404).json({
         success: false,
         message: "Test data not found. You may be logged in with a different account than the one that took this test.",
@@ -107,12 +89,6 @@ export default async function handler(
       (q: any) => q.section_code === sectionCode,
     );
 
-    console.log("🔍 Filtered section questions:", {
-      requestedSection: sectionCode,
-      foundQuestions: sectionQuestions.length,
-      questionIds: sectionQuestions.map((q: any) => q.id),
-    });
-
     // Map user answers to section question indices and add original index to each question
     const sectionUserAnswers: { [key: number]: string } = {};
     const questionsWithOriginalIndex: any[] = [];
@@ -120,11 +96,6 @@ export default async function handler(
 
     testData.questions.forEach((q: any, idx: number) => {
       if (q.section_code === sectionCode) {
-        console.log(`📝 Mapping answer for section question ${sectionQuestionIndex}:`, {
-          originalIndex: idx,
-          userAnswer: testData.userAnswers[idx],
-          questionId: q.id,
-        });
         sectionUserAnswers[sectionQuestionIndex] = testData.userAnswers[idx];
         questionsWithOriginalIndex.push({
           ...q,

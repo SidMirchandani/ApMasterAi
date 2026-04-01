@@ -1,28 +1,21 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../../server/db";
-import { assertNotBanned } from "../../../server/api-user-auth";
-import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { isAdminEmailFromEnv } from "../../../server/platform-admin";
 import { maybeUpdateUserGeoState } from "../../../server/user-geo-state";
+import { requireUser } from "../../../server/next-api-auth";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
 
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
-    const token = authHeader.split("Bearer ")[1];
-    const decodedToken = await verifyFirebaseToken(token);
-    if (!(await assertNotBanned(res, decodedToken.uid))) return;
-    const userId = decodedToken.uid;
+    const user = await requireUser(req, res);
+    if (!user) return;
+    const userId = user.uid;
 
     const db = getDb();
     const userDoc = await db.collection("users").doc(userId).get();
@@ -50,7 +43,7 @@ export default async function handler(
         photoURL: userData?.photoURL,
         experimentalFeaturesEnabled,
         isAdmin:
-          isAdminEmailFromEnv(decodedToken.email ?? userData?.email) || userData?.isAdmin === true,
+          isAdminEmailFromEnv(user.email ?? userData?.email) || userData?.isAdmin === true,
       },
     });
   } catch (error) {

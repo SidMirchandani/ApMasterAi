@@ -1,26 +1,14 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../server/firebase-admin";
-import { getDb } from "../../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../../server/platform-admin";
+import { getFirebaseAdmin } from "../../../../server/firebase-admin";
+import { requireAdmin } from "../../../../server/next-api-auth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method !== "POST") return res.status(405).end();
 
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-    if (!token) return res.status(401).json({ error: "Missing token" });
-
-    const decoded = await verifyFirebaseToken(token);
-    const db = getDb();
-    if (!(await isPlatformAdmin(db, decoded.email, decoded.uid))) {
-      return res.status(403).json({ 
-        error: "Not an admin", 
-        email: decoded.email,
-      });
-    }
-    if (!isEnvAdminEmail(decoded.email)) {
+    const admin = await requireAdmin(req, res);
+    if (!admin || !admin.isEnvAdmin) {
       return res.status(403).json({ error: "Forbidden" });
     }
 

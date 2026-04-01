@@ -16,25 +16,8 @@ import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import { getSubjectByLegacyId, getSubjectByCode, getApiCodeForSubject, getUnitIdForSectionCode } from '@/subjects';
 import { getDisplayCorrectLabel, getStoredAnswerForSubmit } from '@/lib/mcqDisplay';
 import { getSubjectDisplayName } from '../../../../lib/subject-display-names';
-
-interface Question {
-  id: string;
-  prompt: string; // Keep prompt for backward compatibility or simpler questions
-  choices: string[] | { [key: string]: string[] }; // Allow for object structure too
-  answerIndex: number;
-  explanation: string;
-  subject_code?: string;
-  section_code?: string;
-  image_urls?: {
-    question?: string[];
-    A?: string[];
-    B?: string[];
-    C?: string[];
-    D?: string[];
-    E?: string[];
-  };
-  prompt_blocks?: any[]; // Add prompt_blocks for complex prompts
-}
+import { useQuizEngine } from "@/hooks/useQuizEngine";
+import type { Question } from "@/lib/types/question";
 
 interface FullLengthQuizProps {
   questions: Question[];
@@ -53,9 +36,22 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const queryClient = useQueryClient();
   const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(savedState?.currentQuestionIndex || 0);
-  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>(savedState?.userAnswers || {});
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set(savedState?.flaggedQuestions || []));
+  const {
+    currentQuestionIndex,
+    userAnswers,
+    flaggedQuestions,
+    setAnswer,
+    next,
+    previous,
+    goTo,
+    toggleFlag,
+    isLastQuestion,
+  } = useQuizEngine({
+    initialIndex: savedState?.currentQuestionIndex || 0,
+    initialAnswers: savedState?.userAnswers || {},
+    initialFlagged: savedState?.flaggedQuestions || [],
+    totalQuestions: questions.length,
+  });
   const [showQuestionPalette, setShowQuestionPalette] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -185,31 +181,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   };
 
   const handleAnswerSelect = (answer: string) => {
-    setUserAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }));
-  };
-
-  const toggleFlag = () => {
-    setFlaggedQuestions((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(currentQuestionIndex)) {
-        newSet.delete(currentQuestionIndex);
-      } else {
-        newSet.add(currentQuestionIndex);
-      }
-      return newSet;
-    });
-  };
-
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((i) => i + 1);
-    }
-  };
-
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((i) => i - 1);
-    }
+    setAnswer(currentQuestionIndex, answer);
   };
 
   // Updated handleSubmitTest to format question data correctly. Optional overrideAnswers for admin auto-answer.
@@ -272,7 +244,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
       // Save wrong answers per unit with unit info so they appear in Review for that unit (await before redirect)
       const trackPromises: Promise<unknown>[] = [];
-      questions.forEach((q, idx) => {
+        questions.forEach((q, idx) => {
         const displayCorrect = getDisplayCorrectLabel(q, mcqOptionCount);
         const userAns = answersToUse[idx];
         const isCorrect = userAns === displayCorrect;
@@ -378,11 +350,11 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           currentQuestion={currentQuestionIndex + 1}
           totalQuestions={questions.length}
           onOpenPalette={() => setShowQuestionPalette(true)}
-          onPrevious={handlePreviousQuestion}
-          onNext={handleNextQuestion}
+          onPrevious={previous}
+          onNext={next}
           canGoPrevious={currentQuestionIndex > 0}
           canGoNext={currentQuestionIndex < questions.length - 1}
-          isLastQuestion={currentQuestionIndex === questions.length - 1}
+          isLastQuestion={isLastQuestion}
           onSubmit={() => handleSubmitTest()}
           onReview={currentQuestionIndex === questions.length - 1 ? () => setIsReviewMode(true) : undefined}
           onSaveAndExit={handleExitExam}
@@ -415,7 +387,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         userAnswers={userAnswers}
         flaggedQuestions={flaggedQuestions}
         onQuestionSelect={(index) => {
-          setCurrentQuestionIndex(index);
+          goTo(index);
           setShowQuestionPalette(false);
         }}
         onGoToReview={() => {

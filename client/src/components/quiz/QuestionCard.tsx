@@ -57,6 +57,7 @@ interface QuestionCardProps {
 export function QuestionCard({
   question,
   questionNumber,
+  totalQuestions,
   selectedAnswer,
   isFlagged,
   onAnswerSelect,

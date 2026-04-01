@@ -23,19 +23,21 @@ export function Toaster() {
                 <ToastDescription>{description}</ToastDescription>
               )}
             </div>
-            {action && typeof action === 'object' && 'label' in action ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.preventDefault();
-                action.onClick();
-              }}
-              className="h-8 px-3"
-            >
-              {action.label}
-            </Button>
-          ) : action}
+            {action && typeof action === "object" && "label" in action && "onClick" in action ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  (action as { onClick: () => void }).onClick();
+                }}
+                className="h-8 px-3"
+              >
+                {(action as { label: React.ReactNode }).label}
+              </Button>
+            ) : (
+              action
+            )}
             <ToastClose />
           </Toast>
         )

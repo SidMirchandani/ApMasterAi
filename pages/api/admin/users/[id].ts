@@ -1,20 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../server/firebase-admin";
+import { getFirebaseAdmin } from "../../../../server/firebase-admin";
 import { getDb } from "../../../../server/db";
 import {
   isAdminEmailFromEnv,
   isEnvAdminEmail,
   isPlatformAdmin,
 } from "../../../../server/platform-admin";
+import { requireAdmin } from "../../../../server/next-api-auth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "PATCH") {
     return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized" });
   }
 
   const id = typeof req.query.id === "string" ? req.query.id : Array.isArray(req.query.id) ? req.query.id[0] : "";
@@ -22,19 +18,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: "Missing user id" });
   }
 
-  const token = authHeader.split("Bearer ")[1];
-  let decoded: { email?: string | null; uid?: string };
-  try {
-    decoded = await verifyFirebaseToken(token);
-  } catch {
-    return res.status(401).json({ error: "Invalid token" });
-  }
-
   const db = getDb();
-  if (!(await isPlatformAdmin(db, decoded.email, decoded.uid ?? null))) {
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+
+  if (!(await isPlatformAdmin(db, admin.email, admin.uid ?? null))) {
     return res.status(403).json({ error: "Forbidden" });
   }
-  if (!isEnvAdminEmail(decoded.email)) {
+  if (!isEnvAdminEmail(admin.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
@@ -77,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const authUid = ((targetData.firebaseUid as string) || id) as string;
 
   if (typeof wantAdmin === "boolean" && wantAdmin === false) {
-    if (id === decoded.uid && !isAdminEmailFromEnv(decoded.email)) {
+    if (id === admin.uid && !isAdminEmailFromEnv(admin.email)) {
       return res.status(403).json({
         error: "You cannot remove your own Firestore admin flag without being on ADMIN_EMAILS.",
       });
@@ -85,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (wantBanned === true) {
-    if (authUid === decoded.uid) {
+    if (authUid === admin.uid) {
       return res.status(403).json({ error: "You cannot ban your own account." });
     }
   }

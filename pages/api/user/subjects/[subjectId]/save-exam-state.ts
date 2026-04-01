@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { assertNotBanned } from "../../../../../server/api-user-auth";
 import { storage } from "../../../../../server/storage";
 import { getClientIp } from "../../../../../server/client-ip";
-import admin from "@/server/firebase-admin";
 
 async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);

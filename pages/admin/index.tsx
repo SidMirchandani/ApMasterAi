@@ -12,7 +12,7 @@ import {
   browserPopupRedirectResolver,
 } from "firebase/auth";
 import toast, { Toaster } from "react-hot-toast";
-import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square, Pencil, Trash2, Eye } from "lucide-react";
+import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square, Pencil, Trash2, Eye, X } from "lucide-react";
 import { Progress } from "../../client/src/components/ui/progress";
 import Link from "next/link";
 import { Button } from "../../client/src/components/ui/button";
@@ -355,6 +355,18 @@ export default function AdminPage() {
   const [cheatMode, setCheatMode] = useState(false);
   const aiActionAbortRef = useRef<AbortController | null>(null);
   const [explanationProgress, setExplanationProgress] = useState<{
+    current: number;
+    total: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+    message: string;
+    passed?: number;
+    flagged?: number;
+    verifyFailed?: number;
+  } | null>(null);
+
+  const [lastExplanationSummary, setLastExplanationSummary] = useState<{
     current: number;
     total: number;
     updated: number;
@@ -940,6 +952,10 @@ export default function AdminPage() {
       return;
     }
 
+    // Clear any previous summary when starting a new run so the next
+    // execution owns the sticky row contents.
+    setLastExplanationSummary(null);
+
     setGeneratingExplanations(true);
     const questionIds = Array.from(selectedQuestions);
 
@@ -1052,20 +1068,23 @@ export default function AdminPage() {
               });
             }
             if (event.type === "complete") {
-              setExplanationProgress((prev) =>
-                prev && typeof event.passed === "number"
-                  ? {
-                      ...prev,
-                      current: event.total || prev.total,
-                      skipped: event.skipped ?? prev.skipped,
-                      failed: event.failed ?? prev.failed,
-                      passed: event.passed,
-                      flagged: event.flagged ?? prev.flagged,
-                      verifyFailed: event.verifyFailed ?? prev.verifyFailed,
-                      message: event.message || prev.message,
-                    }
-                  : prev,
-              );
+              setExplanationProgress((prev) => {
+                if (!prev) return prev;
+                const next = {
+                  ...prev,
+                  current: event.total || prev.total,
+                  skipped: event.skipped ?? prev.skipped,
+                  failed: event.failed ?? prev.failed,
+                  passed: typeof event.passed === "number" ? event.passed : prev.passed,
+                  flagged: event.flagged ?? prev.flagged,
+                  verifyFailed: event.verifyFailed ?? prev.verifyFailed,
+                  message: event.message || prev.message,
+                };
+                // Snapshot the final state into a sticky summary that will
+                // remain visible even after live progress is cleared.
+                setLastExplanationSummary(next);
+                return next;
+              });
               toast.success(event.message);
               fetchFiltered();
             }
@@ -1657,42 +1676,6 @@ export default function AdminPage() {
                   </Button>
                 )}
               </div>
-              {explanationProgress && (
-                <div className="mt-3 space-y-2">
-                  <div className="flex justify-between text-sm text-slate-600">
-                    <span>{explanationProgress.message}</span>
-                    {explanationProgress.total > 0 && (
-                      <span>{Math.round((explanationProgress.current / Math.max(explanationProgress.total, 1)) * 100)}%</span>
-                    )}
-                  </div>
-                  <Progress
-                    value={(explanationProgress.current / Math.max(explanationProgress.total, 1)) * 100}
-                    className="h-2"
-                  />
-                  <div className="flex flex-wrap gap-4 text-xs text-slate-500">
-                    <span className="text-green-600 font-medium">
-                      Done:{" "}
-                      {typeof explanationProgress.passed === "number"
-                        ? explanationProgress.passed +
-                          (explanationProgress.flagged ?? 0) +
-                          (explanationProgress.verifyFailed ?? 0) +
-                          explanationProgress.skipped
-                        : explanationProgress.updated +
-                          explanationProgress.skipped +
-                          explanationProgress.failed}
-                    </span>
-                    <span className="text-amber-500">Skipped: {explanationProgress.skipped}</span>
-                    <span className="text-red-600">Failed: {explanationProgress.failed}</span>
-                    {typeof explanationProgress.passed === "number" && (
-                      <>
-                        <span className="text-green-700 dark:text-green-400 font-medium">Pass: {explanationProgress.passed}</span>
-                        <span className="text-amber-700 dark:text-amber-400 font-medium">Review: {explanationProgress.flagged}</span>
-                        <span className="text-red-700 dark:text-red-400 font-medium">Fail: {explanationProgress.verifyFailed}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </CardHeader>
           <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={(open) => !bulkDeleting && setBulkDeleteDialogOpen(open)}>
@@ -1728,6 +1711,98 @@ export default function AdminPage() {
             </AlertDialogContent>
           </AlertDialog>
           <CardContent>
+            {/* Sticky status row above the table. Always rendered with a fixed
+                height so the page layout does not jump when progress appears
+                or disappears. */}
+            {(() => {
+              const status = explanationProgress || lastExplanationSummary;
+              const doneCount =
+                status &&
+                (typeof status.passed === "number"
+                  ? status.passed +
+                    (status.flagged ?? 0) +
+                    (status.verifyFailed ?? 0) +
+                    status.skipped
+                  : status.updated + status.skipped + status.failed);
+
+              const percent =
+                status && status.total > 0
+                  ? Math.round(
+                      (status.current / Math.max(status.total, 1)) * 100,
+                    )
+                  : 0;
+
+              return (
+                <div className="mb-3">
+                  <div
+                    className={`h-16 flex items-stretch justify-between rounded-md border px-3 py-1 text-xs transition-colors ${
+                      status
+                        ? "border-slate-200/60 bg-slate-50/40 text-slate-700 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-200"
+                        : "border-transparent bg-transparent text-slate-700 dark:text-slate-200"
+                    }`}
+                  >
+                    {status ? (
+                      <>
+                        <div className="flex-1 flex flex-col justify-center gap-1 pr-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate">{status.message}</span>
+                            {status.total > 0 && (
+                              <span className="shrink-0">{percent}%</span>
+                            )}
+                          </div>
+                          <Progress
+                            value={
+                              (status.current / Math.max(status.total || 1, 1)) *
+                              100
+                            }
+                            className="h-1.5"
+                          />
+                          <div className="flex flex-wrap gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span className="text-green-600 dark:text-green-400 font-medium">
+                              Done: {doneCount ?? 0}
+                            </span>
+                            <span className="text-amber-500 dark:text-amber-400">
+                              Skipped: {status.skipped}
+                            </span>
+                            <span className="text-red-600 dark:text-red-400">
+                              Failed: {status.failed}
+                            </span>
+                            {typeof status.passed === "number" && (
+                              <>
+                                <span className="text-green-700 dark:text-green-400 font-medium">
+                                  Pass: {status.passed}
+                                </span>
+                                <span className="text-amber-700 dark:text-amber-400 font-medium">
+                                  Review: {status.flagged ?? 0}
+                                </span>
+                                <span className="text-red-700 dark:text-red-400 font-medium">
+                                  Fail: {status.verifyFailed ?? 0}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-start pt-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                            onClick={() => {
+                              setExplanationProgress(null);
+                              setLastExplanationSummary(null);
+                            }}
+                            aria-label="Dismiss status"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })()}
             <div className="overflow-x-auto">
               <table className="w-full text-sm table-fixed">
                 <colgroup>

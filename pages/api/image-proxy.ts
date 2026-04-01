@@ -3,9 +3,17 @@ import { getFirebaseAdmin } from "../../server/firebase-admin";
 
 const urlCache = new Map<string, { url: string; expires: number }>();
 
+function isSafeStoragePath(path: string): boolean {
+  // Simple SSRF guard: only allow object-like paths, no traversal or scheme.
+  if (!path || typeof path !== "string") return false;
+  if (path.startsWith("http://") || path.startsWith("https://")) return false;
+  if (path.includes("..")) return false;
+  return true;
+}
+
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -13,8 +21,8 @@ export default async function handler(
 
   const { path } = req.query;
 
-  if (!path || typeof path !== "string") {
-    return res.status(400).json({ error: "Missing path parameter" });
+  if (!path || typeof path !== "string" || !isSafeStoragePath(path)) {
+    return res.status(400).json({ error: "Invalid path parameter" });
   }
 
   try {
@@ -45,8 +53,6 @@ export default async function handler(
     return res.redirect(302, signedUrl);
   } catch (error: any) {
     console.error("Image proxy error:", error?.message || error);
-
-    const directUrl = `https://storage.googleapis.com/gen-lang-client-0260042933.firebasestorage.app/${path}`;
-    return res.redirect(302, directUrl);
+    return res.status(502).json({ error: "Failed to proxy image" });
   }
 }

@@ -1,11 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
-import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
+import { getFirebaseAdmin } from "../../../server/firebase-admin";
 import { getModelName, getGeminiClientOptions } from "../../../lib/gemini-models";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { flattenPromptText, callWithRetry, STUDY_NOTE_PROMPT } from "../../../server/study-notes-helpers";
 import { getDb } from "../../../server/db";
 import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
+import { requireAdmin } from "../../../server/next-api-auth";
 
 export const config = {
   api: {
@@ -23,21 +24,14 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const authHeader = req.headers.authorization || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) return res.status(401).json({ error: "Missing token" });
-
-  let decoded: { email?: string | null; uid?: string };
-  try {
-    decoded = await verifyFirebaseToken(token);
-  } catch {
-    return res.status(401).json({ error: "Invalid token" });
-  }
   const db = getDb();
-  if (!(await isPlatformAdmin(db, decoded.email, decoded.uid ?? null))) {
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+
+  if (!(await isPlatformAdmin(db, admin.email, admin.uid ?? null))) {
     return res.status(403).json({ error: "Not an admin" });
   }
-  if (!isEnvAdminEmail(decoded.email)) {
+  if (!isEnvAdminEmail(admin.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

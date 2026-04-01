@@ -1,11 +1,32 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertWaitlistEmailSchema, insertUserSubjectSchema } from "@shared/schema";
+import { insertWaitlistEmailSchema, insertUserSubjectSchema } from "../shared/schema";
 import { z } from "zod";
 import { DatabaseRetryHandler, ensureDatabaseHealth } from "./db-retry-handler";
 import { verifyFirebaseToken } from "./firebase-admin";
 import { getClientIp } from "./client-ip";
+import {
+  addToWaitlist,
+  getWaitlistStats,
+} from "./services/waitlist-service";
+import {
+  getUserSubjectsForUser,
+  hasUserSubjectForUser,
+  addUserSubjectForUser,
+  removeUserSubjectForUser,
+  updateSubjectMasteryLevelForUser,
+} from "./services/user-subjects-service";
+import {
+  toggleBookmarkForUser,
+  listBookmarksForUser,
+  listBookmarkIdsForUser,
+} from "./services/bookmarks-service";
+import {
+  trackQuestionForUser,
+  getDueReviewsForUser,
+  getQuestionStatsForUser,
+} from "./services/spaced-repetition-service";
 
 declare global {
   namespace Express {
@@ -51,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const firebaseUid = res.locals.firebaseUid!;
       const userId = await getOrCreateUser(firebaseUid, req);
-      const subjects = await storage.getUserSubjects(userId);
+      const subjects = await getUserSubjectsForUser(userId);
       
       res.json({ 
         success: true, 
@@ -72,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = await getOrCreateUser(firebaseUid, req);
       
       // Check if user already has this subject
-      const hasSubject = await storage.hasUserSubject(userId, req.body.subjectId);
+      const hasSubject = await hasUserSubjectForUser(userId, req.body.subjectId);
       if (hasSubject) {
         return res.status(409).json({ 
           success: false, 
@@ -85,7 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId
       });
       
-      const subject = await storage.addUserSubject(validatedData);
+      const subject = await addUserSubjectForUser(validatedData);
       
       res.json({ 
         success: true, 
@@ -112,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const firebaseUid = res.locals.firebaseUid!;
       const userId = await getOrCreateUser(firebaseUid, req);
-      await storage.removeUserSubject(userId, req.params.subjectId);
+      await removeUserSubjectForUser(userId, req.params.subjectId);
       
       res.json({ 
         success: true, 
@@ -137,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       const userId = await getOrCreateUser(firebaseUid, req);
-      const updatedSubject = await storage.updateSubjectMasteryLevel(userId, req.params.subjectId, masteryLevel);
+      const updatedSubject = await updateSubjectMasteryLevelForUser(userId, req.params.subjectId, masteryLevel);
       
       if (!updatedSubject) {
         return res.status(404).json({ 
@@ -163,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/waitlist", async (req, res) => {
     try {
       const validatedData = insertWaitlistEmailSchema.parse(req.body);
-      const waitlistEmail = await storage.addToWaitlist(validatedData);
+      const waitlistEmail = await addToWaitlist(validatedData);
       res.json({ 
         success: true, 
         message: "Successfully added to waitlist!",
@@ -192,11 +213,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get waitlist stats (optional - for admin purposes)
   app.get("/api/waitlist/stats", async (req, res) => {
     try {
-      const emails = await storage.getWaitlistEmails();
+      const stats = await getWaitlistStats();
       res.json({
         success: true,
-        count: emails.length,
-        latestSignup: emails.length > 0 ? emails[emails.length - 1].signedUpAt : null
+        count: stats.total,
+        latestSignup: null,
       });
     } catch (error) {
       res.status(500).json({ 
@@ -217,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, message: "questionId and subjectId are required" });
       }
 
-      const result = await storage.toggleBookmark(firebaseUid, {
+      const result = await toggleBookmarkForUser(firebaseUid, {
         questionId, subjectId, unitId: unitId || '', prompt: prompt || '',
         choices: choices || [], answerIndex: answerIndex ?? 0,
         explanation: explanation || '', sectionCode,
@@ -234,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const firebaseUid = res.locals.firebaseUid!;
       const subjectId = req.query.subjectId as string | undefined;
-      const bookmarks = await storage.getBookmarks(firebaseUid, subjectId);
+      const bookmarks = await listBookmarksForUser(firebaseUid, subjectId);
       res.json({ success: true, data: bookmarks });
     } catch (error) {
       console.error("Error getting bookmarks:", error);
@@ -246,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const firebaseUid = res.locals.firebaseUid!;
       const subjectId = req.query.subjectId as string | undefined;
-      const ids = await storage.getBookmarkedQuestionIds(firebaseUid, subjectId);
+      const ids = await listBookmarkIdsForUser(firebaseUid, subjectId);
       res.json({ success: true, data: ids });
     } catch (error) {
       console.error("Error getting bookmark ids:", error);
@@ -265,7 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, message: "questionId and subjectId are required" });
       }
 
-      await storage.trackQuestionPerformance(firebaseUid, {
+      await trackQuestionForUser(firebaseUid, {
         questionId, subjectId, unitId: unitId || '',
         correct: !!correct, timeSpentSec: timeSpentSec || 0,
         sectionCode, prompt, choices, answerIndex, explanation,
@@ -283,7 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const firebaseUid = res.locals.firebaseUid!;
       const subjectId = req.query.subjectId as string | undefined;
       const limit = parseInt(req.query.limit as string) || 20;
-      const dueReviews = await storage.getDueReviews(firebaseUid, subjectId, limit);
+      const dueReviews = await getDueReviewsForUser(firebaseUid, subjectId, limit);
       res.json({ success: true, data: dueReviews });
     } catch (error) {
       console.error("Error getting due reviews:", error);
@@ -298,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const firebaseUid = res.locals.firebaseUid!;
       const subjectId = req.query.subjectId as string | undefined;
-      const stats = await storage.getQuestionStats(firebaseUid, subjectId);
+      const stats = await getQuestionStatsForUser(firebaseUid, subjectId);
       res.json({ success: true, data: stats });
     } catch (error) {
       console.error("Error getting analytics:", error);

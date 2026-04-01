@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
 import { useQueryClient } from "@tanstack/react-query";
+import { useQuizEngine } from "@/hooks/useQuizEngine";
 import {
   Dialog,
   DialogContent,
@@ -83,7 +84,17 @@ export function PracticeQuiz({
   savedState,
   enableStudyNotesPrimer = false,
 }: PracticeQuizProps) {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const {
+    currentQuestionIndex,
+    userAnswers,
+    setAnswer,
+    next,
+    isLastQuestion,
+  } = useQuizEngine({
+    initialIndex: 0,
+    initialAnswers: {},
+    totalQuestions: questions.length,
+  });
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [score, setScore] = useState(0);
@@ -93,9 +104,7 @@ export function PracticeQuiz({
   const [timerHidden, setTimerHidden] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
-  const [finalUserAnswers, setFinalUserAnswers] = useState<{
-    [key: number]: string;
-  }>({});
+  const [finalUserAnswers, setFinalUserAnswers] = useState<{ [key: number]: string }>({});
   const [cheatMode, setCheatMode] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [showCalculator, setShowCalculator] = useState(false);
@@ -112,7 +121,6 @@ export function PracticeQuiz({
     if (savedState && questions.length > 0 && !appliedSavedState.current) {
       appliedSavedState.current = true;
       const idx = Math.min(savedState.currentQuestionIndex, questions.length - 1);
-      setCurrentQuestionIndex(idx);
       setFinalUserAnswers(savedState.userAnswers || {});
       if (savedState.flaggedQuestions && savedState.flaggedQuestions.length > 0) {
         setFlaggedQuestions(new Set(savedState.flaggedQuestions));
@@ -223,7 +231,7 @@ export function PracticeQuiz({
   const handleSubmitAnswer = () => {
     if (!selectedAnswer || !currentQuestion) return;
     setIsAnswerSubmitted(true);
-
+    setAnswer(currentQuestionIndex, selectedAnswer);
     setFinalUserAnswers((prev) => ({
       ...prev,
       [currentQuestionIndex]: selectedAnswer,
@@ -254,7 +262,7 @@ export function PracticeQuiz({
   const handleNextQuestion = () => {
     const nextIndex = currentQuestionIndex + 1;
     if (nextIndex < orderedQuestions.length) {
-      setCurrentQuestionIndex(nextIndex);
+      next();
       setSelectedAnswer(null);
       setIsAnswerSubmitted(false);
       if (enableStudyNotesPrimer && nextIndex % 5 === 0) {
@@ -262,12 +270,10 @@ export function PracticeQuiz({
       }
     } else {
       if (isFullLength && lastSavedTestId) {
-        router.push(
-          `/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`,
-        );
+        router.push(`/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`);
       } else {
         setShowResults(true);
-        const answersWithLast = { ...finalUserAnswers, [currentQuestionIndex]: selectedAnswer ?? '' };
+        const answersWithLast = { ...finalUserAnswers, [currentQuestionIndex]: selectedAnswer ?? "" };
         onComplete(score, answersWithLast);
       }
     }

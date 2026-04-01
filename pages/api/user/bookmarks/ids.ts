@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { assertNotBanned } from "../../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../../server/firebase-admin";
 import { storage } from "../../../../server/storage";
+import { listBookmarkIdsForUser } from "../../../../server/services/bookmarks-service";
 
 export default async function handler(
   req: NextApiRequest,
@@ -23,7 +24,7 @@ export default async function handler(
     const userId = decodedToken.uid;
 
     const subjectId = req.query.subjectId as string | undefined;
-    const ids = await storage.getBookmarkedQuestionIds(userId, subjectId);
+    const ids = await listBookmarkIdsForUser(userId, subjectId);
     return res.status(200).json({ success: true, data: ids });
   } catch (error) {
     console.error("Error getting bookmark ids:", error);

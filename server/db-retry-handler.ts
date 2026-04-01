@@ -1,6 +1,5 @@
 
 import { databaseManager } from "./db";
-import type { FirebaseFirestore } from 'firebase-admin/firestore';
 
 /**
  * Provides retry and resilience mechanisms for Firestore operations
@@ -53,12 +52,12 @@ export class DatabaseRetryHandler {
    * Run a transaction with retry logic
    */
   static async withTransaction<T>(
-    operation: (db: FirebaseFirestore.Firestore) => Promise<T>,
+    operation: (db: any) => Promise<T>,
     maxRetries = 2,
   ): Promise<T> {
     return this.withRetry(async () => {
       const db = databaseManager.getDatabase();
-      return db.runTransaction(async (transaction) => {
+      return (db as any).runTransaction(async () => {
         // Pass the db instance to the operation for transaction operations
         return operation(db);
       });

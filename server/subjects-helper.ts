@@ -491,28 +491,15 @@ const SUBJECT_REGISTRY: Record<string, SubjectMeta> = {
   },
 };
 
-const LEGACY_ID_MAP: Record<string, string> = {
-  'macroeconomics': 'APMACRO',
-  'microeconomics': 'APMICRO',
-  'computer-science-principles': 'APCSP',
-  'chemistry': 'APCHEM',
-  'government': 'APGOV',
-  'psychology': 'APPSYCH',
-  'biology': 'APBIO',
-  'calculus-ab': 'APCALCAB',
-  'calculus-bc': 'APCALCBC',
-  'computer-science-a': 'APCSA',
-  'us-history': 'APUSH',
-  'world-history': 'APWH',
-  'european-history': 'APEURO',
-  'english-language': 'APLANG',
-  'english-literature': 'APLIT',
-  'statistics': 'APSTATS',
-  'physics-1': 'APPHYS1',
-  'physics-2': 'APPHYS2',
-  'environmental-science': 'APES',
-  'human-geography': 'APHUG',
-};
+import { CANONICAL_SUBJECTS } from "../lib/ap-subjects";
+
+const LEGACY_ID_MAP: Record<string, string> = CANONICAL_SUBJECTS.reduce(
+  (acc, subj) => {
+    acc[subj.legacyId] = subj.code;
+    return acc;
+  },
+  {} as Record<string, string>,
+);
 
 /** AP CSA Unit 3 (Class Creation): extends/super force U3 */
 const APCSA_UNIT3_CODES = ['U3'];

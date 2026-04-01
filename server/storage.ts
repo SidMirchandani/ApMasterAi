@@ -365,16 +365,12 @@ export class Storage {
   }
 
   async deleteUserSubject(subjectId: string): Promise<void> {
-    console.log("[Storage] deleteUserSubject called with ID:", subjectId);
-
     if (isDevelopmentMode()) {
       // Development mode fallback
       if (!devStorage.userSubjects.has(subjectId)) {
-        console.log("[Storage] Subject not found in dev storage:", subjectId);
         throw new Error('Subject not found');
       }
       devStorage.userSubjects.delete(subjectId);
-      console.log("[Storage] Deleted from dev storage:", subjectId);
       return;
     }
 
@@ -383,9 +379,7 @@ export class Storage {
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
 
-      console.log("[Storage] Attempting to delete from Firestore:", subjectId);
       await db.collection('user_subjects').doc(subjectId).delete();
-      console.log("[Storage] Successfully deleted from Firestore:", subjectId);
     });
   }
 
@@ -526,13 +520,6 @@ export class Storage {
     const db = this.getDbInstance();
     if (!db) throw new Error("Firestore not available");
 
-    console.log("[storage.updateUnitProgress] called", {
-      userId,
-      subjectId,
-      unitId,
-      mcqScore,
-    });
-
     await this.ensureUserSubject(userId, subjectId);
 
     const subjectsRef = db.collection("user_subjects");
@@ -591,14 +578,6 @@ export class Storage {
 
       const updated = await doc.ref.get();
       const updatedData = { id: updated.id, ...updated.data() };
-
-      console.log("[storage.updateUnitProgress] updated", {
-        userId,
-        subjectId,
-        unitId,
-        highestScore,
-        status,
-      });
 
       return updatedData;
     } catch (firestoreError) {
@@ -962,12 +941,6 @@ export class Storage {
     const db = this.getDbInstance();
     if (!db) throw new Error("Firestore not available");
 
-    console.log("[storage.saveUnitQuizResult] called", {
-      userId,
-      subjectId,
-      payload,
-    });
-
     const docId = `unit_${payload.sectionCode}_${Date.now()}`;
     const timestamp = new Date();
 
@@ -1009,13 +982,6 @@ export class Storage {
 
     if (!snapshot.empty) {
       await snapshot.docs[0].ref.collection("unitQuizResults").doc(docId).set(testData);
-      console.log("[storage.saveUnitQuizResult] saved unit quiz result", {
-        userId,
-        subjectId,
-        docId,
-        unitId: payload.unitId,
-        sectionCode: payload.sectionCode,
-      });
     } else {
       console.error("[storage.saveUnitQuizResult] No user_subjects doc found after ensureUserSubject", {
         userId,

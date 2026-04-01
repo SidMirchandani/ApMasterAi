@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { storage } from "../../../server/storage";
+import { getQuestionStatsForUser, backfillScoreSnapshotsForUser } from "../../../server/services/spaced-repetition-service";
 import { getApiCodeForSubject } from "../../../server/subjects-helper";
 import { percentageToAPScore } from "../../../server/ap-subject-config";
 
@@ -25,14 +26,14 @@ export default async function handler(
     const userId = decodedToken.uid;
 
     const subjectId = req.query.subjectId as string | undefined;
-    const stats = await storage.getQuestionStats(userId, subjectId);
+    const stats = await getQuestionStatsForUser(userId, subjectId);
 
     if (stats.totalAttempted >= 25 && subjectId) {
       const subjectCode = getApiCodeForSubject(subjectId);
       const curvePredicted = subjectCode ? percentageToAPScore(stats.accuracy, subjectCode) : null;
       const predicted = curvePredicted ?? (stats.accuracy >= 85 ? 5 : stats.accuracy >= 70 ? 4 : stats.accuracy >= 55 ? 3 : stats.accuracy >= 40 ? 2 : 1);
       try {
-        await storage.backfillScoreSnapshots(userId, subjectId, stats.accuracy, predicted, stats.totalAttempted);
+        await backfillScoreSnapshotsForUser(userId, subjectId, stats.accuracy, predicted, stats.totalAttempted);
       } catch (e) {
         console.error("Failed to save score snapshots:", e);
       }
