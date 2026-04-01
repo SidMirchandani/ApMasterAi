@@ -977,13 +977,6 @@ export default function AdminPage() {
       return;
     }
 
-    if (selectedAction === "fix-image-choices" && !showOnlyMixedPrompts) {
-      toast(
-        "Tip: turn on Mixed Prompts to list questions whose choices mix text and images. Others will be skipped.",
-        { icon: "ℹ️", duration: 4500 },
-      );
-    }
-
     // Clear any previous summary when starting a new run so the next
     // execution owns the sticky row contents.
     setLastExplanationSummary(null);
@@ -1015,9 +1008,6 @@ export default function AdminPage() {
       case "verify-questions":
         endpoint = "/api/admin/verify-questions";
         break;
-      case "fix-image-choices":
-        endpoint = "/api/fixImageChoices";
-        break;
     }
 
     const actionLabel = selectedAction === "explanations" ? "Explanation Generation"
@@ -1026,7 +1016,6 @@ export default function AdminPage() {
       : selectedAction === "study-notes" ? "Study Notes Generation"
       : selectedAction === "re-generate-study-notes" ? "Study Notes Re-Generation"
       : selectedAction === "verify-questions" ? "Question Verification"
-      : selectedAction === "fix-image-choices" ? "Fix Image Choices"
       : "Difficulty Tagging";
 
     setExplanationProgress({
@@ -1718,7 +1707,7 @@ export default function AdminPage() {
                   <SelectTrigger className="w-[250px] bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
                     <SelectValue placeholder="Select Action" />
                   </SelectTrigger>
-                  <SelectContent>
+                <SelectContent>
                     <SelectItem value="fix-prompts">Fix Prompts & Choices</SelectItem>
                     <SelectItem value="explanations">Generate Explanations</SelectItem>
                     <SelectItem value="re-generate-explanations">Re-Generate Explanations</SelectItem>
@@ -1726,7 +1715,6 @@ export default function AdminPage() {
                     <SelectItem value="re-generate-study-notes">Re-Generate Study Notes</SelectItem>
                     <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
                     <SelectItem value="verify-questions">Verify Questions</SelectItem>
-                    <SelectItem value="fix-image-choices">Fix Image Choices</SelectItem>
                   </SelectContent>
                 </Select>
                 {generatingExplanations ? (

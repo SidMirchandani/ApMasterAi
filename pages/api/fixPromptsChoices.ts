@@ -4,6 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 import { getModelName, getGeminiClientOptions } from "../../lib/gemini-models";
 import { requireAdmin } from "../../server/next-api-auth";
+import { flattenChoiceText, fetchImageAsBase64 } from "../../server/explanation-helpers";
 
 export const config = {
   api: {
@@ -12,13 +13,6 @@ export const config = {
   },
   maxDuration: 300,
 };
-
-function flattenChoiceText(blocks: any[]) {
-  return blocks
-    .filter(b => b.type === "text")
-    .map(b => b.value)
-    .join(" ");
-}
 
 function removeDuplicateBlocks(blocks: any[]): any[] {
   if (!blocks || blocks.length === 0) return blocks;
@@ -82,6 +76,92 @@ async function callWithRetry(
     }
   }
   throw lastError;
+}
+
+/** Match client MarkdownWithMath so KaTeX/remark-math do not choke on double-escapes or empty $ $. */
+function normalizeChoiceTextForRender(text: string): string {
+  return String(text)
+    .trim()
+    .replace(/\\\\/g, "\\")
+    .replace(/\$\$\s*\$\$/g, " ")
+    .replace(/\$\s*\$/g, " ");
+}
+
+const LETTERS = ["A", "B", "C", "D", "E"] as const;
+
+async function buildFixPromptsParts(question: any): Promise<any[]> {
+  const parts: any[] = [];
+
+  parts.push({
+    text:
+      `Act as a professional AP Exam Editor.\n` +
+      `Your goal is to \"Pretty Print\" and \"Proofread\" the following question AND convert any math/text that currently appears only in images into accessible text.\n\n` +
+      `1. LAYOUT: Use double newlines (\\n\\n) to separate stimulus, question text, and code blocks.\n` +
+      `2. CLEANUP: Remove scraping artifacts, fix duplicate words (\"the the\"), and correct grammar/punctuation.\n` +
+      `3. STEM: For code or math, format neatly. For math formulas, use LaTeX inside single dollar signs, e.g. $\\frac{2}{9}$ or $x^2\\sqrt{x^3+1}$.\n` +
+      `4. CHOICES: For every answer choice, return a single text string (no images). If the original choice was an image of a formula, transcribe it as LaTeX in $...$; if it was simple text like \"-6\" or \"6\", keep it plain.\n` +
+      `5. ACCESSIBILITY: Do NOT rely on images in your output. All essential content must be in the text you return.\n\n` +
+      `Return ONLY valid JSON (no markdown fences):\n` +
+      `{\n  \"question\": \"...\",\n  \"choices\": { \"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\", \"E\": \"...\" }\n}\n\n` +
+      `Question stem (text):\n`,
+  });
+
+  if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
+    const questionText = flattenChoiceText(question.prompt_blocks);
+    parts.push({ text: `${questionText || "(no text)"}\n\n` });
+    for (const block of question.prompt_blocks) {
+      if (block.type === "image" && block.url) {
+        try {
+          const base64Data = await fetchImageAsBase64(block.url);
+          parts.push({
+            inlineData: { mimeType: "image/png", data: base64Data },
+          });
+          parts.push({ text: "\n(above: image from question stem — for context)\n\n" });
+        } catch (e) {
+          console.error("fixPromptsChoices: stem image fetch failed", e);
+        }
+      }
+    }
+  } else if (typeof question.prompt === "string" && question.prompt.trim()) {
+    parts.push({ text: `${question.prompt}\n\n` });
+  }
+
+  parts.push({ text: "Current answer choices (text only; images will follow):\n" });
+
+  const choices = question.choices ?? {};
+  for (const letter of LETTERS) {
+    const blocks = Array.isArray(choices[letter]) ? choices[letter] : [];
+    const t = flattenChoiceText(blocks) || "(no text)";
+    parts.push({ text: `${letter}. ${t}\n` });
+  }
+  parts.push({ text: "\n" });
+
+  for (const letter of LETTERS) {
+    const blocks = Array.isArray(choices[letter]) ? choices[letter] : [];
+    for (const block of blocks) {
+      if (block.type === "image" && block.url) {
+        try {
+          const base64Data = await fetchImageAsBase64(block.url);
+          parts.push({ text: `Image for answer choice ${letter} only:\n` });
+          parts.push({
+            inlineData: { mimeType: "image/png", data: base64Data },
+          });
+          parts.push({ text: "\n" });
+        } catch (e) {
+          console.error(`fixPromptsChoices: choice ${letter} image fetch failed`, e);
+        }
+      }
+    }
+  }
+
+  parts.push({
+    text:
+      `Now return the JSON object with the \"question\" string and \"choices\" for A–E.\n` +
+      `Remember: any math that was in images must now be in LaTeX $...$ so our app can render it. Plain words/numbers stay plain text.\n` +
+      `JSON:`,
+  });
+
+  return parts;
 }
 
 export default async function handler(
@@ -172,38 +252,12 @@ export default async function handler(
 
       sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Fixing Q${i + 1}/${total}...` });
 
-      let promptText = `Act as a professional AP Exam Editor.
-Your goal is to "Pretty Print" and "Proofread" the following question.
-
-1. LAYOUT: Use double newlines (\\n\\n) to separate stimulus, question text, and code blocks.
-2. CLEANUP: Remove "garbage" characters from scraping, fix "the the" style duplicates, and correct grammar/punctuation.
-3. STEM: If you see Java code or Math, format it with proper indentation and symbols (e.g., x², not x^2).
-4. SUBJECT AGNOSTIC: Treat History quotes, Bio data, and CS code with equal care for readability.
-
-Return ONLY valid JSON:
-{
-  "question": "...",
-  "choices": { "A": "...", "B": "...", "C": "...", "D": "...", "E": "..." }
-}
-
-Question:
-`;
-
-      if (question.prompt_blocks && Array.isArray(question.prompt_blocks)) {
-        const questionText = flattenChoiceText(question.prompt_blocks);
-        promptText += questionText + "\n\n";
-      }
-
-      promptText += "Answer Choices:\n";
-      Object.entries(question.choices ?? {}).forEach(([letter, blocks]: [string, any]) => {
-        const choiceText = flattenChoiceText(blocks);
-        promptText += `${letter}. ${choiceText}\n`;
-      });
+      const promptParts = await buildFixPromptsParts(question);
 
       const result = await callWithRetry(
         () => ai.models.generateContent({
           model: selectedModel,
-          contents: promptText,
+          contents: [{ role: "user", parts: promptParts }],
         }),
         5, 5000,
         (attempt, waitSec) => {
@@ -225,14 +279,17 @@ Question:
       const deduplicatedPromptBlocks = removeDuplicateBlocks(updatedPromptBlocks);
 
       const updatedChoices: any = {};
-      for (const [letter, blocks] of Object.entries(question.choices ?? {})) {
-        const correctedBlocks = (blocks as any[]).map((block: any) => {
-          if (block.type === "text") {
-            return { ...block, value: corrected.choices[letter] || block.value };
-          }
-          return block;
-        });
-        updatedChoices[letter] = removeDuplicateBlocks(correctedBlocks);
+      for (const letter of LETTERS) {
+        const existingBlocks = question.choices?.[letter];
+        if (!existingBlocks) continue;
+        const newText = corrected.choices?.[letter];
+        const finalText =
+          typeof newText === "string" && newText.trim().length > 0
+            ? normalizeChoiceTextForRender(newText)
+            : normalizeChoiceTextForRender(flattenChoiceText(existingBlocks));
+        updatedChoices[letter] = removeDuplicateBlocks([
+          { type: "text", value: finalText },
+        ]);
       }
 
       const existingTags = question.tags || [];
