@@ -107,6 +107,13 @@ function normalizeChoiceTextForRender(text: string): string {
 
 const LETTERS = ["A", "B", "C", "D", "E"] as const;
 
+/** Heuristic: does the stem text already contain non-trivial math markup? */
+function hasInlineMathOrLatex(text: string): boolean {
+  const t = text || "";
+  if (/\$[^$]+\$/.test(t)) return true;
+  return looksLikeLatexServer(t);
+}
+
 async function buildFixPromptsParts(question: any): Promise<any[]> {
   const parts: any[] = [];
 
@@ -118,9 +125,11 @@ async function buildFixPromptsParts(question: any): Promise<any[]> {
       `2. CLEANUP: Remove scraping artifacts, fix duplicate words (\"the the\"), and correct grammar/punctuation.\n` +
       `3. STEM: For code or math, format neatly. For math formulas, use LaTeX inside single dollar signs, e.g. $\\frac{2}{9}$ or $x^2\\sqrt{x^3+1}$.\n` +
       `4. CHOICES: For every answer choice, return a single text string (no images). If the original choice was an image of a formula, transcribe it as LaTeX in $...$; if it was simple text like \"-6\" or \"6\", keep it plain.\n` +
-      `5. ACCESSIBILITY: Do NOT rely on images in your output. All essential content must be in the text you return.\n\n` +
-      `Return ONLY valid JSON (no markdown fences):\n` +
-      `{\n  \"question\": \"...\",\n  \"choices\": { \"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\", \"E\": \"...\" }\n}\n\n` +
+      `5. ACCESSIBILITY: Do NOT rely on images in your output. All essential content must be in the text you return.\n` +
+      `6. PROMPT IMAGES: If an image is just a simple formula/number/inline expression that you fully transcribe into the \"question\" text, treat it as redundant and we will safely remove it.\n` +
+      `   Only mark images to keep when they carry structure that is hard to represent as plain text (e.g. large tables, diagrams, complex annotated graphs).\n\n` +
+      `Return ONLY valid JSON (no markdown fences). Shape:\n` +
+      `{\n  \"question\": \"...\",              // cleaned, student-ready stem\n  \"choices\": { \"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\", \"E\": \"...\" },\n  \"keepPromptImages\": true | false   // true ONLY when prompt images cannot be safely replaced by your text\n}\n\n` +
       `Question stem (text):\n`,
   });
 
@@ -288,16 +297,25 @@ export default async function handler(
       
       const corrected = JSON.parse(responseText);
 
-      const imageBlocks = (question.prompt_blocks || []).filter((b: any) => b.type === "image");
+      const rawStem =
+        typeof corrected.question === "string" && corrected.question.trim().length > 0
+          ? corrected.question
+          : flattenChoiceText(question.prompt_blocks || []);
+      const normalizedStem = normalizeChoiceTextForRender(rawStem);
+
+      const keepPromptImagesFlag = !!corrected.keepPromptImages;
+      const hasMathInText = hasInlineMathOrLatex(normalizedStem);
+      // If the model has successfully expressed the math in text, treat any simple
+      // formula images as redundant and drop them, even if keepPromptImages=true.
+      const shouldKeepPromptImages = keepPromptImagesFlag && !hasMathInText;
+      const imageBlocks = shouldKeepPromptImages
+        ? (question.prompt_blocks || []).filter((b: any) => b.type === "image")
+        : [];
+
       const updatedPromptBlocks = [
         {
           type: "text",
-          // Prefer model-cleaned question text; fall back to original flattened stem.
-          value: normalizeChoiceTextForRender(
-            typeof corrected.question === "string" && corrected.question.trim().length > 0
-              ? corrected.question
-              : flattenChoiceText(question.prompt_blocks || []),
-          ),
+          value: normalizedStem,
         },
         ...imageBlocks,
       ];
