@@ -83,7 +83,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .get();
   if ((existingVtSnap.data().count ?? 0) > 0) {
     return res.status(400).json({
-      error: "This subject already has VT questions. Remove VT questions first if you need to import again.",
+      error:
+        "This subject already has GenAI Questions. Remove GenAI Questions first if you need to generate again.",
     });
   }
 
@@ -113,13 +114,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `Starting VT import for ${subjectCode}...`,
+      message: `Starting question generation for ${subjectCode}...`,
     });
 
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `Fetching VT question data...`,
+      message: `Fetching GenAI question data...`,
     });
 
     const { questions, linksCrawled, rawQuestionsFound } = await scrapeVarsityForSubject(
@@ -144,7 +145,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `Fetch phase done: ${linksCrawled} requests, ${rawQuestionsFound} VT questions received, ${questions.length} after filtering. Loading fingerprints...`,
+      message: `Fetch phase done: ${linksCrawled} requests, ${rawQuestionsFound} raw questions received, ${questions.length} after filtering. Loading fingerprints...`,
       linksCrawled,
       rawQuestionsFound,
       current: 0,
@@ -158,7 +159,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!questions.length) {
       sendEvent({
         type: "error",
-        message: `No VT questions found for subject ${subjectCode}`,
+        message: `No GenAI source questions found for subject ${subjectCode}`,
         linksCrawled,
         rawQuestionsFound,
       });
@@ -208,7 +209,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               errors,
               linksCrawled,
               rawQuestionsFound,
-              message: "Writing VT questions...",
+              message: "Writing GenAI Questions...",
             });
             await new Promise((resolve) => setTimeout(resolve, 200));
             continue;
@@ -264,7 +265,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 total: questions.length,
                 linksCrawled,
                 rawQuestionsFound,
-                message: "Writing VT questions...",
+                message: "Writing GenAI Questions...",
               });
             } catch (err: any) {
               errors++;
@@ -290,7 +291,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         errors,
         linksCrawled,
         rawQuestionsFound,
-        message: "Writing VT questions...",
+        message: "Writing GenAI Questions...",
       });
 
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -313,12 +314,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       linksCrawled,
       rawQuestionsFound,
       newUniqueQuestionsAdded: imported,
-      message: `Done. VT requests: ${linksCrawled}. Received: ${rawQuestionsFound}. Duplicates skipped: ${duplicatesSkipped}. New unique: ${imported}. Skipped invalid: ${skipped}. Errors: ${errors}.`,
+        message: `Done. Fetch requests: ${linksCrawled}. Received: ${rawQuestionsFound}. Duplicates skipped: ${duplicatesSkipped}. New unique: ${imported}. Skipped invalid: ${skipped}. Errors: ${errors}.`,
     });
   } catch (err: any) {
     sendEvent({
       type: "error",
-      message: err.message || "VT import failed",
+      message: err.message || "Question generation failed",
     });
   } finally {
     res.end();

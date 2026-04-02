@@ -593,12 +593,12 @@ export async function scrapeVarsityForSubject(
 ): Promise<VarsityScrapeResult> {
   const cfg = getVarsitySubjectConfig(subjectCode);
   if (!cfg) {
-    throw new Error(`Varsity subject config not found for ${subjectCode}`);
+    throw new Error(`Content config not found for subject ${subjectCode}`);
   }
 
   const slugs = getVarsitySlugsFromPracticeUrl(cfg.practiceUrl);
   if (!slugs) {
-    throw new Error(`Could not parse Varsity slugs from ${cfg.practiceUrl}`);
+    throw new Error(`Could not parse practice URLs from ${cfg.practiceUrl}`);
   }
 
   const { pathSlug, underscoreSlug } = slugs;
@@ -703,7 +703,7 @@ export async function scrapeVarsityForSubject(
       onProgress({
         linksCrawled,
         rawQuestionsFound,
-        message: `Fetching VT content… ${linksCrawled} requests, ${rawQuestionsFound} questions received so far.`,
+        message: `Fetching content… ${linksCrawled} requests, ${rawQuestionsFound} questions received so far.`,
       });
     }
     if (!rawQuestions.length) continue;

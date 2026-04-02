@@ -86,7 +86,7 @@ type Question = {
   course?: string | null;
   chapter?: string | null;
   difficulty?: string | null;
-  /** Content origin, e.g. VT importer sets `"VT"`. */
+  /** Content origin; GenAI library pipeline stores `"VT"`. */
   source?: string | null;
   // Legacy fields for backward compatibility
   prompt?: string;
@@ -408,7 +408,7 @@ export default function AdminPage() {
   >({});
   const [loadingStatus, setLoadingStatus] = useState(false);
 
-  // VT question import (admin Content Library)
+  // GenAI question generation / content library import (admin Content Library)
   const [varsitySubjectCode, setVarsitySubjectCode] = useState("");
   const [addingVarsitySubject, setAddingVarsitySubject] = useState(false);
   const [varsitySubjectProgress, setVarsitySubjectProgress] = useState<{
@@ -508,7 +508,9 @@ export default function AdminPage() {
   async function startVarsityAddSubject() {
     if (!token || !varsitySubjectCode) return;
     if ((subjectStatus[varsitySubjectCode]?.varsityCount ?? 0) > 0) {
-      toast.error("This subject already has VT questions. Remove VT questions first to import again.");
+      toast.error(
+        "This subject already has GenAI Questions. Remove those questions first to generate again.",
+      );
       return;
     }
     setAddingVarsitySubject(true);
@@ -522,7 +524,7 @@ export default function AdminPage() {
       duplicatesSkipped: 0,
       linksCrawled: 0,
       rawQuestionsFound: 0,
-      message: `Starting import for ${subjectLabel}...`,
+      message: `Starting question generation for ${subjectLabel}...`,
       phase: "scraping",
     });
 
@@ -542,7 +544,7 @@ export default function AdminPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err.error || "Failed to import questions for this subject");
+        toast.error(err.error || "Failed to generate questions for this subject");
         setAddingVarsitySubject(false);
         return;
       }
@@ -590,7 +592,7 @@ export default function AdminPage() {
               return;
             }
             if (event.type === "error") {
-              const msg = event.message || "Import failed";
+              const msg = event.message || "Generation failed";
               setVarsitySubjectProgress((prev) => ({
                 current: prev?.current || 0,
                 total: prev?.total || 0,
@@ -611,7 +613,7 @@ export default function AdminPage() {
       }
     } catch (err: any) {
       if (err.name !== "AbortError") {
-        toast.error("Import failed: " + err.message);
+        toast.error("Generation failed: " + err.message);
       }
     } finally {
       setAddingVarsitySubject(false);
@@ -622,7 +624,7 @@ export default function AdminPage() {
   function stopVarsityAddSubject() {
     varsitySubjectAbortRef.current?.abort();
     setAddingVarsitySubject(false);
-    toast("VT import cancelled");
+    toast("Question generation cancelled");
   }
 
   const [removingSubject, setRemovingSubject] = useState<string | null>(null);
@@ -652,7 +654,11 @@ export default function AdminPage() {
       if (res.ok) {
         const data = await res.json();
         const scopeLabel =
-          subjectRemoveScope === "all" ? "ALL" : subjectRemoveScope === "vt" ? "VT" : "NON-VT";
+          subjectRemoveScope === "all"
+            ? "ALL"
+            : subjectRemoveScope === "vt"
+              ? "GenAI Questions"
+              : "non–GenAI Questions";
         toast.success(`Removed ${data.deleted} question(s) for ${code} (${scopeLabel})`);
         loadSubjectStatus();
         setSubjectRemoveOpen(false);
@@ -1369,7 +1375,9 @@ export default function AdminPage() {
                   Subjects Overview
                 </CardTitle>
                 <CardDescription className="dark:text-slate-400">
-                  {loadingStatus ? "Loading..." : `${alreadyAdded.length} of ${allApSubjectsRef.length} subjects imported`}
+                  {loadingStatus
+                    ? "Loading..."
+                    : `${alreadyAdded.length} of ${allApSubjectsRef.length} subjects have questions`}
                 </CardDescription>
               </div>
               <div className="text-right">
@@ -1424,7 +1432,7 @@ export default function AdminPage() {
                           {count.toLocaleString()}
                         </div>
                       ) : (
-                        <div className="text-xs text-slate-400 dark:text-slate-500 italic">Not imported</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-500 italic">No questions yet</div>
                       )}
                     </div>
                   );
@@ -1434,15 +1442,15 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* Import VT questions */}
+        {/* Generate Questions (GenAI library) */}
         <Card className="border-2 border-dashed border-indigo-500/30 dark:bg-slate-900/60 dark:border-indigo-600/30 rounded-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 dark:text-white">
               <Zap className="w-5 h-5 text-indigo-500" />
-              Import VT questions
+              Generate Questions
             </CardTitle>
             <CardDescription className="dark:text-slate-400">
-              Each subject can be imported once. New questions are tagged with source VT. Subjects that already have VT questions are not listed.
+              Each subject can be generated once. New rows are stored as GenAI Questions. Subjects that already have GenAI Questions are not listed.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1456,8 +1464,8 @@ export default function AdminPage() {
                         loadingStatus
                           ? "Loading subjects…"
                           : availableToAddVarsity.length === 0
-                            ? "All subjects already have VT questions"
-                            : "Choose a subject to import"
+                            ? "All subjects already have GenAI Questions"
+                            : "Choose a subject to generate"
                       }
                     />
                   </SelectTrigger>
@@ -1473,7 +1481,7 @@ export default function AdminPage() {
               {addingVarsitySubject ? (
                 <Button onClick={stopVarsityAddSubject} variant="destructive" className="min-w-[140px]">
                   <Square className="w-4 h-4 mr-2" />
-                  Stop VT import
+                  Stop generation
                 </Button>
               ) : (
                 <Button
@@ -1486,7 +1494,7 @@ export default function AdminPage() {
                   className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white min-w-[140px]"
                 >
                   <Play className="w-4 h-4 mr-2" />
-                  Import VT
+                  Generate
                 </Button>
               )}
             </div>
@@ -1504,8 +1512,12 @@ export default function AdminPage() {
                   className="h-2"
                 />
                 <div className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="text-slate-600 dark:text-slate-300">VT requests: {varsitySubjectProgress.linksCrawled}</span>
-                  <span className="text-slate-600 dark:text-slate-300">VT questions received: {varsitySubjectProgress.rawQuestionsFound}</span>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    Fetch requests: {varsitySubjectProgress.linksCrawled}
+                  </span>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    Raw questions received: {varsitySubjectProgress.rawQuestionsFound}
+                  </span>
                   <span className="text-amber-600 dark:text-amber-400">Dupes skipped: {varsitySubjectProgress.duplicatesSkipped}</span>
                   <span className="text-green-600 font-medium">New unique: {varsitySubjectProgress.imported}</span>
                   <span className="text-amber-500">Invalid skipped: {varsitySubjectProgress.skipped}</span>
@@ -1563,8 +1575,8 @@ export default function AdminPage() {
                       className="mt-0.5"
                     />
                     <Label htmlFor="subject-remove-non-vt" className="text-sm font-normal text-slate-300 cursor-pointer leading-snug">
-                      <span className="font-semibold text-slate-100">NON-VT</span> — remove only questions where{" "}
-                      <code className="text-xs bg-slate-800 px-1 rounded">source ≠ VT</code> (missing or other source)
+                      <span className="font-semibold text-slate-100">Non–GenAI Questions</span> — remove only questions that are{" "}
+                      not from the GenAI Questions library (other or missing source)
                     </Label>
                   </div>
                   <div className="flex items-start gap-3">
@@ -1577,8 +1589,8 @@ export default function AdminPage() {
                       className="mt-0.5"
                     />
                     <Label htmlFor="subject-remove-vt" className="text-sm font-normal text-slate-300 cursor-pointer leading-snug">
-                      <span className="font-semibold text-slate-100">VT</span> — remove only questions with{" "}
-                      <code className="text-xs bg-slate-800 px-1 rounded">source = VT</code>
+                      <span className="font-semibold text-slate-100">GenAI Questions</span>
+                      {" — remove only questions created by the Generate Questions flow."}
                     </Label>
                   </div>
                 </div>
