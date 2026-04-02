@@ -1019,6 +1019,8 @@ export default function AdminPage() {
     let questionIds = Array.from(selectedQuestions);
 
     // For "Generate Explanations", only send questions that are actually missing explanations.
+    // The dedicated "Re-Generate Explanations (overwrite)" action intentionally skips this
+    // filter so it will overwrite any existing explanations.
     if (selectedAction === "explanations") {
       const byId = new Map(items.map((q) => [q.id, q]));
       const missingExplanationIds = questionIds.filter((id) => {
@@ -1040,6 +1042,10 @@ export default function AdminPage() {
 
     switch (selectedAction) {
       case "explanations":
+        endpoint = "/api/generateExplanations";
+        break;
+      case "re-generate-explanations-fresh":
+        // Overwrite any existing explanations using the same endpoint.
         endpoint = "/api/generateExplanations";
         break;
       case "re-generate-explanations":
@@ -1066,6 +1072,7 @@ export default function AdminPage() {
     }
 
     const actionLabel = selectedAction === "explanations" ? "Explanation Generation"
+      : selectedAction === "re-generate-explanations-fresh" ? "Explanation Re-Generation (overwrite)"
       : selectedAction === "re-generate-explanations" ? "Explanation Reformatting"
       : selectedAction === "fix-prompts" ? "Prompt & Choices Pretty Print"
       : selectedAction === "fix-mixed-media-prompts" ? "Mixed Media Prompt Fixing"
@@ -1624,6 +1631,9 @@ export default function AdminPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="explanations">Generate Explanations</SelectItem>
+                    <SelectItem value="re-generate-explanations-fresh">
+                      Re-Generate Explanations (overwrite)
+                    </SelectItem>
                     <SelectItem value="re-generate-explanations">Reformat Existing Explanations</SelectItem>
                     <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
                     <SelectItem value="verify-questions">Verify Questions</SelectItem>
@@ -1660,9 +1670,10 @@ export default function AdminPage() {
                 status &&
                 (typeof status.passed === "number"
                   ? status.passed +
-                    (status.flagged ?? 0) +
                     (status.verifyFailed ?? 0) +
-                    status.skipped
+                    (status.flagged ?? 0) +
+                    status.skipped +
+                    status.failed
                   : status.updated + status.skipped + status.failed);
 
               const percent =
@@ -1712,11 +1723,8 @@ export default function AdminPage() {
                                 <span className="text-green-700 dark:text-green-400 font-medium">
                                   Pass: {status.passed}
                                 </span>
-                                <span className="text-amber-700 dark:text-amber-400 font-medium">
-                                  Review: {status.flagged ?? 0}
-                                </span>
                                 <span className="text-red-700 dark:text-red-400 font-medium">
-                                  Fail: {status.verifyFailed ?? 0}
+                                  Fail: {(status.verifyFailed ?? 0) + (status.flagged ?? 0)}
                                 </span>
                               </>
                             )}
