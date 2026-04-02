@@ -1587,44 +1587,6 @@ export default function AdminPage() {
                   Verification Failed
                 </Label>
               </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="verification-incomplete-only"
-                  checked={showOnlyVerificationIncomplete}
-                  onCheckedChange={(v) => setShowOnlyVerificationIncomplete(!!v)}
-                />
-                <Label
-                  htmlFor="verification-incomplete-only"
-                  className="text-sm font-medium cursor-pointer dark:text-slate-300"
-                  title="Questions where verification failed because the stem looks incomplete or missing required chart/graph/cartoon/paragraph content."
-                >
-                  Incomplete Prompt
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="mixed-prompts-only"
-                  checked={showOnlyMixedPrompts}
-                  onCheckedChange={(v) => {
-                    const on = !!v;
-                    setShowOnlyMixedPrompts(on);
-                    if (on) {
-                      setMixedPromptsPinnedIds(
-                        items.filter((q) => hasMixedTextAndImageChoices(q.choices)).map((q) => q.id),
-                      );
-                    } else {
-                      setMixedPromptsPinnedIds(null);
-                    }
-                  }}
-                />
-                <Label
-                  htmlFor="mixed-prompts-only"
-                  className="text-sm font-medium cursor-pointer dark:text-slate-300"
-                  title="Some choices are text and others are images. Who is listed updates when you Search or toggle this off/on — not after each AI refresh, so fixed rows stay visible."
-                >
-                  Mixed Prompts
-                </Label>
-              </div>
             </div>
           </CardContent>
         </Card>
