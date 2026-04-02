@@ -628,7 +628,13 @@ export default function AdminPage() {
 
   async function removeSubject(code: string) {
     if (!token) return;
-    if (!confirm(`Remove all questions for ${code}? This cannot be undone.`)) return;
+    const confirmation = prompt(
+      `Type DELETE to confirm removing ALL questions for ${code}.\n\nThis action is PERMANENT and cannot be undone.`,
+    );
+    if (confirmation !== "DELETE") {
+      toast("Subject removal cancelled");
+      return;
+    }
     setRemovingSubject(code);
     try {
       const res = await fetch("/api/admin/questions/delete-subject", {
