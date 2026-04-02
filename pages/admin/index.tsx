@@ -141,7 +141,7 @@ function buildLastVerificationForStatus(
 
 function verificationStatusSelectValue(q: Question): AdminVerifyStatus | undefined {
   const raw = q.lastVerification?.status;
-  if (raw === "pass" || raw === "needs_review" || raw === "fail") return raw;
+  if (raw === "pass" || raw === "fail") return raw;
   if (raw === "error") return "fail";
   return undefined;
 }
@@ -163,7 +163,7 @@ function VerificationStatusSelect({
       <Select
         value={selectValue}
         onValueChange={(val) => {
-          if (val !== "pass" && val !== "needs_review" && val !== "fail") return;
+          if (val !== "pass" && val !== "fail") return;
           void onSave(q.id, {
             lastVerification: buildLastVerificationForStatus(q, val),
           });
@@ -175,9 +175,6 @@ function VerificationStatusSelect({
         <SelectContent>
           <SelectItem value="pass" className="text-xs">
             OK
-          </SelectItem>
-          <SelectItem value="needs_review" className="text-xs">
-            Review
           </SelectItem>
           <SelectItem value="fail" className="text-xs">
             Fail
@@ -306,7 +303,6 @@ export default function AdminPage() {
   const [showOnlyErrorReports, setShowOnlyErrorReports] = useState(false);
   const [showOnlyUnverified, setShowOnlyUnverified] = useState(false);
   const [showOnlyVerificationFailed, setShowOnlyVerificationFailed] = useState(false);
-  const [showOnlyVerificationReview, setShowOnlyVerificationReview] = useState(false);
   const [showOnlyVerificationIncomplete, setShowOnlyVerificationIncomplete] = useState(false);
   /** Answer choices mix plain text and image (formula) choices — for Fix image choices workflow. */
   const [showOnlyMixedPrompts, setShowOnlyMixedPrompts] = useState(false);
@@ -315,6 +311,7 @@ export default function AdminPage() {
    * so rows stay visible after Fix Image Choices until you search/toggle again.
    */
   const [mixedPromptsPinnedIds, setMixedPromptsPinnedIds] = useState<string[] | null>(null);
+  // Bulk delete dialog/button removed from UI; keep flags for potential future reuse.
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
@@ -352,9 +349,6 @@ export default function AdminPage() {
           issues.includes("incomplete question");
       });
     }
-    if (showOnlyVerificationReview) {
-      list = list.filter((q) => q.lastVerification?.status === "needs_review");
-    }
     if (showOnlyMixedPrompts && mixedPromptsPinnedIds !== null) {
       const pin = new Set(mixedPromptsPinnedIds);
       list = list.filter((q) => pin.has(q.id));
@@ -366,7 +360,6 @@ export default function AdminPage() {
     showOnlyErrorReports,
     showOnlyUnverified,
     showOnlyVerificationFailed,
-    showOnlyVerificationReview,
     showOnlyVerificationIncomplete,
     showOnlyMixedPrompts,
     mixedPromptsPinnedIds,
@@ -440,6 +433,9 @@ export default function AdminPage() {
     imported: number;
     skipped: number;
     errors: number;
+    duplicatesSkipped: number;
+    linksCrawled: number;
+    rawQuestionsFound: number;
     message: string;
     phase: string;
   } | null>(null);
@@ -631,6 +627,9 @@ export default function AdminPage() {
       imported: 0,
       skipped: 0,
       errors: 0,
+      duplicatesSkipped: 0,
+      linksCrawled: 0,
+      rawQuestionsFound: 0,
       message: `Starting Varsity Tutors import for ${subjectLabel}...`,
       phase: "scraping",
     });
@@ -685,6 +684,9 @@ export default function AdminPage() {
                 imported: event.imported || 0,
                 skipped: event.skipped || 0,
                 errors: event.errors || 0,
+                duplicatesSkipped: event.duplicatesSkipped ?? 0,
+                linksCrawled: event.linksCrawled ?? 0,
+                rawQuestionsFound: event.rawQuestionsFound ?? 0,
                 message: event.message || "",
                 phase: event.phase || "scraping",
               });
@@ -703,6 +705,9 @@ export default function AdminPage() {
                 imported: prev?.imported || 0,
                 skipped: prev?.skipped || 0,
                 errors: (prev?.errors || 0) + 1,
+                duplicatesSkipped: prev?.duplicatesSkipped ?? 0,
+                linksCrawled: prev?.linksCrawled ?? 0,
+                rawQuestionsFound: prev?.rawQuestionsFound ?? 0,
                 message: msg,
                 phase: prev?.phase || "scraping",
               }));
@@ -1060,38 +1065,22 @@ export default function AdminPage() {
     await updatePromise.then(() => fetchFiltered()).catch(() => {});
   }
 
+  // Bulk delete helper retained, but UI entrypoints removed so this is not currently reachable.
   async function bulkDeleteDisplayedQuestions() {
     if (!token) return;
     const ids = displayedItems.map((q) => q.id);
     if (ids.length === 0) return;
-    setBulkDeleting(true);
     try {
-      const res = await fetch("/api/admin/questions/bulk-delete", {
+      await fetch("/api/admin/questions/bulk-delete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ ids }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error((data as { error?: string }).error || "Bulk delete failed");
-      }
-      const deleted = (data as { deleted?: number }).deleted ?? ids.length;
-      const deletedSet = new Set(ids);
-      setItems((prev) => prev.filter((q) => !deletedSet.has(q.id)));
-      setSelectedQuestions((prev) => {
-        const next = new Set(prev);
-        ids.forEach((id) => next.delete(id));
-        return next;
-      });
-      toast.success(`Deleted ${deleted} question(s).`);
-      setBulkDeleteDialogOpen(false);
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Bulk delete failed");
-    } finally {
-      setBulkDeleting(false);
+      }).catch(() => {});
+    } catch {
+      // no-op
     }
   }
 
@@ -1162,7 +1151,7 @@ export default function AdminPage() {
     }
 
     const actionLabel = selectedAction === "explanations" ? "Explanation Generation"
-      : selectedAction === "re-generate-explanations" ? "Explanation Re-Generation"
+      : selectedAction === "re-generate-explanations" ? "Explanation Reformatting"
       : selectedAction === "fix-prompts" ? "Prompt & Choices Pretty Print"
       : selectedAction === "fix-mixed-media-prompts" ? "Mixed Media Prompt Fixing"
       : selectedAction === "study-notes" ? "Study Notes Generation"
@@ -1670,132 +1659,13 @@ export default function AdminPage() {
                   value={(varsitySubjectProgress.current / Math.max(varsitySubjectProgress.total, 1)) * 100}
                   className="h-2"
                 />
-                <div className="flex gap-4 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="text-green-600 font-medium">Imported: {varsitySubjectProgress.imported}</span>
-                  <span className="text-amber-500">Skipped: {varsitySubjectProgress.skipped}</span>
+                <div className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="text-slate-600 dark:text-slate-300">Links crawled: {varsitySubjectProgress.linksCrawled}</span>
+                  <span className="text-slate-600 dark:text-slate-300">Raw in payload: {varsitySubjectProgress.rawQuestionsFound}</span>
+                  <span className="text-amber-600 dark:text-amber-400">Dupes skipped: {varsitySubjectProgress.duplicatesSkipped}</span>
+                  <span className="text-green-600 font-medium">New unique: {varsitySubjectProgress.imported}</span>
+                  <span className="text-amber-500">Invalid skipped: {varsitySubjectProgress.skipped}</span>
                   <span className="text-red-600">Errors: {varsitySubjectProgress.errors}</span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Image Migration Card */}
-        <Card className="border-2 border-dashed border-amber-300 dark:border-amber-600 dark:bg-slate-900/60">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 dark:text-white">
-              <AlertCircle className="w-5 h-5 text-amber-500" />
-              Migrate Firebase Storage Images
-            </CardTitle>
-            <CardDescription className="dark:text-slate-400">
-              Make Firebase Storage images publicly accessible so they load without the proxy. Or migrate external images (e.g. CrackAP) into Firebase Storage so all subjects store images like APMICRO.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3 items-end">
-              <div className="flex-1">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Subject (optional)</label>
-                <Select
-                  value={migrateSubjectCode}
-                  onValueChange={setMigrateSubjectCode}
-                  disabled={migratingImages || migratingExternalImages}
-                >
-                  <SelectTrigger className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
-                    <SelectValue placeholder="All subjects with Firebase images" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Subjects</SelectItem>
-                    {allApSubjectsRef
-                      .slice()
-                      .sort((a, b) => a.label.localeCompare(b.label))
-                      .map((s) => (
-                        <SelectItem key={s.code} value={s.code}>
-                          {s.label}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {migratingImages ? (
-                <Button onClick={stopImageMigration} variant="destructive" className="min-w-[160px]">
-                  <Square className="w-4 h-4 mr-2" />
-                  Stop
-                </Button>
-              ) : (
-                <Button
-                  onClick={startImageMigration}
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white min-w-[160px] rounded-xl transition-all duration-150 ease-out"
-                  disabled={migratingExternalImages}
-                >
-                  <Zap className="w-4 h-4 mr-2" />
-                  Make Images Public
-                </Button>
-              )}
-              {migratingExternalImages ? (
-                <Button onClick={stopExternalImageMigration} variant="destructive" className="min-w-[200px]">
-                  <Square className="w-4 h-4 mr-2" />
-                  Stop
-                </Button>
-              ) : (
-                <Button
-                  onClick={startExternalImageMigration}
-                  variant="secondary"
-                  className="min-w-[200px] border border-blue-400 text-blue-700 dark:text-blue-300 dark:border-blue-500 rounded-xl"
-                  disabled={migratingImages}
-                >
-                  <Zap className="w-4 h-4 mr-2" />
-                  Migrate External to Firebase
-                </Button>
-              )}
-            </div>
-
-            {migrateProgress && (
-              <div className="space-y-3 pt-2">
-                <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
-                  <span>{migrateProgress.message}</span>
-                  {migrateProgress.total > 0 && (
-                    <span>{Math.round((migrateProgress.current / Math.max(migrateProgress.total, 1)) * 100)}%</span>
-                  )}
-                </div>
-                <Progress
-                  value={migrateProgress.total > 0 ? (migrateProgress.current / Math.max(migrateProgress.total, 1)) * 100 : 0}
-                  className="h-2"
-                />
-                <div className="flex gap-4 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="text-green-600 font-medium">Made Public: {migrateProgress.made_public}</span>
-                  <span className="text-slate-500">Skipped (already public): {migrateProgress.skipped}</span>
-                  <span className="text-red-600">Failed: {migrateProgress.failed}</span>
-                </div>
-              </div>
-            )}
-
-            {migrateExternalProgress && (
-              <div className="space-y-3 pt-2 border-t border-amber-200 dark:border-amber-800">
-                <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
-                  <span>{migrateExternalProgress.message}</span>
-                  {migrateExternalProgress.total > 0 && (
-                    <span>
-                      {Math.round(
-                        (migrateExternalProgress.current / Math.max(migrateExternalProgress.total, 1)) * 100
-                      )}
-                      %
-                    </span>
-                  )}
-                </div>
-                <Progress
-                  value={
-                    migrateExternalProgress.total > 0
-                      ? (migrateExternalProgress.current / Math.max(migrateExternalProgress.total, 1)) * 100
-                      : 0
-                  }
-                  className="h-2"
-                />
-                <div className="flex gap-4 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="text-green-600 font-medium">
-                    Migrated: {migrateExternalProgress.images_migrated}
-                  </span>
-                  <span>Questions: {migrateExternalProgress.questions_processed}</span>
-                  <span className="text-red-600">Failed: {migrateExternalProgress.failed}</span>
                 </div>
               </div>
             )}
@@ -1899,16 +1769,6 @@ export default function AdminPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox
-                  id="verification-review-only"
-                  checked={showOnlyVerificationReview}
-                  onCheckedChange={(v) => setShowOnlyVerificationReview(!!v)}
-                />
-                <Label htmlFor="verification-review-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
-                  Verification Review
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
                   id="verification-incomplete-only"
                   checked={showOnlyVerificationIncomplete}
                   onCheckedChange={(v) => setShowOnlyVerificationIncomplete(!!v)}
@@ -1918,7 +1778,7 @@ export default function AdminPage() {
                   className="text-sm font-medium cursor-pointer dark:text-slate-300"
                   title="Questions where verification failed because the stem looks incomplete or missing required chart/graph/cartoon/paragraph content."
                 >
-                  Verification Failed - Incomplete
+                  Incomplete Prompt
                 </Label>
               </div>
               <div className="flex items-center gap-2">
@@ -1958,25 +1818,13 @@ export default function AdminPage() {
                   <CardTitle className="dark:text-white">
                     Questions ({displayedItems.length})
                   </CardTitle>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="shrink-0"
-                    disabled={displayedItems.length === 0 || !token || bulkDeleting}
-                    onClick={() => setBulkDeleteDialogOpen(true)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-1.5" />
-                    Bulk Delete
-                  </Button>
                 </div>
                 <CardDescription>
                   {showOnlyMissingExplanation && items.length > 0 && "Filter: No Explaination. "}
                   {showOnlyErrorReports && items.length > 0 && "Filter: Error Reported. "}
                   {showOnlyUnverified && items.length > 0 && "Filter: Un-Verified. "}
                   {showOnlyVerificationFailed && items.length > 0 && "Filter: Verification Failed. "}
-                  {showOnlyVerificationIncomplete && items.length > 0 && "Filter: Verification Failed - Incomplete. "}
-                  {showOnlyVerificationReview && items.length > 0 && "Filter: Verification Review. "}
+                  {showOnlyVerificationIncomplete && items.length > 0 && "Filter: Incomplete Prompt. "}
                   {showOnlyMixedPrompts && items.length > 0 && "Filter: Mixed Prompts (text + image choices). "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
                 </CardDescription>
@@ -1990,7 +1838,7 @@ export default function AdminPage() {
                     <SelectItem value="fix-prompts">Fix Prompts & Choices</SelectItem>
                     <SelectItem value="fix-mixed-media-prompts">Fix Mixed Media Prompts</SelectItem>
                     <SelectItem value="explanations">Generate Explanations</SelectItem>
-                    <SelectItem value="re-generate-explanations">Re-Generate Explanations</SelectItem>
+                    <SelectItem value="re-generate-explanations">Reformat Existing Explanations</SelectItem>
                     <SelectItem value="study-notes">Generate Study Notes</SelectItem>
                     <SelectItem value="re-generate-study-notes">Re-Generate Study Notes</SelectItem>
                     <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
@@ -2017,38 +1865,7 @@ export default function AdminPage() {
               </div>
             </div>
           </CardHeader>
-          <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={(open) => !bulkDeleting && setBulkDeleteDialogOpen(open)}>
-            <AlertDialogContent className="dark:bg-slate-900 dark:border-slate-700">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="dark:text-white">Delete questions in this view?</AlertDialogTitle>
-                <AlertDialogDescription className="dark:text-slate-400">
-                  This will permanently delete {displayedItems.length} question
-                  {displayedItems.length !== 1 ? "s" : ""} currently shown in the table (after your subject, section, and
-                  filter settings). This cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={bulkDeleting} className="dark:border-slate-600 dark:text-slate-200">
-                  Cancel
-                </AlertDialogCancel>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={bulkDeleting || displayedItems.length === 0}
-                  onClick={() => void bulkDeleteDisplayedQuestions()}
-                >
-                  {bulkDeleting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Deleting…
-                    </>
-                  ) : (
-                    `Delete ${displayedItems.length} question${displayedItems.length !== 1 ? "s" : ""}`
-                  )}
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          {/* Bulk delete dialog removed from UI */}
           <CardContent>
             {/* Sticky status row above the table. Always rendered with a fixed
                 height so the page layout does not jump when progress appears
@@ -2233,75 +2050,7 @@ function Row({
   onSave: (id: string, patch: Partial<Question>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
-  const [edit, setEdit] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [form, setForm] = useState(() => {
-    const choices = extractChoicesData(q);
-    return {
-      subject_code: q.subject_code || "",
-      section_code: q.section_code || "",
-      prompt: extractPromptText(q),
-      choiceA: choices.A,
-      choiceB: choices.B,
-      choiceC: choices.C,
-      choiceD: choices.D,
-      choiceE: choices.E,
-      answerIndex: q.answerIndex || 0,
-      explanation: q.explanation || "",
-      study_note: (q.test_slug ?? getStudyNoteFromQuestion(q) ?? "").trim() || "",
-    };
-  });
-
-  useEffect(() => {
-    if (edit) {
-      const choices = extractChoicesData(q);
-      setForm({
-        subject_code: q.subject_code || "",
-        section_code: q.section_code || "",
-        prompt: extractPromptText(q),
-        choiceA: choices.A,
-        choiceB: choices.B,
-        choiceC: choices.C,
-        choiceD: choices.D,
-        choiceE: choices.E,
-        answerIndex: q.answerIndex || 0,
-        explanation: q.explanation || "",
-        study_note: (q.test_slug ?? getStudyNoteFromQuestion(q) ?? "").trim() || "",
-      });
-    }
-  }, [edit, q]);
-
-  async function save() {
-    // Validate that required choices are filled (A-D required, E optional)
-    const choices = [
-      form.choiceA.trim(),
-      form.choiceB.trim(),
-      form.choiceC.trim(),
-      form.choiceD.trim(),
-      form.choiceE.trim(),
-    ];
-
-    const requiredChoices = choices.slice(0, 4);
-    if (requiredChoices.some((choice) => !choice)) {
-      toast.error("Choices A-D must be filled");
-      return;
-    }
-
-    const existingTags: string[] = q.tags || [];
-    const otherTags = existingTags.filter((t) => typeof t !== "string" || !t.startsWith("study_note:"));
-    const patch: Partial<Question> = {
-      subject_code: form.subject_code,
-      section_code: form.section_code,
-      prompt: form.prompt,
-      choices: choices,
-      answerIndex: Number(form.answerIndex),
-      explanation: form.explanation,
-      test_slug: form.study_note.trim(),
-      tags: otherTags,
-    };
-    await onSave(q.id, patch);
-    setEdit(false);
-  }
 
   const renderQuestionPrompt = () => {
     if (q.prompt_blocks && q.prompt_blocks.length > 0) {
@@ -2333,8 +2082,10 @@ function Row({
       );
     }
 
-    // Legacy fallback
-    const hasImage = q.image_urls?.question && Array.isArray(q.image_urls.question) && q.image_urls.question.length > 0;
+    const hasImage =
+      q.image_urls?.question &&
+      Array.isArray(q.image_urls.question) &&
+      q.image_urls.question.length > 0;
     const hasText = q.prompt && q.prompt.trim() !== "";
 
     if (!hasImage && !hasText) {
@@ -2369,7 +2120,7 @@ function Row({
     );
   };
 
-  const renderChoice = (choiceKey: 'A' | 'B' | 'C' | 'D' | 'E') => {
+  const renderChoice = (choiceKey: "A" | "B" | "C" | "D" | "E") => {
     if (q.choices && q.choices[choiceKey]) {
       const blocks = q.choices[choiceKey];
       return (
@@ -2400,11 +2151,11 @@ function Row({
       );
     }
 
-    // Legacy fallback
-    const index = ['A', 'B', 'C', 'D', 'E'].indexOf(choiceKey);
+    const index = ["A", "B", "C", "D", "E"].indexOf(choiceKey);
     const choice = Array.isArray(q.choices) ? q.choices[index] : "";
     const choiceImages = q.image_urls?.[choiceKey];
-    const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+    const hasImage =
+      choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
     const hasText = choice && choice.trim() !== "";
 
     if (!hasImage && !hasText) {
@@ -2439,226 +2190,142 @@ function Row({
     );
   };
 
-  if (!edit) {
-    return (
-      <tr className="border-b hover:bg-slate-50 dark:hover:bg-slate-700 dark:border-slate-700">
-        <td className="p-2 text-center align-top">
-          <Checkbox
-            checked={selected}
-            onCheckedChange={onToggleSelect}
-          />
-        </td>
-        <td className="p-2 align-top text-xs break-words dark:text-slate-300">{q.subject_code ? getSubjectDisplayName(q.subject_code) : "-"}</td>
-        <td className="p-2 align-top text-xs break-words dark:text-slate-300">{q.section_code || "-"}</td>
-        <td className="p-2 align-top min-w-[150px] max-w-[200px]">
-          <div className="flex items-start gap-1">
-            <div className="flex-1 min-w-0" title={q.prompt_blocks ? q.prompt_blocks.filter((b): b is Block => b.type === "text").map(b => (b as { value: string }).value).join(" ") : (q.prompt || "")}>
-              {renderQuestionPrompt()}
-            </div>
-            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
-          </div>
-        </td>
-        <td className="p-2 align-top min-w-[150px] max-w-[200px]">
-          <div className="flex items-start gap-1">
-            <div className="text-xs space-y-1 flex-1 min-w-0">
-              {(['A', 'B', 'C', 'D', 'E'] as const).map((letter) => (
-                <div key={letter} className="break-words">
-                  <span className="font-medium">{letter}.</span> {renderChoice(letter)}
-                </div>
-              ))}
-            </div>
-            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
-          </div>
-        </td>
-        <td className="p-2 text-center align-top font-semibold text-xs">
-          <div className="flex items-center justify-center gap-1">
-            <span>({String.fromCharCode(65 + q.answerIndex)})</span>
-            <button type="button" onClick={() => setEdit(true)} className="p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
-          </div>
-        </td>
-        <td className="p-2 align-top text-xs break-words min-w-[150px] max-w-[220px]">
-          <div className="flex items-start gap-1">
-            <div className="flex-1 min-w-0" title={q.explanation || ""}>
-              <span dangerouslySetInnerHTML={{ __html: renderSimpleMarkdownHtml(truncateText(q.explanation || "-", 12)) }} />
-            </div>
-            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
-          </div>
-        </td>
-        <td className="p-2 align-top text-xs break-words min-w-[150px] max-w-[220px]">
-          <div className="flex items-start gap-1">
-            <div className="flex-1 min-w-0 text-slate-700 dark:text-slate-300 leading-relaxed" title={getStudyNoteFromQuestion(q) || ""}>
-              {truncateText(getStudyNoteFromQuestion(q) || "-", 12)}
-            </div>
-            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
-          </div>
-        </td>
-        <td className="p-2 align-top text-xs break-words dark:text-slate-300">
-          {getDifficultyFromQuestion(q) || "-"}
-        </td>
-        <td className="p-2 text-center align-top text-xs">
-          <VerificationStatusSelect q={q} onSave={onSave} />
-        </td>
-        <td className="p-2 align-top text-xs break-words min-w-[120px] max-w-[180px]">
-          <div className="flex items-start gap-1">
-            <div className="flex-1 min-w-0">
-              {(q.tags || []).includes("error_reported") ? (
-                <div className="text-red-600 dark:text-red-400 font-medium" title={getErrorReasonFromQuestion(q) || "Reported"}>
-                  {truncateText(getErrorReasonFromQuestion(q) || "Reported", 10)}
-                </div>
-              ) : (
-                <span className="text-slate-400">-</span>
-              )}
-            </div>
-            <button type="button" onClick={() => setEdit(true)} className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
-          </div>
-        </td>
-        <td className="p-2 text-center align-top">
-          <div className="flex gap-1 justify-center flex-col">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setPreviewOpen(true)}
-              className="text-xs px-2 h-7"
-            >
-              <Eye className="h-3.5 w-3.5 mr-1 inline" />
-              Preview
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setEdit(true)}
-              className="text-xs px-2 h-7"
-            >
-              Edit
-            </Button>
-            {(q.tags || []).includes("error_reported") && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const newTags = (q.tags || []).filter(
-                    (t) => t !== "error_reported" && !t.startsWith("error_reason:") && !t.startsWith("error_details:")
-                  );
-                  onSave(q.id, { tags: newTags });
-                }}
-                className="text-xs px-2 h-7 border-blue-500 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl"
-              >
-                Mark fixed
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => onDelete(q.id)}
-              className="text-xs px-2 h-7"
-            >
-              Delete
-            </Button>
-          </div>
-          <AdminQuestionQuizPreviewDialog
-            open={previewOpen}
-            onOpenChange={setPreviewOpen}
-            question={q}
-          />
-        </td>
-      </tr>
-    );
-  }
-
   return (
-    <tr className="border-b bg-blue-50 dark:bg-blue-900/30">
-      <td className="p-2 text-center">
-        <Checkbox
-          checked={selected}
-          onCheckedChange={onToggleSelect}
-        />
+    <tr className="border-b hover:bg-slate-50 dark:hover:bg-slate-700 dark:border-slate-700">
+      <td className="p-2 text-center align-top">
+        <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
       </td>
-      <td className="p-2">
-        <Input
-          value={form.subject_code}
-          onChange={(e) =>
-            setForm((s) => ({ ...s, subject_code: e.target.value }))
-          }
-        />
+      <td className="p-2 align-top text-xs break-words dark:text-slate-300">
+        {q.subject_code ? getSubjectDisplayName(q.subject_code) : "-"}
       </td>
-      <td className="p-2">
-        <Input
-          value={form.section_code}
-          onChange={(e) =>
-            setForm((s) => ({ ...s, section_code: e.target.value }))
-          }
-        />
+      <td className="p-2 align-top text-xs break-words dark:text-slate-300">
+        {q.section_code || "-"}
       </td>
-      <td className="p-2">
-        <textarea
-          className="w-full border rounded p-2 min-h-[80px] dark:bg-slate-800 dark:text-white dark:border-slate-700"
-          value={form.prompt}
-          onChange={(e) => setForm((s) => ({ ...s, prompt: e.target.value }))}
-        />
-      </td>
-      <td className="p-2">
-        <div className="space-y-2">
-          {(['A', 'B', 'C', 'D', 'E'] as const).map((letter) => (
-            <div key={letter} className="flex items-center gap-2">
-              <span className="font-medium text-xs w-4 shrink-0">{letter}:</span>
-              <Input
-                value={form[`choice${letter}` as keyof typeof form] as string}
-                onChange={(e) => setForm(s => ({ ...s, [`choice${letter}`]: e.target.value }))}
-                className="flex-1 text-xs h-8"
-              />
-            </div>
-          ))}
+      <td className="p-2 align-top min-w-[150px] max-w-[200px]">
+        <div className="flex items-start gap-1">
+          <div
+            className="flex-1 min-w-0"
+            title={
+              q.prompt_blocks
+                ? q.prompt_blocks
+                    .filter((b): b is Block => b.type === "text")
+                    .map((b) => (b as { value: string }).value)
+                    .join(" ")
+                : q.prompt || ""
+            }
+          >
+            {renderQuestionPrompt()}
+          </div>
         </div>
       </td>
-      <td className="p-2 text-center">
-        <Input
-          type="number"
-          value={form.answerIndex}
-          onChange={(e) =>
-            setForm((s) => ({ ...s, answerIndex: Number(e.target.value) }))
-          }
-          className="w-16 mx-auto text-center"
-        />
+      <td className="p-2 align-top min-w-[150px] max-w-[200px]">
+        <div className="flex items-start gap-1">
+          <div className="text-xs space-y-1 flex-1 min-w-0">
+            {(["A", "B", "C", "D", "E"] as const).map((letter) => (
+              <div key={letter} className="break-words">
+                <span className="font-medium">{letter}.</span>{" "}
+                {renderChoice(letter)}
+              </div>
+            ))}
+          </div>
+        </div>
       </td>
-      <td className="p-2">
-        <textarea
-          className="w-full border rounded p-2 min-h-[80px] dark:bg-slate-800 dark:text-white dark:border-slate-700"
-          value={form.explanation}
-          onChange={(e) =>
-            setForm((s) => ({ ...s, explanation: e.target.value }))
-          }
-        />
+      <td className="p-2 text-center align-top font-semibold text-xs">
+        <div className="flex items-center justify-center gap-1">
+          <span>({String.fromCharCode(65 + q.answerIndex)})</span>
+        </div>
       </td>
-      <td className="p-2 align-top text-xs min-w-[150px] max-w-[220px]">
-        <textarea
-          className="w-full border rounded p-2 min-h-[80px] max-h-[240px] dark:bg-slate-800 dark:text-white dark:border-slate-700"
-          value={form.study_note}
-          onChange={(e) => setForm((s) => ({ ...s, study_note: e.target.value }))}
-          placeholder="Study note..."
-        />
+      <td className="p-2 align-top text-xs break-words min-w-[150px] max-w-[220px]">
+        <div className="flex items-start gap-1">
+          <div className="flex-1 min-w-0" title={q.explanation || ""}>
+            <span
+              dangerouslySetInnerHTML={{
+                __html: renderSimpleMarkdownHtml(
+                  truncateText(q.explanation || "-", 12),
+                ),
+              }}
+            />
+          </div>
+        </div>
       </td>
-      <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
+      <td className="p-2 align-top text-xs break-words min-w-[150px] max-w-[220px]">
+        <div className="flex items-start gap-1">
+          <div
+            className="flex-1 min-w-0 text-slate-700 dark:text-slate-300 leading-relaxed"
+            title={getStudyNoteFromQuestion(q) || ""}
+          >
+            {truncateText(getStudyNoteFromQuestion(q) || "-", 12)}
+          </div>
+        </div>
+      </td>
+      <td className="p-2 align-top text-xs break-words dark:text-slate-300">
         {getDifficultyFromQuestion(q) || "-"}
       </td>
       <td className="p-2 text-center align-top text-xs">
         <VerificationStatusSelect q={q} onSave={onSave} />
       </td>
-      <td className="p-2 align-top text-xs text-slate-500 dark:text-slate-400">
-        {getErrorReasonFromQuestion(q) || "-"}
+      <td className="p-2 align-top text-xs break-words min-w-[120px] max-w-[180px]">
+        <div className="flex items-start gap-1">
+          <div className="flex-1 min-w-0">
+            {(q.tags || []).includes("error_reported") ? (
+              <div
+                className="text-red-600 dark:text-red-400 font-medium"
+                title={getErrorReasonFromQuestion(q) || "Reported"}
+              >
+                {truncateText(
+                  getErrorReasonFromQuestion(q) || "Reported",
+                  10,
+                )}
+              </div>
+            ) : (
+              <span className="text-slate-400">-</span>
+            )}
+          </div>
+        </div>
       </td>
-      <td className="p-2 text-center">
-        <div className="flex gap-2 justify-center flex-col">
-          <Button size="sm" onClick={save} className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white">
-            Save
-          </Button>
+      <td className="p-2 text-center align-top">
+        <div className="flex gap-1 justify-center flex-col">
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setEdit(false)}
+            onClick={() => setPreviewOpen(true)}
+            className="text-xs px-2 h-7"
           >
-            Cancel
+            <Eye className="h-3.5 w-3.5 mr-1 inline" />
+            Preview
+          </Button>
+          {(q.tags || []).includes("error_reported") && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const newTags = (q.tags || []).filter(
+                  (t) =>
+                    t !== "error_reported" &&
+                    !t.startsWith("error_reason:") &&
+                    !t.startsWith("error_details:"),
+                );
+                onSave(q.id, { tags: newTags });
+              }}
+              className="text-xs px-2 h-7 border-blue-500 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl"
+            >
+              Mark fixed
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => onDelete(q.id)}
+            className="text-xs px-2 h-7"
+          >
+            Delete
           </Button>
         </div>
+        <AdminQuestionQuizPreviewDialog
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          question={q}
+        />
       </td>
     </tr>
   );

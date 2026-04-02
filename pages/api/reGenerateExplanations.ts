@@ -57,9 +57,7 @@ export default async function handler(
 
   if (process.env.NODE_ENV !== "production") {
     // eslint-disable-next-line no-console
-    console.log(
-      `Re-generating explanations for ${total} selected questions (forced, ignoring existing)...`,
-    );
+    console.log(`Reformatting explanations for ${total} selected questions...`);
   }
 
   let aborted = false;
@@ -94,7 +92,7 @@ export default async function handler(
     updated: 0,
     skipped: 0,
     failed: 0,
-    message: `Starting explanation re-generation for ${total} questions (overwriting existing)...`,
+    message: `Starting explanation reformatting for ${total} questions (only questions with existing explanations will be processed)...`,
   });
 
   const { updated, skipped, failed } = await runExplanationGeneration({
@@ -111,9 +109,7 @@ export default async function handler(
 
   if (process.env.NODE_ENV !== "production") {
     // eslint-disable-next-line no-console
-    console.log(
-      `✅ Completed: Re-generated ${updated}/${total} explanations (${skipped} not found, ${failed} failed)`,
-    );
+    console.log(`✅ Completed: Reformatted ${updated}/${total} explanations (${skipped} not found or skipped, ${failed} failed)`);
   }
 
   sendEvent({
@@ -122,7 +118,7 @@ export default async function handler(
     updated,
     skipped,
     failed,
-    message: `Done! Re-generated ${updated} explanations. ${skipped} skipped (not found), ${failed} failed.`,
+    message: `Done! Reformatted ${updated} explanations. ${skipped} skipped (not found or missing explanation), ${failed} failed.`,
   });
 
   res.end();

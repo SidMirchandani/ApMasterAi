@@ -1,10 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import type FirebaseFirestore from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "../../../server/firebase-admin";
 import { getDb } from "../../../server/db";
 import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
 import { requireAdmin } from "../../../server/next-api-auth";
 import { uploadExternalImagesInQuestion } from "../../../server/upload-image-from-url";
 import { scrapeVarsityForSubject } from "../../../server/scrapers/varsity-tutors";
+import {
+  computeVarsityFingerprint,
+  passageAndQuestionFromPromptBlocks,
+} from "../../../server/varsity-content-fingerprint";
 
 export const config = {
   api: {
@@ -13,6 +18,35 @@ export const config = {
   },
   maxDuration: 300,
 };
+
+function choiceTextFromBlocks(
+  choices: Record<string, { type: string; value?: string }[]>,
+  letter: string,
+): string {
+  const blocks = choices[letter];
+  if (!blocks?.length) return "";
+  return blocks
+    .filter((b) => b.type === "text" && b.value)
+    .map((b) => b.value!)
+    .join(" ");
+}
+
+async function loadFingerprintSet(
+  firestore: FirebaseFirestore.Firestore,
+  subjectCode: string,
+): Promise<Set<string>> {
+  const set = new Set<string>();
+  const snap = await firestore
+    .collection("questions")
+    .where("subject_code", "==", subjectCode)
+    .select("vt_content_hash")
+    .get();
+  snap.forEach((doc) => {
+    const h = doc.get("vt_content_hash");
+    if (typeof h === "string" && h.length > 0) set.add(h);
+  });
+  return set;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -73,19 +107,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `Fetching practice index and discovering Varsity tests...`,
+      message: `Fetching Varsity practice & help pages...`,
     });
 
-    const questions = await scrapeVarsityForSubject(subjectCode);
+    const { questions, linksCrawled, rawQuestionsFound } = await scrapeVarsityForSubject(
+      subjectCode,
+      ({ linksCrawled, rawQuestionsFound, message }) => {
+        sendEvent({
+          type: "status",
+          phase: "scraping",
+          message,
+          linksCrawled,
+          rawQuestionsFound,
+          current: 0,
+          total: 0,
+          imported: 0,
+          skipped: 0,
+          duplicatesSkipped: 0,
+          errors: 0,
+        });
+      },
+    );
 
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `Varsity scraper collected ${questions.length} questions for ${subjectCode}. Beginning import...`,
+      message: `Crawl done: ${linksCrawled} links, ${rawQuestionsFound} raw questions in payload, ${questions.length} after filtering. Loading fingerprints...`,
+      linksCrawled,
+      rawQuestionsFound,
       current: 0,
       total: questions.length,
       imported: 0,
       skipped: 0,
+      duplicatesSkipped: 0,
       errors: 0,
     });
 
@@ -93,13 +147,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sendEvent({
         type: "error",
         message: `No Varsity Tutors questions found for subject ${subjectCode}`,
+        linksCrawled,
+        rawQuestionsFound,
       });
       res.end();
       return;
     }
 
+    const fingerprintSet = await loadFingerprintSet(firestore, subjectCode);
+
     let imported = 0;
     let skipped = 0;
+    let duplicatesSkipped = 0;
     let errors = 0;
     const BATCH_SIZE = 50;
     let batch = firestore.batch();
@@ -108,64 +167,99 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
       try {
-        const { prompt_blocks, choices } = await uploadExternalImagesInQuestion({
-          subject_code: q.subject_code,
-          question_id: q.question_id,
-          prompt_blocks: q.prompt_blocks,
-          choices: q.choices,
-        });
+        const { passage, question, graphicUrl } = passageAndQuestionFromPromptBlocks(q.prompt_blocks);
+        const fp = computeVarsityFingerprint(passage, question, graphicUrl);
 
-        const hasPrompt = prompt_blocks && prompt_blocks.length > 0;
-        const hasChoices = choices && Object.keys(choices).length >= 2;
-        if (!hasPrompt || !hasChoices) {
-          skipped++;
-          continue;
-        }
-
-        const answerIndex = ["A", "B", "C", "D", "E"].indexOf(q.correct_answer || "");
-        const docId = `${q.subject_code}_${q.section_code}_Q${q.question_id}`;
-
-        batch.set(
-          firestore.collection("questions").doc(docId),
-          {
+        if (fingerprintSet.has(fp)) {
+          duplicatesSkipped++;
+        } else {
+          const { prompt_blocks, choices } = await uploadExternalImagesInQuestion({
             subject_code: q.subject_code,
-            section_code: q.section_code,
             question_id: q.question_id,
-            prompt_blocks,
-            choices,
-            answerIndex: answerIndex >= 0 ? answerIndex : 0,
-            mode: "SECTION",
-            test_slug: "",
-            tags: ["Source:VarsityTutor"],
-            explanation: q.explanation || "",
-            updatedAt: new Date(),
-            rand: Math.random(),
-          },
-          { merge: true }
-        );
+            prompt_blocks: q.prompt_blocks,
+            choices: q.choices,
+          });
 
-        batchCount++;
-        imported++;
-
-        if (batchCount >= BATCH_SIZE) {
-          try {
-            await batch.commit();
+          const hasPrompt = prompt_blocks && prompt_blocks.length > 0;
+          const hasChoices =
+            choices && Object.keys(choices).filter((k) => (choices as any)[k]?.length).length >= 2;
+          if (!hasPrompt || !hasChoices) {
+            skipped++;
             sendEvent({
-              type: "batch",
+              type: "progress",
               phase: "scraping",
-              imported,
-              skipped,
-              errors,
               current: i + 1,
               total: questions.length,
+              imported,
+              skipped,
+              duplicatesSkipped,
+              errors,
+              linksCrawled,
+              rawQuestionsFound,
               message: "Scraping questions from Varsity Tutors...",
             });
-          } catch (err: any) {
-            errors++;
-            sendEvent({ type: "error", message: `Batch commit failed: ${err.message}` });
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            continue;
           }
-          batch = firestore.batch();
-          batchCount = 0;
+
+          const answerIndex = ["A", "B", "C", "D", "E"].indexOf(q.correct_answer || "");
+          const correctLabel = q.correct_answer && ["A", "B", "C", "D", "E"].includes(q.correct_answer)
+            ? q.correct_answer!
+            : "A";
+          const correctText = choiceTextFromBlocks(choices as any, correctLabel);
+
+          const rawExpl = (q.explanation || "").trim();
+          const explanation = rawExpl && rawExpl !== "$undefined" ? rawExpl : "";
+
+          const docId = `${q.subject_code}_${q.section_code}_Q${q.question_id}`;
+
+          batch.set(
+            firestore.collection("questions").doc(docId),
+            {
+              subject_code: q.subject_code,
+              section_code: q.section_code,
+              question_id: q.question_id,
+              prompt_blocks,
+              choices,
+              answerIndex: answerIndex >= 0 ? answerIndex : 0,
+              mode: "SECTION",
+              test_slug: "",
+              tags: ["Source:VarsityTutor"],
+              explanation,
+              vt_content_hash: fp,
+              updatedAt: new Date(),
+              rand: Math.random(),
+            },
+            { merge: true },
+          );
+
+          batchCount++;
+          imported++;
+          fingerprintSet.add(fp);
+
+          if (batchCount >= BATCH_SIZE) {
+            try {
+              await batch.commit();
+              sendEvent({
+                type: "batch",
+                phase: "scraping",
+                imported,
+                skipped,
+                duplicatesSkipped,
+                errors,
+                current: i + 1,
+                total: questions.length,
+                linksCrawled,
+                rawQuestionsFound,
+                message: "Scraping questions from Varsity Tutors...",
+              });
+            } catch (err: any) {
+              errors++;
+              sendEvent({ type: "error", message: `Batch commit failed: ${err.message}` });
+            }
+            batch = firestore.batch();
+            batchCount = 0;
+          }
         }
       } catch (err: any) {
         errors++;
@@ -179,7 +273,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         total: questions.length,
         imported,
         skipped,
+        duplicatesSkipped,
         errors,
+        linksCrawled,
+        rawQuestionsFound,
         message: "Scraping questions from Varsity Tutors...",
       });
 
@@ -198,8 +295,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       type: "complete",
       imported,
       skipped,
+      duplicatesSkipped,
       errors,
-      message: `Done! Imported ${imported} Varsity Tutors questions for ${subjectCode}. Skipped ${skipped}, errors ${errors}.`,
+      linksCrawled,
+      rawQuestionsFound,
+      newUniqueQuestionsAdded: imported,
+      message: `Done. Links crawled: ${linksCrawled}. Raw in payload: ${rawQuestionsFound}. Duplicates skipped: ${duplicatesSkipped}. New unique: ${imported}. Skipped invalid: ${skipped}. Errors: ${errors}.`,
     });
   } catch (err: any) {
     sendEvent({
@@ -210,4 +311,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.end();
   }
 }
-

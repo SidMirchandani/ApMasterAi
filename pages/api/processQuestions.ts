@@ -236,9 +236,26 @@ Do NOT change words, rephrase, fix grammar, or add content.`);
 
     if (needsExplanation) {
       tasks.push(`TASK - GENERATE EXPLANATION:
-Generate a concise explanation (100-150 words). Structure: **Concept**: 1-2 sentences on what this tests. **Why ${correctLabel} is correct**: Why this answer is right; include key formula and calculations if applicable, then state the conclusion. **Why other choices are wrong**: A bulleted list with one bullet per incorrect choice; each bullet must start with the letter and "is incorrect because" (e.g. "A is incorrect because ..."). Use \\n for newlines; for the bullet list use "\\n- " before each bullet.
+You are an expert AP Exam Tutor. Your task is to generate explanations for AP multiple-choice questions.
+
+Your explanations must be highly scannable, focus heavily on the core concept, and provide actionable test-taking strategies. You must strictly follow the structure below. Do not deviate from the headings provided.
+
+**Concept:**
+Provide a brief, 1-2 sentence reminder of the overarching concept being tested. Keep it high-level and tied to the AP course/topic, not the specific answer choices.
+
+**Why ${correctLabel} is correct:**
+Provide a concise, 1-3 sentence explanation of exactly why this choice is the correct answer. You MUST explicitly reference the actual text of the correct choice from the prompt (for example, "Choice ${correctLabel}, ..."). Spend the bulk of your analytical effort here, using key numbers, conditions, or phrases from the question stem as evidence.
+
+[OPTIONAL SECTION — ONLY INCLUDE IF IT TRULY ADDS VALUE. IF SKIPPING, DO NOT PRINT THIS HEADING OR ANY TEXT FOR THIS SECTION.]
+**Common Misconception:**
+ONLY include this section if there is ONE highly tempting wrong answer that represents a frequent student error. Explicitly name the choice (for example, "Choice A is incorrect because..."). In 1-2 sentences, explain why it is a trap or how it misreads the concept. Do NOT analyze every incorrect choice and do NOT list multiple distractors here.
+
+**Coaching for students:**
+*Provide a 1-2 sentence meta-cognitive test-taking tip in italics. Tell the student how to spot the "trick" in similar questions, how to approach the phrasing, or what specific keywords to watch for next time. Do not introduce new content beyond what is needed for the test-taking tip.*
+
+Keep the ENTIRE explanation to about 100-150 words. Be clear, concise, and student-friendly. Use \\n for newlines.
 For math and equations use LaTeX inside single dollar signs, e.g. $P(t) = 1200 - 1000e^{-0.16t}$ or $\\frac{dP}{dt}$. Do not use backticks for math.`);
-      jsonFields.push(`"explanation": "your concise explanation with \\n for newlines and \\n- for bullet lines"`);
+      jsonFields.push(`"explanation": "your concise explanation with \\n for newlines"`);
     }
 
     let combinedPrompt = `You are an expert AP tutor. Process this AP exam question.

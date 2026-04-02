@@ -57,7 +57,9 @@ export default async function handler(
 
   if (process.env.NODE_ENV !== "production") {
     // eslint-disable-next-line no-console
-    console.log(`Generating explanations for ${total} selected questions...`);
+    console.log(
+      `Generating explanations for ${total} selected questions (overwriting any existing explanations)...`,
+    );
   }
 
   let aborted = false;
@@ -92,7 +94,7 @@ export default async function handler(
     updated: 0,
     skipped: 0,
     failed: 0,
-    message: `Starting explanation generation for ${total} questions...`,
+    message: `Starting explanation generation for ${total} questions (existing explanations will be overwritten)...`,
   });
 
   const { updated, skipped, failed } = await runExplanationGeneration({
@@ -101,7 +103,7 @@ export default async function handler(
     ai,
     questionsRef,
     sendEvent,
-    skipIfExplanationExists: true,
+    skipIfExplanationExists: false,
     isRegenerate: false,
     onAborted: () => aborted,
     markVerificationFailOnError: true,

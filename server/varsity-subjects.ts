@@ -1,9 +1,27 @@
 import { getSubjectConfig } from "./subjects-helper";
 
+export const VARSITY_ORIGIN = "https://www.varsitytutors.com";
+
 export interface VarsitySubjectConfig {
   subjectCode: string;
   displayName: string;
   practiceUrl: string;
+}
+
+/** e.g. .../subjects/ap-biology/practice → ap-biology, ap_biology */
+export function getVarsitySlugsFromPracticeUrl(
+  practiceUrl: string,
+): { pathSlug: string; underscoreSlug: string } | null {
+  try {
+    const u = new URL(practiceUrl);
+    const m = u.pathname.match(/\/subjects\/([^/]+)\/practice\/?$/i);
+    if (!m) return null;
+    const pathSlug = m[1].toLowerCase();
+    const underscoreSlug = pathSlug.replace(/-/g, "_");
+    return { pathSlug, underscoreSlug };
+  } catch {
+    return null;
+  }
 }
 
 const VARSITY_SUBJECT_URLS: Record<string, string> = {
