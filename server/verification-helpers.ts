@@ -14,7 +14,7 @@ export type VerificationAiChecks = {
 };
 
 export type VerificationAiResult = {
-  status: "pass" | "needs_review" | "fail";
+  status: "pass" | "fail";
   confidence: "high" | "medium" | "low";
   checks: VerificationAiChecks;
   issues: string[];
@@ -264,13 +264,12 @@ export async function buildVerificationPromptParts(question: any): Promise<{ pro
     text:
       `Explanation shown to students:\n${explanation || "(none)"}\n\n` +
       `Return ONLY valid JSON (no markdown, no code fences) with exactly these keys:\n` +
-      `{"status":"pass"|"needs_review"|"fail","confidence":"high"|"medium"|"low",` +
+      `{"status":"pass"|"fail","confidence":"high"|"medium"|"low",` +
       `"checks":{"questionSound":true|false,"choicesSound":true|false,"answerKeyMatchesContent":true|false,"explanationSupportsAnswer":true|false,"sectionPlausible":true|false},` +
       `"issues":["string",...]}\n\n` +
       `Guidelines:\n` +
       `- status "pass": no material problems; content fits subject; keyed answer is correct; explanation supports the key.\n` +
-      `- "needs_review": uncertain, minor wording, or explanation thin but probably OK.\n` +
-      `- "fail": broken question, wrong key, explanation contradicts key, choices don't match stem, wrong unit.\n` +
+      `- "fail": anything else — broken question, wrong key, uncertain or thin explanation, minor wording concerns, explanation contradicts key, choices don't match stem, wrong unit, etc.\n` +
       `- issues: short bullet strings; empty array if none.\n` +
       `JSON:`,
   });
@@ -284,8 +283,14 @@ export function parseVerificationJson(raw: string): VerificationAiResult | null 
     const jsonStr =
       trimmed.replace(/^[^{\[]*/, "").replace(/[^}\]]*$/, "").trim() || trimmed;
     const parsed = JSON.parse(jsonStr) as any;
-    const status = parsed?.status;
-    if (status !== "pass" && status !== "needs_review" && status !== "fail") return null;
+    const rawStatus = parsed?.status;
+    const status: "pass" | "fail" | null =
+      rawStatus === "pass"
+        ? "pass"
+        : rawStatus === "fail" || rawStatus === "needs_review"
+          ? "fail"
+          : null;
+    if (!status) return null;
     const confidence = parsed?.confidence;
     if (confidence !== "high" && confidence !== "medium" && confidence !== "low") return null;
     const c = parsed?.checks || {};

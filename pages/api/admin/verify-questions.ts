@@ -93,7 +93,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   };
 
   let passed = 0;
-  let flagged = 0;
   let failed = 0;
   let skipped = 0;
 
@@ -105,8 +104,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     skipped: 0,
     failed: 0,
     passed: 0,
-    flagged: 0,
-    verifyFailed: 0,
     message: `Starting verification for ${total} questions...`,
   });
 
@@ -126,9 +123,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           skipped,
           failed,
           passed,
-          flagged,
-          verifyFailed: failed,
-          updated: passed + flagged,
+          updated: passed + failed,
           message: `Q${i + 1}/${total}: not found, skipped`,
         });
         continue;
@@ -144,9 +139,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           skipped,
           failed,
           passed,
-          flagged,
-          verifyFailed: failed,
-          updated: passed + flagged,
+          updated: passed + failed,
           message: `Q${i + 1}/${total}: empty doc, skipped`,
         });
         continue;
@@ -190,9 +183,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           skipped,
           failed,
           passed,
-          flagged,
-          verifyFailed: failed,
-          updated: passed + flagged,
+          updated: passed + failed,
           message: `Q${i + 1}/${total}: lint/data fail (${allIssues[0]?.slice(0, 60) || "error"}…)`,
         });
         continue;
@@ -205,9 +196,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         skipped,
         failed,
         passed,
-        flagged,
-        verifyFailed: failed,
-        updated: passed + flagged,
+        updated: passed + failed,
         message: `Q${i + 1}/${total}: calling model…`,
       });
 
@@ -229,9 +218,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             skipped,
             failed,
             passed,
-            flagged,
-            verifyFailed: failed,
-            updated: passed + flagged,
+            updated: passed + failed,
             message: `Rate limit — waiting ${waitSec}s (retry ${attempt}/5)…`,
           });
         },
@@ -267,22 +254,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           skipped,
           failed,
           passed,
-          flagged,
-          verifyFailed: failed,
-          updated: passed + flagged,
+          updated: passed + failed,
           message: `Q${i + 1}/${total}: malformed AI response`,
         });
         continue;
       }
 
       const mergedIssues = [...lint.warnings.map((w) => `Warning: ${w}`), ...parsed.issues];
-      let finalStatus = parsed.status;
-      if (parsed.status === "pass" && lint.warnings.length > 0) {
-        finalStatus = "needs_review";
-      }
+      const finalStatus: "pass" | "fail" =
+        parsed.status === "pass" && lint.warnings.length > 0 ? "fail" : parsed.status;
 
       if (finalStatus === "pass") passed++;
-      else if (finalStatus === "needs_review") flagged++;
       else failed++;
 
       await doc.ref.set(
@@ -311,10 +293,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         skipped,
         failed,
         passed,
-        flagged,
-        verifyFailed: failed,
-        updated: passed + flagged,
-        message: `Q${i + 1}/${total}: ${finalStatus} (pass ${passed}, review ${flagged}, fail ${failed})`,
+        updated: passed + failed,
+        message: `Q${i + 1}/${total}: ${finalStatus} (pass ${passed}, fail ${failed})`,
       });
     } catch (error: any) {
       const quota = isQuotaError(error);
@@ -347,9 +327,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         skipped,
         failed,
         passed,
-        flagged,
-        verifyFailed: failed,
-        updated: passed + flagged,
+        updated: passed + failed,
         message: quota
           ? `Q${i + 1}/${total}: quota exhausted`
           : `Q${i + 1}/${total}: ${(error?.message || "").slice(0, 80)}`,
@@ -363,10 +341,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     skipped,
     failed,
     passed,
-    flagged,
-    verifyFailed: failed,
-    updated: passed + flagged,
-    message: `Done. Pass: ${passed}, needs review: ${flagged}, fail/error: ${failed}, skipped: ${skipped}.`,
+    updated: passed + failed,
+    message: `Done. Pass: ${passed}, failed: ${failed}, skipped: ${skipped}.`,
   });
 
   res.end();

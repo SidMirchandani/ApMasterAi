@@ -77,6 +77,8 @@ type Question = {
   course?: string | null;
   chapter?: string | null;
   difficulty?: string | null;
+  /** Content origin, e.g. VT importer sets `"VT"`. */
+  source?: string | null;
   // Legacy fields for backward compatibility
   prompt?: string;
   image_urls?: {
@@ -117,7 +119,7 @@ function getErrorReasonFromQuestion(q: Question): string {
   return tag ? String(tag).replace(/^error_reason:/, "").trim() : "";
 }
 
-type AdminVerifyStatus = "pass" | "needs_review" | "fail";
+type AdminVerifyStatus = "pass" | "fail";
 
 /** Merge with existing question verification and apply admin-selected status for PUT. */
 function buildLastVerificationForStatus(
@@ -142,7 +144,7 @@ function buildLastVerificationForStatus(
 function verificationStatusSelectValue(q: Question): AdminVerifyStatus | undefined {
   const raw = q.lastVerification?.status;
   if (raw === "pass" || raw === "fail") return raw;
-  if (raw === "error") return "fail";
+  if (raw === "error" || raw === "needs_review") return "fail";
   return undefined;
 }
 
@@ -336,7 +338,7 @@ export default function AdminPage() {
     if (showOnlyVerificationFailed) {
       list = list.filter((q) => {
         const s = q.lastVerification?.status;
-        return s === "fail" || s === "error";
+        return s === "fail" || s === "error" || s === "needs_review";
       });
     }
     if (showOnlyVerificationIncomplete) {
@@ -381,8 +383,6 @@ export default function AdminPage() {
     failed: number;
     message: string;
     passed?: number;
-    flagged?: number;
-    verifyFailed?: number;
   } | null>(null);
 
   const [lastExplanationSummary, setLastExplanationSummary] = useState<{
@@ -393,8 +393,6 @@ export default function AdminPage() {
     failed: number;
     message: string;
     passed?: number;
-    flagged?: number;
-    verifyFailed?: number;
   } | null>(null);
 
   const [subjectStatus, setSubjectStatus] = useState<
@@ -410,7 +408,7 @@ export default function AdminPage() {
   >({});
   const [loadingStatus, setLoadingStatus] = useState(false);
 
-  // Import AI-generated question state (external source)
+  // VT question import (admin Content Library)
   const [varsitySubjectCode, setVarsitySubjectCode] = useState("");
   const [addingVarsitySubject, setAddingVarsitySubject] = useState(false);
   const [varsitySubjectProgress, setVarsitySubjectProgress] = useState<{
@@ -450,10 +448,9 @@ export default function AdminPage() {
     message: string;
   } | null>(null);
 
-  // Allow re-importing Varsity questions even for subjects that already have
-  // Varsity data; the import API de-duplicates using vt_content_hash so only
-  // truly new questions will be added.
-  const availableToAddVarsity = allApSubjectsRef;
+  const availableToAddVarsity = allApSubjectsRef.filter(
+    (s) => (subjectStatus[s.code]?.varsityCount ?? 0) === 0,
+  );
   const alreadyAdded = allApSubjectsRef.filter((s) => subjectStatus[s.code]?.hasQuestions);
 
   async function loadSubjectStatus() {
@@ -510,6 +507,10 @@ export default function AdminPage() {
 
   async function startVarsityAddSubject() {
     if (!token || !varsitySubjectCode) return;
+    if ((subjectStatus[varsitySubjectCode]?.varsityCount ?? 0) > 0) {
+      toast.error("This subject already has VT questions. Remove VT questions first to import again.");
+      return;
+    }
     setAddingVarsitySubject(true);
     const subjectLabel = allApSubjectsRef.find(s => s.code === varsitySubjectCode)?.label || varsitySubjectCode;
     setVarsitySubjectProgress({
@@ -621,20 +622,23 @@ export default function AdminPage() {
   function stopVarsityAddSubject() {
     varsitySubjectAbortRef.current?.abort();
     setAddingVarsitySubject(false);
-    toast("Varsity import cancelled");
+    toast("VT import cancelled");
   }
 
   const [removingSubject, setRemovingSubject] = useState<string | null>(null);
+  const [subjectRemoveOpen, setSubjectRemoveOpen] = useState(false);
+  const [subjectRemoveCode, setSubjectRemoveCode] = useState<string | null>(null);
+  const [subjectRemoveScope, setSubjectRemoveScope] = useState<"all" | "vt" | null>(null);
 
-  async function removeSubject(code: string) {
-    if (!token) return;
-    const confirmation = prompt(
-      `Type DELETE to confirm removing ALL questions for ${code}.\n\nThis action is PERMANENT and cannot be undone.`,
-    );
-    if (confirmation !== "DELETE") {
-      toast("Subject removal cancelled");
-      return;
-    }
+  function openSubjectRemoveDialog(code: string) {
+    setSubjectRemoveCode(code);
+    setSubjectRemoveScope(null);
+    setSubjectRemoveOpen(true);
+  }
+
+  async function confirmSubjectRemove() {
+    if (!token || !subjectRemoveCode || !subjectRemoveScope) return;
+    const code = subjectRemoveCode;
     setRemovingSubject(code);
     try {
       const res = await fetch("/api/admin/questions/delete-subject", {
@@ -643,15 +647,18 @@ export default function AdminPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ subjectCode: code }),
+        body: JSON.stringify({ subjectCode: code, scope: subjectRemoveScope }),
       });
       if (res.ok) {
         const data = await res.json();
-        toast.success(`Removed ${data.deleted} questions for ${code}`);
+        toast.success(`Removed ${data.deleted} question(s) for ${code} (${subjectRemoveScope === "all" ? "ALL" : "VT"})`);
         loadSubjectStatus();
+        setSubjectRemoveOpen(false);
+        setSubjectRemoveCode(null);
+        setSubjectRemoveScope(null);
       } else {
         const err = await res.json();
-        toast.error(err.error || "Failed to remove subject");
+        toast.error(err.error || "Failed to remove questions");
       }
     } catch (err: any) {
       toast.error("Remove failed: " + err.message);
@@ -1088,8 +1095,6 @@ export default function AdminPage() {
       skipped: 0,
       failed: 0,
       passed: selectedAction === "verify-questions" ? 0 : undefined,
-      flagged: selectedAction === "verify-questions" ? 0 : undefined,
-      verifyFailed: selectedAction === "verify-questions" ? 0 : undefined,
       message: `Starting ${actionLabel} for ${questionIds.length} questions...`,
     });
 
@@ -1151,8 +1156,6 @@ export default function AdminPage() {
                 failed: event.failed || 0,
                 message: event.message || "",
                 passed: typeof event.passed === "number" ? event.passed : undefined,
-                flagged: typeof event.flagged === "number" ? event.flagged : undefined,
-                verifyFailed: typeof event.verifyFailed === "number" ? event.verifyFailed : undefined,
               });
             }
             if (event.type === "complete") {
@@ -1164,8 +1167,6 @@ export default function AdminPage() {
                   skipped: event.skipped ?? prev.skipped,
                   failed: event.failed ?? prev.failed,
                   passed: typeof event.passed === "number" ? event.passed : prev.passed,
-                  flagged: event.flagged ?? prev.flagged,
-                  verifyFailed: event.verifyFailed ?? prev.verifyFailed,
                   message: event.message || prev.message,
                 };
                 // Snapshot the final state into a sticky summary that will
@@ -1404,7 +1405,7 @@ export default function AdminPage() {
                         </span>
                         {hasQuestions && (
                           <button
-                            onClick={() => removeSubject(s.code)}
+                            onClick={() => openSubjectRemoveDialog(s.code)}
                             disabled={removingSubject === s.code}
                             className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600 text-xs font-bold leading-none"
                             title={`Remove ${s.label}`}
@@ -1431,26 +1432,30 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* Import AI Generated Questions Card */}
+        {/* Import VT questions */}
         <Card className="border-2 border-dashed border-indigo-500/30 dark:bg-slate-900/60 dark:border-indigo-600/30 rounded-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 dark:text-white">
               <Zap className="w-5 h-5 text-indigo-500" />
-              Import AI Generated Questions
+              Import VT questions
             </CardTitle>
             <CardDescription className="dark:text-slate-400">
-              Select an AP subject to import AI-generated multiple-choice questions and map them to units.
+              Each subject can be imported once. New questions are tagged with source VT. Subjects that already have VT questions are not listed.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3 items-end">
               <div className="flex-1">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Subject to Add</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Subject</label>
                 <Select value={varsitySubjectCode} onValueChange={setVarsitySubjectCode} disabled={addingVarsitySubject}>
                   <SelectTrigger className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
                     <SelectValue
                       placeholder={
-                        loadingStatus ? "Loading subjects..." : "Select AP Subject (re-import allowed)"
+                        loadingStatus
+                          ? "Loading subjects…"
+                          : availableToAddVarsity.length === 0
+                            ? "All subjects already have VT questions"
+                            : "Choose a subject to import"
                       }
                     />
                   </SelectTrigger>
@@ -1466,16 +1471,20 @@ export default function AdminPage() {
               {addingVarsitySubject ? (
                 <Button onClick={stopVarsityAddSubject} variant="destructive" className="min-w-[140px]">
                   <Square className="w-4 h-4 mr-2" />
-                  Stop Import
+                  Stop VT import
                 </Button>
               ) : (
                 <Button
                   onClick={startVarsityAddSubject}
-                  disabled={!varsitySubjectCode || loadingStatus}
+                  disabled={
+                    !varsitySubjectCode ||
+                    loadingStatus ||
+                    availableToAddVarsity.length === 0
+                  }
                   className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white min-w-[140px]"
                 >
                   <Play className="w-4 h-4 mr-2" />
-                  Add Subject
+                  Import VT
                 </Button>
               )}
             </div>
@@ -1493,8 +1502,8 @@ export default function AdminPage() {
                   className="h-2"
                 />
                 <div className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="text-slate-600 dark:text-slate-300">API calls: {varsitySubjectProgress.linksCrawled}</span>
-                  <span className="text-slate-600 dark:text-slate-300">Questions received: {varsitySubjectProgress.rawQuestionsFound}</span>
+                  <span className="text-slate-600 dark:text-slate-300">VT requests: {varsitySubjectProgress.linksCrawled}</span>
+                  <span className="text-slate-600 dark:text-slate-300">VT questions received: {varsitySubjectProgress.rawQuestionsFound}</span>
                   <span className="text-amber-600 dark:text-amber-400">Dupes skipped: {varsitySubjectProgress.duplicatesSkipped}</span>
                   <span className="text-green-600 font-medium">New unique: {varsitySubjectProgress.imported}</span>
                   <span className="text-amber-500">Invalid skipped: {varsitySubjectProgress.skipped}</span>
@@ -1504,6 +1513,77 @@ export default function AdminPage() {
             )}
           </CardContent>
         </Card>
+
+        <AlertDialog
+          open={subjectRemoveOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSubjectRemoveOpen(false);
+              setSubjectRemoveCode(null);
+              setSubjectRemoveScope(null);
+            }
+          }}
+        >
+          <AlertDialogContent className="dark:bg-slate-900 dark:border-slate-800">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="dark:text-white">Remove questions</AlertDialogTitle>
+              <AlertDialogDescription className="dark:text-slate-400 text-left space-y-3">
+                <span className="block">
+                  This cannot be undone. Choose what to delete for{" "}
+                  <strong className="text-slate-200">
+                    {subjectRemoveCode
+                      ? allApSubjectsRef.find((s) => s.code === subjectRemoveCode)?.label ?? subjectRemoveCode
+                      : "—"}
+                  </strong>
+                  :
+                </span>
+                <div className="flex flex-col gap-3 pt-1">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="subject-remove-all"
+                      checked={subjectRemoveScope === "all"}
+                      onCheckedChange={(c) => {
+                        setSubjectRemoveScope(c === true ? "all" : null);
+                      }}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="subject-remove-all" className="text-sm font-normal text-slate-300 cursor-pointer leading-snug">
+                      <span className="font-semibold text-slate-100">ALL</span> — remove every question for this subject
+                    </Label>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="subject-remove-vt"
+                      checked={subjectRemoveScope === "vt"}
+                      onCheckedChange={(c) => {
+                        setSubjectRemoveScope(c === true ? "vt" : null);
+                      }}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="subject-remove-vt" className="text-sm font-normal text-slate-300 cursor-pointer leading-snug">
+                      <span className="font-semibold text-slate-100">VT</span> — remove only questions with{" "}
+                      <code className="text-xs bg-slate-800 px-1 rounded">source = VT</code>
+                    </Label>
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel type="button" className="dark:border-slate-600 dark:text-slate-200">
+                Cancel
+              </AlertDialogCancel>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={!subjectRemoveScope || removingSubject !== null}
+                onClick={() => void confirmSubjectRemove()}
+              >
+                {removingSubject ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Confirm remove
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Filter Card */}
         <Card className="dark:bg-slate-900/60 dark:border-slate-800">
@@ -1669,11 +1749,7 @@ export default function AdminPage() {
               const doneCount =
                 status &&
                 (typeof status.passed === "number"
-                  ? status.passed +
-                    (status.verifyFailed ?? 0) +
-                    (status.flagged ?? 0) +
-                    status.skipped +
-                    status.failed
+                  ? status.passed + status.failed + status.skipped
                   : status.updated + status.skipped + status.failed);
 
               const percent =
@@ -1719,14 +1795,9 @@ export default function AdminPage() {
                               Failed: {status.failed}
                             </span>
                             {typeof status.passed === "number" && (
-                              <>
-                                <span className="text-green-700 dark:text-green-400 font-medium">
-                                  Pass: {status.passed}
-                                </span>
-                                <span className="text-red-700 dark:text-red-400 font-medium">
-                                  Fail: {(status.verifyFailed ?? 0) + (status.flagged ?? 0)}
-                                </span>
-                              </>
+                              <span className="text-green-700 dark:text-green-400 font-medium">
+                                Pass: {status.passed}
+                              </span>
                             )}
                           </div>
                         </div>

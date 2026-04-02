@@ -703,7 +703,7 @@ export async function scrapeVarsityForSubject(
       onProgress({
         linksCrawled,
         rawQuestionsFound,
-        message: `Calling API... ${linksCrawled} requests, ${rawQuestionsFound} questions received so far.`,
+        message: `Fetching VT content… ${linksCrawled} requests, ${rawQuestionsFound} questions received so far.`,
       });
     }
     if (!rawQuestions.length) continue;

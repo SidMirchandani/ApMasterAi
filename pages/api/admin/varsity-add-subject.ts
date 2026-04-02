@@ -75,6 +75,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   const { firestore } = firebaseAdmin;
 
+  const existingVtSnap = await firestore
+    .collection("questions")
+    .where("subject_code", "==", subjectCode)
+    .where("tags", "array-contains", "Source:VarsityTutor")
+    .count()
+    .get();
+  if ((existingVtSnap.data().count ?? 0) > 0) {
+    return res.status(400).json({
+      error: "This subject already has VT questions. Remove VT questions first if you need to import again.",
+    });
+  }
+
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache, no-transform",
@@ -101,13 +113,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `Starting API-powered question import for ${subjectCode}...`,
+      message: `Starting VT import for ${subjectCode}...`,
     });
 
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `Calling external API to fetch question data...`,
+      message: `Fetching VT question data...`,
     });
 
     const { questions, linksCrawled, rawQuestionsFound } = await scrapeVarsityForSubject(
@@ -132,7 +144,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `API phase done: ${linksCrawled} calls, ${rawQuestionsFound} questions received, ${questions.length} after filtering. Loading fingerprints...`,
+      message: `Fetch phase done: ${linksCrawled} requests, ${rawQuestionsFound} VT questions received, ${questions.length} after filtering. Loading fingerprints...`,
       linksCrawled,
       rawQuestionsFound,
       current: 0,
@@ -146,7 +158,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!questions.length) {
       sendEvent({
         type: "error",
-        message: `No questions found for subject ${subjectCode} from the external API`,
+        message: `No VT questions found for subject ${subjectCode}`,
         linksCrawled,
         rawQuestionsFound,
       });
@@ -196,7 +208,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               errors,
               linksCrawled,
               rawQuestionsFound,
-              message: "Importing questions from external API...",
+              message: "Writing VT questions...",
             });
             await new Promise((resolve) => setTimeout(resolve, 200));
             continue;
@@ -225,6 +237,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               mode: "SECTION",
               test_slug: "",
               tags: ["Source:VarsityTutor"],
+              source: "VT",
               explanation,
               vt_content_hash: fp,
               updatedAt: new Date(),
@@ -251,7 +264,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 total: questions.length,
                 linksCrawled,
                 rawQuestionsFound,
-                message: "Importing questions from external API...",
+                message: "Writing VT questions...",
               });
             } catch (err: any) {
               errors++;
@@ -277,7 +290,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         errors,
         linksCrawled,
         rawQuestionsFound,
-        message: "Importing questions from external API...",
+        message: "Writing VT questions...",
       });
 
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -300,12 +313,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       linksCrawled,
       rawQuestionsFound,
       newUniqueQuestionsAdded: imported,
-      message: `Done. API calls: ${linksCrawled}. Questions received: ${rawQuestionsFound}. Duplicates skipped: ${duplicatesSkipped}. New unique: ${imported}. Skipped invalid: ${skipped}. Errors: ${errors}.`,
+      message: `Done. VT requests: ${linksCrawled}. Received: ${rawQuestionsFound}. Duplicates skipped: ${duplicatesSkipped}. New unique: ${imported}. Skipped invalid: ${skipped}. Errors: ${errors}.`,
     });
   } catch (err: any) {
     sendEvent({
       type: "error",
-      message: err.message || "Question import failed",
+      message: err.message || "VT import failed",
     });
   } finally {
     res.end();
