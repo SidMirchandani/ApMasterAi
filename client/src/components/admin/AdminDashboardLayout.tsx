@@ -83,7 +83,7 @@ export function AdminDashboardLayout({
               </div>
             </div>
             <nav
-              className="-mx-3 px-3 sm:mx-0 sm:px-0 flex gap-0 sm:gap-1 border-b border-slate-200 dark:border-slate-800 overflow-x-auto overscroll-x-contain [scrollbar-width:thin]"
+              className="-mx-3 px-3 sm:mx-0 sm:px-0 flex gap-0 sm:gap-1 border-b border-slate-200 dark:border-slate-800 overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:thin]"
               aria-label="Admin sections"
             >
               {tabs.map(({ id, label, shortLabel, icon: Icon }) => {

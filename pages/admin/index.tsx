@@ -20,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Input } from "../../client/src/components/ui/input";
 import { Alert, AlertDescription } from "../../client/src/components/ui/alert";
 import { Checkbox } from "../../client/src/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -57,6 +58,14 @@ const AP_SUBJECT_CODES: string[] = [
 
 const VALID_TABS = ["insights", "library", "users"] as const;
 type AdminTab = (typeof VALID_TABS)[number];
+
+/** Mutually exclusive row filters in Content Library (radio group). */
+type AdminRowQualityFilter =
+  | "all"
+  | "missing_explanation"
+  | "error_reports"
+  | "unverified"
+  | "verification_failed";
 
 type Block =
   | { type: "text"; value: string }
@@ -301,10 +310,7 @@ export default function AdminPage() {
   // Filters
   const [subject, setSubject] = useState("");
   const [section, setSection] = useState("");
-  const [showOnlyMissingExplanation, setShowOnlyMissingExplanation] = useState(false);
-  const [showOnlyErrorReports, setShowOnlyErrorReports] = useState(false);
-  const [showOnlyUnverified, setShowOnlyUnverified] = useState(false);
-  const [showOnlyVerificationFailed, setShowOnlyVerificationFailed] = useState(false);
+  const [rowQualityFilter, setRowQualityFilter] = useState<AdminRowQualityFilter>("all");
   const [showOnlyVerificationIncomplete, setShowOnlyVerificationIncomplete] = useState(false);
   /** Answer choices mix plain text and image (formula) choices — for Fix image choices workflow. */
   const [showOnlyMixedPrompts, setShowOnlyMixedPrompts] = useState(false);
@@ -326,16 +332,13 @@ export default function AdminPage() {
 
   const displayedItems = useMemo(() => {
     let list = items;
-    if (showOnlyMissingExplanation) {
-      list = list.filter(q => !q.explanation || q.explanation.trim() === "");
-    }
-    if (showOnlyErrorReports) {
-      list = list.filter(q => (q.tags || []).includes("error_reported"));
-    }
-    if (showOnlyUnverified) {
+    if (rowQualityFilter === "missing_explanation") {
+      list = list.filter((q) => !q.explanation || q.explanation.trim() === "");
+    } else if (rowQualityFilter === "error_reports") {
+      list = list.filter((q) => (q.tags || []).includes("error_reported"));
+    } else if (rowQualityFilter === "unverified") {
       list = list.filter((q) => !q.lastVerification?.status);
-    }
-    if (showOnlyVerificationFailed) {
+    } else if (rowQualityFilter === "verification_failed") {
       list = list.filter((q) => {
         const s = q.lastVerification?.status;
         return s === "fail" || s === "error" || s === "needs_review";
@@ -358,10 +361,7 @@ export default function AdminPage() {
     return list;
   }, [
     items,
-    showOnlyMissingExplanation,
-    showOnlyErrorReports,
-    showOnlyUnverified,
-    showOnlyVerificationFailed,
+    rowQualityFilter,
     showOnlyVerificationIncomplete,
     showOnlyMixedPrompts,
     mixedPromptsPinnedIds,
@@ -1655,48 +1655,52 @@ export default function AdminPage() {
                 Search
               </Button>
             </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <RadioGroup
+              value={rowQualityFilter}
+              onValueChange={(v) => {
+                if (
+                  v === "all" ||
+                  v === "missing_explanation" ||
+                  v === "error_reports" ||
+                  v === "unverified" ||
+                  v === "verification_failed"
+                ) {
+                  setRowQualityFilter(v);
+                }
+              }}
+              className="flex flex-wrap gap-x-6 gap-y-2"
+            >
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="missing-explanation-only"
-                  checked={showOnlyMissingExplanation}
-                  onCheckedChange={(v) => setShowOnlyMissingExplanation(!!v)}
-                />
-                <Label htmlFor="missing-explanation-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
+                <RadioGroupItem value="all" id="filter-quality-all" />
+                <Label htmlFor="filter-quality-all" className="text-sm font-medium cursor-pointer dark:text-slate-300">
+                  All
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="missing_explanation" id="filter-quality-missing-explanation" />
+                <Label htmlFor="filter-quality-missing-explanation" className="text-sm font-medium cursor-pointer dark:text-slate-300">
                   No Explaination
                 </Label>
               </div>
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="error-reports-only"
-                  checked={showOnlyErrorReports}
-                  onCheckedChange={(v) => setShowOnlyErrorReports(!!v)}
-                />
-                <Label htmlFor="error-reports-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
+                <RadioGroupItem value="error_reports" id="filter-quality-error-reports" />
+                <Label htmlFor="filter-quality-error-reports" className="text-sm font-medium cursor-pointer dark:text-slate-300">
                   Error Reported
                 </Label>
               </div>
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="unverified-only"
-                  checked={showOnlyUnverified}
-                  onCheckedChange={(v) => setShowOnlyUnverified(!!v)}
-                />
-                <Label htmlFor="unverified-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
+                <RadioGroupItem value="unverified" id="filter-quality-unverified" />
+                <Label htmlFor="filter-quality-unverified" className="text-sm font-medium cursor-pointer dark:text-slate-300">
                   Un-Verified
                 </Label>
               </div>
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="verification-failed-only"
-                  checked={showOnlyVerificationFailed}
-                  onCheckedChange={(v) => setShowOnlyVerificationFailed(!!v)}
-                />
-                <Label htmlFor="verification-failed-only" className="text-sm font-medium cursor-pointer dark:text-slate-300">
+                <RadioGroupItem value="verification_failed" id="filter-quality-verification-failed" />
+                <Label htmlFor="filter-quality-verification-failed" className="text-sm font-medium cursor-pointer dark:text-slate-300">
                   Verification Failed
                 </Label>
               </div>
-            </div>
+            </RadioGroup>
           </CardContent>
         </Card>
 
@@ -1711,10 +1715,10 @@ export default function AdminPage() {
                   </CardTitle>
                 </div>
                 <CardDescription>
-                  {showOnlyMissingExplanation && items.length > 0 && "Filter: No Explaination. "}
-                  {showOnlyErrorReports && items.length > 0 && "Filter: Error Reported. "}
-                  {showOnlyUnverified && items.length > 0 && "Filter: Un-Verified. "}
-                  {showOnlyVerificationFailed && items.length > 0 && "Filter: Verification Failed. "}
+                  {rowQualityFilter === "missing_explanation" && items.length > 0 && "Filter: No Explaination. "}
+                  {rowQualityFilter === "error_reports" && items.length > 0 && "Filter: Error Reported. "}
+                  {rowQualityFilter === "unverified" && items.length > 0 && "Filter: Un-Verified. "}
+                  {rowQualityFilter === "verification_failed" && items.length > 0 && "Filter: Verification Failed. "}
                   {showOnlyVerificationIncomplete && items.length > 0 && "Filter: Incomplete Prompt. "}
                   {showOnlyMixedPrompts && items.length > 0 && "Filter: Mixed Prompts (text + image choices). "}
                   {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
@@ -1838,7 +1842,7 @@ export default function AdminPage() {
                 </div>
               );
             })()}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-hidden max-w-full">
               <table className="w-full text-sm table-fixed">
                 <colgroup>
                   <col className="w-10" />
@@ -1891,10 +1895,8 @@ export default function AdminPage() {
               {displayedItems.length === 0 && (
                 <div className="p-8 text-center text-slate-500 dark:text-slate-400">
                   {items.length > 0 &&
-                  (showOnlyMissingExplanation ||
-                    showOnlyErrorReports ||
-                    showOnlyUnverified ||
-                    showOnlyVerificationFailed ||
+                  (rowQualityFilter !== "all" ||
+                    showOnlyVerificationIncomplete ||
                     showOnlyMixedPrompts)
                     ? "No questions match the current filters."
                     : "No questions found. Upload a CSV or adjust filters."}
