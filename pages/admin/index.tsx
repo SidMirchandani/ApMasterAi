@@ -370,7 +370,7 @@ export default function AdminPage() {
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(
     new Set(),
   );
-  const [selectedAction, setSelectedAction] = useState<string>("fix-prompts");
+  const [selectedAction, setSelectedAction] = useState<string>("verify-questions");
   const [cheatMode, setCheatMode] = useState(false);
   const aiActionAbortRef = useRef<AbortController | null>(null);
   const [explanationProgress, setExplanationProgress] = useState<{
@@ -1010,7 +1010,25 @@ export default function AdminPage() {
     setLastExplanationSummary(null);
 
     setGeneratingExplanations(true);
-    const questionIds = Array.from(selectedQuestions);
+    let questionIds = Array.from(selectedQuestions);
+
+    // For "Generate Explanations", only send questions that are actually missing explanations.
+    if (selectedAction === "explanations") {
+      const byId = new Map(items.map((q) => [q.id, q]));
+      const missingExplanationIds = questionIds.filter((id) => {
+        const q = byId.get(id);
+        return !q?.explanation || q.explanation.trim() === "";
+      });
+
+      if (missingExplanationIds.length === 0) {
+        toast.error("All selected questions already have explanations");
+        setGeneratingExplanations(false);
+        setExplanationProgress(null);
+        return;
+      }
+
+      questionIds = missingExplanationIds;
+    }
 
     let endpoint = "/api/generateExplanations";
 
@@ -1637,12 +1655,8 @@ export default function AdminPage() {
                     <SelectValue placeholder="Select Action" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="fix-prompts">Fix Prompts & Choices</SelectItem>
-                    <SelectItem value="fix-mixed-media-prompts">Fix Mixed Media Prompts</SelectItem>
                     <SelectItem value="explanations">Generate Explanations</SelectItem>
                     <SelectItem value="re-generate-explanations">Reformat Existing Explanations</SelectItem>
-                    <SelectItem value="study-notes">Generate Study Notes</SelectItem>
-                    <SelectItem value="re-generate-study-notes">Re-Generate Study Notes</SelectItem>
                     <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
                     <SelectItem value="verify-questions">Verify Questions</SelectItem>
                   </SelectContent>
