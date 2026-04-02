@@ -453,6 +453,15 @@ export default function AdminPage() {
   );
   const alreadyAdded = allApSubjectsRef.filter((s) => subjectStatus[s.code]?.hasQuestions);
 
+  const subjectAggregateCounts = Object.values(subjectStatus).reduce(
+    (acc, s) => ({
+      total: acc.total + (s.questionCount || 0),
+      v1: acc.v1 + (s.crackApCount ?? 0),
+      v2: acc.v2 + (s.varsityCount ?? 0),
+    }),
+    { total: 0, v1: 0, v2: 0 },
+  );
+
   async function loadSubjectStatus() {
     if (!token) return;
     setLoadingStatus(true);
@@ -1378,13 +1387,24 @@ export default function AdminPage() {
                   {loadingStatus
                     ? "Loading..."
                     : `${alreadyAdded.length} of ${allApSubjectsRef.length} subjects have questions`}
+                  {!loadingStatus && (
+                    <span className="block mt-1 text-[11px] text-slate-500 dark:text-slate-500">
+                      v1 = CrackAP, v2 = Varsity Tutors
+                    </span>
+                  )}
                 </CardDescription>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {Object.values(subjectStatus).reduce((sum, s) => sum + (s.questionCount || 0), 0).toLocaleString()}
+                <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tabular-nums leading-tight">
+                  {subjectAggregateCounts.total.toLocaleString()}{" "}
+                  <span className="text-slate-400 font-semibold">-</span>{" "}
+                  {subjectAggregateCounts.v1.toLocaleString()}
+                  <span className="text-slate-500 dark:text-slate-400 text-lg sm:text-xl">(v1)</span>{" "}
+                  <span className="text-slate-400 font-semibold">+</span>{" "}
+                  {subjectAggregateCounts.v2.toLocaleString()}
+                  <span className="text-slate-500 dark:text-slate-400 text-lg sm:text-xl">(v2)</span>
                 </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">Total Questions</div>
+                <div className="text-xs text-slate-500 dark:text-slate-500">Total Questions</div>
               </div>
             </div>
           </CardHeader>
@@ -1395,10 +1415,12 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {allApSubjectsRef.map(s => {
+                {allApSubjectsRef.map(s => {
                   const status = subjectStatus[s.code];
                   const hasQuestions = status?.hasQuestions;
                   const count = status?.questionCount || 0;
+                  const v1 = status?.crackApCount ?? 0;
+                  const v2 = status?.varsityCount ?? 0;
 
                   return (
                     <div
@@ -1428,8 +1450,14 @@ export default function AdminPage() {
                         {s.label.replace("AP ", "")}
                       </div>
                       {hasQuestions ? (
-                        <div className="text-lg font-bold text-green-700 dark:text-green-400">
-                          {count.toLocaleString()}
+                        <div className="text-sm font-bold text-green-700 dark:text-green-400 tabular-nums leading-snug break-words">
+                          {count.toLocaleString()}{" "}
+                          <span className="text-slate-500 dark:text-slate-400 font-semibold">-</span>{" "}
+                          {v1.toLocaleString()}
+                          <span className="text-green-600/80 dark:text-green-500/90 font-semibold">(v1)</span>{" "}
+                          <span className="text-slate-500 dark:text-slate-400 font-semibold">+</span>{" "}
+                          {v2.toLocaleString()}
+                          <span className="text-green-600/80 dark:text-green-500/90 font-semibold">(v2)</span>
                         </div>
                       ) : (
                         <div className="text-xs text-slate-400 dark:text-slate-500 italic">No questions yet</div>
