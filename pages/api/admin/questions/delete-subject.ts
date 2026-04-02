@@ -29,7 +29,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!subjectCode) {
     return res.status(400).json({ error: "subjectCode required" });
   }
-  const scope = scopeRaw === "vt" ? "vt" : "all";
+  const scope: "all" | "vt" | "non_vt" =
+    scopeRaw === "vt" ? "vt" : scopeRaw === "non_vt" ? "non_vt" : "all";
 
   const firebaseAdmin = getFirebaseAdmin();
   if (!firebaseAdmin) {
@@ -60,6 +61,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         totalDeleted += snapshot.size;
       }
     } else {
+      const docMatchesScope = (d: QueryDocumentSnapshot) => {
+        const src = d.get("source");
+        if (scope === "vt") return src === "VT";
+        return src !== "VT";
+      };
       let lastDoc: QueryDocumentSnapshot | null = null;
       for (;;) {
         let q = firestore
@@ -71,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const snapshot = await q.get();
         if (snapshot.empty) break;
         lastDoc = snapshot.docs[snapshot.docs.length - 1];
-        const toDelete = snapshot.docs.filter((d) => d.get("source") === "VT");
+        const toDelete = snapshot.docs.filter(docMatchesScope);
         if (toDelete.length > 0) {
           const batch = firestore.batch();
           toDelete.forEach((doc) => batch.delete(doc.ref));

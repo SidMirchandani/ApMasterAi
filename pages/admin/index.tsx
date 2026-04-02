@@ -628,7 +628,7 @@ export default function AdminPage() {
   const [removingSubject, setRemovingSubject] = useState<string | null>(null);
   const [subjectRemoveOpen, setSubjectRemoveOpen] = useState(false);
   const [subjectRemoveCode, setSubjectRemoveCode] = useState<string | null>(null);
-  const [subjectRemoveScope, setSubjectRemoveScope] = useState<"all" | "vt" | null>(null);
+  const [subjectRemoveScope, setSubjectRemoveScope] = useState<"all" | "vt" | "non_vt" | null>(null);
 
   function openSubjectRemoveDialog(code: string) {
     setSubjectRemoveCode(code);
@@ -651,7 +651,9 @@ export default function AdminPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        toast.success(`Removed ${data.deleted} question(s) for ${code} (${subjectRemoveScope === "all" ? "ALL" : "VT"})`);
+        const scopeLabel =
+          subjectRemoveScope === "all" ? "ALL" : subjectRemoveScope === "vt" ? "VT" : "NON-VT";
+        toast.success(`Removed ${data.deleted} question(s) for ${code} (${scopeLabel})`);
         loadSubjectStatus();
         setSubjectRemoveOpen(false);
         setSubjectRemoveCode(null);
@@ -1549,6 +1551,20 @@ export default function AdminPage() {
                     />
                     <Label htmlFor="subject-remove-all" className="text-sm font-normal text-slate-300 cursor-pointer leading-snug">
                       <span className="font-semibold text-slate-100">ALL</span> — remove every question for this subject
+                    </Label>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="subject-remove-non-vt"
+                      checked={subjectRemoveScope === "non_vt"}
+                      onCheckedChange={(c) => {
+                        setSubjectRemoveScope(c === true ? "non_vt" : null);
+                      }}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="subject-remove-non-vt" className="text-sm font-normal text-slate-300 cursor-pointer leading-snug">
+                      <span className="font-semibold text-slate-100">NON-VT</span> — remove only questions where{" "}
+                      <code className="text-xs bg-slate-800 px-1 rounded">source ≠ VT</code> (missing or other source)
                     </Label>
                   </div>
                   <div className="flex items-start gap-3">

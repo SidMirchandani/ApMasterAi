@@ -178,11 +178,13 @@ export const SUBJECT_SECTIONS: SubjectSections = {
     { code: "FLU", name: "Fluids" },
   ],
   APPHYS2: [
-    { code: "FCS", name: "Fluids, Capillarity, and Surface Tension" },
-    { code: "TE", name: "Thermal Physics and Energy" },
-    { code: "EE", name: "Electrostatics and Electricity" },
-    { code: "MC", name: "Magnetism and Circuits" },
-    { code: "OO", name: "Optics and Oscillations" },
+    { code: "THD", name: "Thermodynamics" },
+    { code: "EFP", name: "Electric Force, Field, and Potential" },
+    { code: "EC", name: "Electric Circuits" },
+    { code: "MEI", name: "Magnetism and Electromagnetism" },
+    { code: "GPO", name: "Geometric Optics" },
+    { code: "WPO", name: "Waves, Sound, and Physical Optics" },
+    { code: "MOD", name: "Modern Physics" },
   ],
 };
 
