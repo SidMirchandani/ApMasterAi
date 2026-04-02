@@ -120,7 +120,46 @@ We **dedupe** URLs, use a short pause between requests, and cap how many pages w
 
 ---
 
-## 8. Files to know
+## 8. How help-page HTML parsing handles embedded code
+
+Some Learn-by-Concept help pages (including AP Computer Science A topics like
+“Assignment Statements and Input”) render the **full question, code snippet,
+choices, and explanation directly in the HTML**, instead of (or in addition to)
+the flight JSON.
+
+When the main JSON extractor finds **no questions** for a `/help/...` URL, we
+fall back to `extractHelpQuestionsFromHtml`:
+
+- It finds the main “Help Questions” card: `div.bg-white.rounded-2xl`.
+- Each question lives in a `div.border-b.border-slate-200` inside that card.
+- For each question:
+  - We grab the **first `div.prose`** in that question block (this holds the
+    visible stem and any code snippet).
+  - All `<p>` children get concatenated into the **stem text**.
+  - Any `<pre>` / `<code>` blocks **within that same `div.prose`** are
+    collected, normalized for whitespace, and appended to the stem with
+    `\n\n` between blocks.  
+    - This is what turns code like the Java snippet from the “quizScore ==
+      input.nextDouble();” question into part of the prompt text.
+  - Choices still come from the `div.w-full.p-4` option blocks, with
+    `border-green-500` marking the correct answer.
+  - The explanation is read from the section whose heading text includes
+    “Explanation”.
+
+By the time we convert to `VarsityQuestion`, the question’s `prompt_blocks`
+will contain a single text block that includes **both**:
+
+1. The natural-language stem (e.g., “Identify the error in the following
+   assignment statement and suggest a correction…”), and  
+2. The full code block, with line breaks preserved.
+
+This applies across subjects that share the same help-page card layout, so APCSA
+questions with code now show up with the inline program text included in the
+prompt.
+
+---
+
+## 9. Files to know
 
 | Piece | Where |
 |--------|--------|
@@ -130,7 +169,7 @@ We **dedupe** URLs, use a short pause between requests, and cap how many pages w
 
 ---
 
-## 9. One-sentence summary
+## 10. One-sentence summary
 
 **We download Varsity HTML, cut out the embedded `questions` JSON (two different “end markers” for practice vs help), resolve shorthand explanations like `$20` using Next flight rows (with hex lengths), then convert everything into our internal question format and guess the section from keywords.**
 

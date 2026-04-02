@@ -414,11 +414,46 @@ function extractHelpQuestionsFromHtml(html: string): RawVarsityQuestion[] {
   card.find("div.border-b.border-slate-200").each((_, el) => {
     const root = $(el);
 
-    const qText = root
-      .find("div.prose p")
-      .first()
-      .text()
-      .trim();
+    const stemProse = root.find("div.prose").first();
+
+    const stemParts: string[] = [];
+    if (stemProse.length) {
+      stemProse.find("p").each((_, p) => {
+        const t = $(p).text().trim();
+        if (!t) return;
+        const last = stemParts[stemParts.length - 1] || "";
+        if (t === last) return;
+        stemParts.push(t);
+      });
+
+      const codeBlocks: string[] = [];
+      stemProse.find("pre, code").each((_, codeEl) => {
+        const t = $(codeEl).text();
+        // Normalize whitespace so code is compact and doesn't have large vertical gaps:
+        // - strip trailing spaces
+        // - collapse 3+ blank lines down to one
+        // - trim leading/trailing blank lines
+        // - remove standalone blank lines entirely (no internal empty lines)
+        const withoutTrailingSpaces = t.replace(/[ \t]+$/gm, "");
+        const collapsedBlankLines = withoutTrailingSpaces.replace(/\n{3,}/g, "\n\n");
+        const trimmedEdges = collapsedBlankLines.replace(/^\s*\n/, "").replace(/\n\s*$/, "");
+        const lines = trimmedEdges.split(/\r?\n/);
+        const compactLines = lines.filter((line) => line.trim().length > 0);
+        const finalText = compactLines.join("\n").trimEnd();
+        if (!finalText) return;
+        const last = codeBlocks[codeBlocks.length - 1] || "";
+        if (finalText === last) return;
+        codeBlocks.push(finalText);
+      });
+
+      if (codeBlocks.length) {
+        const combined = codeBlocks.join("\n\n");
+        const fenced = ["```java", combined, "```"].join("\n");
+        stemParts.push(fenced);
+      }
+    }
+
+    const qText = stemParts.join("\n\n").trim();
     if (!qText) return;
 
     const answers: RawVarsityAnswer[] = [];
@@ -668,7 +703,7 @@ export async function scrapeVarsityForSubject(
       onProgress({
         linksCrawled,
         rawQuestionsFound,
-        message: `Crawling Varsity... ${linksCrawled} pages, ${rawQuestionsFound} raw questions so far.`,
+        message: `Calling API... ${linksCrawled} requests, ${rawQuestionsFound} questions received so far.`,
       });
     }
     if (!rawQuestions.length) continue;

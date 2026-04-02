@@ -101,13 +101,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `Starting Varsity Tutors scrape for ${subjectCode}...`,
+      message: `Starting API-powered question import for ${subjectCode}...`,
     });
 
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `Fetching Varsity practice & help pages...`,
+      message: `Calling external API to fetch question data...`,
     });
 
     const { questions, linksCrawled, rawQuestionsFound } = await scrapeVarsityForSubject(
@@ -132,7 +132,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sendEvent({
       type: "status",
       phase: "scraping",
-      message: `Crawl done: ${linksCrawled} links, ${rawQuestionsFound} raw questions in payload, ${questions.length} after filtering. Loading fingerprints...`,
+      message: `API phase done: ${linksCrawled} calls, ${rawQuestionsFound} questions received, ${questions.length} after filtering. Loading fingerprints...`,
       linksCrawled,
       rawQuestionsFound,
       current: 0,
@@ -146,7 +146,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!questions.length) {
       sendEvent({
         type: "error",
-        message: `No Varsity Tutors questions found for subject ${subjectCode}`,
+        message: `No questions found for subject ${subjectCode} from the external API`,
         linksCrawled,
         rawQuestionsFound,
       });
@@ -196,7 +196,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               errors,
               linksCrawled,
               rawQuestionsFound,
-              message: "Scraping questions from Varsity Tutors...",
+              message: "Importing questions from external API...",
             });
             await new Promise((resolve) => setTimeout(resolve, 200));
             continue;
@@ -251,7 +251,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 total: questions.length,
                 linksCrawled,
                 rawQuestionsFound,
-                message: "Scraping questions from Varsity Tutors...",
+                message: "Importing questions from external API...",
               });
             } catch (err: any) {
               errors++;
@@ -277,7 +277,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         errors,
         linksCrawled,
         rawQuestionsFound,
-        message: "Scraping questions from Varsity Tutors...",
+        message: "Importing questions from external API...",
       });
 
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -300,12 +300,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       linksCrawled,
       rawQuestionsFound,
       newUniqueQuestionsAdded: imported,
-      message: `Done. Links crawled: ${linksCrawled}. Raw in payload: ${rawQuestionsFound}. Duplicates skipped: ${duplicatesSkipped}. New unique: ${imported}. Skipped invalid: ${skipped}. Errors: ${errors}.`,
+      message: `Done. API calls: ${linksCrawled}. Questions received: ${rawQuestionsFound}. Duplicates skipped: ${duplicatesSkipped}. New unique: ${imported}. Skipped invalid: ${skipped}. Errors: ${errors}.`,
     });
   } catch (err: any) {
     sendEvent({
       type: "error",
-      message: err.message || "Varsity Tutors scrape failed",
+      message: err.message || "Question import failed",
     });
   } finally {
     res.end();

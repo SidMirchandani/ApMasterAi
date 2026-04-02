@@ -26,7 +26,18 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, className 
           const text = block.value || (block as any).content || "";
           if (!text) return null;
           return (
-            <RichTextContent key={index} className="text-gray-900 dark:text-white leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+            <RichTextContent
+              key={index}
+              className="
+                text-gray-900 dark:text-white leading-relaxed prose prose-sm dark:prose-invert max-w-none
+                /* VS Code-like editor styling for code blocks */
+                prose-pre:font-mono prose-pre:text-xs sm:prose-pre:text-sm prose-pre:leading-relaxed
+                prose-pre:bg-[#f3f3f3] prose-pre:text-[#333333] prose-pre:border prose-pre:border-[#d4d4d4]
+                prose-pre:rounded-[6px] prose-pre:px-4 prose-pre:py-3 prose-pre:shadow-sm
+                dark:prose-pre:bg-[#1e1e1e] dark:prose-pre:text-[#d4d4d4] dark:prose-pre:border-[#3c3c3c]
+                prose-code:bg-transparent prose-code:text-inherit
+              "
+            >
               {text}
             </RichTextContent>
           );

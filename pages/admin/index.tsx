@@ -397,20 +397,6 @@ export default function AdminPage() {
     verifyFailed?: number;
   } | null>(null);
 
-  // Add Subject state (CrackAP)
-  const [addSubjectCode, setAddSubjectCode] = useState("");
-  const [addingSubject, setAddingSubject] = useState(false);
-  const [addSubjectProgress, setAddSubjectProgress] = useState<{
-    current: number;
-    total: number;
-    imported: number;
-    skipped: number;
-    errors: number;
-    message: string;
-    phase: string;
-  } | null>(null);
-  const [addSubjectLog, setAddSubjectLog] = useState<string[]>([]);
-  const addSubjectAbortRef = useRef<AbortController | null>(null);
   const [subjectStatus, setSubjectStatus] = useState<
     Record<
       string,
@@ -424,7 +410,7 @@ export default function AdminPage() {
   >({});
   const [loadingStatus, setLoadingStatus] = useState(false);
 
-  // Add Subject from Varsity Tutors state
+  // Import AI-generated question state (external source)
   const [varsitySubjectCode, setVarsitySubjectCode] = useState("");
   const [addingVarsitySubject, setAddingVarsitySubject] = useState(false);
   const [varsitySubjectProgress, setVarsitySubjectProgress] = useState<{
@@ -464,12 +450,10 @@ export default function AdminPage() {
     message: string;
   } | null>(null);
 
-  const availableToAddCrackAp = allApSubjectsRef.filter(
-    (s) => !(subjectStatus[s.code]?.crackApCount && subjectStatus[s.code].crackApCount > 0)
-  );
-  const availableToAddVarsity = allApSubjectsRef.filter(
-    (s) => !(subjectStatus[s.code]?.varsityCount && subjectStatus[s.code].varsityCount > 0)
-  );
+  // Allow re-importing Varsity questions even for subjects that already have
+  // Varsity data; the import API de-duplicates using vt_content_hash so only
+  // truly new questions will be added.
+  const availableToAddVarsity = allApSubjectsRef;
   const alreadyAdded = allApSubjectsRef.filter((s) => subjectStatus[s.code]?.hasQuestions);
 
   async function loadSubjectStatus() {
@@ -524,99 +508,6 @@ export default function AdminPage() {
     }
   }
 
-  async function startAddSubject() {
-    if (!token || !addSubjectCode) return;
-    setAddingSubject(true);
-    setAddSubjectLog([]);
-    const subjectLabel = allApSubjectsRef.find(s => s.code === addSubjectCode)?.label || addSubjectCode;
-    setAddSubjectProgress({
-      current: 0,
-      total: 0,
-      imported: 0,
-      skipped: 0,
-      errors: 0,
-      message: `Starting import for ${subjectLabel}...`,
-      phase: "probing",
-    });
-
-    const controller = new AbortController();
-    addSubjectAbortRef.current = controller;
-
-    try {
-      const res = await fetch("/api/admin/add-subject", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ subjectCode: addSubjectCode }),
-        signal: controller.signal,
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        toast.error(err.error || "Failed to add subject");
-        setAddingSubject(false);
-        return;
-      }
-
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        toast.error("No response stream");
-        setAddingSubject(false);
-        return;
-      }
-
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === "progress" || event.type === "batch" || event.type === "status") {
-              setAddSubjectProgress({
-                current: event.current || 0,
-                total: event.total || 0,
-                imported: event.imported || 0,
-                skipped: event.skipped || 0,
-                errors: event.errors || 0,
-                message: event.message || "",
-                phase: event.phase || "scraping",
-              });
-            }
-            if (event.type === "complete") {
-              toast.success(event.message);
-              loadSubjectStatus();
-              setAddSubjectCode("");
-            }
-          } catch {}
-        }
-      }
-    } catch (err: any) {
-      if (err.name !== "AbortError") {
-        toast.error("Failed: " + err.message);
-      }
-    } finally {
-      setAddingSubject(false);
-      addSubjectAbortRef.current = null;
-    }
-  }
-
-  function stopAddSubject() {
-    addSubjectAbortRef.current?.abort();
-    setAddingSubject(false);
-    toast("Import cancelled");
-  }
-
   async function startVarsityAddSubject() {
     if (!token || !varsitySubjectCode) return;
     setAddingVarsitySubject(true);
@@ -630,7 +521,7 @@ export default function AdminPage() {
       duplicatesSkipped: 0,
       linksCrawled: 0,
       rawQuestionsFound: 0,
-      message: `Starting Varsity Tutors import for ${subjectLabel}...`,
+      message: `Starting import for ${subjectLabel}...`,
       phase: "scraping",
     });
 
@@ -650,7 +541,7 @@ export default function AdminPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err.error || "Failed to add Varsity Tutors subject");
+        toast.error(err.error || "Failed to import questions for this subject");
         setAddingVarsitySubject(false);
         return;
       }
@@ -698,7 +589,7 @@ export default function AdminPage() {
               return;
             }
             if (event.type === "error") {
-              const msg = event.message || "Varsity import failed";
+              const msg = event.message || "Import failed";
               setVarsitySubjectProgress((prev) => ({
                 current: prev?.current || 0,
                 total: prev?.total || 0,
@@ -719,7 +610,7 @@ export default function AdminPage() {
       }
     } catch (err: any) {
       if (err.name !== "AbortError") {
-        toast.error("Varsity import failed: " + err.message);
+        toast.error("Import failed: " + err.message);
       }
     } finally {
       setAddingVarsitySubject(false);
@@ -1467,15 +1358,6 @@ export default function AdminPage() {
                   const hasQuestions = status?.hasQuestions;
                   const count = status?.questionCount || 0;
 
-                  const sourceLabels: string[] = [];
-                  if (status?.crackApCount && status.crackApCount > 0) {
-                    sourceLabels.push("CA");
-                  }
-                  if (status?.varsityCount && status.varsityCount > 0) {
-                    sourceLabels.push("VT");
-                  }
-                  const sourceDisplay = sourceLabels.length > 0 ? ` (${sourceLabels.join(", ")})` : "";
-
                   return (
                     <div
                       key={s.code}
@@ -1506,7 +1388,6 @@ export default function AdminPage() {
                       {hasQuestions ? (
                         <div className="text-lg font-bold text-green-700 dark:text-green-400">
                           {count.toLocaleString()}
-                          {sourceDisplay}
                         </div>
                       ) : (
                         <div className="text-xs text-slate-400 dark:text-slate-500 italic">Not imported</div>
@@ -1519,90 +1400,15 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* Add Subject from CrackAP Card */}
-        <Card className="border-2 border-dashed border-blue-500/30 dark:bg-slate-900/60 dark:border-blue-600/30 rounded-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 dark:text-white">
-              <Zap className="w-5 h-5 text-blue-500" />
-              Add Subject from CrackAP
-            </CardTitle>
-            <CardDescription className="dark:text-slate-400">
-              Select an AP subject to automatically scrape questions from CrackAP, classify by unit, and import
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3 items-end">
-              <div className="flex-1">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Subject to Add</label>
-                <Select value={addSubjectCode} onValueChange={setAddSubjectCode} disabled={addingSubject}>
-                  <SelectTrigger className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
-                    <SelectValue
-                      placeholder={
-                        loadingStatus
-                          ? "Loading subjects..."
-                          : availableToAddCrackAp.length > 0
-                          ? "Select AP Subject"
-                          : "All subjects imported from CrackAP"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableToAddCrackAp.map((s) => (
-                      <SelectItem key={s.code} value={s.code}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {addingSubject ? (
-                <Button onClick={stopAddSubject} variant="destructive" className="min-w-[140px]">
-                  <Square className="w-4 h-4 mr-2" />
-                  Stop Import
-                </Button>
-              ) : (
-                <Button
-                  onClick={startAddSubject}
-                  disabled={!addSubjectCode || loadingStatus}
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white min-w-[140px]"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Add Subject
-                </Button>
-              )}
-            </div>
-
-            {addSubjectProgress && (
-              <div className="space-y-3 pt-2">
-                <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
-                  <span>{addSubjectProgress.message}</span>
-                  {addSubjectProgress.total > 0 && (
-                    <span>{Math.round((addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100)}%</span>
-                  )}
-                </div>
-                <Progress
-                  value={(addSubjectProgress.current / Math.max(addSubjectProgress.total, 1)) * 100}
-                  className="h-2"
-                />
-                <div className="flex gap-4 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="text-green-600 font-medium">Imported: {addSubjectProgress.imported}</span>
-                  <span className="text-amber-500">Skipped: {addSubjectProgress.skipped}</span>
-                  <span className="text-red-600">Errors: {addSubjectProgress.errors}</span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Add Subject from Varsity Tutors Card */}
+        {/* Import AI Generated Questions Card */}
         <Card className="border-2 border-dashed border-indigo-500/30 dark:bg-slate-900/60 dark:border-indigo-600/30 rounded-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 dark:text-white">
               <Zap className="w-5 h-5 text-indigo-500" />
-              Add Subject from Varsity Tutors
+              Import AI Generated Questions
             </CardTitle>
             <CardDescription className="dark:text-slate-400">
-              Select an AP subject to scrape stimulus-based MCQs from Varsity Tutors, map them to units, and import
+              Select an AP subject to import AI-generated multiple-choice questions and map them to units.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1613,11 +1419,7 @@ export default function AdminPage() {
                   <SelectTrigger className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
                     <SelectValue
                       placeholder={
-                        loadingStatus
-                          ? "Loading subjects..."
-                          : availableToAddVarsity.length > 0
-                          ? "Select AP Subject"
-                          : "All subjects imported from Varsity Tutors"
+                        loadingStatus ? "Loading subjects..." : "Select AP Subject (re-import allowed)"
                       }
                     />
                   </SelectTrigger>
@@ -1660,8 +1462,8 @@ export default function AdminPage() {
                   className="h-2"
                 />
                 <div className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="text-slate-600 dark:text-slate-300">Links crawled: {varsitySubjectProgress.linksCrawled}</span>
-                  <span className="text-slate-600 dark:text-slate-300">Raw in payload: {varsitySubjectProgress.rawQuestionsFound}</span>
+                  <span className="text-slate-600 dark:text-slate-300">API calls: {varsitySubjectProgress.linksCrawled}</span>
+                  <span className="text-slate-600 dark:text-slate-300">Questions received: {varsitySubjectProgress.rawQuestionsFound}</span>
                   <span className="text-amber-600 dark:text-amber-400">Dupes skipped: {varsitySubjectProgress.duplicatesSkipped}</span>
                   <span className="text-green-600 font-medium">New unique: {varsitySubjectProgress.imported}</span>
                   <span className="text-amber-500">Invalid skipped: {varsitySubjectProgress.skipped}</span>
@@ -2016,7 +1818,6 @@ export default function AdminPage() {
                     showOnlyErrorReports ||
                     showOnlyUnverified ||
                     showOnlyVerificationFailed ||
-                    showOnlyVerificationReview ||
                     showOnlyMixedPrompts)
                     ? "No questions match the current filters."
                     : "No questions found. Upload a CSV or adjust filters."}
