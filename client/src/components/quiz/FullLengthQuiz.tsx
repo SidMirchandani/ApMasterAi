@@ -274,12 +274,10 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     }
   };
 
-  const handleReviewSubmit = (updatedAnswers: { [key: number]: string }, updatedFlagged: Set<number>) => {
-    // Update local state first
-    setUserAnswers(updatedAnswers);
-    setFlaggedQuestions(updatedFlagged);
-    // Directly call submit handler
-    handleSubmitTest();
+  const handleReviewSubmit = (updatedAnswers: { [key: number]: string }, _updatedFlagged: Set<number>) => {
+    // Pass review edits directly — engine state has no bulk setters, and setState would not
+    // apply before submit anyway.
+    handleSubmitTest(updatedAnswers);
   };
 
   // Added logic for review mode rendering
