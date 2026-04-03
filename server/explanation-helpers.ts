@@ -212,14 +212,16 @@ export async function runExplanationGeneration({
   let updated = 0;
   let skipped = 0;
   let failed = 0;
-  const verb = isRegenerate ? "Re-generating" : "Generating";
-  const verbPast = isRegenerate ? "Re-generated" : "Generated";
+  const verb = isRegenerate ? "Reformatting" : "Generating";
+  const verbPast = isRegenerate ? "Reformatted" : "Generated";
 
   for (let i = 0; i < questionIds.length; i++) {
     const questionId = questionIds[i];
 
     if (onAborted()) {
-      console.log(`Client disconnected, stopping explanation ${isRegenerate ? "re-" : ""}generation.`);
+      console.log(
+        `Client disconnected, stopping explanation ${isRegenerate ? "reformatting" : "generation"}.`,
+      );
       break;
     }
 
@@ -334,7 +336,7 @@ export async function runExplanationGeneration({
       failed++;
       const isQuota = isQuotaError(error);
       console.error(
-        `✗ Failed to ${isRegenerate ? "re-" : ""}generate explanation for ${questionId}:`,
+        `✗ Failed to ${isRegenerate ? "reformat" : "generate"} explanation for ${questionId}:`,
         isQuota ? "Quota exhausted after retries" : error.message
       );
 
