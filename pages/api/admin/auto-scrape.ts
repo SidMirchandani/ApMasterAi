@@ -33,11 +33,11 @@ const SCRAPE_CONFIGS: Record<string, SubjectScrapeConfig> = {
     maxQuestionId: 900,
     sectionKeywords: {
       BEC: ["scarcity", "opportunity cost", "production possibilities", "comparative advantage", "absolute advantage", "specialization", "economic systems"],
-      EI: ["circular flow", "gdp", "unemployment", "inflation", "cpi", "business cycle", "recession", "expansion", "economic indicators"],
-      NI: ["aggregate demand", "aggregate supply", "multiplier", "fiscal policy", "government spending", "taxes", "ad-as model", "national income"],
+      EIBC: ["circular flow", "gdp", "unemployment", "inflation", "cpi", "business cycle", "recession", "expansion", "economic indicators"],
+      NIPD: ["aggregate demand", "aggregate supply", "multiplier", "fiscal policy", "government spending", "taxes", "ad-as model", "national income"],
       FS: ["money", "banking", "federal reserve", "monetary policy", "interest rates", "money supply", "loanable funds", "financial sector"],
-      LR: ["phillips curve", "lras", "natural rate of unemployment", "long-run growth", "productivity", "stabilization"],
-      OT: ["balance of payments", "exchange rates", "trade", "exports", "imports", "current account", "capital account", "open economy"],
+      LRCSP: ["phillips curve", "lras", "natural rate of unemployment", "long-run growth", "productivity", "stabilization"],
+      OEITF: ["balance of payments", "exchange rates", "trade", "exports", "imports", "current account", "capital account", "open economy"],
     },
   },
   APMICRO: {

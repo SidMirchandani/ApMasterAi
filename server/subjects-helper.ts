@@ -21,19 +21,19 @@ const SUBJECT_REGISTRY: Record<string, SubjectMeta> = {
     crackApPath: 'macroeconomics',
     units: [
       { id: 'BEC', title: 'Basic Economic Concepts', description: 'Scarcity, opportunity cost, production possibilities', examWeight: '5-10%' },
-      { id: 'EI', title: 'Economic Indicators and the Business Cycle', description: 'GDP, unemployment, inflation', examWeight: '12-17%' },
-      { id: 'NI', title: 'National Income and Price Determination', description: 'Aggregate demand and supply', examWeight: '17-27%' },
+      { id: 'EIBC', title: 'Economic Indicators & Business Cycle', description: 'GDP, unemployment, inflation', examWeight: '12-17%' },
+      { id: 'NIPD', title: 'National Income & Price Determination', description: 'Aggregate demand and supply', examWeight: '17-27%' },
       { id: 'FS', title: 'Financial Sector', description: 'Money, banking, and monetary policy', examWeight: '18-23%' },
-      { id: 'LR', title: 'Long-Run Consequences of Stabilization Policies', description: 'Fiscal policy and government spending', examWeight: '20-30%' },
-      { id: 'OT', title: 'Open Economy - International Trade and Finance', description: 'Balance of payments, exchange rates', examWeight: '10-13%' }
+      { id: 'LRCSP', title: 'Long-Run Consequences of Stabilization Policies', description: 'Fiscal policy and government spending', examWeight: '20-30%' },
+      { id: 'OEITF', title: 'Open Economy—International Trade and Finance', description: 'Balance of payments, exchange rates', examWeight: '10-13%' }
     ],
     sectionKeywords: {
       BEC: ["scarcity", "opportunity cost", "production possibilities", "comparative advantage", "absolute advantage", "specialization", "economic systems"],
-      EI: ["circular flow", "gdp", "unemployment", "inflation", "cpi", "business cycle", "recession", "expansion", "economic indicators"],
-      NI: ["aggregate demand", "aggregate supply", "multiplier", "fiscal policy", "government spending", "taxes", "ad-as model", "national income"],
+      EIBC: ["circular flow", "gdp", "unemployment", "inflation", "cpi", "business cycle", "recession", "expansion", "economic indicators"],
+      NIPD: ["aggregate demand", "aggregate supply", "multiplier", "fiscal policy", "government spending", "taxes", "ad-as model", "national income"],
       FS: ["money", "banking", "federal reserve", "monetary policy", "interest rates", "money supply", "loanable funds", "financial sector"],
-      LR: ["phillips curve", "lras", "natural rate of unemployment", "long-run growth", "productivity", "stabilization"],
-      OT: ["balance of payments", "exchange rates", "trade", "exports", "imports", "current account", "capital account", "open economy"],
+      LRCSP: ["phillips curve", "lras", "natural rate of unemployment", "long-run growth", "productivity", "stabilization"],
+      OEITF: ["balance of payments", "exchange rates", "trade", "exports", "imports", "current account", "capital account", "open economy"],
     },
   },
   'APMICRO': {

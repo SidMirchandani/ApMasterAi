@@ -18,7 +18,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, MoreVertical, User, Ban, Loader2, Users, Shield, ShieldOff, MapPin } from "lucide-react";
+import {
+  Search,
+  MoreVertical,
+  User,
+  Ban,
+  Loader2,
+  Users,
+  Shield,
+  ShieldOff,
+  MapPin,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 interface AdminUser {
@@ -35,6 +48,112 @@ interface AdminUser {
   hasDbAdmin: boolean;
 }
 
+type UserSortKey =
+  | "name"
+  | "email"
+  | "state"
+  | "joinDate"
+  | "lastLogin"
+  | "totalCoursesEnrolled"
+  | "status"
+  | "isAdmin";
+
+function parseTime(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+/** Null / invalid times sort after real times in both directions */
+function compareNullableTime(a: number | null, b: number | null, dir: "asc" | "desc"): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  const diff = a - b;
+  return dir === "asc" ? diff : -diff;
+}
+
+function compareUsers(a: AdminUser, b: AdminUser, key: UserSortKey, dir: "asc" | "desc"): number {
+  let cmp = 0;
+  switch (key) {
+    case "name":
+      cmp = (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" });
+      break;
+    case "email":
+      cmp = a.email.localeCompare(b.email, undefined, { sensitivity: "base" });
+      break;
+    case "state": {
+      const sa = a.state ?? "";
+      const sb = b.state ?? "";
+      if (!sa && !sb) cmp = 0;
+      else if (!sa) cmp = 1;
+      else if (!sb) cmp = -1;
+      else cmp = sa.localeCompare(sb, undefined, { sensitivity: "base" });
+      break;
+    }
+    case "joinDate":
+      return compareNullableTime(parseTime(a.joinDate), parseTime(b.joinDate), dir);
+    case "lastLogin":
+      return compareNullableTime(parseTime(a.lastLogin), parseTime(b.lastLogin), dir);
+    case "totalCoursesEnrolled":
+      cmp = a.totalCoursesEnrolled - b.totalCoursesEnrolled;
+      break;
+    case "status":
+      cmp = a.status.localeCompare(b.status);
+      break;
+    case "isAdmin": {
+      const ra = Number(a.isAdmin);
+      const rb = Number(b.isAdmin);
+      cmp = ra - rb;
+      if (cmp === 0) {
+        cmp = Number(a.hasEnvAdmin) - Number(b.hasEnvAdmin);
+        if (cmp === 0) cmp = Number(a.hasDbAdmin) - Number(b.hasDbAdmin);
+      }
+      break;
+    }
+    default:
+      cmp = 0;
+  }
+  return dir === "asc" ? cmp : -cmp;
+}
+
+function SortableTableHead({
+  label,
+  columnKey,
+  sortKey,
+  sortDir,
+  onSort,
+}: {
+  label: string;
+  columnKey: UserSortKey;
+  sortKey: UserSortKey;
+  sortDir: "asc" | "desc";
+  onSort: (k: UserSortKey) => void;
+}) {
+  const active = sortKey === columnKey;
+  return (
+    <TableHead className="font-semibold">
+      <button
+        type="button"
+        className="inline-flex items-center gap-1.5 -ml-1.5 px-1.5 py-0.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/80 text-left w-full min-w-0"
+        onClick={() => onSort(columnKey)}
+        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+      >
+        <span className="truncate">{label}</span>
+        {active ? (
+          sortDir === "asc" ? (
+            <ArrowUp className="h-3.5 w-3.5 shrink-0 opacity-80" />
+          ) : (
+            <ArrowDown className="h-3.5 w-3.5 shrink-0 opacity-80" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 shrink-0 opacity-35" />
+        )}
+      </button>
+    </TableHead>
+  );
+}
+
 export function AdminUsersTab({
   token,
   canMutateUsers,
@@ -46,12 +165,29 @@ export function AdminUsersTab({
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchEmail, setSearchEmail] = useState("");
+  const [sortKey, setSortKey] = useState<UserSortKey>("email");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const filteredUsers = useMemo(() => {
     if (!searchEmail.trim()) return users;
     const q = searchEmail.trim().toLowerCase();
     return users.filter((u) => u.email.toLowerCase().includes(q));
   }, [users, searchEmail]);
+
+  const sortedUsers = useMemo(() => {
+    const arr = [...filteredUsers];
+    arr.sort((a, b) => compareUsers(a, b, sortKey, sortDir));
+    return arr;
+  }, [filteredUsers, sortKey, sortDir]);
+
+  function handleSort(key: UserSortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
 
   useEffect(() => {
     if (!token) return;
@@ -226,21 +362,69 @@ export function AdminUsersTab({
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <TableHead className="font-semibold">Name</TableHead>
-                  <TableHead className="font-semibold">Email</TableHead>
-                  <TableHead className="font-semibold">State</TableHead>
-                  <TableHead className="font-semibold">Join Date</TableHead>
-                  <TableHead className="font-semibold">Last Login</TableHead>
-                  <TableHead className="font-semibold">Courses Enrolled</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Admin</TableHead>
+                  <SortableTableHead
+                    label="Name"
+                    columnKey="name"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    label="Email"
+                    columnKey="email"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    label="State"
+                    columnKey="state"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    label="Join Date"
+                    columnKey="joinDate"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    label="Last Login"
+                    columnKey="lastLogin"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    label="Courses Enrolled"
+                    columnKey="totalCoursesEnrolled"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    label="Status"
+                    columnKey="status"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    label="Admin"
+                    columnKey="isAdmin"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
                   {canMutateUsers && (
                     <TableHead className="w-[70px] font-semibold text-right">Actions</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
+                {sortedUsers.map((user) => (
                   <TableRow key={user.id} className="dark:border-slate-700">
                     <TableCell className="font-medium dark:text-slate-200">
                       {user.name || "—"}

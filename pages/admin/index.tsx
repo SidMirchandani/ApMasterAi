@@ -56,6 +56,9 @@ const AP_SUBJECT_CODES: string[] = [
   "APLANG", "APLIT", "APSTATS", "APPHYS1", "APPHYS2",
 ];
 
+/** Subjects with legacy→canonical section migration (`/api/admin/fix-legacy-section-codes`). */
+const SUBJECTS_WITH_LEGACY_SECTION_FIX: readonly string[] = ["APMACRO"];
+
 const VALID_TABS = ["insights", "library", "users"] as const;
 type AdminTab = (typeof VALID_TABS)[number];
 
@@ -447,6 +450,8 @@ export default function AdminPage() {
     failed: number;
     message: string;
   } | null>(null);
+
+  const [fixingLegacySections, setFixingLegacySections] = useState(false);
 
   const availableToAddVarsity = allApSubjectsRef.filter(
     (s) => (subjectStatus[s.code]?.varsityCount ?? 0) === 0,
@@ -960,6 +965,64 @@ export default function AdminPage() {
       setMixedPromptsPinnedIds(
         nextItems.filter((q) => hasMixedTextAndImageChoices(q.choices)).map((q) => q.id),
       );
+    }
+  }
+
+  async function startFixLegacySectionCodes() {
+    if (!token || !subject) return;
+    if (!SUBJECTS_WITH_LEGACY_SECTION_FIX.includes(subject)) {
+      toast.error("No legacy section fix for this subject.");
+      return;
+    }
+    setFixingLegacySections(true);
+    try {
+      const res = await fetch("/api/admin/fix-legacy-section-codes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subjectCode: subject }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error((err as { error?: string }).error || "Fix failed to start");
+        return;
+      }
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        toast.error("No response stream");
+        return;
+      }
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "complete") {
+              toast.success(event.message);
+              await fetchFiltered();
+            }
+            if (event.type === "error") {
+              toast.error(event.message);
+            }
+          } catch {
+            // ignore malformed SSE lines
+          }
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Fix failed: " + msg);
+    } finally {
+      setFixingLegacySections(false);
     }
   }
 
@@ -1695,6 +1758,30 @@ export default function AdminPage() {
                 Search
               </Button>
             </div>
+            {SUBJECTS_WITH_LEGACY_SECTION_FIX.includes(subject) ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!token || fixingLegacySections}
+                  onClick={() => void startFixLegacySectionCodes()}
+                  className="dark:border-slate-600 dark:text-slate-200"
+                >
+                  {fixingLegacySections ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+                      Fixing sections…
+                    </>
+                  ) : (
+                    "Fix section codes"
+                  )}
+                </Button>
+                <span>
+                  Remap old scrape codes (e.g. EI→EIBC, NI→NIPD, LR→LRCSP, OT→OEITF) to match official units.
+                </span>
+              </div>
+            ) : null}
             <RadioGroup
               value={rowQualityFilter}
               onValueChange={(v) => {
