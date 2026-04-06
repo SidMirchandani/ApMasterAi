@@ -24,6 +24,19 @@ const LEGACY_TO_CANONICAL_BY_SUBJECT: Record<string, Record<string, string>> = {
     LR: "LRCSP",
     OT: "OEITF",
   },
+  /** Admin filter used U0–U9; allocated questions use unit ids from `subjects-helper` (GT, NE, …). */
+  APWORLD: {
+    U0: "GT",
+    U1: "GT",
+    U2: "NE",
+    U3: "LBE",
+    U4: "TI",
+    U5: "REV",
+    U6: "COI",
+    U7: "GC",
+    U8: "CWD",
+    U9: "GLO",
+  },
 };
 
 function assignSection(

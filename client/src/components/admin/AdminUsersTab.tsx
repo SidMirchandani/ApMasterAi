@@ -132,14 +132,14 @@ function SortableTableHead({
 }) {
   const active = sortKey === columnKey;
   return (
-    <TableHead className="font-semibold">
+    <TableHead className="font-semibold align-middle">
       <button
         type="button"
-        className="inline-flex items-center gap-1.5 -ml-1.5 px-1.5 py-0.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/80 text-left w-full min-w-0"
+        className="inline-flex items-center gap-1.5 -ml-1.5 px-1.5 py-0.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/80 text-left w-full"
         onClick={() => onSort(columnKey)}
         aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
       >
-        <span className="truncate">{label}</span>
+        <span className="whitespace-normal break-words leading-snug text-left">{label}</span>
         {active ? (
           sortDir === "asc" ? (
             <ArrowUp className="h-3.5 w-3.5 shrink-0 opacity-80" />
@@ -419,7 +419,7 @@ export function AdminUsersTab({
                     onSort={handleSort}
                   />
                   {canMutateUsers && (
-                    <TableHead className="w-[70px] font-semibold text-right">Actions</TableHead>
+                    <TableHead className="w-[70px] font-semibold text-right align-middle">Actions</TableHead>
                   )}
                 </TableRow>
               </TableHeader>

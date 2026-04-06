@@ -57,7 +57,7 @@ const AP_SUBJECT_CODES: string[] = [
 ];
 
 /** Subjects with legacy→canonical section migration (`/api/admin/fix-legacy-section-codes`). */
-const SUBJECTS_WITH_LEGACY_SECTION_FIX: readonly string[] = ["APMACRO"];
+const SUBJECTS_WITH_LEGACY_SECTION_FIX: readonly string[] = ["APMACRO", "APWORLD"];
 
 const VALID_TABS = ["insights", "library", "users"] as const;
 type AdminTab = (typeof VALID_TABS)[number];
@@ -1778,7 +1778,9 @@ export default function AdminPage() {
                   )}
                 </Button>
                 <span>
-                  Remap old scrape codes (e.g. EI→EIBC, NI→NIPD, LR→LRCSP, OT→OEITF) to match official units.
+                  {subject === "APMACRO"
+                    ? "Remap old scrape codes (e.g. EI→EIBC, NI→NIPD, LR→LRCSP, OT→OEITF) to match official units."
+                    : "Remap legacy U0–U9 section codes to official unit codes (GT, NE, LBE, …) on stored questions."}
                 </span>
               </div>
             ) : null}
