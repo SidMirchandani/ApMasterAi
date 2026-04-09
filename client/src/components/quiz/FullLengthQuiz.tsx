@@ -18,6 +18,7 @@ import { getDisplayCorrectLabel, getStoredAnswerForSubmit } from '@/lib/mcqDispl
 import { getSubjectDisplayName } from '../../../../lib/subject-display-names';
 import { useQuizEngine } from "@/hooks/useQuizEngine";
 import type { Question } from "@/lib/types/question";
+import { isApBiologySubject } from "@/lib/apBioReference";
 
 interface FullLengthQuizProps {
   questions: Question[];
@@ -77,6 +78,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showAutoAnswerDialog, setShowAutoAnswerDialog] = useState(false);
   const { isAdmin } = useAdminCheck();
+  const apClassroomUi = isApBiologySubject(subjectId);
 
   useEffect(() => {
     const savedCheatMode = localStorage.getItem('adminCheatMode');
@@ -306,7 +308,11 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   };
 
   return (
-    <div className="h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col">
+    <div
+      className={`h-screen flex flex-col ${
+        apClassroomUi ? "bg-[#eef1f4]" : "bg-slate-50 dark:bg-[#0B0F1A]"
+      }`}
+    >
       <div className={`fixed left-0 right-0 z-50 ${hasAppNav ? "top-[4.25rem]" : "top-0"}`}>
         <QuizHeader
           title={`${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test`}
@@ -317,12 +323,17 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           onExitExam={handleExitExam}
           examDirections={examDirections}
           subjectId={subjectId}
+          headerVariant={apClassroomUi ? "apclassroom" : "default"}
         />
       </div>
 
       {/* Time warning overlay */}
       {showTimeWarning && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-xl shadow-lg animate-pulse">
+        <div
+          className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 text-white px-6 py-3 rounded-lg shadow-lg animate-pulse ${
+            apClassroomUi ? "bg-[#1a2b42]" : "bg-blue-600 dark:bg-blue-500 rounded-xl"
+          }`}
+        >
           <p className="font-semibold">⏰ 10 minutes remaining!</p>
         </div>
       )}
@@ -335,10 +346,12 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
             selectedAnswer={userAnswers[currentQuestionIndex]}
             isFlagged={flaggedQuestions.has(currentQuestionIndex)}
             onAnswerSelect={handleAnswerSelect}
-            onToggleFlag={toggleFlag}
+            onToggleFlag={() => toggleFlag(currentQuestionIndex)}
             isFullLength={true}
             cheatMode={cheatMode}
             mcqOptionCount={mcqOptionCount}
+            examSurfaceVariant={apClassroomUi ? "apclassroom" : "default"}
+            onReportError={() => setShowReportDialog(true)}
           />
         </div>
       </div>
@@ -356,9 +369,9 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           onSubmit={() => handleSubmitTest()}
           onReview={currentQuestionIndex === questions.length - 1 ? () => setIsReviewMode(true) : undefined}
           onSaveAndExit={handleExitExam}
-          onReportError={() => setShowReportDialog(true)}
           onAdminAutoAnswer={isAdmin ? () => setShowAutoAnswerDialog(true) : undefined}
           subjectId={subjectId}
+          barVariant={apClassroomUi ? "apclassroom" : "default"}
         />
       </div>
 

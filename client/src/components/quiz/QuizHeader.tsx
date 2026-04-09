@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Clock, Flag, BookOpen, Calculator, FileText, MoreVertical, LogOut, ChevronDown } from "lucide-react";
+import { Clock, MoreVertical, LogOut, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import React, { useState, useEffect, useRef } from 'react';
+import { ExamToolbar } from "./ExamToolbar";
 
 
 interface ExamDirections {
@@ -23,7 +23,7 @@ interface ExamDirections {
     details: string;
     description?: string;
   }>;
-  breakdown?: Array<{ name: string; weight: string }>; // Changed to handle objects
+  breakdown?: string[] | Array<{ name: string; weight: string }>;
   units?: Array<{ name: string; weight: string }>;
   bigIdeas?: Array<{ name: string; weight: string }>;
 }
@@ -39,6 +39,8 @@ interface QuizHeaderProps {
   onGoToReview?: () => void;
   examDirections?: ExamDirections;
   subjectId?: string;
+  /** AP Classroom–style navy header and light content framing (AP Biology full-length). */
+  headerVariant?: "default" | "apclassroom";
 }
 
 // Define time limits for different exams in minutes (2026 official MCQ specs; kept in sync with quiz.tsx EXAM_CONFIGS)
@@ -76,9 +78,11 @@ export function QuizHeader({
   onGoToReview,
   examDirections,
   subjectId,
+  headerVariant = "default",
 }: QuizHeaderProps) {
   // Check if time is low (10 minutes or less)
   const isLowTime = timeRemaining !== undefined && timeRemaining <= 600 && timeRemaining > 0;
+  const isApClass = headerVariant === "apclassroom";
 
 
   const formatTime = (seconds: number) => {
@@ -102,24 +106,45 @@ export function QuizHeader({
     if (fullTitle.includes("Chemistry")) return "AP CHEM";
     if (fullTitle.includes("Psychology")) return "AP PSYCH";
     if (fullTitle.includes("Government")) return "AP GOV";
+    if (fullTitle.includes("Biology")) return "AP BIO";
     if (fullTitle.includes("Review")) return "Review";
     // Default fallback
     return fullTitle.replace("AP® ", "AP ").toUpperCase().substring(0, 20);
   };
 
   return (
-    <div className="border-b border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
+    <div
+      className={
+        isApClass
+          ? "border-b border-[#0d2137] bg-[#1a2b42] sticky top-0 z-50 shadow-md"
+          : "border-b border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm"
+      }
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Desktop: single row */}
         <div className="hidden md:flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="text-lg font-display font-semibold text-slate-900 dark:text-white">
+              <h1
+                className={
+                  isApClass
+                    ? "text-lg font-display font-semibold text-white"
+                    : "text-lg font-display font-semibold text-slate-900 dark:text-white"
+                }
+              >
                 {title}
               </h1>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={
+                      isApClass
+                        ? "h-6 px-2 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
+                        : "h-6 px-2 text-xs text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg"
+                    }
+                  >
                     Directions <ChevronDown className="ml-1 h-3 w-3" />
                   </Button>
                 </SheetTrigger>
@@ -212,7 +237,17 @@ export function QuizHeader({
           </div>
 
           <div className="flex items-center gap-4">
-            <div className={`flex items-center gap-2 text-sm font-semibold ${isLowTime ? "text-amber-600 dark:text-amber-400" : "text-slate-600 dark:text-slate-400"}`}>
+            <div
+              className={`flex items-center gap-2 text-sm font-semibold ${
+                isLowTime
+                  ? isApClass
+                    ? "text-amber-300"
+                    : "text-amber-600 dark:text-amber-400"
+                  : isApClass
+                    ? "text-white/90"
+                    : "text-slate-600 dark:text-slate-400"
+              }`}
+            >
               <Clock className="h-5 w-5" />
               <span className="hidden sm:inline">
                 {timeRemaining !== undefined ? formatCountdown(timeRemaining) : formatTime(timeElapsed)}
@@ -220,19 +255,20 @@ export function QuizHeader({
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" title="Highlight and Notes">
-                <Flag className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" title="Calculator">
-                <Calculator className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" title="Reference">
-                <FileText className="h-5 w-5" />
-              </Button>
+              <ExamToolbar
+                subjectId={subjectId}
+                size="md"
+                variant={isApClass ? "apclassroom" : "default"}
+              />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" title="More">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="More"
+                    className={isApClass ? "text-white/90 hover:bg-white/10" : undefined}
+                  >
                     <MoreVertical className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -252,12 +288,26 @@ export function QuizHeader({
         {/* Mobile: two rows */}
         <div className="md:hidden py-2">
           <div className="flex flex-col items-center">
-            <h1 className="text-base font-display font-semibold text-slate-900 dark:text-white">
+            <h1
+              className={
+                isApClass
+                  ? "text-base font-display font-semibold text-white"
+                  : "text-base font-display font-semibold text-slate-900 dark:text-white"
+              }
+            >
               {getShortTitle(title)}
             </h1>
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-5 px-2 text-xs text-slate-500 hover:text-emerald-600 rounded-lg">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={
+                    isApClass
+                      ? "h-5 px-2 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
+                      : "h-5 px-2 text-xs text-slate-500 hover:text-emerald-600 rounded-lg"
+                  }
+                >
                   Directions <ChevronDown className="ml-1 h-3 w-3" />
                 </Button>
               </SheetTrigger>
@@ -349,7 +399,17 @@ export function QuizHeader({
           </div>
 
           <div className="flex justify-between items-center h-10 mt-1">
-            <div className={`flex items-center gap-2 text-sm font-semibold ${isLowTime ? "text-amber-600" : "text-slate-600 dark:text-slate-400"}`}>
+            <div
+              className={`flex items-center gap-2 text-sm font-semibold ${
+                isLowTime
+                  ? isApClass
+                    ? "text-amber-300"
+                    : "text-amber-600"
+                  : isApClass
+                    ? "text-white/90"
+                    : "text-slate-600 dark:text-slate-400"
+              }`}
+            >
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">
                 {timeRemaining !== undefined ? formatCountdown(timeRemaining) : formatTime(timeElapsed)}
@@ -357,19 +417,20 @@ export function QuizHeader({
             </div>
 
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight and Notes">
-                <Flag className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Calculator">
-                <Calculator className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Reference">
-                <FileText className="h-4 w-4" />
-              </Button>
+              <ExamToolbar
+                subjectId={subjectId}
+                size="sm"
+                variant={isApClass ? "apclassroom" : "default"}
+              />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" title="More">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={isApClass ? "h-8 w-8 text-white/90 hover:bg-white/10" : "h-8 w-8"}
+                    title="More"
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>

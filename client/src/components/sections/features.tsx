@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 // How it works steps
 const steps = [
@@ -158,8 +159,9 @@ export function Features() {
   return (
     <section
       ref={sectionRef}
-      className="relative py-20 md:py-28 bg-white dark:bg-[#0B0F1A] overflow-hidden"
+      className="landing-band-light relative py-20 md:py-28 overflow-hidden"
     >
+      <div className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-slate-50 dark:from-[#090D14] to-transparent pointer-events-none" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
         {/* ===== HOW IT WORKS ===== */}
@@ -169,16 +171,14 @@ export function Features() {
               stepsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
             }`}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 mb-5">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                How It Works
-              </span>
+            <div className="landing-eyebrow mb-5">
+              <span className="text-[11px]">How It Works</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">
+            <h2 className="landing-section-title mb-3">
               Study Smarter in{" "}
               <span className="text-gradient">4 Simple Steps</span>
             </h2>
-            <p className="text-[15px] text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            <p className="landing-section-desc max-w-md">
               Get started in minutes and see results in days.
             </p>
           </div>
@@ -227,18 +227,16 @@ export function Features() {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
           }`}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 mb-5">
-            <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-            <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
-              Features
-            </span>
+          <div className="landing-eyebrow landing-eyebrow--accent mb-5">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span className="text-[11px]">Features</span>
           </div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4 tracking-tight">
+          <h2 className="landing-section-title text-3xl sm:text-4xl lg:text-[2.75rem] mb-4">
             Everything You Need
             <br />
             <span className="text-gradient">to Score a 5</span>
           </h2>
-          <p className="text-[16px] text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
+          <p className="landing-section-desc max-w-xl text-[16px]">
             AI technology meets proven learning methods to accelerate your AP prep.
           </p>
         </div>
@@ -293,27 +291,30 @@ export function Features() {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
           }`}
         >
-          <div className="relative overflow-hidden rounded-2xl bg-slate-900 dark:bg-slate-800 px-8 py-10 text-center">
+          <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900 dark:bg-[#0C121C] px-8 py-10 text-center shadow-xl shadow-slate-900/20">
             {/* Background orbs */}
             <div className="absolute -top-16 -right-16 w-48 h-48 bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 mb-5">
-                <CheckCircle className="w-3 h-3 text-emerald-400" />
-                <span className="text-[11px] font-semibold text-white/80 uppercase tracking-wider">100% Free</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 mb-5">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[11px] font-semibold text-white/85 uppercase tracking-wider">100% Free</span>
               </div>
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight">
+              <h3 className="font-display text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight">
                 Ready to ace your AP exams?
               </h3>
-              <p className="text-slate-400 mb-7 text-[15px] max-w-md mx-auto">
+              <p className="text-slate-400 mb-7 text-[15px] max-w-md mx-auto leading-relaxed">
                 Join thousands of students already using APMaster.ai to prepare smarter.
               </p>
               <Link href="/signup">
-                <button className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-7 py-3 rounded-lg transition-all duration-200 shadow-[0_2px_12px_rgba(37,99,235,0.4)] hover:shadow-[0_4px_20px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 text-[15px]">
+                <Button
+                  size="lg"
+                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-7 h-12 rounded-lg shadow-[0_2px_12px_rgba(37,99,235,0.4)] hover:shadow-[0_4px_20px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 text-[15px]"
+                >
                   Get Started Free
                   <ArrowRight className="w-4 h-4" />
-                </button>
+                </Button>
               </Link>
             </div>
           </div>

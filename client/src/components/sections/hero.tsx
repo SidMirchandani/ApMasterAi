@@ -46,7 +46,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative overflow-hidden min-h-[90vh] flex items-center bg-white dark:bg-[#0B0F1A]">
+    <section className="landing-hero-surface relative overflow-hidden min-h-[90vh] flex items-center">
       {/* Subtle background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
@@ -72,23 +72,23 @@ export function Hero() {
 
           {/* LEFT: Content */}
           <div
-            className={`transition-all duration-600 ${
+            className={`transition-all duration-500 ease-out ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
             }`}
           >
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 mb-7">
+            <div className="landing-eyebrow landing-eyebrow--accent mb-7 pr-2">
               <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-              <span className="text-[13px] font-semibold text-blue-700 dark:text-blue-300">
+              <span className="text-[12px] font-semibold tracking-normal normal-case text-blue-800 dark:text-blue-200">
                 AI-Powered AP Exam Prep
               </span>
-              <span className="bg-blue-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full leading-none flex-shrink-0">
+              <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full leading-none flex-shrink-0 uppercase tracking-wide">
                 Free
               </span>
             </div>
 
             {/* Headline */}
-            <h1 className="text-[2.75rem] sm:text-5xl md:text-[3.5rem] lg:text-[3.75rem] font-bold tracking-tight leading-[1.08] mb-7">
+            <h1 className="font-display text-[2.75rem] sm:text-5xl md:text-[3.5rem] lg:text-[3.75rem] font-bold tracking-tight leading-[1.08] mb-7">
               <span className="text-slate-900 dark:text-white block">Master Your</span>
               <span
                 className={`block text-gradient transition-all duration-250 ${
@@ -155,7 +155,7 @@ export function Hero() {
 
           {/* RIGHT: Product preview card */}
           <div
-            className={`hidden lg:flex justify-center items-center transition-all duration-600 delay-200 ${
+            className={`hidden lg:flex justify-center items-center transition-all duration-500 ease-out delay-200 ${
               isVisible
                 ? "opacity-100 translate-y-0 scale-100"
                 : "opacity-0 translate-y-6 scale-95"
@@ -295,7 +295,7 @@ export function Hero() {
       </div>
 
       {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white dark:from-[#0B0F1A] to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-slate-50 dark:from-[#090D14] to-transparent pointer-events-none" />
     </section>
   );
 }
@@ -358,26 +358,24 @@ export function HeroStats() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative py-20 md:py-28 bg-slate-50 dark:bg-slate-950">
-      <div className="absolute inset-0 bg-gradient-to-b from-white dark:from-[#0B0F1A] to-transparent h-16 pointer-events-none" />
+    <section ref={sectionRef} className="landing-band-muted relative py-20 md:py-28">
+      <div className="absolute inset-0 bg-gradient-to-b from-white dark:from-[#0B0F1A] to-transparent h-20 pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section header */}
         <div
-          className={`text-center mb-14 transition-all duration-600 ${
+          className={`text-center mb-14 transition-all duration-500 ease-out ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
           }`}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 mb-5">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              The AP Landscape
-            </span>
+          <div className="landing-eyebrow mb-5">
+            <span className="text-[11px]">The AP Landscape</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">
+          <h2 className="landing-section-title mb-3">
             Why Students Need{" "}
             <span className="text-gradient">Better Prep</span>
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto text-[15px]">
+          <p className="landing-section-desc max-w-md">
             The data tells a clear story — and APMaster.ai was built to change it.
           </p>
         </div>
@@ -418,12 +416,12 @@ export function HeroStats() {
 
         {/* Bottom callout */}
         <div
-          className={`mt-12 mx-auto max-w-2xl transition-all duration-600 delay-400 ${
+          className={`mt-12 mx-auto max-w-2xl transition-all duration-500 ease-out delay-300 ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
           }`}
         >
-          <div className="bg-blue-600 rounded-2xl px-8 py-6 text-center shadow-[0_8px_32px_rgba(37,99,235,0.2)]">
-            <p className="text-[15px] text-white/90 leading-relaxed">
+          <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-600 dark:to-blue-800 px-8 py-6 text-center shadow-[0_12px_40px_rgba(37,99,235,0.22)]">
+            <p className="text-[15px] text-white/95 leading-relaxed">
               With{" "}
               <span className="font-bold text-white">
                 61% of teens

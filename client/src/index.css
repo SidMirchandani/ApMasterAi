@@ -496,6 +496,35 @@ html, body {
     border: 1px solid hsl(var(--primary) / 0.15);
   }
 
+  /* ── Landing / marketing page ── */
+  .landing-page {
+    @apply min-h-screen bg-slate-50 dark:bg-[#0B0F1A] text-slate-900 dark:text-slate-100 antialiased;
+  }
+  .landing-hero-surface {
+    @apply bg-white dark:bg-[#0B0F1A];
+  }
+  .landing-band-muted {
+    @apply bg-slate-50 dark:bg-[#090D14];
+  }
+  .landing-band-light {
+    @apply bg-white dark:bg-[#0B0F1A];
+  }
+  .landing-eyebrow {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200/90 dark:border-slate-700/80 bg-white/90 dark:bg-white/[0.04] backdrop-blur-sm text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400;
+  }
+  .landing-eyebrow--accent {
+    @apply border-blue-200/90 dark:border-blue-500/25 bg-blue-50/95 dark:bg-blue-500/[0.09] text-blue-800 dark:text-blue-200;
+  }
+  .landing-eyebrow--violet {
+    @apply border-violet-200/80 dark:border-violet-500/25 bg-violet-50/95 dark:bg-violet-500/[0.09] text-violet-800 dark:text-violet-200;
+  }
+  .landing-section-title {
+    @apply font-display font-bold text-3xl sm:text-4xl tracking-tight text-slate-900 dark:text-white;
+  }
+  .landing-section-desc {
+    @apply text-[15px] text-slate-500 dark:text-slate-400 max-w-lg mx-auto leading-relaxed;
+  }
+
   /* ── Divider ── */
   .divider {
     @apply border-t border-slate-100 dark:border-slate-800;

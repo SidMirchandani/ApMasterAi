@@ -1,5 +1,5 @@
 import type { NextApiResponse } from "next";
-import { getDb } from "./db";
+import { tryGetDb } from "./db";
 import { isUserBanned } from "./user-ban";
 
 export type BannedResponseVariant = "default" | "adminCheck";
@@ -12,7 +12,20 @@ export async function assertNotBanned(
   uid: string,
   variant: BannedResponseVariant = "default",
 ): Promise<boolean> {
-  const db = getDb();
+  const db = tryGetDb();
+  if (!db) {
+    if (process.env.NODE_ENV === "production") {
+      res.status(503).json({
+        success: false,
+        message: "Database temporarily unavailable",
+      });
+      return false;
+    }
+    console.warn(
+      "[assertNotBanned] Firestore unavailable; skipping ban check (non-production)",
+    );
+    return true;
+  }
   if (!(await isUserBanned(db, uid))) return true;
   if (variant === "adminCheck") {
     res.status(403).json({

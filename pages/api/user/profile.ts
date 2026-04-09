@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getDb } from "../../../server/db";
+import { tryGetDb } from "../../../server/db";
 import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { isPlatformAdmin } from "../../../server/platform-admin";
@@ -41,7 +41,29 @@ export default async function handler(
       });
     }
 
-    const db = getDb();
+    const db = tryGetDb();
+    if (!db) {
+      if (isExperimentalOnly) {
+        return res.status(503).json({
+          success: false,
+          message: "Database unavailable; cannot update experimental features",
+        });
+      }
+      const displayNameValue =
+        displayName?.trim() || (email as string).split("@")[0] || "User";
+      const nameParts = displayNameValue.trim().split(" ");
+      return res.status(200).json({
+        success: true,
+        data: {
+          userId,
+          firstName: nameParts[0] || "",
+          lastName: nameParts.slice(1).join(" ") || "",
+          displayName: displayNameValue,
+          email,
+        },
+      });
+    }
+
     const userRef = db.collection("users").doc(userId);
 
     if (isExperimentalOnly) {

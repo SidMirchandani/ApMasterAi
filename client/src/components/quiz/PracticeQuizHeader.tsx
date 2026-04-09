@@ -1,6 +1,5 @@
-
 import { Button } from "@/components/ui/button";
-import { Flag, BookOpen, Calculator, FileText, MoreVertical, LogOut, ChevronDown } from "lucide-react";
+import { MoreVertical, LogOut, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { ExamToolbar } from "./ExamToolbar";
 
 interface ExamDirections {
   title: string;
@@ -22,7 +22,7 @@ interface ExamDirections {
     details: string;
     description?: string;
   }>;
-  breakdown?: Array<{ name: string; weight: string }>;
+  breakdown?: string[] | Array<{ name: string; weight: string }>;
   units?: Array<{ name: string; weight: string }>;
   bigIdeas?: Array<{ name: string; weight: string }>;
 }
@@ -48,6 +48,7 @@ export function PracticeQuizHeader({
     if (fullTitle.includes("Chemistry")) return "AP CHEM";
     if (fullTitle.includes("Psychology")) return "AP PSYCH";
     if (fullTitle.includes("Government")) return "AP GOV";
+    if (fullTitle.includes("Biology")) return "AP BIO";
     if (fullTitle.includes("Review")) return "Review";
     return fullTitle.replace("AP® ", "AP ").toUpperCase().substring(0, 20);
   };
@@ -156,15 +157,7 @@ export function PracticeQuizHeader({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" title="Highlight and Notes">
-              <Flag className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" title="Calculator">
-              <Calculator className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" title="Reference">
-              <FileText className="h-5 w-5" />
-            </Button>
+            <ExamToolbar subjectId={subjectId} size="md" variant="default" />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -286,15 +279,7 @@ export function PracticeQuizHeader({
           {/* Second row: Tools only (no timer) */}
           <div className="flex justify-center items-center h-10 mt-1">
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Highlight and Notes">
-                <Flag className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Calculator">
-                <Calculator className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Reference">
-                <FileText className="h-4 w-4" />
-              </Button>
+              <ExamToolbar subjectId={subjectId} size="sm" variant="default" />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

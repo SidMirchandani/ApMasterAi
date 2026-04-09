@@ -4,7 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { HelpCircle, CheckCircle, Zap, Shield, BookOpen } from "lucide-react";
+import { HelpCircle, CheckCircle, Zap, Shield, BookOpen, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const faqs = [
@@ -107,10 +107,11 @@ export function FAQ() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative py-24 md:py-32 bg-white dark:bg-slate-950 overflow-hidden">
+    <section ref={sectionRef} className="landing-band-muted relative py-24 md:py-32 overflow-hidden">
+      <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-white dark:from-[#0B0F1A] to-transparent pointer-events-none z-[1]" />
       {/* Subtle bg decoration */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-violet-500/3 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/3 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-violet-500/[0.06] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/[0.05] rounded-full blur-[100px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16">
@@ -123,18 +124,16 @@ export function FAQ() {
           >
             <div className="lg:sticky lg:top-24">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200/60 dark:border-violet-500/20 mb-6">
+              <div className="landing-eyebrow landing-eyebrow--violet mb-6">
                 <HelpCircle className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
-                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wider">
-                  FAQ
-                </span>
+                <span className="text-[11px]">FAQ</span>
               </div>
 
-              <h2 className="text-3xl sm:text-4xl font-display font-extrabold text-slate-900 dark:text-white tracking-tight mb-4 leading-tight">
+              <h2 className="landing-section-title mb-4 leading-tight">
                 Got Questions?<br />
-                <span className="text-gradient">We've Got Answers.</span>
+                <span className="text-gradient">We&apos;ve Got Answers.</span>
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 font-medium mb-10 leading-relaxed">
+              <p className="text-[15px] text-slate-500 dark:text-slate-400 font-medium mb-10 leading-relaxed max-w-sm">
                 Everything you need to know about getting started and scoring a 5 with APMaster.ai.
               </p>
 
@@ -143,7 +142,7 @@ export function FAQ() {
                 {perks.map((perk, i) => (
                   <div
                     key={i}
-                    className={`flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 transition-all duration-500 ${
+                    className={`flex items-start gap-4 p-4 rounded-2xl bg-white/90 dark:bg-[#0C121C] border border-slate-200/80 dark:border-slate-800 transition-all duration-500 ${
                       isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
                     }`}
                     style={{ transitionDelay: `${200 + i * 100}ms` }}
@@ -176,7 +175,7 @@ export function FAQ() {
                 <AccordionItem
                   key={index}
                   value={`item-${index}`}
-                  className={`group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-6 overflow-hidden transition-all duration-300 hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-md data-[state=open]:border-violet-200 dark:data-[state=open]:border-violet-800/60 data-[state=open]:shadow-lg data-[state=open]:shadow-violet-500/5 ${
+                  className={`group relative bg-white dark:bg-[#0C121C] border border-slate-200/90 dark:border-slate-800 rounded-2xl px-6 overflow-hidden transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md data-[state=open]:border-violet-200/90 dark:data-[state=open]:border-violet-800/50 data-[state=open]:shadow-lg data-[state=open]:shadow-violet-500/[0.07] ${
                     isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                   }`}
                   style={{ transitionDelay: `${300 + index * 80}ms` }}
@@ -196,22 +195,22 @@ export function FAQ() {
 
             {/* Still have questions? */}
             <div
-              className={`mt-8 p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-800/50 border border-slate-200 dark:border-slate-700 transition-all duration-700 delay-700 ${
+              className={`mt-8 p-6 rounded-2xl bg-white/80 dark:bg-[#0C121C]/80 backdrop-blur-sm border border-slate-200/90 dark:border-slate-700/90 shadow-sm transition-all duration-700 delay-700 ${
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
             >
               <p className="text-sm font-bold text-slate-900 dark:text-white mb-1">
                 Still have questions?
               </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                We'd love to hear from you. Reach out and we'll get back to you quickly.
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                We&apos;d love to hear from you. Reach out and we&apos;ll get back to you quickly.
               </p>
               <a
                 href="mailto:apmaster-contact@gmail.com"
-                className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors group/link"
               >
                 Contact us
-                <span className="text-emerald-400">→</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover/link:translate-x-0.5" />
               </a>
             </div>
           </div>

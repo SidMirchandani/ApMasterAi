@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getDb } from "../../../server/db";
+import { tryGetDb } from "../../../server/db";
 import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { isAdminEmailFromEnv } from "../../../server/platform-admin";
@@ -29,10 +29,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let experimentalFeaturesEnabled = false;
     let docIsAdmin = false;
     if (decoded.uid) {
-      const db = getDb();
-      const userDoc = await db.collection("users").doc(decoded.uid).get();
-      experimentalFeaturesEnabled = userDoc.exists && userDoc.data()?.experimentalFeaturesEnabled === true;
-      docIsAdmin = userDoc.exists && userDoc.data()?.isAdmin === true;
+      const db = tryGetDb();
+      if (db) {
+        const userDoc = await db.collection("users").doc(decoded.uid).get();
+        experimentalFeaturesEnabled =
+          userDoc.exists && userDoc.data()?.experimentalFeaturesEnabled === true;
+        docIsAdmin = userDoc.exists && userDoc.data()?.isAdmin === true;
+      }
     }
     const admin = isAdminEmailFromEnv(decoded.email) || docIsAdmin;
     return res.status(200).json({

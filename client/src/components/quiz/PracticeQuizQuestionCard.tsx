@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { BlockRenderer } from "./BlockRenderer";
-import { BookmarkCheck, XCircle } from "lucide-react";
+import { BookmarkCheck, XCircle, Flag, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getDisplayChoicesAndCorrect } from "@/lib/mcqDisplay";
 
@@ -44,6 +44,9 @@ interface PracticeQuizQuestionCardProps {
   onToggleBookmark?: () => void;
   /** 4 = A-D only (2026 Digital); 5 = A-E. Used for E→D swap when stored correct is E. */
   mcqOptionCount?: number;
+  isFlagged?: boolean;
+  onToggleMarkForReview?: () => void;
+  onReport?: () => void;
 }
 
 export function PracticeQuizQuestionCard({
@@ -57,6 +60,9 @@ export function PracticeQuizQuestionCard({
   isBookmarked = false,
   onToggleBookmark,
   mcqOptionCount,
+  isFlagged = false,
+  onToggleMarkForReview,
+  onReport,
 }: PracticeQuizQuestionCardProps) {
   const [crossedOut, setCrossedOut] = useState<Set<string>>(new Set());
 
@@ -73,13 +79,31 @@ export function PracticeQuizQuestionCard({
   const isCorrect = selectedAnswer === displayCorrectLabel;
 
   return (
-    <Card className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden rounded-xl transition-all duration-150 ease-out">
+    <Card
+      className={`bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden rounded-xl transition-all duration-150 ease-out ${
+        isFlagged ? "ring-2 ring-red-400 dark:ring-red-500" : ""
+      }`}
+    >
       <CardHeader className="p-0">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-3 py-2 bg-slate-50/50 dark:bg-slate-800/50">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Question {questionNumber} of {totalQuestions}
             </span>
+            {onToggleMarkForReview && (
+              <button
+                type="button"
+                onClick={onToggleMarkForReview}
+                className={`flex items-center gap-1 text-xs font-medium rounded-lg px-1.5 py-0.5 transition-colors ${
+                  isFlagged
+                    ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                }`}
+              >
+                <Flag className={`h-3 w-3 ${isFlagged ? "fill-current" : ""}`} />
+                <span>Mark for Review</span>
+              </button>
+            )}
             {question.difficulty && ["easy", "medium", "hard"].includes(question.difficulty) && (
               <span
                 className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
@@ -95,6 +119,17 @@ export function PracticeQuizQuestionCard({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {onReport && (
+              <button
+                type="button"
+                onClick={onReport}
+                className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                title="Report an error with this question"
+              >
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Report</span>
+              </button>
+            )}
             {onToggleBookmark && (
               <button
                 onClick={onToggleBookmark}

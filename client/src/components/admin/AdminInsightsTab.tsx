@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, PieChart, Pie } from "recharts";
-import { Users, Activity, MessageCircle, Loader2, Calendar, BookOpen } from "lucide-react";
+import { Users, MessageCircle, Loader2, Calendar, BookOpen, MapPin, ClipboardList, ListChecks } from "lucide-react";
 import {
   SUBJECT_DISPLAY_NAMES,
   getSubjectDisplayName,
@@ -52,6 +52,11 @@ interface InsightsData {
   usersByState?: StateCount[];
   /** Count of users with no inferred US state (monitoring). */
   unknownRegionCount?: number;
+  /** Distinct US state codes (excluding Unknown) with at least one user. */
+  statesWithUsersCount?: number;
+  totalQuizzesTaken?: number;
+  /** Sum of attemptCount in user_question_state (tracked answers). */
+  totalStudentQuestionAttempts?: number;
   signUpsOverTime: SignUpPoint[];
   enrollmentsOverTime: SignUpPoint[];
   courseEnrollments: CourseEnrollment[];
@@ -259,9 +264,15 @@ export function AdminInsightsTab({ token }: { token: string }) {
   const totalStudents = data?.totalStudents ?? 0;
   const totalQuestions = data?.questionBankTotal ?? data?.totalQuestionsAnswered ?? 0;
   const totalSubjects = data?.totalSubjectsEnrolled ?? 0;
+  const statesWithUsers = data?.statesWithUsersCount ?? 0;
+  const totalQuizzes = data?.totalQuizzesTaken ?? 0;
+  const totalStudentAnswers = data?.totalStudentQuestionAttempts ?? 0;
   const countUpStudents = useCountUp(totalStudents);
   const countUpQuestions = useCountUp(totalQuestions);
   const countUpSubjects = useCountUp(totalSubjects);
+  const countUpStates = useCountUp(statesWithUsers);
+  const countUpQuizzes = useCountUp(totalQuizzes);
+  const countUpStudentAnswers = useCountUp(totalStudentAnswers);
 
   useEffect(() => {
     if (!token) return;
@@ -355,21 +366,14 @@ export function AdminInsightsTab({ token }: { token: string }) {
 
   return (
     <div className="space-y-4">
-      {/* KPI strip at top */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI strip: two rows of three on large screens */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[
           {
             key: "students",
             label: "Total Students",
             display: countUpStudents.toLocaleString(),
             icon: Users,
-            sub: null as string | null,
-          },
-          {
-            key: "active",
-            label: "Active Users",
-            display: data.activeUsersDAU > 0 ? `${data.activeUsersDAU} / ${data.activeUsersMAU}` : String(data.activeUsersMAU),
-            icon: Activity,
             sub: null as string | null,
           },
           {
@@ -384,6 +388,27 @@ export function AdminInsightsTab({ token }: { token: string }) {
             label: "Question Bank",
             display: countUpQuestions.toLocaleString(),
             icon: MessageCircle,
+            sub: null as string | null,
+          },
+          {
+            key: "states",
+            label: "# States with Users",
+            display: countUpStates.toLocaleString(),
+            icon: MapPin,
+            sub: null as string | null,
+          },
+          {
+            key: "quizzes",
+            label: "Total Quizzes Taken",
+            display: countUpQuizzes.toLocaleString(),
+            icon: ClipboardList,
+            sub: null as string | null,
+          },
+          {
+            key: "answered",
+            label: "Total Questions Answered",
+            display: countUpStudentAnswers.toLocaleString(),
+            icon: ListChecks,
             sub: null as string | null,
           },
         ].map((item, i) => (
@@ -929,7 +954,9 @@ export function AdminInsightsTab({ token }: { token: string }) {
             <CardHeader>
               <CardTitle className="dark:text-white">Enrollments by Subject</CardTitle>
               <CardDescription className="dark:text-slate-400">
-                Students Enrolled Per Course
+                New enrollments per subject with a recorded date in{" "}
+                {RANGE_OPTIONS.find((o) => o.value === dateRange)?.label ?? dateRange}
+                {dateRange === "all" ? " (academic year to date)" : ""}. Matches the date range control above.
               </CardDescription>
             </CardHeader>
             <CardContent>

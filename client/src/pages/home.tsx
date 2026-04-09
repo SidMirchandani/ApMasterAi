@@ -19,11 +19,11 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center">
+      <div className="landing-page flex items-center justify-center">
         <div className="text-center">
           <div className="relative w-10 h-10 mx-auto mb-4">
-            <div className="absolute inset-0 rounded-full border-2 border-emerald-200 dark:border-emerald-800" />
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-500 animate-spin" />
+            <div className="absolute inset-0 rounded-full border-2 border-blue-200 dark:border-blue-900/80" />
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-600 dark:border-t-blue-400 animate-spin" />
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Loading...</p>
         </div>
@@ -36,7 +36,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <div className="landing-page">
       <Navigation />
       <Hero />
       <HeroStats />

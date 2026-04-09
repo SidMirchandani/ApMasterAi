@@ -1,7 +1,8 @@
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, App, ServiceAccount } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
+import { loadServiceAccountJson } from './firebase-service-account';
 
 let adminApp: App | null = null;
 
@@ -19,29 +20,22 @@ export function getFirebaseAdmin() {
 
       console.log('Initializing Firebase Admin with project ID:', projectId);
 
-      // Check if we're in development mode (Replit)
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const isReplit = process.env.REPL_ID || process.env.REPLIT_DB_URL;
-
       try {
-        // Check if we have a service account key
-        const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-        // Use the correct storage bucket format - must match exactly
         const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'gen-lang-client-0260042933.firebasestorage.app';
 
         console.log('Storage bucket configuration:', storageBucket);
 
-        if (serviceAccountKey) {
-          // Use service account key for authentication
-          const serviceAccount = JSON.parse(serviceAccountKey);
+        const serviceAccount = loadServiceAccountJson();
+
+        if (serviceAccount) {
           adminApp = initializeApp({
-            credential: cert(serviceAccount),
+            credential: cert(serviceAccount as ServiceAccount),
             projectId,
             storageBucket,
           });
           console.log('Firebase Admin initialized with service account for project:', projectId);
         } else {
-          // Fallback to default credentials
+          // Fallback to default credentials (e.g. GCP metadata / gcloud ADC)
           adminApp = initializeApp({
             projectId,
             storageBucket,

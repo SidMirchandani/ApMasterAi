@@ -8,13 +8,12 @@ import { apiRequest } from "@/lib/queryClient";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 import { getStudyNoteFromQuestion } from "@/lib/studyNote";
-import { Calculator } from "lucide-react";
 import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
 import { ExplanationPanel } from "./ExplanationPanel";
-import { CheckCircle, XCircle, LogOut, Flag, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
@@ -28,7 +27,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const CALCULATOR_SUBJECTS = ["calculus-ab", "calculus-bc", "statistics", "chemistry", "physics-1", "physics-2"];
+const CALCULATOR_SUBJECTS = [
+  "biology",
+  "calculus-ab",
+  "calculus-bc",
+  "statistics",
+  "chemistry",
+  "physics-1",
+  "physics-2",
+];
 
 interface Question {
   id: string;
@@ -107,7 +114,6 @@ export function PracticeQuiz({
   const [finalUserAnswers, setFinalUserAnswers] = useState<{ [key: number]: string }>({});
   const [cheatMode, setCheatMode] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
-  const [showCalculator, setShowCalculator] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showConceptPrimer, setShowConceptPrimer] = useState(false);
   const [primerStepIndex, setPrimerStepIndex] = useState(0);
@@ -150,6 +156,22 @@ export function PracticeQuiz({
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
 
   const isCalculatorAllowed = CALCULATOR_SUBJECTS.includes(subjectId);
+  const toggleMarkForCurrentQuestion = () => {
+    setFlaggedQuestions((prev) => {
+      const next = new Set(prev);
+      if (next.has(currentQuestionIndex)) next.delete(currentQuestionIndex);
+      else next.add(currentQuestionIndex);
+      return next;
+    });
+  };
+
+  const practiceExamDirections = subject
+    ? {
+        title: subject.metadata.examTitle || `${subject.displayName} Practice Exam`,
+        sections: subject.metadata.examSections || [],
+        breakdown: subject.metadata.breakdown,
+      }
+    : undefined;
 
   useEffect(() => {
     const savedCheatMode = localStorage.getItem('adminCheatMode');
@@ -404,30 +426,22 @@ export function PracticeQuiz({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col text-slate-900 dark:text-slate-100">
-      <div className="flex-1 flex overflow-hidden">
-        {/* Desmos Sidebar */}
-        {isCalculatorAllowed && showCalculator && (
-          <div className="w-full md:w-1/3 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 flex flex-col z-40">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Desmos Calculator</h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setShowCalculator(false)}
-                className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <XCircle className="h-4 w-4" />
-              </Button>
-            </div>
-            <iframe
-              src="https://www.desmos.com/calculator"
-              className="flex-1 w-full"
-              title="Desmos Calculator"
-            />
-          </div>
-        )}
-
-        <div className={`flex-1 overflow-y-auto mb-14 pb-1 ${showCalculator ? 'hidden md:block' : 'block'}`}>
+      {isCalculatorAllowed && (
+        <div className="fixed top-[4.25rem] left-0 right-0 z-40">
+          <PracticeQuizHeader
+            title={`${subject?.displayName ?? "Practice"} — Practice Quiz`}
+            examDirections={practiceExamDirections}
+            subjectId={subjectId}
+            onExitExam={onExit}
+          />
+        </div>
+      )}
+      <div
+        className={`flex-1 flex overflow-hidden ${
+          isCalculatorAllowed ? "pt-16" : ""
+        }`}
+      >
+        <div className="flex-1 overflow-y-auto mb-14 pb-1">
           <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2">
             <div className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-stretch">
               {/* Question: left on desktop, top on narrow screens */}
@@ -443,6 +457,9 @@ export function PracticeQuiz({
                   isBookmarked={bookmarkedIds.has(currentQuestion?.id)}
                   onToggleBookmark={() => handleToggleBookmark(currentQuestion)}
                   mcqOptionCount={mcqOptionCount}
+                  isFlagged={flaggedQuestions.has(currentQuestionIndex)}
+                  onToggleMarkForReview={toggleMarkForCurrentQuestion}
+                  onReport={() => setShowReportDialog(true)}
                 />
               </div>
               {/* Explanation: right on desktop, below on narrow screens */}
@@ -468,17 +485,6 @@ export function PracticeQuiz({
         <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2.5">
           <div className="flex justify-between items-center gap-2 sm:gap-4">
             <div className="flex flex-1 items-center gap-2 min-w-0">
-              {isCalculatorAllowed && (
-                <Button
-                  variant={showCalculator ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={() => setShowCalculator(!showCalculator)}
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:border-blue-500 dark:text-blue-400 shrink-0"
-                >
-                  <Calculator className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{showCalculator ? "Hide Calculator" : "Show Calculator"}</span>
-                </Button>
-              )}
               {isAdmin && (
                 <Button
                   variant="outline"
@@ -511,15 +517,6 @@ export function PracticeQuiz({
               )}
             </div>
             <div className="flex justify-end items-center gap-2 flex-1 min-w-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowReportDialog(true)}
-                className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs"
-              >
-                <Flag className="w-3.5 h-3.5 mr-1" />
-                Report
-              </Button>
               {onSaveAndExit ? (
                 <Button
                   onClick={() => {

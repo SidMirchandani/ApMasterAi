@@ -6,6 +6,8 @@ import { QuestionCard } from "./QuestionCard";
 import { QuizHeader } from "./QuizHeader";
 import { QuizBottomBar } from "./QuizBottomBar";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
+import { isApBiologySubject } from "@/lib/apBioReference";
+import { ReportQuestionDialog } from "./ReportQuestionDialog";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
@@ -54,9 +56,11 @@ export function QuizReviewPage({
 }: QuizReviewPageProps) {
   const subject = subjectId ? getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId) : undefined;
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
+  const apClassroomUi = isApBiologySubject(subjectId);
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const [localAnswers, setLocalAnswers] = useState(userAnswers);
   const [localFlagged, setLocalFlagged] = useState(flaggedQuestions);
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   const handleAnswerChange = (questionIndex: number, answer: string) => {
     setLocalAnswers((prev) => ({ ...prev, [questionIndex]: answer }));
@@ -83,7 +87,11 @@ export function QuizReviewPage({
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col relative">
+    <div
+      className={`h-screen flex flex-col relative ${
+        apClassroomUi ? "bg-[#eef1f4]" : "bg-gray-50"
+      }`}
+    >
       {/* Blur overlay during submit */}
       {isSubmitting && (
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[60] flex items-center justify-center">
@@ -108,6 +116,7 @@ export function QuizReviewPage({
           timerHidden
           subjectId={subjectId}
           onExitExam={selectedQuestion === null ? onBack : undefined}
+          headerVariant={apClassroomUi ? "apclassroom" : "default"}
         />
       </div>
 
@@ -211,6 +220,8 @@ export function QuizReviewPage({
               isReviewMode
               isAnswerSubmitted={false}
               mcqOptionCount={mcqOptionCount}
+              examSurfaceVariant={apClassroomUi ? "apclassroom" : "default"}
+              onReportError={() => setShowReportDialog(true)}
             />
           </div>
         </div>
@@ -245,8 +256,18 @@ export function QuizReviewPage({
               : undefined
           }
           subjectId={subjectId}
+          barVariant={apClassroomUi ? "apclassroom" : "default"}
         />
       )}
+
+      <ReportQuestionDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        questionId={
+          selectedQuestion !== null ? questions[selectedQuestion]?.id : undefined
+        }
+        subjectId={subjectId ?? ""}
+      />
     </div>
   );
 }

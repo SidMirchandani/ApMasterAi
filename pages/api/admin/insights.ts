@@ -1,4 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import type { Firestore } from "firebase-admin/firestore";
+import { AggregateField } from "firebase-admin/firestore";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../../lib/subject-display-names";
 import { getAllSubjectCodes, getApiCodeForSubject } from "../../../server/subjects-helper";
@@ -38,6 +40,22 @@ function getDateRange(range: string): { start: Date; end: Date } | null {
   return { start, end };
 }
 
+/** Best-effort enrollment timestamp from user_subjects (same fields as daily enrollment buckets). */
+function parseEnrollmentCreated(data: Record<string, unknown>): Date | null {
+  const raw =
+    (data.createdAt as { toDate?: () => Date } | undefined)?.toDate?.() ||
+    data.createdAt ||
+    (data.enrolledAt as { toDate?: () => Date } | undefined)?.toDate?.() ||
+    data.enrolledAt ||
+    (data.created_at as { toDate?: () => Date } | undefined)?.toDate?.() ||
+    data.created_at ||
+    (data.dateAdded as { toDate?: () => Date } | undefined)?.toDate?.() ||
+    data.dateAdded;
+  if (raw == null) return null;
+  const d = raw instanceof Date ? raw : new Date(raw as string | number);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 function getDatesBetween(start: Date, end: Date): string[] {
   const out: string[] = [];
   const cur = new Date(start);
@@ -46,6 +64,32 @@ function getDatesBetween(start: Date, end: Date): string[] {
     cur.setDate(cur.getDate() + 1);
   }
   return out;
+}
+
+/** Collection-group document count (quiz results under user_subjects). */
+async function aggregateCollectionGroupCount(firestore: Firestore, collectionId: string): Promise<number> {
+  try {
+    const snap = await firestore.collectionGroup(collectionId).aggregate({ n: AggregateField.count() }).get();
+    return Number(snap.data().n ?? 0);
+  } catch (err) {
+    console.error(`[admin/insights] collectionGroup "${collectionId}" count failed`, err);
+    return 0;
+  }
+}
+
+/** Sum of spaced-repetition attempt counts (each track call increments attemptCount). */
+async function aggregateStudentQuestionAttempts(firestore: Firestore): Promise<number> {
+  try {
+    const snap = await firestore
+      .collection("user_question_state")
+      .aggregate({ s: AggregateField.sum("attemptCount") })
+      .get();
+    const v = snap.data().s;
+    return typeof v === "number" && !Number.isNaN(v) ? v : 0;
+  } catch (err) {
+    console.error("[admin/insights] user_question_state sum(attemptCount) failed", err);
+    return 0;
+  }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -100,6 +144,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    const rangeParam = String((req.query.range as string) || "all").trim();
+    const dateRange = getDateRange(rangeParam);
+
     // User enrollments: count user_subjects per subject for distribution (normalize to canonical codes)
     const userSubjectsSnap = await firestore.collection("user_subjects").get();
     const totalSubjectsEnrolled = userSubjectsSnap.size;
@@ -111,15 +158,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const rawId = data.subjectId || data.subject_id || "";
       if (!rawId) return;
       const canonicalCode = getApiCodeForSubject(rawId) ?? rawId.toUpperCase();
-      enrollmentsBySubject[canonicalCode] = (enrollmentsBySubject[canonicalCode] || 0) + 1;
-      const created = data.createdAt?.toDate?.() || data.createdAt || data.enrolledAt?.toDate?.() || data.enrolledAt || data.created_at?.toDate?.() || data.created_at || data.dateAdded?.toDate?.() || data.dateAdded;
-      if (created) {
-        const dateStr = new Date(created).toISOString().slice(0, 10);
+      const createdAt = parseEnrollmentCreated(data as Record<string, unknown>);
+      // Bar chart "Enrollments by Subject": respect selected date range when valid; unknown range → all-time.
+      const countTowardSubjectBar =
+        dateRange == null ||
+        (createdAt != null &&
+          createdAt.getTime() >= dateRange.start.getTime() &&
+          createdAt.getTime() <= dateRange.end.getTime());
+      if (countTowardSubjectBar) {
+        enrollmentsBySubject[canonicalCode] = (enrollmentsBySubject[canonicalCode] || 0) + 1;
+      }
+      if (createdAt) {
+        const dateStr = createdAt.toISOString().slice(0, 10);
         byDateEnrollments[dateStr] = (byDateEnrollments[dateStr] || 0) + 1;
       }
     });
-    const rangeParam = (req.query.range as string) || "all";
-    const dateRange = getDateRange(rangeParam);
 
     // Full subject list for enrollment chart: use registry, or fallback to display-names keys so chart always has all subjects
     const enrollmentSubjectCodes =
@@ -234,6 +287,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map(([stateCode, count]) => ({ stateCode, count }))
       .sort((a, b) => b.count - a.count);
     const unknownRegionCount = usersByStateMap["Unknown"] ?? 0;
+    const statesWithUsersCount = Object.entries(usersByStateMap).filter(
+      ([code, n]) => code !== "Unknown" && /^[A-Z]{2}$/.test(code) && n > 0
+    ).length;
+
+    const [fullLengthQuizCount, diagnosticQuizCount, unitQuizCount, totalStudentQuestionAttempts] =
+      await Promise.all([
+        aggregateCollectionGroupCount(firestore, "fullLengthTests"),
+        aggregateCollectionGroupCount(firestore, "diagnosticTests"),
+        aggregateCollectionGroupCount(firestore, "unitQuizResults"),
+        aggregateStudentQuestionAttempts(firestore),
+      ]);
+    const totalQuizzesTaken = fullLengthQuizCount + diagnosticQuizCount + unitQuizCount;
 
     // DAU/MAU: would require activity logs; placeholder
     const activeUsersDAU = 0;
@@ -249,6 +314,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         totalQuestionsAnswered,
         /** Same as totalQuestionsAnswered — size of the MCQ content library per subject (not attempts). */
         questionBankTotal: totalQuestionsAnswered,
+        statesWithUsersCount,
+        totalQuizzesTaken,
+        /** Answers recorded via /api/user/questions/track (attemptCount across user_question_state). */
+        totalStudentQuestionAttempts,
         averageApScoreLift,
         /** @deprecated Use averageApScoreLift; kept for older clients. */
         platformAccuracyRate: averageApScoreLift ?? 0,

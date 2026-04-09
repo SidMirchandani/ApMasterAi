@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getDb } from "../../../server/db";
+import { tryGetDb } from "../../../server/db";
 import { isAdminEmailFromEnv } from "../../../server/platform-admin";
 import { maybeUpdateUserGeoState } from "../../../server/user-geo-state";
 import { requireUser } from "../../../server/next-api-auth";
@@ -17,7 +17,26 @@ export default async function handler(
     if (!user) return;
     const userId = user.uid;
 
-    const db = getDb();
+    const db = tryGetDb();
+    if (!db) {
+      const dt = user.decodedToken as Record<string, unknown> | undefined;
+      const picture = typeof dt?.picture === "string" ? dt.picture : undefined;
+      const name = typeof dt?.name === "string" ? dt.name : undefined;
+      return res.status(200).json({
+        success: true,
+        data: {
+          userId,
+          email: user.email ?? undefined,
+          displayName: name,
+          firstName: undefined,
+          lastName: undefined,
+          photoURL: picture,
+          experimentalFeaturesEnabled: false,
+          isAdmin: isAdminEmailFromEnv(user.email ?? undefined),
+        },
+      });
+    }
+
     const userDoc = await db.collection("users").doc(userId).get();
 
     if (!userDoc.exists) {

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Flag, Bookmark, XCircle } from "lucide-react";
+import { Flag, Bookmark, XCircle, AlertTriangle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { BlockRenderer } from "./BlockRenderer";
@@ -52,6 +52,9 @@ interface QuestionCardProps {
   onToggleBookmark?: () => void;
   /** 4 = A-D only (2026 Digital); 5 = A-E. Used for E???D swap when stored correct is E. */
   mcqOptionCount?: number;
+  /** Light gray chrome similar to AP Classroom assessment view. */
+  examSurfaceVariant?: "default" | "apclassroom";
+  onReportError?: () => void;
 }
 
 export function QuestionCard({
@@ -69,9 +72,12 @@ export function QuestionCard({
   cheatMode = false,
   isBookmarked = false,
   onToggleBookmark,
-  mcqOptionCount,   
+  mcqOptionCount,
+  examSurfaceVariant = "default",
+  onReportError,
 }: QuestionCardProps) {
   const [crossedOut, setCrossedOut] = useState<Set<string>>(new Set());
+  const isApClass = examSurfaceVariant === "apclassroom";
 
   useEffect(() => {
     setCrossedOut(new Set());
@@ -87,12 +93,30 @@ export function QuestionCard({
   const shouldShowCorrectness = isAnswerSubmitted || isFullLength;
 
   return (
-    <Card className={`rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm transition-all duration-150 ease-out ${isFlagged ? "ring-2 ring-red-400 dark:ring-red-500" : ""}`}>
+    <Card
+      className={`rounded-xl border shadow-sm transition-all duration-150 ease-out ${
+        isApClass
+          ? "border-[#d4dbe3] bg-white"
+          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70"
+      } ${isFlagged ? "ring-2 ring-red-400 dark:ring-red-500" : ""}`}
+    >
       <CardHeader className="pb-1 pt-2">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1 -mx-4 px-3 -mt-2 pt-1.5 bg-slate-50 dark:bg-slate-800/50 min-h-[48px] rounded-t-xl">
+        <div
+          className={`flex items-center justify-between border-b pb-1 -mx-4 px-3 -mt-2 pt-1.5 min-h-[48px] rounded-t-xl ${
+            isApClass
+              ? "border-[#e2e7ee] bg-[#f0f3f7]"
+              : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50"
+          }`}
+        >
           <div className="flex items-center gap-2">
             {!hidePracticeQuizElements && (
-              <div className="bg-slate-900 dark:bg-slate-700 text-white px-2.5 py-0.5 font-bold text-xs rounded-lg">
+              <div
+                className={
+                  isApClass
+                    ? "bg-[#1a2b42] text-white px-2.5 py-0.5 font-bold text-xs rounded-md"
+                    : "bg-slate-900 dark:bg-slate-700 text-white px-2.5 py-0.5 font-bold text-xs rounded-lg"
+                }
+              >
                 {questionNumber}
               </div>
             )}
@@ -109,6 +133,17 @@ export function QuestionCard({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {onReportError && (
+              <button
+                type="button"
+                onClick={onReportError}
+                className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                title="Report an error with this question"
+              >
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Report</span>
+              </button>
+            )}
             {onToggleBookmark && (
               <button
                 onClick={onToggleBookmark}

@@ -1,9 +1,12 @@
 import { getFirebaseAdmin } from './firebase-admin';
+import { hasServiceAccountFileOrKey } from './firebase-service-account';
 import { getFirestore } from 'firebase-admin/firestore';
 
 export class DatabaseManager {
   private static instance: DatabaseManager;
   private db: FirebaseFirestore.Firestore | null = null;
+  /** When true, do not call initializeConnection again (e.g. dev without service account). */
+  private firestoreUnavailable = false;
 
   private constructor() {}
 
@@ -18,13 +21,31 @@ export class DatabaseManager {
   private initializeConnection(): void {
     try {
       const firebaseAdmin = getFirebaseAdmin();
-      
+
       if (!firebaseAdmin) {
         console.warn("Firebase Admin not available - database operations will be limited in development");
         this.db = null;
         return;
       }
-      
+
+      /**
+       * Without explicit GCP credentials, Firestore's client can be created but the first RPC fails
+       * with "Could not load the default credentials" on typical local setups.
+       * Skip Firestore in development so APIs can use JWT/in-memory fallbacks.
+       * Set FIREBASE_SERVICE_ACCOUNT_KEY, FIREBASE_SERVICE_ACCOUNT_PATH, or GOOGLE_APPLICATION_CREDENTIALS for real Firestore locally.
+       */
+      const hasExplicitGcpCreds = hasServiceAccountFileOrKey();
+      const devWithoutFirestoreCreds =
+        process.env.NODE_ENV === "development" && !hasExplicitGcpCreds;
+      if (devWithoutFirestoreCreds) {
+        console.warn(
+          "[db] No Firebase service account env in development — Firestore disabled (JWT/in-memory fallbacks).",
+        );
+        this.db = null;
+        this.firestoreUnavailable = true;
+        return;
+      }
+
       const { app } = firebaseAdmin;
       this.db = getFirestore(app);
       console.log("Firestore connection established.");
@@ -35,7 +56,7 @@ export class DatabaseManager {
   }
 
   getDatabase(): FirebaseFirestore.Firestore | null {
-    if (!this.db) {
+    if (!this.db && !this.firestoreUnavailable) {
       this.initializeConnection();
     }
     return this.db;
@@ -47,6 +68,7 @@ export class DatabaseManager {
   async forceReconnect(): Promise<void> {
     console.warn("Forcing Firestore reconnect...");
     this.db = null;
+    this.firestoreUnavailable = false;
     this.initializeConnection();
   }
 
@@ -83,3 +105,12 @@ export const getDb = () => {
   }
   return db;
 };
+
+/** Firestore handle or null when unavailable (no throw). Use for graceful degradation in API routes. */
+export function tryGetDb(): FirebaseFirestore.Firestore | null {
+  try {
+    return databaseManager.getDatabase();
+  } catch {
+    return null;
+  }
+}
