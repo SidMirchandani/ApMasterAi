@@ -472,26 +472,6 @@ export default function Quiz() {
     fetchFreshQuestions();
   };
 
-  const handleSaveAndExit = async (examState: any) => {
-    try {
-      await apiRequest(
-        "POST",
-        `/api/user/subjects/${subjectId}/save-exam-state`,
-        { examState: { ...examState, timeElapsed } } // Include current time elapsed
-      );
-      if (subjectId) {
-        queryClient.invalidateQueries({ queryKey: ["subjects"] });
-        queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
-        await queryClient.refetchQueries({ queryKey: ["subjects"] });
-        await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
-      }
-      router.push(`/study?subject=${subjectId}`);
-    } catch (error) {
-      console.error("Failed to save exam state:", error);
-      // Optionally show a user-facing error message
-    }
-  };
-
   const handleResumeExam = async () => {
     setShowResumeDialog(false);
     setIsLoading(true);
@@ -769,10 +749,16 @@ export default function Quiz() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
+        <div className="flex h-96 items-center justify-center">
+          <div className="text-center">
+            <div className="relative mx-auto mb-4 h-11 w-11">
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
+            </div>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</p>
+          </div>
         </div>
       </div>
     );
@@ -780,18 +766,22 @@ export default function Quiz() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Error</h1>
-            <p className="text-gray-600 mb-8">{error}</p>
-            <Button onClick={() => router.push(`/study?subject=${subjectId}`)}>
+        <main className="mx-auto max-w-lg px-4 py-12">
+          <div className="rounded-3xl bg-slate-100 px-6 py-10 text-center dark:bg-white/[0.06]">
+            <h1 className="mb-2 font-display text-xl font-bold text-slate-900 dark:text-white">Couldn&apos;t load quiz</h1>
+            <p className="mb-6 text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">{error}</p>
+            <Button
+              variant="ghost"
+              onClick={() => router.push(`/study?subject=${subjectId}`)}
+              className="h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Study
+              Back to study
             </Button>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -799,25 +789,24 @@ export default function Quiz() {
   if (quizCompleted) {
     const resultsUserAnswers = completionPayloadRef.current?.userAnswers ?? userAnswers;
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="container mx-auto">
-          <UnifiedQuizResultsReview
-            questions={questions as any}
-            userAnswers={resultsUserAnswers}
-            subjectId={subjectId as string}
-            score={score}
-            totalQuestions={questions.length}
-            isFullLength={isFullLength}
-            onCloseReview={handleExitQuiz}
-          />
-        </div>
+        <UnifiedQuizResultsReview
+          questions={questions as any}
+          userAnswers={resultsUserAnswers}
+          subjectId={subjectId as string}
+          score={score}
+          totalQuestions={questions.length}
+          isFullLength={isFullLength}
+          onCloseReview={handleExitQuiz}
+          hasAppNav
+        />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+    <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       {isFullLength ? (
         <>
           <Navigation />
@@ -827,7 +816,6 @@ export default function Quiz() {
             timeElapsed={timeElapsed}
             onExit={handleExitQuiz}
             onSubmit={handleSubmitFullLength}
-            onSaveAndExit={handleSaveAndExit}
             savedState={savedExamState}
             examConfig={getExamConfig(subjectId as string)}
             hasAppNav
@@ -851,7 +839,7 @@ export default function Quiz() {
       )}
 
       <AlertDialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md rounded-2xl shadow-none">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {savedUnitQuizState ? "Resume unit quiz?" : "Resume Previous Exam?"}

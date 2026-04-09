@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Flag } from "lucide-react";
 import { QuestionCard } from "./QuestionCard";
 import { QuizHeader } from "./QuizHeader";
-import { QuizBottomBar } from "./QuizBottomBar";
+import { TestFloatingNav } from "./TestFloatingNav";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
 
@@ -42,6 +43,8 @@ interface QuizReviewPageProps {
     updatedFlagged: Set<number>,
   ) => void;
   isSubmitting?: boolean;
+  /** When true, sit below the app Navigation bar (same as full-length quiz page). */
+  hasAppNav?: boolean;
 }
 
 export function QuizReviewPage({
@@ -52,10 +55,15 @@ export function QuizReviewPage({
   onBack,
   onSubmit,
   isSubmitting,
+  hasAppNav = false,
 }: QuizReviewPageProps) {
+  const belowNav = hasAppNav ? "top-[calc(3.75rem+1px)]" : "top-0";
+  const contentTop =
+    hasAppNav
+      ? "pt-[calc(3.75rem+1px+4rem+1px)] max-md:pt-[calc(3.75rem+1px+4.875rem+1px)]"
+      : "pt-[calc(4rem+1px)] max-md:pt-[calc(4.875rem+1px)]";
   const subject = subjectId ? getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId) : undefined;
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
-  const apClassroomUi = true;
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const [localAnswers, setLocalAnswers] = useState(userAnswers);
   const [localFlagged, setLocalFlagged] = useState(flaggedQuestions);
@@ -86,23 +94,24 @@ export function QuizReviewPage({
   };
 
   return (
-    <div
-      className={`h-screen flex flex-col relative ${
-        apClassroomUi ? "bg-[#eef1f4]" : "bg-gray-50"
-      }`}
-    >
+    <div className="relative flex h-screen flex-col bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
       {/* Blur overlay during submit */}
       {isSubmitting && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[60] flex items-center justify-center">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-white/90 backdrop-blur-sm dark:bg-[#0B0F1A]/90">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-lg font-semibold text-gray-700">Submitting your test...</p>
+            <div className="relative mx-auto mb-4 h-11 w-11">
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              Submitting your test…
+            </p>
           </div>
         </div>
       )}
       
       {/* HEADER */}
-      <div className="fixed top-0 left-0 right-0 z-50">
+      <div className={cn("fixed left-0 right-0 z-50", belowNav)}>
         <QuizHeader
           title={
             selectedQuestion === null
@@ -115,16 +124,16 @@ export function QuizReviewPage({
           timerHidden
           subjectId={subjectId}
           onExitExam={selectedQuestion === null ? onBack : undefined}
-          headerVariant={apClassroomUi ? "apclassroom" : "default"}
+          headerVariant="default"
         />
       </div>
 
       {/* ====================== PALETTE MODE ====================== */}
       {selectedQuestion === null ? (
         <>
-          <div className="flex-1 overflow-y-auto mt-16 mb-14">
-            <div className="max-w-7xl mx-auto px-4 py-4">
-              <Card className="p-4">
+          <div className={cn("flex-1 overflow-y-auto pb-32", contentTop)}>
+            <div className="mx-auto max-w-7xl px-4 py-3">
+              <Card className="border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-white/[0.04]">
                 {/* Legend */}
                 <div className="flex items-center justify-center gap-4 mb-4 text-xs">
                   <div className="flex items-center gap-1.5">
@@ -185,29 +194,24 @@ export function QuizReviewPage({
             </div>
           </div>
 
-          {/* Bottom submit bar */}
-          <div className="border-t border-gray-200 bg-white fixed bottom-0 left-0 right-0 z-50">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="flex justify-between items-center h-16">
-                <span className="text-xl font-bold text-green-600">APMaster</span>
-
-                {onSubmit && (
-                  <Button
-                    onClick={() => onSubmit(localAnswers, localFlagged)}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit Test"}
-                  </Button>
-                )}
+          <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 sm:bottom-6">
+            {onSubmit && (
+              <div className="pointer-events-auto">
+                <Button
+                  onClick={() => onSubmit(localAnswers, localFlagged)}
+                  className="min-h-12 rounded-full border border-slate-200/80 bg-blue-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 disabled:opacity-50 dark:border-blue-500/30 dark:bg-blue-500 dark:shadow-lg dark:hover:bg-blue-600"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Test"}
+                </Button>
               </div>
-            </div>
+            )}
           </div>
         </>
       ) : (
         /* ====================== QUESTION MODE ====================== */
-        <div className="flex-1 overflow-y-auto mt-16 mb-14">
-          <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className={cn("flex-1 overflow-y-auto pb-32", contentTop)}>
+          <div className="mx-auto max-w-3xl px-2 pb-6 pt-0 sm:px-3">
             <QuestionCard
               question={questions[selectedQuestion]}
               questionNumber={selectedQuestion + 1}
@@ -219,7 +223,7 @@ export function QuizReviewPage({
               isReviewMode
               isAnswerSubmitted={false}
               mcqOptionCount={mcqOptionCount}
-              examSurfaceVariant={apClassroomUi ? "apclassroom" : "default"}
+              examSurfaceVariant="default"
               onReportError={() => setShowReportDialog(true)}
             />
           </div>
@@ -228,34 +232,31 @@ export function QuizReviewPage({
 
       {/* ====================== NAV BAR ====================== */}
       {selectedQuestion !== null && (
-        <QuizBottomBar
-          currentQuestion={selectedQuestion + 1}
+        <TestFloatingNav
+          currentIndex={selectedQuestion}
           totalQuestions={questions.length}
-          onOpenPalette={() => {
-            setSelectedQuestion(null);
-          }}
+          userAnswers={localAnswers}
+          flaggedQuestions={localFlagged}
+          canGoPrevious
+          canGoNext={selectedQuestion < questions.length - 1}
           onPrevious={() => {
             if (selectedQuestion > 0) {
               setSelectedQuestion(selectedQuestion - 1);
             } else {
-              // Going back from first question - return to palette view
               setSelectedQuestion(null);
             }
           }}
-          onNext={() =>
-            selectedQuestion < questions.length - 1 &&
-            setSelectedQuestion(selectedQuestion + 1)
-          }
-          canGoPrevious
-          canGoNext={selectedQuestion < questions.length - 1}
-          isLastQuestion={selectedQuestion === questions.length - 1}
-          onReview={
+          onNext={() => {
+            if (selectedQuestion < questions.length - 1) {
+              setSelectedQuestion(selectedQuestion + 1);
+            }
+          }}
+          onGoTo={(i) => setSelectedQuestion(i)}
+          onEndReview={
             selectedQuestion === questions.length - 1
               ? () => setSelectedQuestion(null)
               : undefined
           }
-          subjectId={subjectId}
-          barVariant={apClassroomUi ? "apclassroom" : "default"}
         />
       )}
 

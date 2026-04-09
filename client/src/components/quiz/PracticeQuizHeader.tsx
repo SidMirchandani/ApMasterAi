@@ -1,46 +1,18 @@
 import { Button } from "@/components/ui/button";
-import { MoreVertical, LogOut, ChevronDown } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { LogOut } from "lucide-react";
 import { ExamToolbar } from "./ExamToolbar";
-
-interface ExamDirections {
-  title: string;
-  sections?: Array<{
-    title: string;
-    details: string;
-    description?: string;
-  }>;
-  breakdown?: string[] | Array<{ name: string; weight: string }>;
-  units?: Array<{ name: string; weight: string }>;
-  bigIdeas?: Array<{ name: string; weight: string }>;
-}
 
 interface PracticeQuizHeaderProps {
   title: string;
   onExitExam?: () => void;
-  examDirections?: ExamDirections;
   subjectId?: string;
 }
 
 export function PracticeQuizHeader({
   title,
   onExitExam,
-  examDirections,
   subjectId,
 }: PracticeQuizHeaderProps) {
-  // Extract short subject code from title
   const getShortTitle = (fullTitle: string) => {
     if (fullTitle.includes("Computer Science Principles")) return "AP CSP";
     if (fullTitle.includes("Macroeconomics")) return "AP MACRO";
@@ -54,249 +26,51 @@ export function PracticeQuizHeader({
   };
 
   return (
-    <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Desktop: single row */}
-        <div className="hidden md:flex justify-between items-center h-16">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {title}
-              </h1>
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-gray-600 hover:text-gray-900">
-                    Directions <ChevronDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[600px] sm:w-[700px] overflow-y-auto">
-                  <SheetHeader>
-                    <SheetTitle className="text-xl font-bold">Please read the below directions carefully.</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6 space-y-4 text-sm">
-                    {examDirections ? (
-                      <>
-                        <h3 className="font-bold text-base">{examDirections.title}</h3>
-
-                        {examDirections.sections?.map((section, idx) => (
-                          <div key={idx}>
-                            <h4 className="font-semibold">{section.title}</h4>
-                            <p className="font-medium">{section.details}</p>
-                            {section.description && <p className="mt-2">{section.description}</p>}
-                          </div>
-                        ))}
-
-                        {examDirections.breakdown && (
-                          <ul className="list-disc pl-5 space-y-1">
-                            {examDirections.breakdown.map((item, idx) => (
-                              <li key={idx}>
-                                {typeof item === 'string' ? item : `${item.name}: ${item.weight}`}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-
-                        {examDirections.units && (
-                          <div className="border rounded-lg overflow-hidden">
-                            <table className="w-full text-sm">
-                              <thead className="bg-blue-50">
-                                <tr>
-                                  <th className="text-left p-2 font-semibold">Units</th>
-                                  <th className="text-right p-2 font-semibold">Exam Weighting</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y">
-                                {examDirections.units.map((unit, idx) => (
-                                  <tr key={idx}>
-                                    <td className="p-2">{unit.name}</td>
-                                    <td className="p-2 text-right font-semibold text-blue-700">{unit.weight}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-
-                        {examDirections.bigIdeas && (
-                          <div className="border rounded-lg overflow-hidden">
-                            <table className="w-full text-sm">
-                              <thead className="bg-blue-50">
-                                <tr>
-                                  <th className="text-left p-2 font-semibold">Big Ideas</th>
-                                  <th className="text-right p-2 font-semibold">Exam Weighting</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y">
-                                {examDirections.bigIdeas.map((idea, idx) => (
-                                  <tr key={idx}>
-                                    <td className="p-2">{idea.name}</td>
-                                    <td className="p-2 text-right font-semibold text-blue-700">{idea.weight}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-
-                        <p>Each of the questions is followed by four suggested answers. Select the best answer for each question.</p>
-                      </>
-                    ) : (
-                      <>
-                        <p>This practice quiz will help you prepare for the AP® exam.</p>
-                        <p>Each of the questions is followed by four suggested answers. Select the one that best answers each question.</p>
-                      </>
-                    )}
-
-                    <p>A calculator is allowed in this section. You may use a handheld calculator or the calculator available in their application.</p>
-                    <p>Reference information is available in this application and can be accessed throughout the quiz.</p>
-                    <p className="mt-6"><strong>Copyright:</strong> "AP®" is a registered trademark of the College Board. The College Board is not affiliated with, nor does it endorse, this product. This is not an official test provided by the College Board. The user interface (UI) is intended solely for educational purposes and aims to mimic the appearance of the official Bluebook interface.</p>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-          </div>
-
+    <div className="sticky top-0 z-50 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A]">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="hidden h-16 items-center justify-between md:flex">
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {title}
+          </h1>
           <div className="flex items-center gap-2">
             <ExamToolbar subjectId={subjectId} size="md" variant="default" />
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" title="More">
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {onExitExam && (
-                  <DropdownMenuItem onClick={onExitExam}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Exit to Main</span>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {onExitExam && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onExitExam}
+                title="Exit"
+                className="h-9 gap-1.5 px-3 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Exit</span>
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Mobile: two rows */}
-        <div className="md:hidden py-2">
-          {/* First row: Title and Directions */}
+        <div className="py-1.5 md:hidden">
           <div className="flex flex-col items-center">
             <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">
               {getShortTitle(title)}
             </h1>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-5 px-2 text-xs text-gray-600 hover:text-gray-900">
-                  Directions <ChevronDown className="ml-1 h-3 w-3" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[90vw] overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle className="text-lg font-bold">Please read the below directions carefully.</SheetTitle>
-                </SheetHeader>
-                <div className="mt-6 space-y-4 text-sm">
-                  {examDirections ? (
-                    <>
-                      <h3 className="font-bold text-base">{examDirections.title}</h3>
-
-                      {examDirections.sections?.map((section, idx) => (
-                        <div key={idx}>
-                          <h4 className="font-semibold">{section.title}</h4>
-                          <p className="font-medium">{section.details}</p>
-                          {section.description && <p className="mt-2">{section.description}</p>}
-                        </div>
-                      ))}
-
-                      {examDirections.breakdown && (
-                        <ul className="list-disc pl-5 space-y-1">
-                          {examDirections.breakdown.map((item, idx) => (
-                            <li key={idx}>
-                              {typeof item === 'string' ? item : `${item.name}: ${item.weight}`}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {examDirections.units && (
-                        <div className="border rounded-lg overflow-hidden">
-                          <table className="w-full text-sm">
-                            <thead className="bg-blue-50">
-                              <tr>
-                                <th className="text-left p-2 font-semibold">Units</th>
-                                <th className="text-right p-2 font-semibold">Exam Weighting</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                              {examDirections.units.map((unit, idx) => (
-                                <tr key={idx}>
-                                  <td className="p-2">{unit.name}</td>
-                                  <td className="p-2 text-right font-semibold text-blue-700">{unit.weight}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-
-                      {examDirections.bigIdeas && (
-                        <div className="border rounded-lg overflow-hidden">
-                          <table className="w-full text-sm">
-                            <thead className="bg-blue-50">
-                              <tr>
-                                <th className="text-left p-2 font-semibold">Big Ideas</th>
-                                <th className="text-right p-2 font-semibold">Exam Weighting</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                              {examDirections.bigIdeas.map((idea, idx) => (
-                                <tr key={idx}>
-                                  <td className="p-2">{idea.name}</td>
-                                  <td className="p-2 text-right font-semibold text-blue-700">{idea.weight}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-
-                      <p>Each of the questions is followed by four suggested answers. Select the best answer for each question.</p>
-                    </>
-                  ) : (
-                    <>
-                      <p>This practice quiz will help you prepare for the AP® exam.</p>
-                      <p>Each of the questions is followed by four suggested answers. Select the one that best answers each question.</p>
-                    </>
-                  )}
-
-                  <p>A calculator is allowed in this section. You may use a handheld calculator or the calculator available in their application.</p>
-                  <p>Reference information is available in this application and can be accessed throughout the quiz.</p>
-                  <p className="mt-6"><strong>Copyright:</strong> "AP®" is a registered trademark of the College Board. The College Board is not affiliated with, nor does it endorse, this product. This is not an official test provided by the College Board. The user interface (UI) is intended solely for educational purposes and aims to mimic the appearance of the official Bluebook interface.</p>
-                </div>
-              </SheetContent>
-            </Sheet>
           </div>
-
-          {/* Second row: Tools only (no timer) */}
-          <div className="flex justify-center items-center h-10 mt-1">
-            <div className="flex items-center gap-1">
-              <ExamToolbar subjectId={subjectId} size="sm" variant="default" />
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" title="More">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {onExitExam && (
-                    <DropdownMenuItem onClick={onExitExam}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Exit to Main</span>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+          <div className="mt-0.5 flex h-10 items-center justify-center gap-2">
+            <ExamToolbar subjectId={subjectId} size="sm" variant="default" />
+            {onExitExam && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onExitExam}
+                title="Exit"
+                className="h-8 gap-1 px-2 text-xs font-medium text-slate-600 dark:text-slate-300"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Exit
+              </Button>
+            )}
           </div>
         </div>
       </div>

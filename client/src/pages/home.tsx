@@ -36,7 +36,7 @@ export default function Home() {
   }
 
   return (
-    <div className="landing-page">
+    <div className="landing-page min-h-screen bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
       <Navigation />
       <Hero />
       <HeroStats />

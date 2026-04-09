@@ -157,10 +157,16 @@ export default function FullLengthResults() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-950">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
+        <div className="flex h-96 items-center justify-center">
+          <div className="text-center">
+            <div className="relative mx-auto mb-4 h-11 w-11">
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
+            </div>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</p>
+          </div>
         </div>
       </div>
     );
@@ -168,20 +174,24 @@ export default function FullLengthResults() {
 
   if (fetchError) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-950">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center max-w-md mx-auto">
-            <p className="text-gray-600 dark:text-gray-400 font-medium">{fetchError}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-              The result may have been removed or the link is invalid. Return to Quiz/Test History to see your saved results.
+        <main className="mx-auto max-w-lg px-4 py-12">
+          <div className="rounded-3xl bg-slate-100 px-6 py-10 text-center dark:bg-white/[0.06]">
+            <p className="font-medium text-slate-900 dark:text-white">{fetchError}</p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              The result may have been removed or the link is invalid. Open quiz & test history to see saved results.
             </p>
-            <Button onClick={handleCloseReview} className="mt-4">
+            <Button
+              variant="ghost"
+              onClick={handleCloseReview}
+              className="mt-6 h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Quiz/Test History
+              Quiz & test history
             </Button>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -198,27 +208,32 @@ export default function FullLengthResults() {
   if (isUnitQuiz && !hasQuestions && Object.keys(sectionBreakdown).length > 0) {
     if (unitQuestionsLoading) {
       return (
-        <div className="min-h-screen bg-white dark:bg-gray-950">
+        <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
           <Navigation />
-          <div className="flex items-center justify-center h-96">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
+          <div className="flex h-96 items-center justify-center">
+            <div className="relative h-11 w-11">
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
+            </div>
           </div>
         </div>
       );
     }
     if (unitQuestionsError) {
       return (
-        <div className="min-h-screen bg-white dark:bg-gray-950">
+        <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
           <Navigation />
-          <div className="container mx-auto px-4 py-8">
-            <div className="text-center">
-              <p className="text-gray-600 dark:text-gray-400">Question details could not be loaded for this unit quiz.</p>
-              <Button onClick={handleCloseReview} className="mt-4">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Quiz/Test History
-              </Button>
-            </div>
-          </div>
+          <main className="mx-auto max-w-lg px-4 py-12 text-center">
+            <p className="text-slate-600 dark:text-slate-400">Question details could not be loaded for this unit quiz.</p>
+            <Button
+              variant="ghost"
+              onClick={handleCloseReview}
+              className="mt-6 h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Quiz & test history
+            </Button>
+          </main>
         </div>
       );
     }
@@ -227,61 +242,72 @@ export default function FullLengthResults() {
   // Summary-only view: only for non-unit tests that have section breakdown but no question list
   if (!hasQuestions && Object.keys(sectionBreakdown).length > 0 && !isUnitQuiz) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-950">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {testData.type === "diagnostic" ? "Diagnostic" : "Test"} Results
-              </h1>
-              <Button variant="outline" onClick={handleCloseReview}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Quiz/Test History
-              </Button>
+        <main className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-10">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
+              {testData.type === "diagnostic" ? "Diagnostic" : "Test"} results
+            </h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCloseReview}
+              className="h-10 rounded-full px-4 text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              History
+            </Button>
+          </div>
+          <div className="space-y-6 rounded-3xl bg-slate-100 px-6 py-8 dark:bg-white/[0.06]">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">
+                {score} / {totalQuestions}
+              </p>
+              <p className="mt-1 text-lg text-slate-600 dark:text-slate-400">
+                {testData.percentage ?? (totalQuestions ? Math.round((score / totalQuestions) * 100) : 0)}%
+              </p>
             </div>
-            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-6">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{score} / {totalQuestions}</p>
-                <p className="text-lg text-gray-600 dark:text-gray-400 mt-1">{testData.percentage ?? (totalQuestions ? Math.round((score / totalQuestions) * 100) : 0)}%</p>
-              </div>
-              <div>
-                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Section breakdown</h2>
-                <ul className="space-y-2">
-                  {Object.entries(sectionBreakdown).map(([code, section]) => (
-                    <li key={code} className="flex justify-between items-center text-sm">
-                      <span className="text-gray-700 dark:text-gray-300">{section.name}</span>
-                      <span className="font-medium">{section.correct}/{section.total} ({section.percentage}%)</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            <div>
+              <h2 className="mb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Section breakdown</h2>
+              <ul className="space-y-2">
+                {Object.entries(sectionBreakdown).map(([code, section]) => (
+                  <li key={code} className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-white/[0.06]">
+                    <span className="text-slate-700 dark:text-slate-300">{section.name}</span>
+                    <span className="font-medium text-slate-900 dark:text-white">
+                      {section.correct}/{section.total} ({section.percentage}%)
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
   if (!hasQuestions) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-950">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <p className="text-gray-600 dark:text-gray-400">No question details available for this result.</p>
-            <Button onClick={handleCloseReview} className="mt-4">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Quiz/Test History
-            </Button>
-          </div>
-        </div>
+        <main className="mx-auto max-w-lg px-4 py-12 text-center">
+          <p className="text-slate-600 dark:text-slate-400">No question details available for this result.</p>
+          <Button
+            variant="ghost"
+            onClick={handleCloseReview}
+            className="mt-6 h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Quiz & test history
+          </Button>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
+    <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
       <UnifiedQuizResultsReview
         questions={questions as any}
@@ -293,6 +319,7 @@ export default function FullLengthResults() {
         onCloseReview={handleCloseReview}
         testId={testId as string}
         sectionReviewReturnTo={returnToParam}
+        hasAppNav
       />
     </div>
   );

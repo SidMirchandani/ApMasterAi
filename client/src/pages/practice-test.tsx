@@ -1,8 +1,10 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import Navigation from "@/components/ui/navigation";
-import { Target, Clock, BarChart3, CheckCircle } from "lucide-react";
+import SimpleFooter from "@/components/sections/simple-footer";
+import { Target, Clock, BarChart3, CheckCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PracticeTest() {
@@ -18,20 +20,22 @@ export default function PracticeTest() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-khan-background flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-[#0B0F1A]">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-khan-gray-medium">Loading...</p>
+          <div className="relative mx-auto mb-4 h-11 w-11">
+            <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+            <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
+          </div>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</p>
         </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return null; // Will redirect to login
+    return null;
   }
 
-  // Get test name from the ID (you can expand this with actual data later)
   const getTestName = (testId: string) => {
     const testMap: Record<string, string> = {
       "calculus-ab": "AP Calculus AB Practice Test",
@@ -48,115 +52,72 @@ export default function PracticeTest() {
     return testMap[testId] || "AP Practice Test";
   };
 
-  // ✅ Normalize id into a string
   const testId: string = Array.isArray(id) ? (id[0] || "") : (id || "");
   const testName: string = getTestName(testId);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-khan-background via-white to-white relative overflow-hidden">
-      {/* Background decoration - matching hero style */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-khan-green/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-khan-blue/5 rounded-full blur-3xl"></div>
-      </div>
+  const tiles = [
+    { icon: Target, title: "55 questions", subtitle: "Multiple choice" },
+    { icon: Clock, title: "3h 15m", subtitle: "Exam-style timing" },
+    { icon: BarChart3, title: "Analytics", subtitle: "Performance insights" },
+    { icon: CheckCircle, title: "Instant feedback", subtitle: "With explanations" },
+  ];
 
+  return (
+    <div className="relative min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
-      <main className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-khan-gray-dark mb-4">
-              {testName}
-            </h1>
-            <p className="text-xl text-khan-gray-medium max-w-2xl mx-auto">
-              Test your knowledge with real AP-style questions and get instant
-              feedback.
-            </p>
+      <main className="relative z-10 mx-auto max-w-4xl px-4 py-8 md:px-8 md:py-10">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-1 mb-6 h-10 rounded-full px-3 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
+          asChild
+        >
+          <Link href="/learn">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Browse courses
+          </Link>
+        </Button>
+
+        <header className="mb-8 space-y-2">
+          <p className="text-sm font-medium text-blue-600/90 dark:text-blue-400/90">Practice test</p>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            {testName}
+          </h1>
+          <p className="max-w-2xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+            Real AP-style questions and instant feedback—coming soon as a dedicated flow. Use full-length MCQ from study for now.
+          </p>
+        </header>
+
+        <div className="space-y-6 rounded-3xl bg-slate-100 px-5 py-6 dark:bg-white/[0.06] sm:px-8 sm:py-8">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {tiles.map(({ icon: Icon, title, subtitle }) => (
+              <div key={title} className="text-center">
+                <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-blue-600 dark:bg-white/[0.08] dark:text-blue-400">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">{title}</h3>
+                <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">{subtitle}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="bg-white rounded-lg border-2 border-gray-100 p-8 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="text-center">
-                <div className="w-14 h-14 bg-khan-blue rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <Target className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-sm font-bold text-khan-gray-dark mb-1">
-                  55 Questions
-                </h3>
-                <p className="text-xs text-khan-gray-medium">
-                  Multiple choice
-                </p>
-              </div>
-
-              <div className="text-center">
-                <div className="w-14 h-14 bg-khan-green rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <Clock className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-sm font-bold text-khan-gray-dark mb-1">
-                  3 Hours 15 Min
-                </h3>
-                <p className="text-xs text-khan-gray-medium">
-                  Real exam timing
-                </p>
-              </div>
-
-              <div className="text-center">
-                <div className="w-14 h-14 bg-khan-purple rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <BarChart3 className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-sm font-bold text-khan-gray-dark mb-1">
-                  Detailed Analytics
-                </h3>
-                <p className="text-xs text-khan-gray-medium">
-                  Performance insights
-                </p>
-              </div>
-
-              <div className="text-center">
-                <div className="w-14 h-14 bg-khan-orange rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-sm font-bold text-khan-gray-dark mb-1">
-                  Instant Feedback
-                </h3>
-                <p className="text-xs text-khan-gray-medium">
-                  Explanations included
-                </p>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-khan-gray-dark mb-4">
-                Practice Test Coming Soon
-              </h2>
-              <p className="text-khan-gray-medium mb-6">
-                We're creating comprehensive practice tests with real AP-style
-                questions for optimal exam preparation. Our diagnostic tests
-                will help identify your strengths and areas for improvement.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  className="bg-khan-green text-white hover:bg-khan-green-light transition-colors px-6 py-3 font-semibold"
-                  disabled
-                >
-                  Start Practice Test
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-2 border-khan-blue text-khan-blue hover:bg-khan-blue hover:text-white transition-colors px-6 py-3 font-semibold"
-                  disabled
-                >
-                  Quick Diagnostic (15 min)
-                </Button>
-              </div>
-
-              <p className="text-sm text-khan-gray-medium mt-4">
-                Practice tests will be available soon. Stay tuned for updates!
-              </p>
+          <div className="border-t border-slate-200/80 pt-6 text-center dark:border-white/[0.08]">
+            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">Coming soon</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-slate-600 dark:text-slate-400">
+              We&apos;re building dedicated practice tests with diagnostics. Stay tuned.
+            </p>
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+              <Button disabled variant="ghost" className="h-11 rounded-full bg-slate-200/80 text-slate-500 dark:bg-white/[0.08]">
+                Start practice test
+              </Button>
+              <Button disabled variant="ghost" className="h-11 rounded-full bg-slate-200/80 text-slate-500 dark:bg-white/[0.08]">
+                Quick diagnostic (15 min)
+              </Button>
             </div>
           </div>
         </div>
       </main>
+      <SimpleFooter />
     </div>
   );
 }

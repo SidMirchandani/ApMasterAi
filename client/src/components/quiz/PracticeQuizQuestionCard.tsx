@@ -1,7 +1,5 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { RadioGroup } from "@/components/ui/radio-group";
 import { BlockRenderer } from "./BlockRenderer";
-import { BookmarkCheck, XCircle, Flag, AlertTriangle } from "lucide-react";
+import { XCircle, Flag, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getDisplayChoicesAndCorrect } from "@/lib/mcqDisplay";
 
@@ -40,13 +38,12 @@ interface PracticeQuizQuestionCardProps {
   onAnswerSelect: (answer: string) => void;
   isAnswerSubmitted?: boolean;
   cheatMode?: boolean;
-  isBookmarked?: boolean;
-  onToggleBookmark?: () => void;
   /** 4 = A-D only (2026 Digital); 5 = A-E. Used for E→D swap when stored correct is E. */
   mcqOptionCount?: number;
   isFlagged?: boolean;
   onToggleMarkForReview?: () => void;
   onReport?: () => void;
+  showQuestionCounter?: boolean;
 }
 
 export function PracticeQuizQuestionCard({
@@ -57,12 +54,11 @@ export function PracticeQuizQuestionCard({
   onAnswerSelect,
   isAnswerSubmitted = false,
   cheatMode = false,
-  isBookmarked = false,
-  onToggleBookmark,
   mcqOptionCount,
   isFlagged = false,
   onToggleMarkForReview,
   onReport,
+  showQuestionCounter = true,
 }: PracticeQuizQuestionCardProps) {
   const [crossedOut, setCrossedOut] = useState<Set<string>>(new Set());
 
@@ -79,24 +75,21 @@ export function PracticeQuizQuestionCard({
   const isCorrect = selectedAnswer === displayCorrectLabel;
 
   return (
-    <Card
-      className={`bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden rounded-xl transition-all duration-150 ease-out ${
-        isFlagged ? "ring-2 ring-red-400 dark:ring-red-500" : ""
-      }`}
-    >
-      <CardHeader className="p-0">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-3 py-2 bg-slate-50/50 dark:bg-slate-800/50">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Question {questionNumber} of {totalQuestions}
-            </span>
+    <div className="space-y-4 transition-all duration-150 ease-out">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-2">
+            {showQuestionCounter ? (
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                Question {questionNumber} of {totalQuestions}
+              </span>
+            ) : null}
             {onToggleMarkForReview && (
               <button
                 type="button"
                 onClick={onToggleMarkForReview}
-                className={`flex items-center gap-1 text-xs font-medium rounded-lg px-1.5 py-0.5 transition-colors ${
+                className={`flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs font-medium transition-colors ${
                   isFlagged
-                    ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10"
+                    ? "text-red-600 dark:text-red-400"
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
                 }`}
               >
@@ -130,27 +123,12 @@ export function PracticeQuizQuestionCard({
                 <span className="hidden sm:inline">Report</span>
               </button>
             )}
-            {onToggleBookmark && (
-              <button
-                onClick={onToggleBookmark}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150 ease-out border ${
-                  isBookmarked
-                    ? "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-600"
-                    : "bg-white dark:bg-slate-800 text-slate-500 border-slate-300 hover:bg-slate-50 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700"
-                }`}
-              >
-                <BookmarkCheck className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
-                {isBookmarked ? 'Saved' : 'Save'}
-              </button>
-            )}
           </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="p-4 space-y-4">
-        <div className="text-slate-900 dark:text-white leading-relaxed text-xs sm:text-sm">
+      <div className="text-sm leading-relaxed text-slate-900 dark:text-slate-100">
           <BlockRenderer blocks={question.prompt_blocks || []} />
-        </div>
+      </div>
 
         <div className="space-y-2">
           {choiceLabels.map((label) => {
@@ -158,62 +136,55 @@ export function PracticeQuizQuestionCard({
             const isCorrectAnswer = label === displayCorrectLabel;
             const isCrossedOut = crossedOut.has(label);
 
-            let borderColor = "border border-slate-200 dark:border-slate-800";
-            let bgColor = "bg-white dark:bg-slate-800/50";
-            let textColor = "text-slate-700 dark:text-white";
-            let ringClass = "";
-            let opacity = "opacity-100";
+            const opacity = isCrossedOut && !isAnswerSubmitted ? "opacity-40" : "opacity-100";
 
-            if (isCrossedOut && !isAnswerSubmitted) {
-              opacity = "opacity-40";
-            }
+            const rowClass =
+              "w-full rounded-lg border border-slate-200/90 bg-white p-3 text-left text-slate-900 transition-colors dark:border-slate-200/25 dark:bg-white";
 
-            if (cheatMode && isCorrectAnswer && !isAnswerSubmitted) {
-              ringClass = "ring-2 ring-green-500";
-              borderColor = "border-green-500 dark:border-green-600";
-              bgColor = "bg-green-50 dark:bg-green-500/10";
-            } else if (isAnswerSubmitted) {
-              if (isCorrectAnswer) {
-                ringClass = "ring-2 ring-green-500";
-                borderColor = "border-green-500 dark:border-green-600";
-                bgColor = "bg-green-50 dark:bg-green-500/10";
-                textColor = "text-green-700 dark:text-green-300";
-              } else if (isUserAnswer && !isCorrect) {
-                ringClass = "ring-2 ring-red-500";
-                borderColor = "border-red-500 dark:border-red-600";
-                bgColor = "bg-red-50 dark:bg-red-500/10";
-                textColor = "text-red-700 dark:text-red-300";
+            const hoverRow =
+              !isAnswerSubmitted && !cheatMode
+                ? "hover:bg-slate-50/80 dark:hover:bg-slate-50"
+                : "";
+
+            const shouldShowCheatOutline = cheatMode && isCorrectAnswer && !isAnswerSubmitted;
+
+            let letterClass =
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-slate-300 text-xs font-bold text-slate-600 dark:border-slate-400 dark:text-slate-700";
+
+            if (!isAnswerSubmitted) {
+              if (isUserAnswer) {
+                letterClass =
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-blue-600 bg-blue-600 text-xs font-bold text-white dark:border-blue-500 dark:bg-blue-500";
               }
-            } else if (isUserAnswer) {
-              ringClass = "ring-2 ring-blue-500";
-              borderColor = "border-blue-500";
-              bgColor = "bg-blue-50 dark:bg-blue-500/10";
-              textColor = "text-blue-700 dark:text-blue-300";
             } else {
-              bgColor = "bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-700/50";
+              if (isCorrectAnswer) {
+                letterClass =
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-emerald-600 bg-emerald-600 text-xs font-bold text-white dark:border-emerald-500 dark:bg-emerald-500";
+              } else if (isUserAnswer && !isCorrect) {
+                letterClass =
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-red-600 bg-red-600 text-xs font-bold text-white dark:border-red-500 dark:bg-red-500";
+              }
             }
-
-            const hoverRing = !isAnswerSubmitted ? "hover:ring-1 hover:ring-blue-400/40" : "";
 
             return (
               <button
                 key={label}
                 disabled={isAnswerSubmitted}
                 onClick={() => onAnswerSelect(label)}
-                className={`w-full flex items-start gap-3 p-3 rounded-lg border transition-all duration-150 ease-out text-left relative group/choice
-                  ${borderColor} ${bgColor} ${ringClass} ${opacity} ${hoverRing}
-                  ${isAnswerSubmitted ? "cursor-default" : "cursor-pointer hover:shadow-sm"}
-                `}
+                className={`group/choice relative flex items-start gap-3 ${rowClass} ${hoverRow} ${opacity} ${
+                  shouldShowCheatOutline
+                    ? "border-emerald-300 bg-emerald-50/40 dark:border-emerald-400 dark:bg-emerald-500/10"
+                    : ""
+                } ${
+                  isAnswerSubmitted ? "cursor-default" : "cursor-pointer"
+                }`}
               >
-                <div className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center font-bold text-xs transition-colors
-                  ${isUserAnswer
-                    ? "bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500 text-white"
-                    : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-300"
-                  }
-                `}>
-                  {label}
-                </div>
-                <div className={`flex-1 text-sm leading-snug ${textColor} ${isCrossedOut && !isAnswerSubmitted ? 'line-through decoration-2' : ''}`}>
+                <div className={letterClass}>{label}</div>
+                <div
+                  className={`flex-1 text-sm leading-snug text-slate-900 dark:text-slate-900 ${
+                    isCrossedOut && !isAnswerSubmitted ? "line-through decoration-2" : ""
+                  }`}
+                >
                   <BlockRenderer blocks={getChoiceBlocks(label) ?? []} />
                 </div>
                 {!isAnswerSubmitted && (
@@ -237,7 +208,6 @@ export function PracticeQuizQuestionCard({
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

@@ -53,8 +53,7 @@ export function AdminQuestionQuizPreviewDialog({
         </DialogHeader>
         {normalized != null && displayCorrect != null ? (
           <div className="flex-1 min-h-0 overflow-y-auto">
-            <div className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-stretch pb-2">
-              <div className="order-1 flex-1 min-w-0">
+            <div className="mx-auto max-w-3xl pb-2">
                 <PracticeQuizQuestionCard
                   question={normalized}
                   questionNumber={1}
@@ -64,11 +63,12 @@ export function AdminQuestionQuizPreviewDialog({
                   isAnswerSubmitted
                   mcqOptionCount={mcqOptionCount}
                 />
-              </div>
-              <div className="order-2 w-full md:w-[35%] md:min-w-0 flex flex-col">
-                <ExplanationPanel hasAnswered isCorrect>
+                <ExplanationPanel hasAnswered>
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    Correct.
+                  </p>
                   {normalized.explanation ? (
-                    <PrettyExplanation>
+                    <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
                       {getDisplayExplanation(
                         normalized.explanation as string,
                         normalized,
@@ -76,12 +76,11 @@ export function AdminQuestionQuizPreviewDialog({
                       )}
                     </PrettyExplanation>
                   ) : (
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-slate-500 dark:text-slate-400">
                       No explanation on this question.
                     </span>
                   )}
                 </ExplanationPanel>
-              </div>
             </div>
           </div>
         ) : null}

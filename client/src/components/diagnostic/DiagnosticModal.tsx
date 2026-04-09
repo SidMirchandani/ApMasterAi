@@ -628,27 +628,21 @@ setQuestionSequence(seq);
       {/* Scrollable content area with bottom padding for fixed bar */}
       <div className="flex-1 overflow-y-auto pb-14">
         <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2">
-          <div className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-stretch">
-            {/* Question: left on desktop, top on narrow screens */}
-            <div className="order-1 flex-1 min-w-0 space-y-2">
-              {/* Header card */}
-              <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 px-3 pt-3 pb-2.5 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
+          <div className="mx-auto max-w-3xl space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-blue-500" />
-                    <span className="font-bold text-gray-900 dark:text-white text-xs">Quick Diagnostic</span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">Quick Diagnostic</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <DifficultyBadge difficulty={currentDiff} />
-                    <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                    <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
                       {currentIndex + 1} / {sectionPlan.length}
                     </span>
                   </div>
-                </div>
-                <Progress value={progressPct} className="h-1 bg-slate-100 dark:bg-slate-800" />
               </div>
+              <Progress value={progressPct} className="h-1 rounded-full bg-slate-100 dark:bg-slate-800" />
 
-              {/* Question card — same interface as unit-wise MCQ (cross-out, styling) */}
               <PracticeQuizQuestionCard
                 question={currentQuestion as any}
                 questionNumber={currentIndex + 1}
@@ -659,31 +653,32 @@ setQuestionSequence(seq);
                 cheatMode={cheatMode}
                 mcqOptionCount={mcqOptionCount}
               />
-            </div>
-            {/* Explanation: right on desktop, below on narrow screens */}
-            <div className="order-2 w-full md:w-[35%] md:min-w-0 flex flex-col">
-              <ExplanationPanel
-                hasAnswered={showFeedback}
-                isCorrect={selectedAnswer === correctLabel}
-              >
+              <ExplanationPanel hasAnswered={showFeedback}>
                 {showFeedback && (
                   <>
-                    <span className="text-xs font-semibold block mb-1">
-                      {selectedAnswer === correctLabel ? "Correct! " : `Incorrect. The answer is ${correctLabel}. `}
-                    </span>
-                    {(currentQuestion as any).explanation && (
-                      <PrettyExplanation className="text-xs text-inherit prose prose-sm dark:prose-invert max-w-none">
+                    <p
+                      className={`text-sm font-medium ${
+                        selectedAnswer === correctLabel
+                          ? "text-emerald-700 dark:text-emerald-400"
+                          : "text-red-700 dark:text-red-300"
+                      }`}
+                    >
+                      {selectedAnswer === correctLabel
+                        ? "Correct."
+                        : `Incorrect. The correct answer is ${correctLabel}.`}
+                    </p>
+                    {(currentQuestion as any).explanation ? (
+                      <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
                         {getDisplayExplanation(
                         (currentQuestion as any).explanation,
                         currentQuestion as any,
                         mcqOptionCount
                       )}
                       </PrettyExplanation>
-                    )}
+                    ) : null}
                   </>
                 )}
               </ExplanationPanel>
-            </div>
           </div>
         </div>
       </div>

@@ -73,7 +73,7 @@ export function ExamToolbar({
         <ReferenceInformationDialog
           open={referenceOpen}
           onOpenChange={setReferenceOpen}
-          pdfUrl={getExamReferencePdfUrl()}
+          pdfUrl={getExamReferencePdfUrl(subjectId)}
           title={getExamReferenceDialogTitle(subjectId)}
         />
       )}

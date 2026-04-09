@@ -15,17 +15,8 @@ import { ReportQuestionDialog } from "./ReportQuestionDialog";
 import { ExplanationPanel } from "./ExplanationPanel";
 import { Zap } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
-import { useQueryClient } from "@tanstack/react-query";
 import { useQuizEngine } from "@/hooks/useQuizEngine";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { showPracticeExamToolHeader } from "@/lib/examTools";
 
 interface Question {
@@ -87,7 +78,6 @@ export function PracticeQuiz({
     userAnswers,
     setAnswer,
     next,
-    isLastQuestion,
   } = useQuizEngine({
     initialIndex: 0,
     initialAnswers: {},
@@ -96,21 +86,16 @@ export function PracticeQuiz({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [score, setScore] = useState(0);
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(
-    new Set(),
-  );
   const [timerHidden, setTimerHidden] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [finalUserAnswers, setFinalUserAnswers] = useState<{ [key: number]: string }>({});
   const [cheatMode, setCheatMode] = useState(false);
-  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showConceptPrimer, setShowConceptPrimer] = useState(false);
   const [primerStepIndex, setPrimerStepIndex] = useState(0);
   const [showAutoAnswerDialog, setShowAutoAnswerDialog] = useState(false);
 
-  const { isAdmin } = useAdminCheck();
   const appliedSavedState = useRef(false);
   const hasSetInitialPrimer = useRef(false);
   // Initialize from saved state when resuming a unit quiz (only once)
@@ -119,9 +104,6 @@ export function PracticeQuiz({
       appliedSavedState.current = true;
       const idx = Math.min(savedState.currentQuestionIndex, questions.length - 1);
       setFinalUserAnswers(savedState.userAnswers || {});
-      if (savedState.flaggedQuestions && savedState.flaggedQuestions.length > 0) {
-        setFlaggedQuestions(new Set(savedState.flaggedQuestions));
-      }
       if (enableStudyNotesPrimer && idx % 5 === 0) {
         setShowConceptPrimer(true);
       }
@@ -142,98 +124,45 @@ export function PracticeQuiz({
 
   const router = useRouter();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
 
   const showToolHeader = showPracticeExamToolHeader(subjectId);
-  const toggleMarkForCurrentQuestion = () => {
-    setFlaggedQuestions((prev) => {
-      const next = new Set(prev);
-      if (next.has(currentQuestionIndex)) next.delete(currentQuestionIndex);
-      else next.add(currentQuestionIndex);
-      return next;
-    });
-  };
-
-  const practiceExamDirections = subject
-    ? {
-        title: subject.metadata.examTitle || `${subject.displayName} Practice Exam`,
-        sections: subject.metadata.examSections || [],
-        breakdown: subject.metadata.breakdown,
-      }
-    : undefined;
 
   useEffect(() => {
-    const savedCheatMode = localStorage.getItem('adminCheatMode');
-    if (savedCheatMode) {
-      setCheatMode(savedCheatMode === 'true');
-    }
+    const syncCheatMode = () => {
+      setCheatMode(localStorage.getItem("adminCheatMode") === "true");
+    };
+    syncCheatMode();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "adminCheatMode") {
+        syncCheatMode();
+      }
+    };
+    const onCheatModeChanged = () => {
+      syncCheatMode();
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("admin-cheat-mode-changed", onCheatModeChanged);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("admin-cheat-mode-changed", onCheatModeChanged);
+    };
   }, []);
 
   useEffect(() => {
-    const loadBookmarks = async () => {
-      if (!user) return;
-      try {
-        const res = await apiRequest("GET", `/api/user/bookmarks/ids?subjectId=${subjectId}`);
-        const data = await res.json();
-        if (data.success) {
-          setBookmarkedIds(new Set(data.data));
-        }
-      } catch (e) {
-        console.log("Could not load bookmarks");
-      }
-    };
-    loadBookmarks();
-  }, [user, subjectId]);
-
-  const handleToggleBookmark = async (question: any) => {
-    if (!user) return;
-    const qId = question.id;
-    const wasBookmarked = bookmarkedIds.has(qId);
-    setBookmarkedIds(prev => {
-      const next = new Set(prev);
-      if (wasBookmarked) next.delete(qId);
-      else next.add(qId);
-      return next;
-    });
-    try {
-      let promptText = question.prompt || '';
-      if (!promptText && question.prompt_blocks) {
-        promptText = question.prompt_blocks
-          .filter((b: any) => b.type === 'text')
-          .map((b: any) => b.value)
-          .join(' ');
-      }
-      const res = await apiRequest("POST", "/api/user/bookmarks/toggle", {
-        questionId: qId,
-        subjectId,
-        unitId: router.query.unit as string || '',
-        prompt: promptText,
-        choices: question.choices || [],
-        answerIndex: question.answerIndex,
-        explanation: question.explanation || '',
-        sectionCode: question.section_code || '',
-      });
-      const data = await res.json();
-      setBookmarkedIds(prev => {
-        const next = new Set(prev);
-        if (data.data.bookmarked) next.add(qId);
-        else next.delete(qId);
-        return next;
-      });
-    } catch (e) {
-      setBookmarkedIds(prev => {
-        const next = new Set(prev);
-        if (wasBookmarked) next.add(qId);
-        else next.delete(qId);
-        return next;
-      });
+    if (!cheatMode) {
+      setShowAutoAnswerDialog(false);
     }
-  };
+  }, [cheatMode]);
 
   const orderedQuestions = isFullLength ? [...questions].reverse() : questions;
   const currentQuestion = orderedQuestions[currentQuestionIndex];
+  const feedbackCorrectLabel = currentQuestion
+    ? getDisplayCorrectLabel(currentQuestion, mcqOptionCount)
+    : "";
+  const isCurrentAnswerCorrect =
+    isAnswerSubmitted && !!selectedAnswer && selectedAnswer === feedbackCorrectLabel;
 
   const handleAnswerSelect = (answer: string) => {
     if (!isAnswerSubmitted) {
@@ -309,6 +238,7 @@ export function PracticeQuiz({
   };
 
   const handleAdminAutoAnswerApply = (answers: { [key: number]: string }) => {
+    if (!cheatMode) return;
     const correctCount = orderedQuestions.reduce((count, q, idx) => {
       const correctLabel = getDisplayCorrectLabel(q, mcqOptionCount);
       return answers[idx] === correctLabel ? count + 1 : count;
@@ -317,6 +247,24 @@ export function PracticeQuiz({
     setScore(correctCount);
     setShowResults(true);
     onComplete(correctCount, answers);
+  };
+
+  const buildUnitQuizStateForExit = (): UnitQuizState => {
+    const merged = { ...finalUserAnswers };
+    if (selectedAnswer) merged[currentQuestionIndex] = selectedAnswer;
+    return {
+      questionIds: orderedQuestions.map((q) => q.id),
+      currentQuestionIndex,
+      userAnswers: merged,
+    };
+  };
+
+  const handleHeaderExit = () => {
+    if (onSaveAndExit) {
+      onSaveAndExit(buildUnitQuizStateForExit());
+    } else {
+      onExit();
+    }
   };
 
   if (isReviewMode) {
@@ -359,16 +307,16 @@ export function PracticeQuiz({
     }
 
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col text-slate-900 dark:text-slate-100">
-        <div className="flex-1 flex overflow-y-auto">
-          <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-3xl mx-auto">
+      <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
+        <div className="flex flex-1 overflow-y-auto">
+          <div className="mx-auto flex max-w-3xl flex-1 flex-col items-center justify-center px-4 py-8">
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2 text-center">
               Concepts to know for the next 5 questions
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
               {primerStepIndex + 1} of {chunkQuestions.length}
             </p>
-            <div className="w-full rounded-lg border-2 bg-gray-100 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 min-h-[200px] p-6 flex flex-col">
+            <div className="flex min-h-[200px] w-full flex-col rounded-2xl bg-slate-100 p-6 dark:bg-white/[0.06]">
               <div className="text-sm text-gray-800 dark:text-gray-200 prose prose-sm dark:prose-invert max-w-none flex-1">
                 {note ? (
                   <PrettyExplanation className="text-sm">
@@ -396,14 +344,14 @@ export function PracticeQuiz({
                     setShowConceptPrimer(false);
                     setPrimerStepIndex(0);
                   }}
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-6 py-2.5 text-white font-medium rounded-xl"
+                  className="rounded-full bg-blue-600 px-6 py-2.5 font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
                   I&apos;m ready
                 </Button>
               ) : (
                 <Button
                   onClick={() => setPrimerStepIndex((i) => Math.min(chunkQuestions.length - 1, i + 1))}
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-5 py-2.5 text-white font-medium rounded-xl"
+                  className="rounded-full bg-blue-600 px-5 py-2.5 font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
                   Next
                 </Button>
@@ -416,53 +364,60 @@ export function PracticeQuiz({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col text-slate-900 dark:text-slate-100">
+    <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
       {showToolHeader && (
-        <div className="fixed top-[4.25rem] left-0 right-0 z-40">
+        <div className="fixed left-0 right-0 top-[calc(3.75rem+1px)] z-40">
           <PracticeQuizHeader
             title={`${subject?.displayName ?? "Practice"} — Practice Quiz`}
-            examDirections={practiceExamDirections}
             subjectId={subjectId}
-            onExitExam={onExit}
+            onExitExam={handleHeaderExit}
           />
         </div>
       )}
       <div
-        className={`flex-1 flex overflow-hidden ${
-          showToolHeader ? "pt-16" : ""
+        className={`flex min-h-0 flex-1 flex-col overflow-hidden ${
+          showToolHeader
+            ? "pt-[calc(3.75rem+1px+3.25rem+1px)] max-md:pt-[calc(3.75rem+1px+4.25rem+1px)]"
+            : ""
         }`}
       >
-        <div className="flex-1 overflow-y-auto mb-14 pb-1">
-          <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2">
-            <div className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-stretch">
-              {/* Question: left on desktop, top on narrow screens */}
-              <div className="order-1 flex-1 min-w-0">
-                <PracticeQuizQuestionCard
-                  question={currentQuestion}
-                  questionNumber={currentQuestionIndex + 1}
-                  totalQuestions={orderedQuestions.length}
-                  selectedAnswer={selectedAnswer}
-                  onAnswerSelect={handleAnswerSelect}
-                  isAnswerSubmitted={isAnswerSubmitted}
-                  cheatMode={cheatMode}
-                  isBookmarked={bookmarkedIds.has(currentQuestion?.id)}
-                  onToggleBookmark={() => handleToggleBookmark(currentQuestion)}
-                  mcqOptionCount={mcqOptionCount}
-                  isFlagged={flaggedQuestions.has(currentQuestionIndex)}
-                  onToggleMarkForReview={toggleMarkForCurrentQuestion}
-                  onReport={() => setShowReportDialog(true)}
-                />
-              </div>
-              {/* Explanation: right on desktop, below on narrow screens */}
-              <div className="order-2 w-full md:w-[35%] md:min-w-0 flex flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto pb-32">
+          <div className={`mx-auto max-w-6xl px-2 sm:px-3 ${showToolHeader ? "pb-1 pt-0" : "py-2"}`}>
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+              <PracticeQuizQuestionCard
+                question={currentQuestion}
+                questionNumber={currentQuestionIndex + 1}
+                totalQuestions={orderedQuestions.length}
+                selectedAnswer={selectedAnswer}
+                onAnswerSelect={handleAnswerSelect}
+                isAnswerSubmitted={isAnswerSubmitted}
+                cheatMode={cheatMode}
+                mcqOptionCount={mcqOptionCount}
+                onReport={() => setShowReportDialog(true)}
+              />
+              <div className={`md:sticky md:top-4 ${isAnswerSubmitted ? "md:self-start" : "md:self-stretch"}`}>
                 <ExplanationPanel
                   hasAnswered={isAnswerSubmitted}
-                  isCorrect={!!(currentQuestion && selectedAnswer === getDisplayCorrectLabel(currentQuestion, mcqOptionCount))}
+                  isCorrect={isCurrentAnswerCorrect}
+                  className={isAnswerSubmitted ? "" : "h-full"}
                 >
-                  {isAnswerSubmitted && currentQuestion?.explanation && (
-                    <PrettyExplanation>
-                      {getDisplayExplanation(currentQuestion.explanation, currentQuestion, mcqOptionCount)}
-                    </PrettyExplanation>
+                  {isAnswerSubmitted && currentQuestion && (
+                    <>
+                      <p className="text-sm font-medium">
+                        {selectedAnswer === feedbackCorrectLabel
+                          ? "Correct."
+                          : `Incorrect. The correct answer is ${feedbackCorrectLabel}.`}
+                      </p>
+                      {currentQuestion.explanation ? (
+                        <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none">
+                          {getDisplayExplanation(
+                            currentQuestion.explanation,
+                            currentQuestion,
+                            mcqOptionCount,
+                          )}
+                        </PrettyExplanation>
+                      ) : null}
+                    </>
                   )}
                 </ExplanationPanel>
               </div>
@@ -471,71 +426,36 @@ export function PracticeQuiz({
         </div>
       </div>
 
-      {/* Fixed Bottom Bar — aligned with quiz content (max-w-6xl), Submit/Next in center */}
-      <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 fixed bottom-0 left-0 right-0 z-50">
-        <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2.5">
-          <div className="flex justify-between items-center gap-2 sm:gap-4">
-            <div className="flex flex-1 items-center gap-2 min-w-0">
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowAutoAnswerDialog(true)}
-                  className="text-amber-600 border-amber-300 dark:border-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-xs shrink-0"
-                  title="Admin: Auto-answer with target grade %"
-                >
-                  <Zap className="w-3.5 h-3.5 mr-1" />
-                  Auto-answer
-                </Button>
-              )}
-            </div>
-            <div className="flex justify-center items-center flex-shrink-0">
-              {!isAnswerSubmitted ? (
-                <Button
-                  onClick={handleSubmitAnswer}
-                  disabled={!selectedAnswer}
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-5 py-2 text-xs font-medium text-white border-none shadow-none rounded-xl disabled:opacity-50"
-                >
-                  Submit
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleNextQuestion}
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-5 py-2 text-xs font-medium text-white border-none shadow-none rounded-xl"
-                >
-                  {currentQuestionIndex === orderedQuestions.length - 1 ? "Finish" : "Next"}
-                </Button>
-              )}
-            </div>
-            <div className="flex justify-end items-center gap-2 flex-1 min-w-0">
-              {onSaveAndExit ? (
-                <Button
-                  onClick={() => {
-                    onSaveAndExit({
-                      questionIds: orderedQuestions.map((q) => q.id),
-                      currentQuestionIndex,
-                      userAnswers: finalUserAnswers,
-                      flaggedQuestions: Array.from(flaggedQuestions),
-                    });
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs dark:border-red-500 dark:text-red-400"
-                >
-                  Save & Exit
-                </Button>
-              ) : (
-                <Button
-                  onClick={onExit}
-                  variant="outline"
-                  size="sm"
-                  className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs dark:border-red-500 dark:text-red-400"
-                >
-                  Exit
-                </Button>
-              )}
-            </div>
-          </div>
+      {cheatMode && (
+        <div className="pointer-events-auto fixed bottom-4 left-3 z-50 sm:bottom-6 sm:left-5">
+          <Button
+            onClick={() => setShowAutoAnswerDialog(true)}
+            className="min-h-12 rounded-full border border-slate-200/80 bg-blue-600 px-6 py-3 font-sans text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 dark:border-blue-500/30 dark:bg-blue-500 dark:shadow-lg dark:hover:bg-blue-600"
+            title="Admin: Auto-answer with target grade %"
+          >
+            <Zap className="mr-1 h-3.5 w-3.5" />
+            Auto Answer
+          </Button>
+        </div>
+      )}
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 sm:bottom-6">
+        <div className="pointer-events-auto">
+          {!isAnswerSubmitted ? (
+            <Button
+              onClick={handleSubmitAnswer}
+              disabled={!selectedAnswer}
+              className="min-h-12 rounded-full border border-slate-200/80 bg-blue-600 px-8 py-3 font-sans text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 disabled:opacity-50 dark:border-blue-500/30 dark:bg-blue-500 dark:shadow-lg dark:hover:bg-blue-600"
+            >
+              Submit
+            </Button>
+          ) : (
+            <Button
+              onClick={handleNextQuestion}
+              className="min-h-12 rounded-full border border-slate-200/80 bg-blue-600 px-8 py-3 font-sans text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 dark:border-blue-500/30 dark:bg-blue-500 dark:shadow-lg dark:hover:bg-blue-600"
+            >
+              {currentQuestionIndex === orderedQuestions.length - 1 ? "Finish" : "Next"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -546,17 +466,19 @@ export function PracticeQuiz({
         subjectId={subjectId}
       />
 
-      <AdminAutoAnswerDialog
-        open={showAutoAnswerDialog}
-        onOpenChange={setShowAutoAnswerDialog}
-        questions={orderedQuestions}
-        mcqOptionCount={mcqOptionCount}
-        onApply={handleAdminAutoAnswerApply}
-      />
+      {cheatMode && (
+        <AdminAutoAnswerDialog
+          open={showAutoAnswerDialog}
+          onOpenChange={setShowAutoAnswerDialog}
+          questions={orderedQuestions}
+          mcqOptionCount={mcqOptionCount}
+          onApply={handleAdminAutoAnswerApply}
+        />
+      )}
 
       {showResults && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <Card className="w-full max-w-md bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+          <Card className="w-full max-w-md rounded-2xl border-0 bg-slate-100 shadow-none dark:bg-white/[0.06]">
             <CardHeader>
               <CardTitle className="text-center text-base text-gray-900 dark:text-gray-100">Quiz Complete!</CardTitle>
             </CardHeader>
@@ -572,7 +494,7 @@ export function PracticeQuiz({
               <Button
                 onClick={handleReview}
                 size="lg"
-                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 w-full text-base py-5 text-white border-none"
+                className="h-12 w-full rounded-full border-none bg-blue-600 text-base font-semibold text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
                 Review Answers
               </Button>

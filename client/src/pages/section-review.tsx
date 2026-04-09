@@ -145,10 +145,13 @@ export default function SectionReview() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-khan-background">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
+        <div className="flex h-96 items-center justify-center">
+          <div className="relative h-11 w-11">
+            <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+            <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
+          </div>
         </div>
       </div>
     );
@@ -216,27 +219,26 @@ export default function SectionReview() {
         : undefined;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Main Navigation with Breadcrumbs */}
+    <div className="flex min-h-screen flex-col bg-white dark:bg-[#0B0F1A]">
       <Navigation />
 
       {isReviewMode && (
-        <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 sticky top-0 z-40">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-end">
+        <div className="sticky top-0 z-40 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A]">
+          <div className="mx-auto flex max-w-6xl items-center justify-end px-4 py-3">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleBackNavigation}
-              className="shrink-0"
+              className="h-10 shrink-0 rounded-full px-4 text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
             >
-              <X className="h-4 w-4 mr-1.5" />
-              Close Review
+              <X className="mr-1.5 h-4 w-4" />
+              Close review
             </Button>
           </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto mb-14 pt-2">
+      <div className="flex-1 overflow-y-auto pb-32 pt-2">
         <div className="max-w-6xl mx-auto px-4 py-2">
           <ReviewQuestionDetail
             question={currentQuestion}
@@ -248,22 +250,19 @@ export default function SectionReview() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50">
-        <QuizBottomBar
-          currentQuestion={currentQuestionIndex + 1}
-          totalQuestions={questions.length}
-          onOpenPalette={isReviewMode ? undefined : () => setShowQuestionPalette(true)}
-          onPrevious={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
-          onNext={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))}
-          canGoPrevious={currentQuestionIndex > 0}
-          canGoNext={currentQuestionIndex < questions.length - 1}
-          isLastQuestion={currentQuestionIndex === questions.length - 1}
-          reviewOnly={isReviewMode}
-          onExit={handleBackNavigation}
-          exitLabel="Exit"
-          hideExitButton={isReviewMode}
-        />
-      </div>
+      <QuizBottomBar
+        currentQuestion={currentQuestionIndex + 1}
+        totalQuestions={questions.length}
+        onOpenPalette={isReviewMode ? undefined : () => setShowQuestionPalette(true)}
+        onPrevious={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
+        onNext={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))}
+        canGoPrevious={currentQuestionIndex > 0}
+        canGoNext={currentQuestionIndex < questions.length - 1}
+        reviewOnly={isReviewMode}
+        onExit={handleBackNavigation}
+        exitLabel="Exit"
+        hideExitButton={isReviewMode}
+      />
 
       {!isReviewMode && (
       <ReviewQuestionPalette

@@ -48,12 +48,15 @@ export default function DiagnosticPage() {
 
   if (loading || !subjectId) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="flex items-center justify-center h-96">
-          <div className="relative w-12 h-12">
-            <div className="absolute inset-0 rounded-full border-2 border-blue-200 dark:border-blue-800" />
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
+        <div className="flex h-96 items-center justify-center">
+          <div className="text-center">
+            <div className="relative mx-auto mb-4 h-11 w-11">
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
+            </div>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</p>
           </div>
         </div>
       </div>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, X, FileQuestion, ClipboardList, BookOpen } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
@@ -121,119 +120,112 @@ export default function FullLengthHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
-      <div className="container mx-auto px-4 py-4 max-w-3xl">
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <BarChart3 className="w-6 h-6 text-purple-500 flex-shrink-0" />
-              Quiz/Test History
+      <main className="relative z-10 mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-8">
+        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm font-medium text-blue-600/90 dark:text-blue-400/90">Results</p>
+            <h1 className="flex items-center gap-2 font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+              <BarChart3 className="h-7 w-7 shrink-0 text-blue-600 dark:text-blue-400" />
+              Quiz & test history
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {subjectId ? `Subject: ${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId ?? "")}` : "All subjects"}
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {subjectId
+                ? getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId ?? "")
+                : "All subjects"}
             </p>
           </div>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/study")}
-            className="rounded-xl shrink-0"
-            aria-label="Close History"
+            onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
+            className="h-10 shrink-0 rounded-full px-4 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
+            aria-label="Close history"
           >
-            <X className="h-4 w-4 mr-1.5" />
-            Close History
+            <X className="mr-1.5 h-4 w-4" />
+            Close
           </Button>
-        </div>
+        </header>
 
         {isLoading ? (
-          <Card className="dark:bg-gray-900 dark:border-gray-700">
-            <CardContent className="p-8 text-center text-gray-500 dark:text-gray-400">
-              Loading test history…
-            </CardContent>
-          </Card>
+          <div className="rounded-3xl bg-slate-100 py-14 text-center dark:bg-white/[0.06]">
+            <div className="text-center">
+              <div className="relative mx-auto mb-4 h-11 w-11">
+                <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+                <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400" />
+              </div>
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</span>
+            </div>
+          </div>
         ) : tests.length === 0 ? (
-          <Card className="dark:bg-gray-900 dark:border-gray-700">
-            <CardContent className="p-8 text-center">
-              <BarChart3 className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" />
-              <p className="text-gray-600 dark:text-gray-300 font-medium">No tests yet</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Complete a full-length test, diagnostic, or unit quiz to see results here.
-              </p>
-              <Button
-                className="mt-4"
-                onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/study")}
-              >
-                Go to study
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="rounded-3xl bg-slate-100 px-6 py-12 text-center dark:bg-white/[0.06]">
+            <BarChart3 className="mx-auto mb-4 h-12 w-12 text-slate-400 dark:text-slate-500" />
+            <p className="font-medium text-slate-900 dark:text-white">No tests yet</p>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Complete a full-length test, diagnostic, or unit quiz to see results here.
+            </p>
+            <Button
+              variant="ghost"
+              className="mt-6 h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+              onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/learn")}
+            >
+              Go to study
+            </Button>
+          </div>
         ) : (
-          <Card className="dark:bg-gray-900 dark:border-gray-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg dark:text-gray-100">Tests completed</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
+          <div className="space-y-3">
+            <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400">Tests completed</h2>
+            <ul className="space-y-2">
               {tests.map((test) => {
                 const dateStr = formatDate(test.date);
                 return (
-                  <div
-                    key={`${test.type}-${test.id}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() =>
-                      router.push(
-                        `/full-length-results?subject=${test.subjectId}&testId=${test.id}&from=history${from ? `&returnTo=${from}` : ""}`,
-                      )
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
+                  <li key={`${test.type}-${test.id}`}>
+                    <button
+                      type="button"
+                      onClick={() =>
                         router.push(
                           `/full-length-results?subject=${test.subjectId}&testId=${test.id}&from=history${from ? `&returnTo=${from}` : ""}`,
-                        );
+                        )
                       }
-                    }}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="flex-shrink-0 w-6 text-sm font-semibold text-gray-500 dark:text-gray-400 tabular-nums">
-                        {test.testNumber}.
-                      </span>
-                      {getTestTypeIcon(test.type ?? "")}
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                      className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-100 px-4 py-4 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="w-6 shrink-0 text-sm font-semibold tabular-nums text-slate-400 dark:text-slate-500">
+                          {test.testNumber}.
+                        </span>
+                        {getTestTypeIcon(test.type ?? "")}
+                        <div className="min-w-0">
+                          <div className="font-medium text-slate-900 dark:text-white">
                             {getTestTypeLabel(test.type ?? "")}
                             {test.type === "unit" && (() => {
                               const num = test.unitNumber ?? test.sectionBreakdown?.[test.sectionCode ?? ""]?.unitNumber;
                               const name = test.sectionBreakdown?.[test.sectionCode ?? ""]?.name;
                               if (num == null && !name) return null;
-                              const unitPart = name != null ? (num != null ? `Unit ${num}: ${name}` : name) : (num != null ? `Unit ${num}` : null);
+                              const unitPart =
+                                name != null ? (num != null ? `Unit ${num}: ${name}` : name) : num != null ? `Unit ${num}` : null;
                               if (!unitPart) return null;
                               return (
-                                <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">
-                                  {" "}{unitPart}
+                                <span className="ml-1 font-normal text-slate-600 dark:text-slate-300">
+                                  {unitPart}
                                 </span>
                               );
                             })()}
-                          </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{dateStr}</p>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{dateStr}</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary" className="font-mono">
+                      <Badge variant="secondary" className="shrink-0 font-mono">
                         {test.score}/{test.totalQuestions} ({test.percentage}%)
                       </Badge>
-                    </div>
-                  </div>
+                    </button>
+                  </li>
                 );
               })}
-            </CardContent>
-          </Card>
+            </ul>
+          </div>
         )}
-      </div>
+      </main>
       <SimpleFooter />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 import { APScoreCircle } from "@/components/ui/APScoreCircle";
+import { cn } from "@/lib/utils";
 
 interface StudySubject {
   id: number;
@@ -56,6 +57,20 @@ interface StudySubject {
 export default function Study() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const [practiceMenuUnitId, setPracticeMenuUnitId] = useState<string | null>(null);
+  const practiceMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!practiceMenuUnitId) return;
+    const onDown = (e: MouseEvent) => {
+      const el = practiceMenuRef.current;
+      if (el && !el.contains(e.target as Node)) {
+        setPracticeMenuUnitId(null);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [practiceMenuUnitId]);
 
   const rawSubject = router.query.subject;
   const subjectId: string | undefined = Array.isArray(rawSubject)
@@ -204,15 +219,15 @@ export default function Study() {
 
   if (loading || subjectsLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="flex items-center justify-center h-96">
+        <div className="flex h-96 items-center justify-center">
           <div className="text-center">
-            <div className="relative w-12 h-12 mx-auto mb-4">
-              <div className="absolute inset-0 rounded-full border-2 border-blue-200 dark:border-blue-800" />
-              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
+            <div className="relative mx-auto mb-4 h-11 w-11">
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
             </div>
-            <span className="text-slate-500 dark:text-slate-400 font-medium">Loading...</span>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</span>
           </div>
         </div>
       </div>
@@ -221,25 +236,26 @@ export default function Study() {
 
   if (!currentSubject) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="container mx-auto px-4 py-8 max-w-xl">
-          <div className="text-center rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-            <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+        <div className="mx-auto max-w-xl px-4 py-12">
+          <div className="rounded-3xl bg-slate-100 px-6 py-10 text-center dark:bg-white/[0.06]">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/80 dark:bg-white/[0.08]">
               <HelpCircle className="h-8 w-8 text-slate-400" />
             </div>
-            <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-2">
+            <h1 className="mb-2 font-display text-2xl font-bold text-slate-900 dark:text-white">
               Subject not found
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mb-4">
+            <p className="mb-6 text-slate-600 dark:text-slate-400">
               The requested subject was not found in your dashboard.
             </p>
             <Button
+              variant="ghost"
               onClick={() => router.push("/dashboard")}
-              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-xl transition-all duration-150 ease-out"
+              className="h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+              Back to dashboard
             </Button>
           </div>
         </div>
@@ -256,184 +272,177 @@ export default function Study() {
   const totalTopics = units.length;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+    <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
 
-      {/* Hero header */}
-      <div className="relative bg-white dark:bg-slate-900/70 border-b border-slate-200 dark:border-slate-800 overflow-hidden">
-
-        <div className="container mx-auto px-4 py-3 max-w-6xl relative z-10">
+      <main className="relative z-10 mx-auto max-w-6xl px-4 py-5 md:px-8 md:py-6">
+        <header className="mb-5 md:mb-6">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push("/dashboard")}
-            className="text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 -ml-2 mb-2 rounded-lg group transition-colors duration-150 ease-out"
+            className="-ml-1 mb-3 h-9 rounded-full px-3 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] hover:text-blue-600 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-blue-400"
           >
-            <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
-            Back to Dashboard
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to dashboard
           </Button>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-lg md:text-xl font-display font-bold text-slate-900 dark:text-white tracking-tight mb-0.5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 space-y-1.5">
+              <p className="text-sm font-medium text-blue-600/90 dark:text-blue-400/90">Study</p>
+              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
                 {currentSubject.name}
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-xs max-w-2xl leading-relaxed">
+              <p className="max-w-2xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
                 {currentSubject.description}
               </p>
             </div>
 
-            {/* Stat badges */}
-            <div className="flex items-stretch gap-2 flex-shrink-0">
+            <div className="flex flex-shrink-0 flex-wrap gap-2">
               <div
-                className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center gap-2"
+                className="flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 dark:bg-white/[0.06]"
                 title="Predicted AP Score"
               >
-                <div>
-                  <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider leading-none">
-                    Projected
-                  </p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider leading-none">AP Score</p>
-                    <APScoreExplainDialog inline triggerClassName="self-start" />
-                  </div>
-                </div>
                 <APScoreCircle
                   score={predicted?.score ?? null}
                   color={predicted ? predicted.color : "#94a3b8"}
                   size="sm"
                 />
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Projected
+                  </p>
+                  <div className="mt-0.5 flex items-center gap-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      AP score
+                    </p>
+                    <APScoreExplainDialog inline triggerClassName="mt-0" />
+                  </div>
+                </div>
               </div>
-              <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center gap-2">
-                <div className="w-7 h-7 bg-blue-50 dark:bg-blue-500/10 rounded-lg flex items-center justify-center">
-                  <CalendarDays className="h-3.5 w-3.5 text-blue-500" />
+              <div className="flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 dark:bg-white/[0.06]">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 dark:bg-white/[0.08]">
+                  <CalendarDays className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider leading-none">
-                    Exam Date
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Exam date
                   </p>
-                  <p className="text-sm font-black text-slate-900 dark:text-white leading-tight mt-0.5">
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">
                     {formatDate(subjectMeta?.metadata?.examDate ?? currentSubject.examDate)}
                   </p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      <div className="container mx-auto px-4 py-4 max-w-6xl">
+        <div className="space-y-5">
 
-        {/* Quick Actions — 4 buttons: wide = 1 row, narrow = 2x2 */}
-        <div className="mb-4">
-          <h2 className="text-[13px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 gap-2">
-            {/* Full Length MCQ Test */}
+        {/* Quick actions */}
+        <section>
+          <div className="mb-2">
+            <h2 className="text-xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+              Quick actions
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
             <button
+              type="button"
               onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-              className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md active:translate-y-0"
+              className="group flex items-center gap-2.5 rounded-2xl bg-blue-600 px-3 py-2.5 text-left text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
-              <div className="relative z-10 flex items-center gap-3">
-                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Play className="w-4 h-4 text-white fill-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[13px] leading-tight">{subjectId ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test` : "Full Length MCQ Test"}</p>
-                  <p className="text-white/75 text-xs mt-0.5">Simulate real exam conditions</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-white/60 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20">
+                <Play className="h-4 w-4 fill-white text-white" />
               </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-bold leading-tight">
+                  {subjectId
+                    ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} full-length MCQ`
+                    : "Full-length MCQ"}
+                </p>
+                <p className="mt-0.5 text-xs text-white/80">Exam-style timing</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-white/70 transition-transform group-hover:translate-x-0.5" />
             </button>
 
-            {/* Analytics */}
             <button
+              type="button"
               onClick={() => router.push(`/analytics?subject=${subjectId}`)}
-              className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-white dark:bg-slate-900/70 border border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+              className="group flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
             >
-              <div className="relative z-10 flex items-center gap-3">
-                <div className="w-9 h-9 bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
-                  <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">Analytics</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Detailed performance data</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
+                <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">Analytics</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Performance detail</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
             </button>
 
-            {/* DualPath (experimental) or Quiz/Test History */}
             {showAdminFeatures ? (
               <button
+                type="button"
                 onClick={() => router.push(`/dualpath?subject=${subjectId}`)}
-                className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-white dark:bg-slate-900/70 border border-green-200 dark:border-green-800/50 hover:border-green-300 dark:hover:border-green-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+                className="group flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
               >
-                <div className="relative z-10 flex items-center gap-3">
-                  <div className="w-9 h-9 bg-green-50 dark:bg-green-500/10 group-hover:bg-green-100 dark:group-hover:bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
-                    <Target className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">
-                      DualPath <span className="text-red-500 dark:text-red-400 font-bold">(experimental)</span>
-                    </p>
-                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Dual-path study plan</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
+                  <Target className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">
+                    DualPath <span className="text-red-500 dark:text-red-400">(beta)</span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Study plan</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
               </button>
             ) : (
               <button
+                type="button"
                 onClick={() => router.push(`/full-length-history?subject=${subjectId}&from=study`)}
-                className="group relative overflow-hidden rounded-xl py-2.5 px-3 bg-white dark:bg-slate-900/70 border border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+                className="group flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
               >
-                <div className="relative z-10 flex items-center gap-3">
-                  <div className="w-9 h-9 bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
-                    <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">Quiz/Test History</p>
-                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">View past test results</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
+                  <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">Quiz & test history</p>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Past results</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
               </button>
             )}
 
-            {/* Review Questions */}
             <button
+              type="button"
               onClick={() => router.push(`/review?subject=${subjectId}`)}
-              className="group relative overflow-hidden rounded-xl p-2.5 bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800/60 text-left transition-all duration-150 ease-out hover:-translate-y-[1px] hover:shadow-md"
+              className="group flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
             >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 bg-blue-50 dark:bg-blue-500/10 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors">
-                  <RotateCcw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-[13px] text-slate-900 dark:text-white leading-tight truncate">Review Questions</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate hidden sm:block">Questions for review</p>
-                </div>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
+                <RotateCcw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">Review questions</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Due for review</p>
               </div>
             </button>
           </div>
-        </div>
+        </section>
 
-        {/* Units Grid */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-[13px] font-bold uppercase tracking-widest text-slate-400">
-                Course Content
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                {totalTopics} units · {topicsMastered} mastered
-              </p>
-            </div>
+        {/* Units */}
+        <section className="space-y-3">
+          <div className="space-y-1">
+            <h2 className="text-xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+              Course content
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {totalTopics} units · {topicsMastered} mastered
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-2">
+          <div className="flex flex-col gap-2.5">
             {units.map((unit, index) => {
               const unitData = getUnitData(unit.id);
               const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
@@ -489,101 +498,135 @@ export default function Study() {
               return (
                 <div
                   key={unit.id}
-                  className={`group relative overflow-hidden rounded-xl bg-white dark:bg-slate-900/70 border transition-all duration-150 ease-out ${
-                    isMastered
-                      ? "border-green-200/60 dark:border-green-800/40 hover:border-green-300 dark:hover:border-green-700/60"
-                      : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600"
-                  } hover:shadow-md hover:-translate-y-[1px]`}
+                  className="flex flex-col gap-2.5 rounded-2xl bg-slate-100 px-3.5 py-3 transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09] sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                 >
-                  {/* Left colored accent */}
-                  <div
-                    className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${statusConfig.barColor} opacity-${isMastered ? "100" : "40"} group-hover:opacity-100 transition-opacity duration-150 ease-out`}
-                  />
-
-                  <div className="flex items-center pl-3">
-                    {/* Main content */}
-                    <div className="py-3 px-2 flex-1 min-w-0">
-                      <div className="flex items-center gap-3">
-                        {/* Unit number + crown when mastered */}
-                        <div className="relative shrink-0">
-                          {isMastered && (
-                            <Crown
-                              className="absolute -top-1 left-1/2 -translate-x-1/2 fill-[#FFD700] stroke-[#FFD700] pointer-events-none z-10"
-                              size={13}
-                              strokeWidth={2}
-                              aria-hidden
-                            />
-                          )}
-                          <div
-                            className={`w-9 h-9 rounded-lg flex items-center justify-center font-black text-sm ${statusConfig.numBg} transition-colors`}
-                          >
-                            {index + 1}
-                          </div>
-                        </div>
-
-                        <div className="flex-1 min-w-0 space-y-0.5">
-                          {/* Title + badge */}
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                              {unit.title}
-                            </h3>
-                            {hasAttempted && (
-                              <Badge className={`${statusConfig.badge} border-none px-1.5 py-0 text-[11px] font-bold h-4 leading-none rounded-full`}>
-                                {level}
-                              </Badge>
-                            )}
-                          </div>
-
-                          {/* Meta row */}
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs font-medium text-slate-400">
-                              Exam: {unit.examWeight}
-                            </span>
-                            {hasAttempted && (
-                              <span className={`text-xs font-medium flex items-center gap-1 ${tierResult.textClass}`}>
-                                <Target className="w-3 h-3" />
-                                {score}%
-                              </span>
-                            )}
-                            {hasAttempted && (
-                              <div className="flex-1 max-w-[120px]">
-                                <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                  <div
-                                    className={`h-full bg-gradient-to-r ${statusConfig.barColor} rounded-full transition-all duration-700`}
-                                    style={{ width: `${score}%` }}
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                  <div className="flex min-w-0 flex-1 items-start gap-2.5">
+                    <div className="relative shrink-0">
+                      {isMastered && (
+                        <Crown
+                          className="pointer-events-none absolute -top-1 left-1/2 z-10 -translate-x-1/2 fill-[#FFD700] stroke-[#FFD700]"
+                          size={13}
+                          strokeWidth={2}
+                          aria-hidden
+                        />
+                      )}
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-black ${statusConfig.numBg}`}>
+                        {index + 1}
                       </div>
                     </div>
 
-                    {/* CTA */}
-                    <div className="px-3 py-3 flex items-center flex-shrink-0">
-                      <Button
-                        onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.id}`)}
-                        variant="outline"
-                        size="sm"
-                        title="Practice quiz for this unit"
-                        className={`h-8 font-semibold rounded-lg transition-all duration-150 ease-out text-[13px] shrink-0 px-3 ${
-                          isMastered
-                            ? "bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/60 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
-                            : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-600 hover:text-white text-slate-900 dark:text-white"
-                        }`}
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-bold leading-snug text-slate-900 dark:text-white">
+                          {unit.title}
+                        </h3>
+                        {hasAttempted && (
+                          <Badge
+                            className={`h-5 border-0 px-2 text-[11px] font-bold leading-none ${statusConfig.badge} rounded-full`}
+                          >
+                            {level}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                          Exam weight {unit.examWeight}
+                        </span>
+                        {hasAttempted && (
+                          <span className={`flex items-center gap-1 text-xs font-medium ${tierResult.textClass}`}>
+                            <Target className="h-3 w-3" />
+                            {score}%
+                          </span>
+                        )}
+                        {hasAttempted && (
+                          <div className="h-1.5 min-w-[100px] max-w-[160px] flex-1 rounded-full bg-white/80 dark:bg-white/[0.08]">
+                            <div
+                              className={`h-full rounded-full bg-gradient-to-r ${statusConfig.barColor} transition-all duration-700`}
+                              style={{ width: `${score}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    ref={practiceMenuUnitId === unit.id ? practiceMenuRef : undefined}
+                    className="relative isolate w-full max-w-[min(100%,17rem)] shrink-0 self-end sm:w-auto sm:max-w-none sm:min-w-[188px] sm:self-center"
+                  >
+                    {/* Grid stack keeps controls in a fixed h-10 band (no absolute overflow over the card). */}
+                    <div className="grid h-9 w-full grid-cols-1 grid-rows-1 overflow-hidden rounded-full">
+                      <div
+                        className={cn(
+                          "col-start-1 row-start-1 flex min-h-0 min-w-0 transition-all duration-300 ease-out",
+                          practiceMenuUnitId === unit.id
+                            ? "pointer-events-none scale-[0.92] opacity-0"
+                            : "scale-100 opacity-100",
+                        )}
                       >
-                        <Play className="w-3 h-3 flex-shrink-0 mr-1" />
-                        Practice Quiz
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          type="button"
+                          onClick={() =>
+                            setPracticeMenuUnitId((id) => (id === unit.id ? null : unit.id))
+                          }
+                          size="sm"
+                          title="Practice quiz for this unit"
+                          className={cn(
+                            "h-9 min-w-0 flex-1 rounded-full px-3.5 text-[13px] font-semibold",
+                            isMastered
+                              ? "bg-white/80 text-slate-600 hover:!bg-white hover:!text-slate-900 dark:bg-white/[0.08] dark:text-slate-300 dark:hover:!bg-white/[0.12] dark:hover:!text-slate-200"
+                              : "bg-blue-600 !text-white hover:!bg-blue-700 hover:!text-white dark:bg-blue-500 dark:hover:!bg-blue-600 dark:hover:!text-white",
+                          )}
+                        >
+                          <Play className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                          Practice
+                        </Button>
+                      </div>
+                      <div
+                        className={cn(
+                          "col-start-1 row-start-1 flex min-h-0 min-w-0 items-stretch justify-end gap-1.5 transition-all duration-300 ease-out",
+                          practiceMenuUnitId === unit.id
+                            ? "scale-100 opacity-100"
+                            : "pointer-events-none scale-[0.92] opacity-0",
+                        )}
+                      >
+                        {([8, 15, 25] as const).map((n, i) => (
+                          <Button
+                            key={n}
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setPracticeMenuUnitId(null);
+                              router.push(
+                                `/quiz?subject=${subjectId}&unit=${unit.id}&limit=${n}`,
+                              );
+                            }}
+                            style={{
+                              transitionDelay:
+                                practiceMenuUnitId === unit.id ? `${i * 45}ms` : "0ms",
+                            }}
+                            className={cn(
+                              "h-9 min-w-0 flex-1 rounded-full px-2 text-xs font-bold transition-all duration-200 ease-out sm:max-w-[4.1rem] sm:flex-1",
+                              isMastered
+                                ? "bg-white !text-slate-700 ring-1 ring-slate-200 hover:!bg-slate-50 hover:!text-slate-800 dark:bg-white/[0.08] dark:!text-slate-200 dark:ring-white/10 dark:hover:!bg-white/[0.12] dark:hover:!text-slate-100"
+                                : "bg-blue-600 !text-white hover:!bg-blue-700 hover:!text-white dark:bg-blue-500 dark:hover:!bg-blue-600 dark:hover:!text-white",
+                            )}
+                          >
+                            {n}q
+                          </Button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
+        </section>
         </div>
-      </div>
+      </main>
       <SimpleFooter />
     </div>
   );

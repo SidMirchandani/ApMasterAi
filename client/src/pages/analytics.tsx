@@ -249,23 +249,29 @@ export default function AnalyticsPage() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-950">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
+        <div className="flex h-96 items-center justify-center">
+          <div className="text-center">
+            <div className="relative mx-auto mb-4 h-11 w-11">
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400" />
+            </div>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</span>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
+    <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
 
-      <div className="container mx-auto px-4 py-4 max-w-5xl">
+      <div className="container mx-auto max-w-5xl px-4 py-4">
         <div className="mb-3">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-khan-green" />
+          <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-slate-100">
+            <BarChart3 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             {subjectDisplayName ? `${subjectDisplayName}: Analytics` : "Analytics"}
           </h1>
         </div>
@@ -275,8 +281,8 @@ export default function AnalyticsPage() {
             <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700">
               <BarChart3 className="h-8 w-8 text-slate-500" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">No analytics yet</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto text-sm leading-relaxed">
+            <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-100">No analytics yet</h2>
+            <p className="mx-auto mb-6 max-w-md text-sm leading-relaxed text-slate-500 dark:text-slate-400">
               Start practice to see your projected score and performance.
             </p>
             <Button
@@ -285,14 +291,14 @@ export default function AnalyticsPage() {
             >
               Start practice
             </Button>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+            <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">
               Projected score is a statistical estimate based on MCQ performance.
             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="dark:bg-gray-900 dark:border-gray-700">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <Card className="border-slate-200 dark:border-slate-700 dark:bg-white/[0.04]">
                 <CardContent className="p-4 flex flex-col items-center justify-center min-h-[120px] text-center">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <APScoreCircle
@@ -300,7 +306,7 @@ export default function AnalyticsPage() {
                       color={subjectId && hasEnoughForPrediction ? predicted.color : "#9ca3af"}
                       size="sm"
                     />
-                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex flex-wrap justify-center items-center gap-x-1 gap-y-0">
+                    <p className="flex flex-wrap items-center justify-center gap-x-1 gap-y-0 text-sm font-bold text-slate-900 dark:text-slate-100">
                       <span>Predicted</span>
                       <span className="relative pr-5">
                         AP Score
@@ -313,39 +319,39 @@ export default function AnalyticsPage() {
                 </CardContent>
               </Card>
               <Card
-                className={`dark:bg-gray-900 dark:border-gray-700 ${showAdminFeatures ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors" : ""}`}
+                className={`border-slate-200 dark:border-slate-700 dark:bg-white/[0.04] ${showAdminFeatures ? "cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.08]" : ""}`}
                 onClick={showAdminFeatures ? () => subjectId && router.push(`/full-length-history?subject=${subjectId}&from=analytics`) : undefined}
               >
                 <CardContent className="p-4 text-center">
-                  <BarChart3 className="mx-auto h-8 w-8 text-purple-500 mb-2" />
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{testHistory.length}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Tests Completed</p>
+                  <BarChart3 className="mx-auto mb-2 h-8 w-8 text-blue-500" />
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{testHistory.length}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Tests Completed</p>
                 </CardContent>
               </Card>
-              <Card className="dark:bg-gray-900 dark:border-gray-700">
+              <Card className="border-slate-200 dark:border-slate-700 dark:bg-white/[0.04]">
                 <CardContent className="p-4 text-center">
-                  <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2" />
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <CheckCircle className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                     {testHistory.reduce((sum, t) => sum + t.score, 0)}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Total Correct</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Total Correct</p>
                 </CardContent>
               </Card>
-              <Card className="dark:bg-gray-900 dark:border-gray-700">
+              <Card className="border-slate-200 dark:border-slate-700 dark:bg-white/[0.04]">
                 <CardContent className="p-4 text-center">
-                  <XCircle className="mx-auto h-8 w-8 text-red-500 mb-2" />
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <XCircle className="mx-auto mb-2 h-8 w-8 text-red-500" />
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                     {testHistory.reduce((sum, t) => sum + (t.totalQuestions - t.score), 0)}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Total Incorrect</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Total Incorrect</p>
                 </CardContent>
               </Card>
             </div>
 
             {unitEntries.length > 0 && (
-              <Card className="dark:bg-gray-900 dark:border-gray-700">
+              <Card className="border-slate-200 dark:border-slate-700 dark:bg-white/[0.04]">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg dark:text-gray-100">
+                  <CardTitle className="text-lg dark:text-slate-100">
                     {subjectDisplayName ? `${subjectDisplayName}: Performance by Unit` : "Performance by Unit"}
                   </CardTitle>
                 </CardHeader>
@@ -360,7 +366,7 @@ export default function AnalyticsPage() {
                       return (
                         <div key={unit.code} className="flex items-center gap-3">
                           <div className="w-56 sm:w-64 flex-shrink-0">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate" title={unit.name}>
+                            <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300" title={unit.name}>
                               {unit.unitNumber != null ? `U${unit.unitNumber}: ` : ""}{unit.name}
                             </p>
                           </div>
@@ -411,7 +417,7 @@ export default function AnalyticsPage() {
                               {unit.percentage}%
                             </span>
                           </div>
-                          <div className="w-14 flex-shrink-0 text-right text-xs text-gray-500 dark:text-gray-400">
+                          <div className="w-14 flex-shrink-0 text-right text-xs text-slate-500 dark:text-slate-400">
                             {unit.correct}/{unit.total}
                           </div>
                         </div>

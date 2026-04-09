@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bookmark, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Flag } from "lucide-react";
 import { ToastAction } from "@/components/ui/toast";
@@ -183,10 +182,16 @@ export default function BookmarksPage() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-950">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-khan-green"></div>
+        <div className="flex h-96 items-center justify-center">
+          <div className="text-center">
+            <div className="relative mx-auto mb-4 h-11 w-11">
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400" />
+            </div>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</span>
+          </div>
         </div>
       </div>
     );
@@ -229,12 +234,9 @@ export default function BookmarksPage() {
                 {getUnitDisplayLabel(subjectId, currentQuestion.unitId)}
               </p>
             )}
-            <div className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-stretch">
-              {/* Question: left on desktop, top on narrow screens */}
-              <div className="order-1 flex-1 min-w-0">
-                <Card className="dark:bg-gray-900 dark:border-gray-700 h-full">
-                  <CardContent className="p-3">
-                    <p className="text-xs text-gray-900 dark:text-gray-100 mb-3 leading-relaxed font-medium">
+            <div className="mx-auto max-w-3xl space-y-0">
+                <div className="space-y-4">
+                    <p className="text-sm leading-relaxed text-gray-900 dark:text-gray-100">
                       {typeof currentQuestion.prompt === "string" && currentQuestion.prompt
                         ? currentQuestion.prompt
                         : `Q${currentIndex + 1}`}
@@ -249,15 +251,15 @@ export default function BookmarksPage() {
                         <div className="space-y-2">
                           {choicesArr.map(({ letter, text }) => {
                             const isSelected = selectedAnswer === letter;
-                            const isCorrect = letter === correctLetter;
+                            const isCorrectChoice = letter === correctLetter;
 
                             let borderClass = "border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500";
                             if (isRevealed) {
-                              if (isCorrect) borderClass = "border-green-500 bg-green-50 dark:bg-green-900/30";
-                              else if (isSelected && !isCorrect) borderClass = "border-red-500 bg-red-50 dark:bg-red-900/30";
+                              if (isCorrectChoice) borderClass = "border-green-500 bg-green-50 dark:bg-green-900/30";
+                              else if (isSelected && !isCorrectChoice) borderClass = "border-red-500 bg-red-50 dark:bg-red-900/30";
                               else borderClass = "border-gray-200 dark:border-gray-700";
                             } else if (isSelected) {
-                              borderClass = "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20";
+                              borderClass = "border-blue-500 bg-blue-50 dark:bg-blue-900/20";
                             }
 
                             return (
@@ -265,17 +267,17 @@ export default function BookmarksPage() {
                                 key={letter}
                                 onClick={() => !isRevealed && setSelectedAnswer(letter)}
                                 disabled={isRevealed}
-                                className={`w-full text-left p-3 rounded-lg border-2 ${borderClass} transition-all disabled:cursor-default text-xs`}
+                                className={`w-full text-left p-3 rounded-lg border ${borderClass} transition-all disabled:cursor-default text-sm`}
                               >
                                 <div className="flex items-start gap-3">
-                                  <span className={`font-bold mt-0.5 ${isRevealed && isCorrect ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}>
+                                  <span className={`font-bold mt-0.5 ${isRevealed && isCorrectChoice ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}>
                                     {letter}.
                                   </span>
                                   <span className="text-gray-800 dark:text-gray-200 flex-1">{text}</span>
-                                  {isRevealed && isCorrect && (
+                                  {isRevealed && isCorrectChoice && (
                                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                                   )}
-                                  {isRevealed && isSelected && !isCorrect && (
+                                  {isRevealed && isSelected && !isCorrectChoice && (
                                     <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                                   )}
                                 </div>
@@ -285,35 +287,35 @@ export default function BookmarksPage() {
                         </div>
                       );
                     })()}
-                  </CardContent>
-                </Card>
-              </div>
-              {/* Explanation: right on desktop, below on narrow screens */}
-              <div className="order-2 w-full md:w-[35%] md:min-w-0 flex flex-col">
+                </div>
                 {(() => {
                   const subject = currentQuestion.subjectId ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId) : undefined;
                   const displayCorrect = getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, subject?.metadata?.mcqOptionCount);
                   return (
-                    <ExplanationPanel
-                      hasAnswered={isRevealed}
-                      isCorrect={!isSubmitted ? true : selectedAnswer === displayCorrect}
-                    >
+                    <ExplanationPanel hasAnswered={isRevealed}>
                       {isRevealed && (
                         <>
-                          {selectedAnswer === displayCorrect ? "Correct!" : `Incorrect. The correct answer is ${displayCorrect}.`}
-                          {currentQuestion.explanation && (
-                            <div className="mt-2">
-                              <PrettyExplanation>
-                                {getDisplayExplanation(currentQuestion.explanation, currentQuestion, subject?.metadata?.mcqOptionCount)}
-                              </PrettyExplanation>
-                            </div>
-                          )}
+                          <p
+                            className={`text-sm font-medium ${
+                              selectedAnswer === displayCorrect
+                                ? "text-emerald-700 dark:text-emerald-400"
+                                : "text-red-700 dark:text-red-300"
+                            }`}
+                          >
+                            {selectedAnswer === displayCorrect
+                              ? "Correct."
+                              : `Incorrect. The correct answer is ${displayCorrect}.`}
+                          </p>
+                          {currentQuestion.explanation ? (
+                            <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
+                              {getDisplayExplanation(currentQuestion.explanation, currentQuestion, subject?.metadata?.mcqOptionCount)}
+                            </PrettyExplanation>
+                          ) : null}
                         </>
                       )}
                     </ExplanationPanel>
                   );
                 })()}
-              </div>
             </div>
           </div>
 

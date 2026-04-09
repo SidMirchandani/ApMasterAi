@@ -1327,6 +1327,7 @@ export default function AdminPage() {
   const handleCheatModeToggle = (checked: boolean) => {
     setCheatMode(checked);
     localStorage.setItem('adminCheatMode', checked.toString());
+    window.dispatchEvent(new CustomEvent("admin-cheat-mode-changed", { detail: { enabled: checked } }));
     toast.success(checked ? 'Cheat mode enabled' : 'Cheat mode disabled');
   };
 

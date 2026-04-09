@@ -46,8 +46,8 @@ export default function Navigation() {
       toast({
         title: isDiagnostic ? "Diagnostic In Progress" : "Practice Quiz in Progress",
         description: isDiagnostic
-          ? "You cannot navigate away. Use 'Save & Exit' to leave."
-          : "You cannot navigate away. Use 'Exit Quiz' to leave.",
+          ? "You cannot navigate away. Finish or use the in-app controls to leave."
+          : "You cannot navigate away. Use Exit in the quiz header to leave.",
         duration: 3000,
       });
     }

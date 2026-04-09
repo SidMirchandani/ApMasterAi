@@ -44,6 +44,27 @@ function normalizeLatexBackslashes(text: string): string {
   return String(text).replace(/\\\\/g, "\\");
 }
 
+/**
+ * Repair common mojibake/encoding artifacts seen in imported question text.
+ * Example: "ion▯b4dipole" -> "ion-dipole", "pi▯b4pi" -> "pi-pi".
+ */
+function repairTextEncodingArtifacts(text: string): string {
+  return String(text)
+    // Typical UTF-8 mojibake for en/em dashes.
+    .replace(/â€“|â€”/g, "-")
+    // Placeholder glyph + b4 artifact between word characters.
+    .replace(/([\p{L}\p{N}])(?:[\uFFFD\u25A1\u25AF\u2060\u200B\uFEFF])?b4(?=[\p{L}\p{N}])/gu, "$1-")
+    // Spaced variant: "pi b4 pi" -> "pi-pi".
+    .replace(/([\p{L}\p{N}])\s+b4\s+(?=[\p{L}\p{N}])/gu, "$1-")
+    // Common glycosidic notation mojibake: "�b2(\1to4)" -> "β(1→4)".
+    .replace(
+      /(?:[\uFFFD\u25A1\u25AF\u2060\u200B\uFEFF\u21B5\u23CE])?b2\s*\(\s*\\?1to4\s*\)/giu,
+      "β(1→4)"
+    )
+    // Generic arrow fix for escaped text like "\1to6" -> "1→6".
+    .replace(/\\?1to([2-9])/g, "1→$1");
+}
+
 export function MarkdownWithMath({
   children,
   className = "",
@@ -56,7 +77,9 @@ export function MarkdownWithMath({
   }, []);
 
   const raw = typeof children === "string" ? children : "";
-  const sanitized = normalizeLatexBackslashes(sanitizeMathDelimiters(raw));
+  const sanitized = repairTextEncodingArtifacts(
+    normalizeLatexBackslashes(sanitizeMathDelimiters(raw))
+  );
 
   const fallback = (
     <div className={className}>

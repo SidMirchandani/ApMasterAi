@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Zap } from "lucide-react";
 import { QuizHeader } from "./QuizHeader";
-import { QuizBottomBar } from "./QuizBottomBar";
 import { QuestionCard } from "./QuestionCard";
-import { EnhancedQuestionPalette } from "./EnhancedQuestionPalette";
+import { TestFloatingNav } from "./TestFloatingNav";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { QuizReviewPage } from "./QuizReviewPage";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
 import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useRouter } from "next/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -24,13 +24,12 @@ interface FullLengthQuizProps {
   timeElapsed: number;
   onExit: () => void;
   onSubmit: (answers?: { [key: number]: string }) => void;
-  onSaveAndExit: (state: any) => void;
   savedState?: any;
   examConfig?: { questions: number; timeMinutes: number } | null;
   hasAppNav?: boolean;
 }
 
-export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, onSaveAndExit, savedState, examConfig, hasAppNav }: FullLengthQuizProps) {
+export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, savedState, examConfig, hasAppNav }: FullLengthQuizProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
@@ -44,14 +43,12 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     previous,
     goTo,
     toggleFlag,
-    isLastQuestion,
   } = useQuizEngine({
     initialIndex: savedState?.currentQuestionIndex || 0,
     initialAnswers: savedState?.userAnswers || {},
     initialFlagged: savedState?.flaggedQuestions || [],
     totalQuestions: questions.length,
   });
-  const [showQuestionPalette, setShowQuestionPalette] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [timerHidden, setTimerHidden] = useState(false);
@@ -75,15 +72,33 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [cheatMode, setCheatMode] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showAutoAnswerDialog, setShowAutoAnswerDialog] = useState(false);
-  const { isAdmin } = useAdminCheck();
-  const apClassroomUi = true;
 
   useEffect(() => {
-    const savedCheatMode = localStorage.getItem('adminCheatMode');
-    if (savedCheatMode) {
-      setCheatMode(savedCheatMode === 'true');
-    }
+    const syncCheatMode = () => {
+      setCheatMode(localStorage.getItem("adminCheatMode") === "true");
+    };
+    syncCheatMode();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "adminCheatMode") {
+        syncCheatMode();
+      }
+    };
+    const onCheatModeChanged = () => {
+      syncCheatMode();
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("admin-cheat-mode-changed", onCheatModeChanged);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("admin-cheat-mode-changed", onCheatModeChanged);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!cheatMode) {
+      setShowAutoAnswerDialog(false);
+    }
+  }, [cheatMode]);
 
   // Countdown timer effect
   useEffect(() => {
@@ -111,38 +126,6 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     return () => clearInterval(timer);
   }, [isReviewMode, isSubmitting]);
 
-  // Subject-specific directions
-  const getExamDirections = () => {
-    const subjectKey = subjectId?.toString().toLowerCase();
-
-    const getExamInfo = (subjectKey: string) => {
-      const subject = getSubjectByLegacyId(subjectKey);
-
-      if (!subject) {
-        return {
-          title: 'AP® Practice Exam',
-          sections: [
-            {
-              title: 'General Instructions',
-              details: `This practice exam has ${questions.length} multiple-choice questions`,
-              description: 'Each question has four suggested answers. Select the best answer for each question.'
-            }
-          ]
-        };
-      }
-
-      return {
-        title: subject.metadata.examTitle || `${subject.displayName} Practice Exam`,
-        sections: subject.metadata.examSections || [],
-        breakdown: subject.metadata.breakdown || []
-      };
-    };
-
-    return getExamInfo(subjectKey); // Call getExamInfo here
-  };
-
-  const examDirections = getExamDirections();
-
   const currentQuestion = questions[currentQuestionIndex];
 
   const handleExitExam = () => {
@@ -165,19 +148,11 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         `/api/user/subjects/${subjectId}/save-exam-state`,
         { examState }
       );
-      queryClient.invalidateQueries({ queryKey: ["subjects"] });
-      queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
-      await queryClient.refetchQueries({ queryKey: ["subjects"] });
-      await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
-      router.push(`/study?subject=${subjectId}`);
     } catch (error) {
       console.error("Failed to save exam state:", error);
-      queryClient.invalidateQueries({ queryKey: ["subjects"] });
-      queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
-      await queryClient.refetchQueries({ queryKey: ["subjects"] });
-      await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
-      router.push(`/study?subject=${subjectId}`);
     }
+    setShowExitDialog(false);
+    onExit();
   };
 
   const handleAnswerSelect = (answer: string) => {
@@ -293,6 +268,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         onSubmit={handleReviewSubmit}
         subjectId={subjectId}
         isSubmitting={isSubmitting}
+        hasAppNav={hasAppNav}
       />
     );
   }
@@ -302,16 +278,16 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     if (!urls || urls.length === 0) {
       return null;
     }
-    return urls.map((url, index) => <img key={index} src={url} alt={`Image ${index + 1}`} className="max-w-full h-auto mb-4 rounded-lg shadow-md" />);
+    return urls.map((url, index) => <img key={index} src={url} alt={`Image ${index + 1}`} className="mb-4 h-auto max-w-full rounded-lg" />);
   };
 
   return (
-    <div
-      className={`h-screen flex flex-col ${
-        apClassroomUi ? "bg-[#eef1f4]" : "bg-slate-50 dark:bg-[#0B0F1A]"
-      }`}
-    >
-      <div className={`fixed left-0 right-0 z-50 ${hasAppNav ? "top-[4.25rem]" : "top-0"}`}>
+    <div className="flex h-screen flex-col overflow-hidden bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
+      <div
+        className={`fixed left-0 right-0 z-50 ${
+          hasAppNav ? "top-[calc(3.75rem+1px)]" : "top-0"
+        }`}
+      >
         <QuizHeader
           title={`${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test`}
           timeElapsed={timeElapsed}
@@ -319,25 +295,33 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           onHideTimer={() => setTimerHidden(!timerHidden)}
           timerHidden={timerHidden}
           onExitExam={handleExitExam}
-          examDirections={examDirections}
           subjectId={subjectId}
-          headerVariant={apClassroomUi ? "apclassroom" : "default"}
+          headerVariant="default"
+          useBlueDashedDivider
         />
       </div>
 
       {/* Time warning overlay */}
       {showTimeWarning && (
         <div
-          className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 text-white px-6 py-3 rounded-lg shadow-lg animate-pulse ${
-            apClassroomUi ? "bg-[#1a2b42]" : "bg-blue-600 dark:bg-blue-500 rounded-xl"
+          className={`fixed left-1/2 z-50 -translate-x-1/2 transform animate-pulse rounded-xl bg-blue-600 px-6 py-3 text-white dark:bg-blue-500 ${
+            hasAppNav
+              ? "top-[calc(3.75rem+1px+4rem+0.5rem)] max-md:top-[calc(3.75rem+1px+4.875rem+0.5rem)]"
+              : "top-20"
           }`}
         >
           <p className="font-semibold">⏰ 10 minutes remaining!</p>
         </div>
       )}
 
-      <div className={`flex-1 overflow-y-auto mb-14 ${hasAppNav ? "mt-[8.25rem]" : "mt-16 md:mt-16"}`}>
-        <div className="max-w-4xl mx-auto px-4 py-3">
+      <div
+        className={`flex-1 overflow-y-auto pb-32 ${
+          hasAppNav
+            ? "pt-[calc(3.75rem+1px+3.25rem+1px)] max-md:pt-[calc(3.75rem+1px+4.25rem+1px)]"
+            : "pt-[calc(3.25rem+1px)] max-md:pt-[calc(4.25rem+1px)]"
+        }`}
+      >
+        <div className="mx-auto max-w-3xl px-2 pb-3 pt-0 sm:px-3">
           <QuestionCard
             question={currentQuestion}
             questionNumber={currentQuestionIndex + 1}
@@ -348,61 +332,60 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
             isFullLength={true}
             cheatMode={cheatMode}
             mcqOptionCount={mcqOptionCount}
-            examSurfaceVariant={apClassroomUi ? "apclassroom" : "default"}
+            examSurfaceVariant="apclassroom"
             onReportError={() => setShowReportDialog(true)}
           />
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50">
-        <QuizBottomBar
-          currentQuestion={currentQuestionIndex + 1}
-          totalQuestions={questions.length}
-          onOpenPalette={() => setShowQuestionPalette(true)}
-          onPrevious={previous}
-          onNext={next}
-          canGoPrevious={currentQuestionIndex > 0}
-          canGoNext={currentQuestionIndex < questions.length - 1}
-          isLastQuestion={isLastQuestion}
-          onSubmit={() => handleSubmitTest()}
-          onReview={currentQuestionIndex === questions.length - 1 ? () => setIsReviewMode(true) : undefined}
-          onSaveAndExit={handleExitExam}
-          onAdminAutoAnswer={isAdmin ? () => setShowAutoAnswerDialog(true) : undefined}
-          subjectId={subjectId}
-          barVariant={apClassroomUi ? "apclassroom" : "default"}
-        />
-      </div>
+      {cheatMode && (
+        <div className="pointer-events-auto fixed bottom-4 left-3 z-50 sm:bottom-6 sm:left-5">
+          <Button
+            onClick={() => setShowAutoAnswerDialog(true)}
+            className="min-h-12 rounded-full border border-slate-200/80 bg-blue-600 px-6 py-3 font-sans text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 dark:border-blue-500/30 dark:bg-blue-500 dark:shadow-lg dark:hover:bg-blue-600"
+            title="Admin: Auto-answer with target grade %"
+          >
+            <Zap className="mr-1 h-3.5 w-3.5" />
+            Auto Answer
+          </Button>
+        </div>
+      )}
 
-      <AdminAutoAnswerDialog
-        open={showAutoAnswerDialog}
-        onOpenChange={setShowAutoAnswerDialog}
-        questions={questions}
-        mcqOptionCount={mcqOptionCount}
-        onApply={(answers) => handleSubmitTest(answers)}
+      <TestFloatingNav
+        currentIndex={currentQuestionIndex}
+        totalQuestions={questions.length}
+        userAnswers={userAnswers}
+        flaggedQuestions={flaggedQuestions}
+        canGoPrevious={currentQuestionIndex > 0}
+        canGoNext={currentQuestionIndex < questions.length - 1}
+        onPrevious={previous}
+        onNext={next}
+        onGoTo={goTo}
+        onEndReview={
+          currentQuestionIndex === questions.length - 1
+            ? () => setIsReviewMode(true)
+            : undefined
+        }
       />
+
+      {cheatMode && (
+        <AdminAutoAnswerDialog
+          open={showAutoAnswerDialog}
+          onOpenChange={setShowAutoAnswerDialog}
+          questions={questions}
+          mcqOptionCount={mcqOptionCount}
+          onApply={(answers) => {
+            if (!cheatMode) return;
+            handleSubmitTest(answers);
+          }}
+        />
+      )}
 
       <ReportQuestionDialog
         open={showReportDialog}
         onOpenChange={setShowReportDialog}
         questionId={currentQuestion?.id}
         subjectId={subjectId}
-      />
-
-      <EnhancedQuestionPalette
-        isOpen={showQuestionPalette}
-        onClose={() => setShowQuestionPalette(false)}
-        questions={questions}
-        currentQuestion={currentQuestionIndex}
-        userAnswers={userAnswers}
-        flaggedQuestions={flaggedQuestions}
-        onQuestionSelect={(index) => {
-          goTo(index);
-          setShowQuestionPalette(false);
-        }}
-        onGoToReview={() => {
-          setIsReviewMode(true);
-          setShowQuestionPalette(false);
-        }}
       />
 
       <SubmitConfirmDialog

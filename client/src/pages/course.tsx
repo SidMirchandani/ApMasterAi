@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import Navigation from "@/components/ui/navigation";
-import { Toaster } from "@/components/ui/toaster";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import SimpleFooter from "@/components/sections/simple-footer";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Clock, Target, Users, Plus } from "lucide-react";
-import { getSubjectByLegacyId, getLegacyIdForSubjectCode } from "@/subjects";
+import { BookOpen, Clock, Target, Users, Plus, ArrowLeft } from "lucide-react";
+import { getSubjectByLegacyId } from "@/subjects";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -63,7 +60,7 @@ export default function Course() {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to add course",
@@ -76,20 +73,22 @@ export default function Course() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-khan-background dark:bg-gray-950 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-[#0B0F1A]">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-khan-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-khan-gray-medium dark:text-gray-400">Loading...</p>
+          <div className="relative mx-auto mb-4 h-11 w-11">
+            <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+            <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
+          </div>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</p>
         </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return null; // Will redirect to login
+    return null;
   }
 
-  // Get course name from the ID (expand later with actual data)
   const getCourseName = (courseId: string) => {
     const courseMap: Record<string, string> = {
       "calculus-ab": "AP Calculus AB",
@@ -106,90 +105,95 @@ export default function Course() {
     return courseMap[courseId] || "AP Course";
   };
 
-  // ✅ Normalize id into a string
   const courseId: string = Array.isArray(id) ? (id[0] || "") : (id || "");
   const courseName: string = getCourseName(courseId);
 
+  const features = [
+    {
+      icon: Target,
+      title: "Practice questions",
+      desc: "Real AP-style problems and solutions",
+      iconBg: "bg-blue-600 text-white dark:bg-blue-500",
+    },
+    {
+      icon: BookOpen,
+      title: "Detailed explanations",
+      desc: "Comprehensive answer explanations",
+      iconBg: "bg-emerald-600 text-white dark:bg-emerald-500",
+    },
+    {
+      icon: Clock,
+      title: "Timed practice",
+      desc: "Exam simulation with real timing",
+      iconBg: "bg-violet-600 text-white dark:bg-violet-500",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-khan-background">
+    <div className="relative min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
 
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold text-khan-gray-dark mb-3">
-              {courseName}
-            </h1>
-            <p className="text-lg text-khan-gray-medium max-w-2xl mx-auto">
-              Master the concepts and skills you need to succeed on your AP
-              exam.
-            </p>
+      <main className="relative z-10 mx-auto max-w-4xl px-4 py-8 md:px-8 md:py-10">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-1 mb-6 h-10 rounded-full px-3 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
+          asChild
+        >
+          <Link href="/learn">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Browse courses
+          </Link>
+        </Button>
+
+        <header className="mb-8 space-y-2">
+          <p className="text-sm font-medium text-blue-600/90 dark:text-blue-400/90">Course</p>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            {courseName}
+          </h1>
+          <p className="max-w-2xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+            Master the concepts and skills you need to succeed on your AP exam.
+          </p>
+        </header>
+
+        <div className="space-y-4 rounded-3xl bg-slate-100 px-5 py-6 dark:bg-white/[0.06] sm:px-8 sm:py-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {features.map(({ icon: Icon, title, desc, iconBg }) => (
+              <div key={title} className="text-center sm:text-left">
+                <div
+                  className={`mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full sm:mx-0 ${iconBg}`}
+                >
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="font-display text-base font-bold text-slate-900 dark:text-white">{title}</h3>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{desc}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="bg-white rounded-lg border-2 border-gray-100 p-6 mb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-khan-blue rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <Target className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
-                  Practice Questions
-                </h3>
-                <p className="text-khan-gray-medium">
-                  Real AP-style problems and solutions
-                </p>
-              </div>
-
-              <div className="text-center">
-                <div className="w-12 h-12 bg-khan-green rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <BookOpen className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
-                  Detailed Explanations
-                </h3>
-                <p className="text-khan-gray-medium">
-                  Comprehensive answer explanations
-                </p>
-              </div>
-
-              <div className="text-center">
-                <div className="w-12 h-12 bg-khan-purple rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <Clock className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-lg font-bold text-khan-gray-dark mb-2">
-                  Timed Practice
-                </h3>
-                <p className="text-khan-gray-medium">
-                  Exam simulation with real timing
-                </p>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <h2 className="text-xl font-bold text-khan-gray-dark mb-3">
-                Ready to Start Studying?
-              </h2>
-              <p className="text-khan-gray-medium mb-4">
-                Add {courseName} to your dashboard and start practicing with real AP-style questions.
-              </p>
-              <Button
-                onClick={handleAddCourse}
-                disabled={isAdding}
-                className="bg-khan-green text-white hover:bg-khan-green/90 px-8 py-3 text-lg"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                {isAdding ? "Adding..." : "Add to Dashboard"}
-              </Button>
-              <div className="flex items-center justify-center space-x-2 text-khan-green mt-4">
-                <Users className="w-5 h-5" />
-                <span className="font-medium">
-                  Join thousands of students preparing for success
-                </span>
-              </div>
+          <div className="mt-6 border-t border-slate-200/80 pt-6 text-center dark:border-white/[0.08]">
+            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">Ready to start?</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-slate-600 dark:text-slate-400">
+              Add {courseName} to your dashboard and start practicing with real AP-style questions.
+            </p>
+            <Button
+              variant="ghost"
+              disabled={isAdding}
+              onClick={handleAddCourse}
+              className="mt-6 h-12 rounded-full bg-blue-600 px-8 text-base font-semibold text-white hover:bg-blue-700 hover:text-white disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              <Plus className="mr-2 h-5 w-5" />
+              {isAdding ? "Adding…" : "Add to dashboard"}
+            </Button>
+            <div className="mt-5 flex items-center justify-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+              <Users className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+              <span>Join thousands of students preparing for success</span>
             </div>
           </div>
         </div>
-      </div>
+      </main>
+
+      <SimpleFooter />
     </div>
   );
 }

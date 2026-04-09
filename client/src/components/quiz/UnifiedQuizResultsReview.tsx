@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRight, X } from "lucide-react";
 import { getSectionInfo, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
-import { getDisplayCorrectLabel } from "@/lib/mcqDisplay";
+import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 import { percentageToAPScore } from "@/lib/ap-score-utils";
-import { QuizBottomBar } from "./QuizBottomBar";
-import { ReviewQuestionDetail } from "./ReviewQuestionDetail";
+import { TestFloatingNav } from "./TestFloatingNav";
+import { QuestionCard } from "./QuestionCard";
+import { PracticeQuizQuestionCard } from "./PracticeQuizQuestionCard";
+import { ExplanationPanel } from "./ExplanationPanel";
+import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
@@ -38,6 +40,8 @@ export interface UnifiedQuizResultsReviewProps {
   testId?: string;
   /** When navigating to section-review, pass this as `returnTo` on full-length-history (e.g. "study") */
   sectionReviewReturnTo?: string;
+  /** Whether app navbar is visible above this screen. */
+  hasAppNav?: boolean;
 }
 
 export function UnifiedQuizResultsReview({
@@ -50,6 +54,7 @@ export function UnifiedQuizResultsReview({
   onCloseReview,
   testId,
   sectionReviewReturnTo,
+  hasAppNav = true,
 }: UnifiedQuizResultsReviewProps) {
   const router = useRouter();
   const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
@@ -57,6 +62,10 @@ export function UnifiedQuizResultsReview({
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
 
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
+  const resultsHeaderTop = hasAppNav ? "top-[calc(3.75rem+1px)]" : "top-0";
+  const resultsContentTop = hasAppNav
+    ? "pt-[calc(3.75rem+1px+3.75rem+1px)]"
+    : "pt-[calc(3.75rem+1px)]";
 
   const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
@@ -149,74 +158,111 @@ export function UnifiedQuizResultsReview({
   if (selectedQuestionIndex !== null) {
     const q = questions[selectedQuestionIndex];
     if (!q) return null;
-    const sec = q.section_code ? sectionPerformance[q.section_code] : null;
-    const unitLabel = sec ? `UNIT ${sec.unitNumber}` : undefined;
     const handleBackToResults = () => setSelectedQuestionIndex(null);
+    const selectedAnswer = userAnswers[selectedQuestionIndex] ?? userAnswers[String(selectedQuestionIndex)] ?? null;
+    const selectedCorrectLabel = getCorrectLabel(q);
+    const isSelectedCorrect = !!selectedAnswer && selectedAnswer === selectedCorrectLabel;
+    const isApClassroomSurface = isFullLength;
+
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900/30 flex flex-col">
-        <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Question {selectedQuestionIndex + 1} of {questions.length}</h1>
+      <div className="flex min-h-screen flex-col bg-white dark:bg-[#0B0F1A]">
+        <div className={`fixed left-0 right-0 z-50 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A] ${resultsHeaderTop}`}>
+          <div className="mx-auto flex max-w-3xl items-center justify-between px-3 py-2.5 sm:px-4">
+            <h1 className="text-lg font-semibold text-slate-900 dark:text-white">
+              Question {selectedQuestionIndex + 1} of {questions.length}
+            </h1>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleBackToResults}
-              className="shrink-0"
+              className="h-10 shrink-0 rounded-full px-4 text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
             >
-              <X className="h-4 w-4 mr-1.5" />
-              Close Review
+              <X className="mr-1.5 h-4 w-4" />
+              Close
             </Button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto mb-14 pt-2">
-          <div className="max-w-6xl mx-auto px-4 py-2">
-            <ReviewQuestionDetail
-              question={q as any}
-              userAnswer={userAnswers[selectedQuestionIndex]}
-              questionNumber={selectedQuestionIndex + 1}
-              unitLabel={unitLabel}
-              mcqOptionCount={mcqOptionCount}
-            />
+        <div className={`flex-1 overflow-y-auto pb-32 ${resultsContentTop}`}>
+          <div className="mx-auto max-w-6xl px-2 py-0 sm:px-3">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+              {isFullLength ? (
+                <QuestionCard
+                  question={q as any}
+                  questionNumber={selectedQuestionIndex + 1}
+                  selectedAnswer={selectedAnswer}
+                  isFlagged={false}
+                  onAnswerSelect={() => {}}
+                  onToggleFlag={() => {}}
+                  isFullLength
+                  isAnswerSubmitted
+                  isReviewMode
+                  mcqOptionCount={mcqOptionCount}
+                  examSurfaceVariant={isApClassroomSurface ? "apclassroom" : "default"}
+                />
+              ) : (
+                <PracticeQuizQuestionCard
+                  question={q as any}
+                  questionNumber={selectedQuestionIndex + 1}
+                  totalQuestions={questions.length}
+                  selectedAnswer={selectedAnswer}
+                  onAnswerSelect={() => {}}
+                  isAnswerSubmitted
+                  mcqOptionCount={mcqOptionCount}
+                />
+              )}
+
+              <div className="md:sticky md:top-4 md:self-start">
+                <ExplanationPanel hasAnswered={true} isCorrect={isSelectedCorrect}>
+                  <p className="text-sm font-medium">
+                    {isSelectedCorrect
+                      ? "Correct."
+                      : `Incorrect. The correct answer is ${selectedCorrectLabel}.`}
+                  </p>
+                  {q.explanation ? (
+                    <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none">
+                      {getDisplayExplanation(q.explanation, q, mcqOptionCount)}
+                    </PrettyExplanation>
+                  ) : null}
+                </ExplanationPanel>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="fixed bottom-0 left-0 right-0 z-50">
-          <QuizBottomBar
-            currentQuestion={selectedQuestionIndex + 1}
-            totalQuestions={questions.length}
-            onPrevious={() => setSelectedQuestionIndex(Math.max(0, selectedQuestionIndex - 1))}
-            onNext={() => setSelectedQuestionIndex(Math.min(questions.length - 1, selectedQuestionIndex + 1))}
-            canGoPrevious={selectedQuestionIndex > 0}
-            canGoNext={selectedQuestionIndex < questions.length - 1}
-            isLastQuestion={selectedQuestionIndex === questions.length - 1}
-            reviewOnly
-            onExit={handleBackToResults}
-            exitLabel="Back to results"
-            hideExitButton
-          />
-        </div>
+        <TestFloatingNav
+          currentIndex={selectedQuestionIndex}
+          totalQuestions={questions.length}
+          userAnswers={userAnswers}
+          flaggedQuestions={new Set<number>()}
+          canGoPrevious={selectedQuestionIndex > 0}
+          canGoNext={selectedQuestionIndex < questions.length - 1}
+          onPrevious={() => setSelectedQuestionIndex(Math.max(0, selectedQuestionIndex - 1))}
+          onNext={() => setSelectedQuestionIndex(Math.min(questions.length - 1, selectedQuestionIndex + 1))}
+          onGoTo={setSelectedQuestionIndex}
+          onEndReview={() => setSelectedQuestionIndex(null)}
+        />
       </div>
     );
   }
 
   // Summary view: Close Review, score, grid, buttons, Review By Unit
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900/30">
-      <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Quiz Results</h1>
+    <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
+      <div className={`fixed left-0 right-0 z-50 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A] ${resultsHeaderTop}`}>
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-3 py-2.5 sm:px-4">
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Quiz results</h1>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={onCloseReview}
-            className="shrink-0"
+            className="h-10 shrink-0 rounded-full px-4 text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
           >
-            <X className="h-4 w-4 mr-1.5" />
-            Close Review
+            <X className="mr-1.5 h-4 w-4" />
+            Close
           </Button>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <div className={`mx-auto max-w-3xl space-y-4 px-2 pb-8 sm:px-3 ${resultsContentTop}`}>
         {/* Center-aligned score and review actions */}
         <div className="flex flex-col items-center gap-3 text-center">
           <p className="text-xl font-bold text-slate-900 dark:text-white">
@@ -226,20 +272,21 @@ export function UnifiedQuizResultsReview({
             {testId ? (
               <>
                 <Button
-                  variant="default"
+                  variant="ghost"
                   size="sm"
                   onClick={() => handleViewSection("all", questions.length)}
-                  className="bg-sky-500 hover:bg-sky-600 text-white"
+                  className="h-10 rounded-full bg-blue-600 px-5 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
-                  Review All Questions
+                  Review all questions
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => handleViewSection("incorrect", incorrectIndices.length)}
                   disabled={incorrectIndices.length === 0}
+                  className="h-10 rounded-full bg-slate-100 px-5 font-semibold text-slate-900 hover:bg-slate-200/80 disabled:opacity-50 dark:bg-white/[0.06] dark:text-white dark:hover:bg-white/[0.09]"
                 >
-                  Review Incorrect Questions
+                  Review incorrect
                   {incorrectIndices.length > 0 && (
                     <span className="ml-1.5 text-slate-500">({incorrectIndices.length})</span>
                   )}
@@ -248,22 +295,23 @@ export function UnifiedQuizResultsReview({
             ) : (
               <>
                 <Button
-                  variant="default"
+                  variant="ghost"
                   size="sm"
                   onClick={() => setSelectedQuestionIndex(0)}
-                  className="bg-sky-500 hover:bg-sky-600 text-white"
+                  className="h-10 rounded-full bg-blue-600 px-5 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
-                  Review All Questions
+                  Review all questions
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => {
                     if (incorrectIndices.length > 0) setSelectedQuestionIndex(incorrectIndices[0]);
                   }}
                   disabled={incorrectIndices.length === 0}
+                  className="h-10 rounded-full bg-slate-100 px-5 font-semibold text-slate-900 hover:bg-slate-200/80 disabled:opacity-50 dark:bg-white/[0.06] dark:text-white dark:hover:bg-white/[0.09]"
                 >
-                  Review Incorrect Questions
+                  Review incorrect
                   {incorrectIndices.length > 0 && (
                     <span className="ml-1.5 text-slate-500">({incorrectIndices.length})</span>
                   )}
@@ -274,88 +322,83 @@ export function UnifiedQuizResultsReview({
         </div>
 
         {/* Question grid: green = correct, red = incorrect */}
-        <Card className="border border-slate-200 dark:border-slate-700">
-          <CardContent className="p-4">
-            <div className="grid gap-2 grid-cols-5 sm:grid-cols-10">
-              {questions.map((_, index) => {
-                const isCorrect = correctMap[index];
-                const base =
-                  "aspect-square max-w-[55px] min-w-[36px] w-full rounded flex items-center justify-center font-semibold text-sm transition-all hover:opacity-90 cursor-pointer";
-                const cls = isCorrect
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white border-2 border-emerald-600"
-                  : "bg-red-500 hover:bg-red-600 text-white border-2 border-red-600";
+        <div className="rounded-2xl bg-slate-100 p-4 dark:bg-white/[0.06]">
+          <div className="grid grid-cols-5 gap-2 sm:grid-cols-8">
+            {questions.map((_, index) => {
+              const isCorrect = correctMap[index];
+              const base =
+                "aspect-square max-w-[55px] min-w-[36px] w-full rounded-lg flex items-center justify-center font-semibold text-sm transition-opacity hover:opacity-90 cursor-pointer";
+              const cls = isCorrect
+                ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                : "bg-red-500 text-white hover:bg-red-600";
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setSelectedQuestionIndex(index)}
+                  className={`${base} ${cls}`}
+                >
+                  {index + 1}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {allSectionEntries.length > 0 && (
+          <div className="rounded-2xl bg-slate-100 p-4 dark:bg-white/[0.06]">
+            <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">Review by unit</h2>
+            <div className="space-y-2">
+              {allSectionEntries.map(([code, sec]) => {
+                const hasQuestions = sec.total > 0;
+                const apResult = hasQuestions ? percentageToAPScore(sec.percentage ?? 0, apiCode) : null;
+                const barWidth = `${Math.min(100, Math.max(0, sec.percentage ?? 0))}%`;
+                const barFillColor = !hasQuestions
+                  ? undefined
+                  : apResult
+                    ? apResult.color
+                    : undefined;
+                const barFillClass = !hasQuestions
+                  ? "bg-slate-300 dark:bg-slate-600"
+                  : barFillColor
+                    ? ""
+                    : "bg-emerald-500 dark:bg-emerald-500";
                 return (
                   <button
-                    key={index}
-                    onClick={() => setSelectedQuestionIndex(index)}
-                    className={`${base} ${cls}`}
+                    key={code}
+                    type="button"
+                    onClick={() => handleViewSection(code, sec.total)}
+                    disabled={!hasQuestions}
+                    className={`group flex w-full items-center justify-between gap-3 rounded-2xl p-3 text-left transition-colors ${
+                      hasQuestions
+                        ? "cursor-pointer bg-white/80 hover:bg-white dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
+                        : "cursor-not-allowed bg-white/40 opacity-60 dark:bg-white/[0.03]"
+                    }`}
                   >
-                    {index + 1}
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className={`truncate font-medium ${
+                          hasQuestions ? "text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400"
+                        }`}
+                      >
+                        UNIT {sec.unitNumber || "?"}: {sec.name}
+                        {!hasQuestions && " (No questions)"}
+                      </div>
+                      <div className="relative mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                        <div
+                          className={`absolute inset-y-0 left-0 min-w-[2px] rounded-full ${barFillClass}`}
+                          style={{ width: barWidth, ...(barFillColor ? { backgroundColor: barFillColor } : {}) }}
+                        />
+                      </div>
+                    </div>
+                    {hasQuestions && (
+                      <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 group-hover:text-slate-600" />
+                    )}
                   </button>
                 );
               })}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Review By Unit: full unit list, grey when no questions, neutral track with accuracy fill */}
-        {allSectionEntries.length > 0 && (
-          <Card className="border border-slate-200 dark:border-slate-700">
-            <CardContent className="p-4">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
-                Review By Unit
-              </h2>
-              <div className="space-y-3">
-                {allSectionEntries.map(([code, sec]) => {
-                  const hasQuestions = sec.total > 0;
-                  const apResult = hasQuestions ? percentageToAPScore(sec.percentage ?? 0, apiCode) : null;
-                  const barWidth = `${Math.min(100, Math.max(0, sec.percentage ?? 0))}%`;
-                  const barFillColor = !hasQuestions
-                    ? undefined
-                    : apResult
-                      ? apResult.color
-                      : undefined;
-                  const barFillClass = !hasQuestions
-                    ? "bg-slate-300 dark:bg-slate-600"
-                    : barFillColor
-                      ? ""
-                      : "bg-emerald-500 dark:bg-emerald-500";
-                  return (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => handleViewSection(code, sec.total)}
-                      disabled={!hasQuestions}
-                      className={`w-full flex items-center justify-between gap-3 rounded-lg border p-3 text-left transition-colors group ${
-                        hasQuestions
-                          ? "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
-                          : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 cursor-not-allowed opacity-60"
-                      }`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className={`font-medium truncate ${
-                          hasQuestions ? "text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400"
-                        }`}>
-                          UNIT {sec.unitNumber || "?"}: {sec.name}
-                          {!hasQuestions && " (No questions)"}
-                        </div>
-                        <div className="mt-1.5 relative h-2 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
-                          {/* Neutral track; fill colored by AP scale when has questions, else neutral */}
-                          <div
-                            className={`absolute inset-y-0 left-0 rounded-full min-w-[2px] ${barFillClass}`}
-                            style={{ width: barWidth, ...(barFillColor ? { backgroundColor: barFillColor } : {}) }}
-                          />
-                        </div>
-                      </div>
-                      {hasQuestions && (
-                        <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-slate-600 shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         )}
       </div>
     </div>

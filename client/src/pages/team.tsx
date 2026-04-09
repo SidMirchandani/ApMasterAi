@@ -24,11 +24,12 @@ const teamMembers = [
 
 export default function Team() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+    <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
 
       {/* Hero */}
-      <section className="relative overflow-hidden pt-6 pb-8 md:pt-8 md:pb-10">
+      <section className="relative overflow-hidden pb-8 pt-6 md:pb-10 md:pt-8">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.08),transparent_55%)] dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.12),transparent_60%)]" />
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200/60 dark:border-blue-500/20 mb-2">

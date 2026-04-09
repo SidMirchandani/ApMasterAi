@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { BookOpen, Clock, ArrowRight, Check, Search, Sparkles } from "lucide-react";
+import { BookOpen, Clock, ArrowRight, Check, Search } from "lucide-react";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 import Navigation from "@/components/ui/navigation";
@@ -186,13 +179,13 @@ export default function Courses() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-[#0B0F1A]">
         <div className="text-center">
-          <div className="relative w-10 h-10 mx-auto mb-4">
-            <div className="absolute inset-0 rounded-full border-2 border-blue-200 dark:border-blue-800" />
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
+          <div className="relative mx-auto mb-4 h-11 w-11">
+            <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+            <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
           </div>
-          <p className="text-slate-500 dark:text-slate-400 font-medium">Loading...</p>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</p>
         </div>
       </div>
     );
@@ -200,45 +193,70 @@ export default function Courses() {
 
   if (!isAuthenticated) return null;
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] relative overflow-hidden">
+  const totalCount = apSubjects.length;
 
+  return (
+    <div className="relative min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
 
-      <div className="py-5 px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200/60 dark:border-blue-500/20 mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">Courses</span>
+      <main className="relative z-10 mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">
+        <header className="mb-8 md:mb-10">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-2">
+              <p className="text-sm font-medium text-blue-600/90 dark:text-blue-400/90">Courses</p>
+              <h1 className="text-3xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+                Choose your AP subject
+              </h1>
+              <p className="max-w-xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+                Add a course to your dashboard and start your personalized learning journey.
+              </p>
             </div>
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-2">
-              Choose Your <span className="text-gradient">AP Subject</span>
-            </h1>
-            <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-4">
-              Add a course to your dashboard and start your personalized learning journey.
-            </p>
-            <div className="max-w-md mx-auto relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <div className="flex flex-shrink-0 flex-wrap gap-2 sm:justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 rounded-full px-4 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
+                asChild
+              >
+                <Link href="/dashboard">Back to dashboard</Link>
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+                All subjects
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {searchQuery.trim()
+                  ? `${filteredSubjects.length} match${filteredSubjects.length !== 1 ? "es" : ""} · ${totalCount} total`
+                  : `${totalCount} course${totalCount !== 1 ? "s" : ""}`}
+              </p>
+            </div>
+            <div className="relative w-full sm:w-auto sm:min-w-[280px] sm:max-w-md">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search AP subjects..."
-                className="w-full pl-11 pr-4 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all duration-150 ease-out"
+                placeholder="Search courses…"
+                className="h-11 w-full rounded-full border-0 bg-slate-900/[0.04] pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:bg-white/[0.06] dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
           </div>
 
           {filteredSubjects.length === 0 && searchQuery.trim() && (
-            <div className="text-center py-8 rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-sm">
-              <p className="text-slate-500 dark:text-slate-400">
+            <div className="rounded-3xl bg-slate-100 py-10 text-center dark:bg-white/[0.06]">
+              <p className="text-slate-600 dark:text-slate-400">
                 No subjects match &quot;{searchQuery}&quot;. Try a different search term.
               </p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {filteredSubjects.map((subject) => {
               const isAdded = addedSubjectIds.has(subject.id);
               const isAdding =
@@ -246,59 +264,64 @@ export default function Courses() {
                 addSubjectMutation.variables?.id === subject.id;
 
               return (
-                <Card
+                <article
                   key={subject.id}
-                  className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden hover:border-blue-200 dark:hover:border-blue-800/50 hover:shadow-md hover:-translate-y-[1px] transition-all duration-150 ease-out group"
+                  className="group flex flex-col overflow-hidden rounded-3xl bg-slate-100 transition-colors duration-200 hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
                 >
-                  <CardHeader className="pb-2 pt-4 px-4">
-                    <CardTitle className="text-lg font-display font-bold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors duration-150 ease-out">
+                  <div className="flex flex-1 flex-col px-5 pb-5 pt-5">
+                    <h3 className="font-display text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                       {subject.name}
-                    </CardTitle>
-                    <CardDescription className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-2">
+                    </h3>
+                    <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                       {subject.description}
-                    </CardDescription>
-                  </CardHeader>
+                    </p>
 
-                  <CardContent className="px-4 pb-4">
-                    <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 mb-3">
-                      <div className="flex items-center gap-1.5">
-                        <BookOpen className="w-4 h-4 text-blue-500" />
-                        <span className="font-medium text-slate-700 dark:text-slate-300">
-                          {subject.units} Units
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-blue-500" />
+                    <div className="mt-4 flex items-center justify-between gap-3 text-sm text-slate-500 dark:text-slate-400">
+                      <span className="inline-flex items-center gap-1.5">
+                        <BookOpen className="h-4 w-4 shrink-0 text-blue-600 opacity-80 dark:text-blue-400" />
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{subject.units} units</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock className="h-4 w-4 shrink-0 text-blue-600 opacity-80 dark:text-blue-400" />
                         <span className="font-medium text-slate-700 dark:text-slate-300">
                           {formatDate(subject.examDate)}
                         </span>
-                      </div>
+                      </span>
                     </div>
 
-                    {isAdded ? (
-                      <Button
-                        disabled
-                        className="w-full rounded-xl h-11 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-2 border-blue-200 dark:border-blue-800/50 font-semibold cursor-default"
-                      >
-                        <Check className="mr-2 w-4 h-4" />
-                        {isAdding ? "Adding..." : archivedAddedSubjectIds.has(subject.id) ? "Added to Dashboard (Archived)" : "Added to Dashboard"}
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => handleAddToDashboard(subject)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl h-11 font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98]"
-                      >
-                        Add to Dashboard
-                        <ArrowRight className="ml-2 w-4 h-4" />
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
+                    <div className="mt-4">
+                      {isAdded ? (
+                        <Button
+                          disabled
+                          variant="ghost"
+                          className="h-11 w-full cursor-default rounded-full bg-white/80 font-semibold text-blue-700 hover:bg-white/80 hover:text-blue-700 dark:bg-white/[0.08] dark:text-blue-400 dark:hover:bg-white/[0.08] dark:hover:text-blue-400"
+                        >
+                          <Check className="mr-2 h-4 w-4" />
+                          {isAdding
+                            ? "Adding…"
+                            : archivedAddedSubjectIds.has(subject.id)
+                              ? "Added (archived)"
+                              : "Added to dashboard"}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleAddToDashboard(subject)}
+                          className="h-11 w-full rounded-full bg-blue-600 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+                        >
+                          Add to dashboard
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </article>
               );
             })}
           </div>
         </div>
-      </div>
+      </main>
+
       <SimpleFooter />
     </div>
   );

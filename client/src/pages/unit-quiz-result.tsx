@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, ArrowLeft, RotateCcw } from "lucide-react";
 import Navigation from "@/components/ui/navigation";
 import SimpleFooter from "@/components/sections/simple-footer";
@@ -62,14 +61,18 @@ export default function UnitQuizResultPage() {
 
   if (!subjectId || !testId) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="container mx-auto px-4 py-8 text-center">
-          <p className="text-gray-600 dark:text-gray-400">Missing subject or test ID.</p>
-          <Button className="mt-4" onClick={() => router.push("/dashboard")}>
+        <main className="mx-auto max-w-lg px-4 py-12 text-center">
+          <p className="text-slate-600 dark:text-slate-400">Missing subject or test ID.</p>
+          <Button
+            variant="ghost"
+            className="mt-6 h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white"
+            onClick={() => router.push("/dashboard")}
+          >
             Back to dashboard
           </Button>
-        </div>
+        </main>
         <SimpleFooter />
       </div>
     );
@@ -77,24 +80,22 @@ export default function UnitQuizResultPage() {
 
   if (!test) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="container mx-auto px-4 py-8 max-w-md">
-          <Card className="dark:bg-gray-900 dark:border-gray-700">
-            <CardContent className="p-6 text-center">
-              <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-              <p className="text-gray-600 dark:text-gray-300">Unit quiz result not found.</p>
-              <Button
-                variant="outline"
-                className="mt-4 gap-2"
-                onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to test history
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        <main className="mx-auto max-w-md px-4 py-12">
+          <div className="rounded-3xl bg-slate-100 px-6 py-10 text-center dark:bg-white/[0.06]">
+            <BookOpen className="mx-auto mb-4 h-12 w-12 text-slate-400" />
+            <p className="text-slate-700 dark:text-slate-300">Unit quiz result not found.</p>
+            <Button
+              variant="ghost"
+              className="mt-6 h-11 rounded-full px-6 font-semibold text-slate-700 hover:bg-white/80 dark:text-slate-200 dark:hover:bg-white/[0.08]"
+              onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Test history
+            </Button>
+          </div>
+        </main>
         <SimpleFooter />
       </div>
     );
@@ -106,40 +107,41 @@ export default function UnitQuizResultPage() {
       : test.sectionCode ?? "Unit quiz";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
-      <div className="container mx-auto px-4 py-6 max-w-md">
+      <main className="mx-auto max-w-md px-4 py-8 md:py-10">
         <Button
           variant="ghost"
           size="sm"
-          className="mb-4 gap-1"
+          className="mb-6 h-10 rounded-full px-3 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
           onClick={() => router.push(`/full-length-history?subject=${subjectId}`)}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Test history
         </Button>
-        <Card className="dark:bg-gray-900 dark:border-gray-700">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
-              <BookOpen className="h-5 w-5 text-green-500" />
-              Unit quiz result
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{sectionName}</p>
-            <div className="rounded-lg bg-gray-100 dark:bg-gray-800 p-4 text-center">
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {test.score} / {test.totalQuestions}
-              </p>
-              <p className="text-lg text-gray-600 dark:text-gray-400 mt-1">{test.percentage}%</p>
-            </div>
-            <Button className="w-full gap-2" onClick={handlePracticeAgain}>
-              <RotateCcw className="h-4 w-4" />
-              Practice again
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+
+        <div className="rounded-3xl bg-slate-100 px-6 py-8 dark:bg-white/[0.06]">
+          <div className="mb-6 flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <h1 className="font-display text-lg font-bold text-slate-900 dark:text-white">Unit quiz result</h1>
+          </div>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{sectionName}</p>
+          <div className="mt-4 rounded-2xl bg-white/90 py-6 text-center dark:bg-white/[0.08]">
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">
+              {test.score} / {test.totalQuestions}
+            </p>
+            <p className="mt-1 text-lg text-slate-600 dark:text-slate-400">{test.percentage}%</p>
+          </div>
+          <Button
+            variant="ghost"
+            className="mt-6 h-11 w-full rounded-full bg-blue-600 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+            onClick={handlePracticeAgain}
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Practice again
+          </Button>
+        </div>
+      </main>
       <SimpleFooter />
     </div>
   );

@@ -3,63 +3,58 @@
 import { ReactNode } from "react";
 
 interface ExplanationPanelProps {
-  /** Whether the user has answered; if false, show empty grey placeholder */
+  /** When false, panel is hidden unless showEmptyHint is set. */
   hasAnswered: boolean;
-  /** When hasAnswered, whether the answer was correct (green vs red) */
+  /** Correctness status used for subtle success/error tint after submit. */
   isCorrect?: boolean;
-  /** Rendered explanation content when hasAnswered */
+  /** Rendered after the user answers (feedback + optional explanation body). */
   children?: ReactNode;
   className?: string;
+  /**
+   * When true and the user has not answered yet, show a subtle hint instead of nothing.
+   * Prefer false for practice flows so no “explanation” chrome appears early.
+   */
+  showEmptyHint?: boolean;
 }
 
 /**
- * Side panel for quiz/question UIs: grey "Explanation" box (empty until answered),
- * then fills with green (correct) or red (incorrect) explanation.
- * Used in a flex row on desktop (30–40% width) and below question on narrow screens.
+ * Post-answer feedback block: top border + free-flowing content (no boxed panel, no “Explanation” title).
+ * Callers own copy (Correct / Incorrect) and optional PrettyExplanation.
  */
 export function ExplanationPanel({
   hasAnswered,
-  isCorrect = false,
+  isCorrect,
   children,
   className = "",
+  showEmptyHint = true,
 }: ExplanationPanelProps) {
-  const base =
-    "rounded-lg border-2 flex flex-col min-h-[100px] md:min-h-0 " + className;
+  const basePanelClass =
+    "rounded-xl border px-4 py-3 text-sm leading-relaxed";
 
   if (!hasAnswered) {
+    if (!showEmptyHint) return null;
     return (
       <div
-        className={`${base} bg-gray-100 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 flex-1 flex flex-col items-start justify-start p-3`}
+        className={`${basePanelClass} border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 ${className}`}
       >
-        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-0.5">
+        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
           Explanation
-        </span>
-        <span className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
-          An AI-generated explanation will appear here once you answer.
-        </span>
+        </p>
+        <p className="mt-2 text-sm">
+          An explanation will appear here once you submit your answer.
+        </p>
       </div>
     );
   }
 
-  const correctClass =
-    "ring-2 ring-green-500 border-green-500 dark:border-green-600 bg-green-50 dark:bg-green-500/10";
-  const incorrectClass =
-    "ring-2 ring-red-500 border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-500/10";
+  const answeredTintClass = isCorrect
+    ? "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-700/70 dark:bg-emerald-950/30 dark:text-emerald-100"
+    : "border-red-200 bg-red-50 text-red-950 dark:border-red-700/70 dark:bg-red-950/30 dark:text-red-100";
 
   return (
-    <div
-      className={`${base} ${isCorrect ? correctClass : incorrectClass} flex-1 p-3 overflow-auto`}
-    >
-      <span
-        className={`text-xs font-semibold block mb-1.5 ${
-          isCorrect
-            ? "text-green-800 dark:text-green-300"
-            : "text-red-800 dark:text-red-300"
-        }`}
-      >
-        {isCorrect ? "Correct — Explanation" : "Incorrect — Explanation"}
-      </span>
-      <div className="text-xs text-gray-800 dark:text-gray-200 prose prose-sm dark:prose-invert max-w-none">
+    <div className={`${basePanelClass} ${answeredTintClass} ${className}`}>
+      <p className="text-sm font-semibold">Explanation</p>
+      <div className="space-y-3 text-sm text-slate-800 dark:text-slate-200 [&_.prose]:max-w-none">
         {children}
       </div>
     </div>

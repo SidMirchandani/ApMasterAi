@@ -1,9 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  BookOpen,
   Trash2,
   Plus,
   Calendar,
@@ -66,7 +64,6 @@ export default function Dashboard() {
   const { toast } = useToast();
 
   const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
-  const [subjectToArchive, setSubjectToArchive] = useState<DashboardSubject | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [isArchiveExpanded, setIsArchiveExpanded] = useState(false);
   const [subjectSearch, setSubjectSearch] = useState("");
@@ -213,89 +210,98 @@ export default function Dashboard() {
   })();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] relative">
-      <BackgroundDecor />
+    <div className="relative min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
 
-      <main className="py-5 px-4 md:px-8 relative z-10 max-w-6xl mx-auto">
+      <main className="relative z-10 mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">
         {/* Header */}
-        <div className="mb-5">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-widest">
+        <header className="mb-8 md:mb-10">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-2">
+              <p className="text-sm font-medium text-blue-600/90 dark:text-blue-400/90">
                 {greeting}
               </p>
-              <h1 className="text-2xl sm:text-3xl font-display font-bold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-3xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
                 {userProfile?.data?.firstName
-                  ? `Welcome back, ${userProfile.data.firstName} 👋`
-                  : "Welcome back 👋"}
+                  ? `Welcome back, ${userProfile.data.firstName}`
+                  : "Welcome back"}
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 font-medium mt-1.5">
-                Continue your personalized AP preparation journey.
+              <p className="max-w-xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+                Pick up where you left off—your courses and projected scores stay in sync as you practice.
               </p>
             </div>
             {(activeList.length > 0 || subjects.length > 0) && (
-              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <div className="flex flex-shrink-0 flex-wrap gap-2 sm:justify-end">
                 <Button
                   onClick={() => archiveSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out px-4 h-9 text-xs flex-shrink-0"
+                  className="h-10 rounded-full px-4 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
                 >
-                  Go to Archive
+                  View archive
                 </Button>
                 <Button
                   onClick={() => router.push("/learn")}
+                  variant="ghost"
                   size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] px-4 h-9 text-xs flex-shrink-0"
+                  className="h-10 rounded-full bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
-                  <Plus className="mr-1.5 w-3.5 h-3.5" /> Add Course
+                  <Plus className="mr-1.5 h-4 w-4" /> Add course
                 </Button>
               </div>
             )}
           </div>
-        </div>
+        </header>
 
         {subjectsLoading || !subjectsResponse ? (
           <CenteredLoader />
         ) : subjects.length === 0 ? (
           <EmptyState router={router} />
         ) : (
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-display font-bold tracking-tight text-slate-900 dark:text-white">
-                  My Subjects
+          <div className="space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-1">
+                <h2 className="text-xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+                  Your courses
                 </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                  {activeList.length} active course{activeList.length !== 1 ? "s" : ""}
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {activeList.length} active
                   {subjects.filter((s) => s.archived).length > 0 && (
-                    <>, {subjects.filter((s) => s.archived).length} archived</>
+                    <span className="text-slate-400 dark:text-slate-500">
+                      {" "}
+                      · {subjects.filter((s) => s.archived).length} archived
+                    </span>
                   )}
                 </p>
               </div>
-              <div className="flex-1 min-w-[200px] max-w-sm flex items-center justify-center">
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:min-w-[280px] sm:max-w-md sm:flex-row sm:items-center sm:justify-end">
                 <div className="relative w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search subjects..."
+                    placeholder="Search courses…"
                     value={subjectSearch}
                     onChange={(e) => setSubjectSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="h-11 w-full rounded-full border-0 bg-slate-900/[0.04] pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:bg-white/[0.06] dark:text-slate-100 dark:placeholder:text-slate-500"
                   />
                 </div>
+                {subjectsFetching && (
+                  <div className="flex justify-end sm:justify-center">
+                    <RefreshingState />
+                  </div>
+                )}
               </div>
-              {subjectsFetching && <RefreshingState />}
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="flex flex-col gap-5">
               {activeSubjects.map((subject) => (
                 <SubjectCard
                   key={subject.id}
                   subject={subject}
                   isAdmin={showAdminFeatures}
-                  onArchive={() => setSubjectToArchive(subject)}
+                  onConfirmArchive={() =>
+                    archiveMutation.mutate({ id: subject.id, archive: true })
+                  }
                   onDelete={
                     showAdminFeatures
                       ? () => {
@@ -327,7 +333,7 @@ export default function Dashboard() {
       {/* Delete dialog (only relevant when experimental features are on) */}
       {showAdminFeatures && (
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="rounded-2xl max-w-md">
+        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-w-md rounded-2xl shadow-none">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete subject?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -338,7 +344,7 @@ export default function Dashboard() {
             <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate(String(subjectToRemove?.id))}
-              className="bg-red-600 hover:bg-red-700 rounded-xl"
+              className="rounded-xl bg-red-600 shadow-none hover:bg-red-700 hover:shadow-none"
             >
               Delete
             </AlertDialogAction>
@@ -346,30 +352,6 @@ export default function Dashboard() {
         </AlertDialogContent>
       </AlertDialog>
       )}
-
-      {/* Archive dialog */}
-      <AlertDialog open={!!subjectToArchive} onOpenChange={(v) => !v && setSubjectToArchive(null)}>
-        <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="rounded-2xl max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Archive subject?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Move <b>{subjectToArchive?.name}</b> to archive? You can restore it later.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                archiveMutation.mutate({ id: subjectToArchive?.id, archive: true });
-                setSubjectToArchive(null);
-              }}
-              className="bg-blue-500 hover:bg-blue-600 rounded-xl"
-            >
-              Archive
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <SimpleFooter />
     </div>
@@ -380,36 +362,35 @@ export default function Dashboard() {
 // SUBCOMPONENTS
 // ======================================================================================
 
-const BackgroundDecor = () => null;
-
 const CenteredLoader = () => (
-  <div className="flex items-center justify-center py-12">
+  <div className="flex items-center justify-center py-16">
     <div className="text-center">
-      <div className="relative w-12 h-12 mx-auto mb-4">
-        <div className="absolute inset-0 rounded-full border-2 border-blue-200 dark:border-blue-800" />
-        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
+      <div className="relative mx-auto mb-4 h-11 w-11">
+        <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+        <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
       </div>
-      <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">Loading...</p>
+      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</p>
     </div>
   </div>
 );
 
 const EmptyState = ({ router }: { router: any }) => (
-  <div className="text-center py-12 px-4">
-    <div className="w-20 h-20 mx-auto mb-4 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-200/60 dark:border-blue-800/60">
-      <Sparkles className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+  <div className="flex flex-col items-center px-4 py-16 text-center">
+    <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/15 via-blue-400/10 to-violet-500/15 ring-1 ring-blue-500/10 dark:from-blue-500/20 dark:via-blue-400/10 dark:to-violet-500/15 dark:ring-white/10">
+      <Sparkles className="h-11 w-11 text-blue-600 dark:text-blue-400" strokeWidth={1.5} />
     </div>
-    <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-2">
-      No subjects yet
+    <h2 className="mb-2 text-2xl font-display font-bold tracking-tight text-slate-900 dark:text-white">
+      Start with a course
     </h2>
-    <p className="text-slate-500 dark:text-slate-400 mb-5 max-w-sm mx-auto font-medium">
-      Add AP subjects to start practicing and tracking your progress.
+    <p className="mb-8 max-w-md text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+      Add an AP subject to unlock practice, analytics, and a projected score that updates as you improve.
     </p>
     <Button
       onClick={() => router.push("/learn")}
-      className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-8 h-12 rounded-xl font-semibold shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98]"
+      variant="ghost"
+      className="h-12 rounded-full bg-blue-600 px-8 text-base font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
     >
-      <Plus className="mr-2 w-5 h-5" /> Browse Courses
+      <Plus className="mr-2 h-5 w-5" /> Browse courses
     </Button>
   </div>
 );
@@ -422,20 +403,20 @@ const RefreshingState = () => (
 );
 
 const ErrorScreen = ({ refetch }: { refetch: () => void }) => (
-  <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+  <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
     <Navigation />
-<div className="py-8 px-4 max-w-xl mx-auto">
-        <Alert className="border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-500/10 rounded-2xl">
-        <AlertTriangle className="h-4 w-4 text-red-600" />
-        <AlertDescription className="text-red-700 dark:text-red-300 flex flex-wrap justify-between items-center gap-3">
-          Failed to load your subjects.
+    <div className="mx-auto max-w-lg px-4 py-12">
+      <Alert className="rounded-2xl border-0 bg-red-500/[0.08] text-red-900 shadow-none ring-1 ring-red-500/15 dark:bg-red-500/10 dark:text-red-200 dark:ring-red-500/20">
+        <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+        <AlertDescription className="flex flex-wrap items-center justify-between gap-3 text-red-800 dark:text-red-200/90">
+          We couldn&apos;t load your courses.
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={refetch}
-            className="border-red-500 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg"
+            className="h-9 rounded-full text-red-700 hover:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/20"
           >
-            Try Again
+            Try again
           </Button>
         </AlertDescription>
       </Alert>
@@ -455,53 +436,51 @@ const ArchivedSection = ({
   toggle: () => void;
   onRestore: (s: DashboardSubject) => void;
 }) => (
-  <div className="mt-4">
+  <section className="mt-10 border-t border-slate-200/70 pt-8 dark:border-slate-800/80">
     <button
+      type="button"
       onClick={toggle}
-      className="flex justify-between items-center w-full p-3 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-800 transition-all duration-150 ease-out"
+      className="group flex w-full items-center justify-between gap-3 py-2 text-left transition-colors hover:text-blue-600 dark:hover:text-blue-400"
     >
-      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-        Archived ({subjects.length})
+      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-inherit">
+        Archived courses
+        <span className="ml-2 font-normal text-slate-400 dark:text-slate-500">({subjects.length})</span>
       </span>
       <ChevronDown
-        className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 group-hover:text-blue-500 dark:group-hover:text-blue-400 ${isOpen ? "rotate-180" : ""}`}
       />
     </button>
 
     {isOpen && (
-      <div className="mt-3 space-y-3">
+      <ul className="mt-4 space-y-1">
         {subjects.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400 py-2">No archived courses.</p>
+          <li className="py-3 text-sm text-slate-500 dark:text-slate-400">Nothing in the archive yet.</li>
         ) : (
           subjects.map((s) => (
-            <Card
+            <li
               key={s.id}
-              className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl opacity-80 hover:opacity-100 transition-all duration-150 ease-out"
+              className="flex flex-col gap-3 rounded-2xl px-4 py-4 transition-colors hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
             >
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start gap-4">
-                  <div>
-                    <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-200">
-                      {s.name}
-                    </CardTitle>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{s.description}</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onRestore(s)}
-                    className="border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl shrink-0 transition-all duration-150 ease-out"
-                  >
-                    Restore
-                  </Button>
-                </div>
-              </CardHeader>
-            </Card>
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-900 dark:text-white">{s.name}</p>
+                {s.description ? (
+                  <p className="mt-0.5 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{s.description}</p>
+                ) : null}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onRestore(s)}
+                className="h-9 shrink-0 self-start rounded-full px-4 font-semibold text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/15 sm:self-center"
+              >
+                Restore
+              </Button>
+            </li>
           ))
         )}
-      </div>
+      </ul>
     )}
-  </div>
+  </section>
 );
 
 // Shared helper: compute weighted Student Score for prediction so Dashboard matches Analytics logic
@@ -566,20 +545,19 @@ const scoreColorMap: Record<number, { text: string; bg: string; border: string; 
 const SubjectCard = ({
   subject,
   isAdmin,
-  onArchive,
+  onConfirmArchive,
   onDelete,
   onStudy,
   unitProgressOverride,
 }: {
   subject: DashboardSubject;
   isAdmin?: boolean;
-  onArchive: () => void;
+  onConfirmArchive: () => void;
   onDelete?: () => void;
   onStudy: () => void;
   /** Optional unit progress map passed from parent to avoid extra network calls. */
   unitProgressOverride?: Record<string, { highestScore?: number; mcqScore?: number }>;
 }) => {
-  const router = useRouter();
   const subjectMeta = getSubjectByCode(subject.subjectId);
   const units = subjectMeta?.units || [];
   const unitCount = subject.units ?? units.length;
@@ -614,75 +592,112 @@ const SubjectCard = ({
   const scoreColors = predicted ? scoreColorMap[predicted.score] : null;
 
   const description = subject.description || subjectMeta?.metadata?.description || "";
+  const [archiveConfirm, setArchiveConfirm] = useState(false);
 
   return (
-    <Card className="group flex flex-row h-full overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-[1px] hover:border-blue-200 dark:hover:border-blue-800/50 transition-all duration-150 ease-out bg-white dark:bg-slate-900/60 rounded-xl">
-      {/* Left: Predicted AP Score + Percentile (big box) */}
-      <div
-        className={`flex-shrink-0 w-36 sm:w-40 flex flex-col items-center justify-center gap-2 p-4 rounded-l-xl border-r border-slate-200 dark:border-slate-800 ${
-          scoreColors ? scoreColors.bg : "bg-slate-100 dark:bg-slate-800/80"
-        }`}
-      >
-        <div className="flex flex-col items-center gap-1.5" title="Predicted AP Score">
-          <APScoreCircle
-            score={predicted?.score ?? null}
-            color={predicted ? predicted.color : "#94a3b8"}
-            size="lg"
-          />
-          <APScoreExplainDialog inline triggerClassName="self-center" />
+    <article className="group relative overflow-hidden rounded-3xl bg-white shadow-none ring-1 ring-slate-200 transition-colors duration-200 hover:ring-slate-300 dark:bg-slate-900/40 dark:ring-white/[0.08] dark:hover:ring-white/[0.12]">
+      <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-stretch sm:gap-6 sm:p-6">
+        <div
+          className={`flex flex-row items-center justify-between gap-4 rounded-2xl px-4 py-4 sm:w-[9.5rem] sm:flex-col sm:justify-center sm:px-3 sm:py-5 ${
+            scoreColors ? scoreColors.bg : "bg-slate-100 dark:bg-white/[0.06]"
+          }`}
+        >
+          <div className="flex flex-col items-center gap-2 sm:w-full" title="Predicted AP Score">
+            <APScoreCircle
+              score={predicted?.score ?? null}
+              color={predicted ? predicted.color : "#94a3b8"}
+              size="lg"
+            />
+            <APScoreExplainDialog inline triggerClassName="self-center" />
+          </div>
+          <div className="text-right sm:text-center">
+            <p className="text-[11px] font-medium leading-tight text-slate-500 dark:text-slate-400">Projected</p>
+            <p className="text-[11px] font-medium leading-tight text-slate-500 dark:text-slate-400">AP score</p>
+          </div>
         </div>
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-500">Projected</p>
-          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-500">AP Score</p>
-        </div>
-      </div>
 
-      {/* Right: Title, description, metadata, actions */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        <CardHeader className="pb-2 pt-3 px-4 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex justify-between items-start gap-2">
-            <div className="space-y-0.5 min-w-0">
-              <CardTitle className="text-base font-display font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+        <div className="min-w-0 flex-1 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-1">
+              <h3 className="font-display text-lg font-bold leading-snug tracking-tight text-slate-900 dark:text-white sm:text-xl">
                 {subject.name}
-              </CardTitle>
-              {description && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
-                  {description}
-                </p>
-              )}
+              </h3>
+              {description ? (
+                <p className="line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{description}</p>
+              ) : null}
             </div>
-            <div className="flex items-center gap-0.5 flex-shrink-0">
-              <Button
-                size="sm"
-                onClick={onArchive}
-                title="Archive"
-                className="h-8 px-2.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border-0 transition-colors"
-              >
-                Archive
-              </Button>
+            <div className="flex shrink-0 items-center gap-1 self-start sm:self-auto">
+              {/* Fixed width + stacked layers so switching states doesn’t shift the title or delete control */}
+              <div className="grid h-9 w-[200px] shrink-0 grid-cols-1 grid-rows-1 place-items-end sm:w-[220px]">
+                <div
+                  className={`col-start-1 row-start-1 flex h-full items-center justify-end transition-opacity duration-300 ease-out ${
+                    archiveConfirm ? "pointer-events-none opacity-0" : "opacity-100"
+                  }`}
+                >
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setArchiveConfirm(true)}
+                    title="Archive"
+                    className="h-9 rounded-full px-3 text-xs font-medium text-slate-600 shadow-none hover:bg-slate-900/[0.05] hover:shadow-none dark:text-slate-400 dark:hover:bg-white/[0.06]"
+                  >
+                    Archive
+                  </Button>
+                </div>
+                <div
+                  className={`col-start-1 row-start-1 flex h-full w-full items-center justify-end gap-2 text-xs font-medium text-blue-600 transition-opacity duration-300 ease-out dark:text-blue-400 ${
+                    archiveConfirm ? "opacity-100" : "pointer-events-none opacity-0"
+                  }`}
+                >
+                  <span className="whitespace-nowrap">Are you sure?</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onConfirmArchive();
+                      setArchiveConfirm(false);
+                    }}
+                    className="rounded-full px-2 py-1 text-blue-600 underline-offset-2 transition-colors hover:bg-blue-500/10 hover:underline dark:text-blue-400"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setArchiveConfirm(false)}
+                    className="rounded-full px-2 py-1 text-blue-600 underline-offset-2 transition-colors hover:bg-blue-500/10 hover:underline dark:text-blue-400"
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
               {isAdmin && onDelete && (
-                <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 h-8 w-8 p-0 rounded-lg" onClick={onDelete} title="Delete">
-                  <Trash2 className="w-3.5 h-3.5" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 rounded-full p-0 text-slate-400 shadow-none hover:bg-red-500/10 hover:text-red-600 hover:shadow-none dark:hover:text-red-400"
+                  onClick={onDelete}
+                  title="Delete"
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="flex-1 py-2.5 px-4 flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-            <span className="flex items-center gap-1">
-              <Target className="w-3.5 h-3.5 flex-shrink-0" />
-              {unitCount} Units
+
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
+            <span className="inline-flex items-center gap-1.5">
+              <Target className="h-4 w-4 shrink-0 opacity-70" />
+              {unitCount} units
             </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-              Exam: {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar className="h-4 w-4 shrink-0 opacity-70" />
+              Exam {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
             </span>
           </div>
-          <div className="flex flex-wrap items-end gap-3 justify-between">
-            <div className="flex flex-col gap-1 min-w-0">
-              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-500">Unit Progress</p>
-              <div className="flex flex-wrap gap-1 items-center">
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 space-y-2">
+              <p className="text-xs font-medium text-slate-400 dark:text-slate-500">Unit progress</p>
+              <div className="flex flex-wrap items-center gap-1.5">
                 {units.slice(0, 10).map((u: { id: string }, i: number) => {
                   const unitData = unitProgressMap[u.id];
                   const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
@@ -691,32 +706,36 @@ const SubjectCard = ({
                   return (
                     <div
                       key={u.id}
-                      className={`w-5 h-5 rounded-md ${stat.bg} border border-black/5 dark:border-white/5 flex items-center justify-center transition-transform hover:scale-125 cursor-help`}
+                      className={`flex h-6 w-6 cursor-help items-center justify-center rounded-full ${stat.bg} ring-1 ring-black/[0.04] transition-transform hover:scale-110 dark:ring-white/[0.08]`}
                       title={`Unit ${i + 1}: ${stat.label}${score > 0 ? ` (${score}%)` : ""}`}
                     >
                       {isMastered && (
-                        <Crown className="w-2.5 h-2.5 fill-[#FFD700] stroke-[#FFD700]" strokeWidth={2} aria-hidden />
+                        <Crown className="h-3 w-3 fill-[#FFD700] stroke-[#FFD700]" strokeWidth={2} aria-hidden />
                       )}
                     </div>
                   );
                 })}
-                {units.length > 10 && <span className="text-[10px] text-slate-400 self-center font-semibold">+{units.length - 10}</span>}
+                {units.length > 10 && (
+                  <span className="self-center pl-1 text-xs font-medium text-slate-400">+{units.length - 10}</span>
+                )}
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-              <Button
-                onClick={onStudy}
-                title={testHistory.length === 0 ? "Start practice" : "Continue practice"}
-                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-2.5 h-9 px-3 sm:px-4 text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] group"
-              >
-                <span className="md:hidden">{testHistory.length === 0 ? "Start" : "Practice"}</span>
-                <span className="hidden md:inline">{testHistory.length === 0 ? "Start practice" : "Continue practice"}</span>
-                <ArrowRight className="w-4 h-4 ml-1.5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" aria-hidden />
-              </Button>
-            </div>
+            <Button
+              onClick={onStudy}
+              title={testHistory.length === 0 ? "Start practice" : "Continue practice"}
+              variant="ghost"
+              className="group/btn h-11 shrink-0 rounded-full bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600 sm:self-end"
+            >
+              <span className="md:hidden">{testHistory.length === 0 ? "Start" : "Practice"}</span>
+              <span className="hidden md:inline">{testHistory.length === 0 ? "Start practice" : "Continue practice"}</span>
+              <ArrowRight
+                className="ml-2 h-4 w-4 shrink-0 transition-transform group-hover/btn:translate-x-0.5"
+                aria-hidden
+              />
+            </Button>
           </div>
-        </CardContent>
+        </div>
       </div>
-    </Card>
+    </article>
   );
 };

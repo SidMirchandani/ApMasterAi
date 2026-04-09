@@ -14,7 +14,7 @@ const CALCULATOR_SUBJECT_CODES = new Set([
   "APSTATS",
 ]);
 
-/** Subjects where a reference sheet control is shown. PDF is shared until per-course sheets are added. */
+/** Subjects where a reference sheet control is shown. */
 const REFERENCE_SHEET_SUBJECT_CODES = new Set([
   "APBIO",
   "APCHEM",
@@ -24,6 +24,17 @@ const REFERENCE_SHEET_SUBJECT_CODES = new Set([
   "APPHYS2",
   "APSTATS",
 ]);
+
+/** Public URLs under `/public/reference`. */
+const REFERENCE_PDF_BY_SUBJECT_CODE: Record<string, string> = {
+  APBIO: AP_BIOLOGY_REFERENCE_PDF_PATH,
+  APCHEM: "/reference/ap-chemistry-equations-sheet.pdf",
+  APCSA: "/reference/ap-computer-science-a-java-quick-reference.pdf",
+  APCSP: "/reference/ap-computer-science-principles-exam-reference-sheet.pdf",
+  APPHYS1: "/reference/ap-physics-1-equations-sheet.pdf",
+  APPHYS2: "/reference/ap-physics-2-equations-sheet.pdf",
+  APSTATS: "/reference/ap-statistics-formula-tables-sheet.pdf",
+};
 
 export function subjectAllowsExamCalculator(subjectIdOrCode?: string): boolean {
   if (!subjectIdOrCode) return false;
@@ -37,8 +48,12 @@ export function subjectAllowsExamReferenceSheet(subjectIdOrCode?: string): boole
   return code ? REFERENCE_SHEET_SUBJECT_CODES.has(code) : false;
 }
 
-/** Same PDF as AP Biology for all subjects permitted to use a reference sheet (placeholder until course-specific PDFs exist). */
-export function getExamReferencePdfUrl(): string {
+/** Reference PDF for this subject, or biology sheet as fallback. */
+export function getExamReferencePdfUrl(subjectIdOrCode?: string): string {
+  const code = subjectIdOrCode ? getApiCodeForSubject(subjectIdOrCode) : undefined;
+  if (code && REFERENCE_PDF_BY_SUBJECT_CODE[code]) {
+    return REFERENCE_PDF_BY_SUBJECT_CODE[code];
+  }
   return AP_BIOLOGY_REFERENCE_PDF_PATH;
 }
 

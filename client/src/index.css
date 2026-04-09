@@ -1,13 +1,4 @@
-@font-face {
-  font-family: 'Google Sans Flex';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 1 1000;
-  src: url(https://cdn.jsdelivr.net/fontsource/fonts/google-sans-flex:vf@latest/latin-wght-normal.woff2) format('woff2-variations');
-}
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -157,7 +148,7 @@ html, body {
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     @apply font-bold tracking-tight;
     color: hsl(var(--foreground));
     line-height: 1.2;
@@ -528,6 +519,25 @@ html, body {
   /* ── Divider ── */
   .divider {
     @apply border-t border-slate-100 dark:border-slate-800;
+  }
+
+  .ap-long-blue-dash-divider {
+    border-bottom-width: 0;
+    background-image: repeating-linear-gradient(
+      to right,
+      #1d4ed8 0 16px,
+      transparent 16px 24px
+    );
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    background-size: 100% 2px;
+  }
+  .dark .ap-long-blue-dash-divider {
+    background-image: repeating-linear-gradient(
+      to right,
+      #2563eb 0 16px,
+      transparent 16px 24px
+    );
   }
 
   /* ── Surface variants ── */

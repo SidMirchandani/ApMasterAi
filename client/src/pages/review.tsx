@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { RotateCcw, CheckCircle, ChevronRight, ChevronLeft, Flag, Trash2 } from "lucide-react";
+import { RotateCcw, CheckCircle, ChevronRight, ChevronLeft, ChevronDown, Flag, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { ToastAction } from "@/components/ui/toast";
 import Navigation from "@/components/ui/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -67,10 +68,27 @@ export default function ReviewPage() {
   const [cheatMode, setCheatMode] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [questionGridOpen, setQuestionGridOpen] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("adminCheatMode");
-    setCheatMode(saved === "true");
+    const syncCheatMode = () => {
+      setCheatMode(localStorage.getItem("adminCheatMode") === "true");
+    };
+    syncCheatMode();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "adminCheatMode") {
+        syncCheatMode();
+      }
+    };
+    const onCheatModeChanged = () => {
+      syncCheatMode();
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("admin-cheat-mode-changed", onCheatModeChanged);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("admin-cheat-mode-changed", onCheatModeChanged);
+    };
   }, []);
 
   useEffect(() => {
@@ -171,6 +189,12 @@ export default function ReviewPage() {
   const normalizedQuestion = currentQuestion
     ? normalizeQuestion({ ...currentQuestion, id: currentQuestion.questionId })
     : null;
+  const reviewCorrectLabel =
+    currentQuestion?.answerIndex !== undefined
+      ? getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, mcqOptionCount)
+      : "";
+  const isReviewAnswerCorrect =
+    isSubmitted && !!selectedAnswer && selectedAnswer === reviewCorrectLabel;
 
   const handleAnswerSelect = (answer: string) => {
     if (!isSubmitted) setSelectedAnswer(answer);
@@ -201,12 +225,18 @@ export default function ReviewPage() {
   };
 
   const handleNext = () => {
-    if (!currentQuestion || !selectedAnswer) return;
+    if (!currentQuestion) return;
+    if (!isSubmitted && !selectedAnswer) return;
     if (currentIndex < reviewQuestions.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setSelectedAnswer(null);
       setIsSubmitted(false);
     }
+  };
+
+  const handleNavNext = () => {
+    if (isSubmitted) handleNext();
+    else handleSkip();
   };
 
   const handlePrev = () => {
@@ -282,36 +312,42 @@ export default function ReviewPage() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
+      <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
+        <div className="flex h-96 items-center justify-center">
+          <div className="text-center">
+            <div className="relative mx-auto mb-4 h-11 w-11">
+              <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400" />
+            </div>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</span>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col text-slate-900 dark:text-slate-100">
+    <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
       <Navigation />
 
       {reviewQuestions.length === 0 ? (
-        <div className="flex-1 container mx-auto px-3 py-4 max-w-6xl">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <RotateCcw className="w-6 h-6 text-purple-500" />
+        <div className="container mx-auto max-w-6xl flex-1 px-3 py-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
+              <RotateCcw className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               Review Questions
             </h1>
           </div>
-          <div className="text-center py-10">
-            <CheckCircle className="mx-auto h-12 w-12 text-green-400 mb-4" />
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">All caught up!</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
+          <div className="py-10 text-center">
+            <CheckCircle className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
+            <h2 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">All caught up!</h2>
+            <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
               No questions to review. Questions you get wrong or bookmark during practice will appear here.
             </p>
             <Button
               onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
+              className="rounded-full bg-blue-600 px-6 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               {subjectId ? "Back to study" : "Start Practicing"}
             </Button>
@@ -319,62 +355,153 @@ export default function ReviewPage() {
         </div>
       ) : currentQuestion && normalizedQuestion ? (
         <>
-          <div className="flex-1 overflow-y-auto pb-14">
-            <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2">
-              <div className="flex items-center justify-between mb-2">
-                <h1 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <RotateCcw className="w-5 h-5 text-purple-500" />
-                  Review Questions
-                </h1>
-                <Badge variant="outline" className="text-[11px] dark:border-slate-600 dark:text-slate-300">
-                  {reviewQuestions.length} to review
-                </Badge>
+          <div className="fixed left-0 right-0 top-[calc(3.75rem+1px)] z-40 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A]">
+            <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:gap-3">
+              <div className="flex flex-1 items-center justify-center gap-1 sm:justify-start">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handlePrev}
+                  disabled={currentIndex === 0}
+                  className="h-9 w-9 shrink-0 rounded-full text-slate-600 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-white/10"
+                  title="Previous"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+
+                <Popover open={questionGridOpen} onOpenChange={setQuestionGridOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
+                    >
+                      Question {currentIndex + 1} of {reviewQuestions.length}
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 transition-transform duration-200",
+                          questionGridOpen && "rotate-180",
+                        )}
+                      />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="center"
+                    sideOffset={8}
+                    className="w-auto border-slate-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900 data-[state=closed]:animate-none data-[state=open]:animate-none"
+                  >
+                    <div className="grid max-h-[min(50vh,20rem)] grid-cols-5 gap-1.5 overflow-y-auto sm:grid-cols-8">
+                      {reviewQuestions.map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setCurrentIndex(i);
+                            setSelectedAnswer(null);
+                            setIsSubmitted(false);
+                            setQuestionGridOpen(false);
+                          }}
+                          className={cn(
+                            "flex h-9 w-9 items-center justify-center rounded-lg text-xs font-semibold transition-colors",
+                            i === currentIndex
+                              ? "bg-blue-600 text-white dark:bg-blue-500"
+                              : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15",
+                          )}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNavNext}
+                  disabled={currentIndex >= reviewQuestions.length - 1}
+                  className="h-9 w-9 shrink-0 rounded-full text-slate-600 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-white/10"
+                  title={isSubmitted ? "Next question" : "Skip"}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
               </div>
+
+              <div className="flex w-full flex-wrap items-center justify-center gap-1 sm:w-auto sm:justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowReportDialog(true)}
+                  className="h-8 rounded-full px-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                >
+                  <Flag className="mr-1 h-3.5 w-3.5" />
+                  Report
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemove}
+                  disabled={isRemoving}
+                  className="h-8 rounded-full px-2 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
+                >
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                  Remove
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
+                  className="h-8 rounded-full px-2 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
+                >
+                  Exit
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto pb-32 pt-[calc(3.75rem+1px+3.75rem+1px)]">
+            <div className="mx-auto max-w-6xl px-2 sm:px-3">
               {subjectId && currentQuestion.unitId && (
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   {getUnitDisplayLabel(subjectId, currentQuestion.unitId)}
                 </p>
               )}
-              <div className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-stretch">
-                <div className="order-1 flex-1 min-w-0">
-                  <PracticeQuizQuestionCard
-                    question={normalizedQuestion}
-                    questionNumber={currentIndex + 1}
-                    totalQuestions={reviewQuestions.length}
-                    selectedAnswer={selectedAnswer}
-                    onAnswerSelect={handleAnswerSelect}
-                    isAnswerSubmitted={isSubmitted}
-                    cheatMode={cheatMode}
-                    mcqOptionCount={mcqOptionCount}
-                  />
-                </div>
-                <div className="order-2 w-full md:w-[35%] md:min-w-0 flex flex-col">
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+                <PracticeQuizQuestionCard
+                  question={normalizedQuestion}
+                  questionNumber={currentIndex + 1}
+                  totalQuestions={reviewQuestions.length}
+                  selectedAnswer={selectedAnswer}
+                  onAnswerSelect={handleAnswerSelect}
+                  isAnswerSubmitted={isSubmitted}
+                  cheatMode={cheatMode}
+                  mcqOptionCount={mcqOptionCount}
+                  showQuestionCounter={false}
+                  onReport={() => setShowReportDialog(true)}
+                />
+                <div className={`md:sticky md:top-4 ${isSubmitted ? "md:self-start" : "md:self-stretch"}`}>
                   <ExplanationPanel
                     hasAnswered={isSubmitted}
-                    isCorrect={
-                      !!(
-                        currentQuestion.answerIndex !== undefined &&
-                        selectedAnswer === getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, mcqOptionCount)
-                      )
-                    }
+                    isCorrect={isReviewAnswerCorrect}
+                    className={isSubmitted ? "" : "h-full"}
                   >
                     {isSubmitted && (
                       <>
-                        {currentQuestion.answerIndex !== undefined &&
-                        selectedAnswer === getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, mcqOptionCount)
-                          ? "Correct!"
-                          : `Incorrect. The correct answer is ${getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex ?? 0 }, mcqOptionCount)}.`}
-                        {currentQuestion.explanation && (
-                          <div className="mt-1.5">
-                            <PrettyExplanation>
-                              {getDisplayExplanation(
-                                currentQuestion.explanation,
-                                { answerIndex: currentQuestion.answerIndex ?? 0 },
-                                mcqOptionCount
-                              )}
-                            </PrettyExplanation>
-                          </div>
-                        )}
+                        <p className="text-sm font-medium">
+                          {isReviewAnswerCorrect
+                            ? "Correct."
+                            : `Incorrect. The correct answer is ${getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex ?? 0 }, mcqOptionCount)}.`}
+                        </p>
+                        {currentQuestion.explanation ? (
+                          <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none">
+                            {getDisplayExplanation(
+                              currentQuestion.explanation,
+                              { answerIndex: currentQuestion.answerIndex ?? 0 },
+                              mcqOptionCount,
+                            )}
+                          </PrettyExplanation>
+                        ) : null}
                       </>
                     )}
                   </ExplanationPanel>
@@ -383,73 +510,25 @@ export default function ReviewPage() {
             </div>
           </div>
 
-          <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 fixed bottom-0 left-0 right-0 z-50">
-            <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2.5">
-              <div className="flex justify-between items-center gap-2 sm:gap-4">
-                <div className="flex flex-1 items-center gap-2 min-w-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrev}
-                    disabled={currentIndex === 0}
-                    className="border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 disabled:opacity-30 rounded-xl shrink-0"
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Prev
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={isSubmitted ? handleNext : handleSkip}
-                    disabled={currentIndex >= reviewQuestions.length - 1}
-                    className="border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 disabled:opacity-30 rounded-xl shrink-0 flex items-center gap-1"
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="flex justify-center items-center flex-shrink-0">
-                  {!isSubmitted && (
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={!selectedAnswer}
-                      className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 px-5 py-2 text-xs font-medium text-white border-none shadow-none rounded-xl disabled:opacity-50"
-                    >
-                      Submit
-                    </Button>
-                  )}
-                </div>
-                <div className="flex justify-end flex-1 items-center gap-2 min-w-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowReportDialog(true)}
-                    className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs"
-                  >
-                    <Flag className="w-3.5 h-3.5 mr-1" />
-                    Report
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRemove}
-                    disabled={isRemoving}
-                    className="border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs sm:text-sm"
-                    title="Remove from review"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 mr-1" />
-                    Remove
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
-                    className="border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 text-xs"
-                  >
-                    {reviewQuestions.length > 0 ? "Save & Exit" : "Exit"}
-                  </Button>
-                </div>
-              </div>
+          <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 sm:bottom-6">
+            <div className="pointer-events-auto">
+              {!isSubmitted ? (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!selectedAnswer}
+                  className="min-h-12 rounded-full border border-slate-200/80 bg-blue-600 px-8 py-3 font-sans text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 disabled:opacity-50 dark:border-blue-500/30 dark:bg-blue-500 dark:shadow-lg dark:hover:bg-blue-600"
+                >
+                  Submit
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNext}
+                  disabled={currentIndex >= reviewQuestions.length - 1}
+                  className="min-h-12 rounded-full border border-slate-200/80 bg-blue-600 px-8 py-3 font-sans text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 disabled:opacity-50 dark:border-blue-500/30 dark:bg-blue-500 dark:shadow-lg dark:hover:bg-blue-600"
+                >
+                  Next
+                </Button>
+              )}
             </div>
           </div>
 
