@@ -40,7 +40,6 @@ interface AdminUser {
   email: string;
   state: string | null;
   joinDate: string;
-  lastLogin: string | null;
   totalCoursesEnrolled: number;
   status: "active" | "banned";
   isAdmin: boolean;
@@ -53,7 +52,6 @@ type UserSortKey =
   | "email"
   | "state"
   | "joinDate"
-  | "lastLogin"
   | "totalCoursesEnrolled"
   | "status"
   | "isAdmin";
@@ -93,8 +91,6 @@ function compareUsers(a: AdminUser, b: AdminUser, key: UserSortKey, dir: "asc" |
     }
     case "joinDate":
       return compareNullableTime(parseTime(a.joinDate), parseTime(b.joinDate), dir);
-    case "lastLogin":
-      return compareNullableTime(parseTime(a.lastLogin), parseTime(b.lastLogin), dir);
     case "totalCoursesEnrolled":
       cmp = a.totalCoursesEnrolled - b.totalCoursesEnrolled;
       break;
@@ -391,13 +387,6 @@ export function AdminUsersTab({
                     onSort={handleSort}
                   />
                   <SortableTableHead
-                    label="Last Login"
-                    columnKey="lastLogin"
-                    sortKey={sortKey}
-                    sortDir={sortDir}
-                    onSort={handleSort}
-                  />
-                  <SortableTableHead
                     label="Courses Enrolled"
                     columnKey="totalCoursesEnrolled"
                     sortKey={sortKey}
@@ -433,11 +422,6 @@ export function AdminUsersTab({
                     <TableCell className="dark:text-slate-300">{user.state || "—"}</TableCell>
                     <TableCell className="dark:text-slate-300">
                       {formatDate(user.joinDate)}
-                    </TableCell>
-                    <TableCell className="dark:text-slate-300">
-                      {user.lastLogin
-                        ? formatDate(user.lastLogin)
-                        : "—"}
                     </TableCell>
                     <TableCell className="dark:text-slate-300">
                       {user.totalCoursesEnrolled}

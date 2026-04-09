@@ -90,62 +90,98 @@ export function QuestionCard({
 
   const isCorrect = selectedAnswer === displayCorrectLabel;
 
+  const fullLengthApToolbar = isFullLength && isApClass && !hidePracticeQuizElements;
+  const showDashRule = isFullLength || isApClass;
+
+  const markForReviewBtn = isFullLength && (
+    <button
+      onClick={onToggleFlag}
+      className={`flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs font-medium transition-colors ${
+        isFlagged
+          ? "text-red-600 dark:text-red-400"
+          : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+      }`}
+    >
+      <Flag className={`h-3 w-3 ${isFlagged ? "fill-current" : ""}`} />
+      <span>Mark for Review</span>
+    </button>
+  );
+
+  const reportBookmarkRow = (
+    <div className="flex items-center gap-2">
+      {onReportError && (
+        <button
+          type="button"
+          onClick={onReportError}
+          className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+          title="Report an error with this question"
+        >
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span className="hidden sm:inline">Report</span>
+        </button>
+      )}
+      {onToggleBookmark && (
+        <button
+          onClick={onToggleBookmark}
+          className={`p-1 rounded-lg transition-colors duration-150 ease-out ${isBookmarked ? "text-blue-500" : "text-slate-400 hover:text-blue-500"}`}
+          title={isBookmarked ? "Remove bookmark" : "Bookmark this question"}
+        >
+          <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`} />
+        </button>
+      )}
+    </div>
+  );
+
+  const toolbarClassName =
+    fullLengthApToolbar
+      ? "relative flex min-h-[48px] items-stretch gap-0 bg-slate-100 pr-3 dark:bg-slate-800/75 sm:pr-4"
+      : isFullLength
+        ? "relative flex min-h-[48px] flex-wrap items-center justify-between gap-2 bg-slate-100 px-3 py-3 sm:px-4 dark:bg-slate-800/75"
+        : isApClass
+          ? "relative flex min-h-[40px] flex-wrap items-center justify-between gap-2 pb-2"
+          : "flex min-h-[40px] flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2 dark:border-slate-800";
+
+  const toolbarBody =
+    fullLengthApToolbar ? (
+      <>
+        <div className="flex min-h-[48px] shrink-0 items-center justify-center self-stretch rounded-none bg-[#1a2b42] text-sm font-bold tabular-nums text-white aspect-square">
+          {questionNumber}
+        </div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-2 py-3 pl-3 sm:pl-4">
+          <div className="flex min-w-0 items-center gap-2">{markForReviewBtn}</div>
+          {reportBookmarkRow}
+        </div>
+      </>
+    ) : (
+      <>
+        <div className="flex items-center gap-2">
+          {!hidePracticeQuizElements && (
+            <div
+              className={
+                isApClass
+                  ? "rounded-md bg-[#1a2b42] px-2.5 py-0.5 text-xs font-bold text-white"
+                  : "rounded-lg bg-slate-900 px-2.5 py-0.5 text-xs font-bold text-white dark:bg-slate-700"
+              }
+            >
+              {questionNumber}
+            </div>
+          )}
+          {markForReviewBtn}
+        </div>
+        {reportBookmarkRow}
+      </>
+    );
+
   return (
     <div className="space-y-4 transition-all duration-150 ease-out">
-      <div
-        className={`flex min-h-[40px] flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2 dark:border-slate-800 ${
-          isApClass ? "ap-long-blue-dash-divider" : ""
-        }`}
-      >
-          <div className="flex items-center gap-2">
-            {!hidePracticeQuizElements && (
-              <div
-                className={
-                  isApClass
-                    ? "bg-[#1a2b42] text-white px-2.5 py-0.5 font-bold text-xs rounded-md"
-                    : "bg-slate-900 dark:bg-slate-700 text-white px-2.5 py-0.5 font-bold text-xs rounded-lg"
-                }
-              >
-                {questionNumber}
-              </div>
-            )}
-            {isFullLength && (
-              <button
-                onClick={onToggleFlag}
-                className={`flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs font-medium transition-colors ${
-                  isFlagged
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-                }`}
-              >
-                <Flag className={`h-3 w-3 ${isFlagged ? "fill-current" : ""}`} />
-                <span>Mark for Review</span>
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {onReportError && (
-              <button
-                type="button"
-                onClick={onReportError}
-                className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
-                title="Report an error with this question"
-              >
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span className="hidden sm:inline">Report</span>
-              </button>
-            )}
-            {onToggleBookmark && (
-              <button
-                onClick={onToggleBookmark}
-                className={`p-1 rounded-lg transition-colors duration-150 ease-out ${isBookmarked ? "text-blue-500" : "text-slate-400 hover:text-blue-500"}`}
-                title={isBookmarked ? "Remove bookmark" : "Bookmark this question"}
-              >
-                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-              </button>
-            )}
-          </div>
+      {showDashRule ? (
+        <div className="flex flex-col gap-0.5">
+          <div className={toolbarClassName}>{toolbarBody}</div>
+          <div className="ap-long-dash-rule" aria-hidden />
         </div>
+      ) : (
+        <div className={toolbarClassName}>{toolbarBody}</div>
+      )}
 
       <div className="space-y-3 px-0.5">
         {/* Question Counter for Practice Quizzes */}

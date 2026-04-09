@@ -114,7 +114,7 @@ export function TestFloatingNav({
                 Flagged
               </span>
             </div>
-            <div className="grid max-h-[min(42vh,15rem)] grid-cols-5 gap-1.5 overflow-y-auto sm:grid-cols-8">
+            <div className="grid max-h-[min(42vh,15rem)] grid-cols-5 gap-1.5 overflow-y-auto px-1.5 pb-2 pt-1 sm:grid-cols-8 sm:px-2">
               {Array.from({ length: totalQuestions }, (_, i) => (
                 <button
                   key={i}

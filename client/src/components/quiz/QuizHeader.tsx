@@ -87,19 +87,10 @@ export function QuizHeader({
     return fullTitle.replace("AP® ", "AP ").toUpperCase().substring(0, 20);
   };
 
-  return (
-    <div
-      className={
-        isApClass
-          ? "sticky top-0 z-50 bg-[#1a2b42] ap-long-blue-dash-divider"
-          : `sticky top-0 z-50 bg-white dark:bg-[#0B0F1A] ${
-              useBlueDashedDivider
-                ? "ap-long-blue-dash-divider"
-                : "border-b border-slate-100 dark:border-slate-800"
-            }`
-      }
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  const showBlueDash = isApClass || useBlueDashedDivider;
+
+  const headerInner = (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Desktop: single row */}
         <div className="hidden md:flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
@@ -222,6 +213,24 @@ export function QuizHeader({
           </div>
         </div>
       </div>
+  );
+
+  return (
+    <div
+      className={
+        showBlueDash
+          ? "sticky top-0 z-50 flex flex-col gap-0.5"
+          : "sticky top-0 z-50 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A]"
+      }
+    >
+      {showBlueDash ? (
+        <>
+          <div className={isApClass ? "bg-[#1a2b42]" : "bg-white dark:bg-[#0B0F1A]"}>{headerInner}</div>
+          <div className="ap-long-dash-rule" aria-hidden />
+        </>
+      ) : (
+        headerInner
+      )}
     </div>
   );
 }

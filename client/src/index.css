@@ -521,22 +521,16 @@ html, body {
     @apply border-t border-slate-100 dark:border-slate-800;
   }
 
-  .ap-long-blue-dash-divider {
-    border-bottom-width: 0;
+  /* Horizontal dash rule (#1a2b42); place below headers with gap-1 on a parent flex-col. */
+  .ap-long-dash-rule {
+    --ap-dash-thickness: 2px;
+    height: var(--ap-dash-thickness);
+    width: 100%;
+    flex-shrink: 0;
     background-image: repeating-linear-gradient(
       to right,
-      #1d4ed8 0 16px,
-      transparent 16px 24px
-    );
-    background-repeat: no-repeat;
-    background-position: left bottom;
-    background-size: 100% 2px;
-  }
-  .dark .ap-long-blue-dash-divider {
-    background-image: repeating-linear-gradient(
-      to right,
-      #2563eb 0 16px,
-      transparent 16px 24px
+      #1a2b42 0 12px,
+      transparent 12px 18px
     );
   }
 
