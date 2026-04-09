@@ -4,24 +4,11 @@ import { Calculator, FileText } from "lucide-react";
 import { ReferenceInformationDialog } from "./ReferenceInformationDialog";
 import { FloatingToolPanel } from "./FloatingToolPanel";
 import {
-  getApBiologyReferencePdfUrl,
-  isApBiologySubject,
-} from "@/lib/apBioReference";
-
-const CALCULATOR_LEGACY_IDS = [
-  "calculus-ab",
-  "calculus-bc",
-  "statistics",
-  "chemistry",
-  "physics-1",
-  "physics-2",
-];
-
-function subjectAllowsDesmosCalculator(subjectId?: string): boolean {
-  if (!subjectId) return false;
-  if (isApBiologySubject(subjectId)) return true;
-  return CALCULATOR_LEGACY_IDS.includes(subjectId);
-}
+  getExamReferenceDialogTitle,
+  getExamReferencePdfUrl,
+  subjectAllowsExamCalculator,
+  subjectAllowsExamReferenceSheet,
+} from "@/lib/examTools";
 
 export type ExamToolbarVariant = "default" | "apclassroom";
 
@@ -41,8 +28,8 @@ export function ExamToolbar({
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
 
-  const apBio = isApBiologySubject(subjectId);
-  const showCalculator = subjectAllowsDesmosCalculator(subjectId);
+  const showCalculator = subjectAllowsExamCalculator(subjectId);
+  const showReference = subjectAllowsExamReferenceSheet(subjectId);
 
   const iconClass = size === "sm" ? "h-4 w-4" : "h-5 w-5";
   const btnSize = "icon" as const;
@@ -67,14 +54,14 @@ export function ExamToolbar({
             <Calculator className={iconClass} />
           </Button>
         )}
-        {apBio && (
+        {showReference && (
           <Button
             type="button"
             variant="ghost"
             size={btnSize}
             className={btnClass}
             title="Reference sheet"
-            aria-label="Open AP Biology equations and formulas"
+            aria-label="Open reference information"
             onClick={() => setReferenceOpen(true)}
           >
             <FileText className={iconClass} />
@@ -82,28 +69,32 @@ export function ExamToolbar({
         )}
       </div>
 
-      <ReferenceInformationDialog
-        open={referenceOpen}
-        onOpenChange={setReferenceOpen}
-        pdfUrl={getApBiologyReferencePdfUrl()}
-        title="AP Biology — Equations and Formulas"
-      />
-
-      <FloatingToolPanel
-        open={calculatorOpen}
-        onOpenChange={setCalculatorOpen}
-        title="Calculator"
-        defaultWidth={640}
-        defaultHeight={520}
-        minWidth={320}
-        minHeight={260}
-      >
-        <iframe
-          src="https://www.desmos.com/calculator"
-          className="h-full w-full border-0 bg-slate-100"
-          title="Desmos Calculator"
+      {showReference && (
+        <ReferenceInformationDialog
+          open={referenceOpen}
+          onOpenChange={setReferenceOpen}
+          pdfUrl={getExamReferencePdfUrl()}
+          title={getExamReferenceDialogTitle(subjectId)}
         />
-      </FloatingToolPanel>
+      )}
+
+      {showCalculator && (
+        <FloatingToolPanel
+          open={calculatorOpen}
+          onOpenChange={setCalculatorOpen}
+          title="Calculator"
+          defaultWidth={640}
+          defaultHeight={520}
+          minWidth={320}
+          minHeight={260}
+        >
+          <iframe
+            src="https://www.desmos.com/calculator"
+            className="h-full w-full border-0 bg-slate-100"
+            title="Desmos Calculator"
+          />
+        </FloatingToolPanel>
+      )}
     </>
   );
 }

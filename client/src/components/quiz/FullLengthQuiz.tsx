@@ -18,8 +18,6 @@ import { getDisplayCorrectLabel, getStoredAnswerForSubmit } from '@/lib/mcqDispl
 import { getSubjectDisplayName } from '../../../../lib/subject-display-names';
 import { useQuizEngine } from "@/hooks/useQuizEngine";
 import type { Question } from "@/lib/types/question";
-import { isApBiologySubject } from "@/lib/apBioReference";
-
 interface FullLengthQuizProps {
   questions: Question[];
   subjectId: string;
@@ -78,7 +76,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showAutoAnswerDialog, setShowAutoAnswerDialog] = useState(false);
   const { isAdmin } = useAdminCheck();
-  const apClassroomUi = isApBiologySubject(subjectId);
+  const apClassroomUi = true;
 
   useEffect(() => {
     const savedCheatMode = localStorage.getItem('adminCheatMode');

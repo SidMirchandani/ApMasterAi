@@ -6,7 +6,6 @@ import { QuestionCard } from "./QuestionCard";
 import { QuizHeader } from "./QuizHeader";
 import { QuizBottomBar } from "./QuizBottomBar";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
-import { isApBiologySubject } from "@/lib/apBioReference";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
@@ -56,7 +55,7 @@ export function QuizReviewPage({
 }: QuizReviewPageProps) {
   const subject = subjectId ? getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId) : undefined;
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
-  const apClassroomUi = isApBiologySubject(subjectId);
+  const apClassroomUi = true;
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const [localAnswers, setLocalAnswers] = useState(userAnswers);
   const [localFlagged, setLocalFlagged] = useState(flaggedQuestions);

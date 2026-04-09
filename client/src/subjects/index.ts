@@ -47,6 +47,9 @@ export const subjectRegistry: Record<string, APSubject> = allSubjects.reduce((ac
   return acc;
 }, {} as Record<string, APSubject>);
 
+// Same course as APWH; used by API config and some stored user rows
+subjectRegistry.APWORLD = apwh;
+
 const legacyIdMap: Record<string, string> = {
   'macroeconomics': 'APMACRO',
   'microeconomics': 'APMICRO',
@@ -59,7 +62,7 @@ const legacyIdMap: Record<string, string> = {
   'calculus-bc': 'APCALCBC',
   'computer-science-a': 'APCSA',
   'us-history': 'APUSH',
-  'world-history': 'APWORLD',
+  'world-history': 'APWH',
   'european-history': 'APEURO',
   'english-language': 'APLANG',
   'english-literature': 'APLIT',
@@ -183,6 +186,7 @@ export function getApiCodeForSubject(subjectIdOrCode: string): string | undefine
 }
 
 export function getLegacyIdForSubjectCode(subjectCode: string): string | undefined {
-  const entry = Object.entries(legacyIdMap).find(([_, code]) => code === subjectCode);
+  const normalized = subjectCode === "APWORLD" ? "APWH" : subjectCode;
+  const entry = Object.entries(legacyIdMap).find(([_, code]) => code === normalized);
   return entry ? entry[0] : undefined;
 }

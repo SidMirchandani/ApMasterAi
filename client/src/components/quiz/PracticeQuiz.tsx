@@ -26,16 +26,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
-const CALCULATOR_SUBJECTS = [
-  "biology",
-  "calculus-ab",
-  "calculus-bc",
-  "statistics",
-  "chemistry",
-  "physics-1",
-  "physics-2",
-];
+import { showPracticeExamToolHeader } from "@/lib/examTools";
 
 interface Question {
   id: string;
@@ -155,7 +146,7 @@ export function PracticeQuiz({
   const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
 
-  const isCalculatorAllowed = CALCULATOR_SUBJECTS.includes(subjectId);
+  const showToolHeader = showPracticeExamToolHeader(subjectId);
   const toggleMarkForCurrentQuestion = () => {
     setFlaggedQuestions((prev) => {
       const next = new Set(prev);
@@ -426,7 +417,7 @@ export function PracticeQuiz({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] flex flex-col text-slate-900 dark:text-slate-100">
-      {isCalculatorAllowed && (
+      {showToolHeader && (
         <div className="fixed top-[4.25rem] left-0 right-0 z-40">
           <PracticeQuizHeader
             title={`${subject?.displayName ?? "Practice"} — Practice Quiz`}
@@ -438,7 +429,7 @@ export function PracticeQuiz({
       )}
       <div
         className={`flex-1 flex overflow-hidden ${
-          isCalculatorAllowed ? "pt-16" : ""
+          showToolHeader ? "pt-16" : ""
         }`}
       >
         <div className="flex-1 overflow-y-auto mb-14 pb-1">
