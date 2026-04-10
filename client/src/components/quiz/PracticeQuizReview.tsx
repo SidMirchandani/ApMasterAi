@@ -150,8 +150,8 @@ export function PracticeQuizReview({
                 {isExpanded && (
                   <CardContent className="pt-0">
                     {/* Question Prompt */}
-                    <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                      <div className="font-semibold mb-2">Question:</div>
+                    <div className="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-slate-800/60">
+                      <div className="mb-2 font-semibold text-slate-900 dark:text-slate-100">Question:</div>
                       <BlockRenderer blocks={question.prompt_blocks} />
                     </div>
 
@@ -161,18 +161,27 @@ export function PracticeQuizReview({
                         const isUserAnswer = userAnswer === label;
                         const isCorrectAnswer = label === correctLabel;
 
-                        let bgColor = "bg-white";
-                        let borderColor = "border-gray-200";
-                        let textColor = "text-gray-800";
+                        let bgColor =
+                          "bg-white dark:bg-slate-800";
+                        let borderColor =
+                          "border-gray-200 dark:border-slate-600";
+                        let textColor =
+                          "text-gray-800 dark:text-slate-200";
 
                         if (isCorrectAnswer) {
-                          bgColor = "bg-green-50";
-                          borderColor = "border-green-500";
-                          textColor = "text-green-900";
+                          bgColor =
+                            "bg-green-50 dark:bg-green-950/40";
+                          borderColor =
+                            "border-green-500 dark:border-green-600";
+                          textColor =
+                            "text-green-900 dark:text-green-100";
                         } else if (isUserAnswer && !isCorrect) {
-                          bgColor = "bg-red-50";
-                          borderColor = "border-red-500";
-                          textColor = "text-red-900";
+                          bgColor =
+                            "bg-red-50 dark:bg-red-950/40";
+                          borderColor =
+                            "border-red-500 dark:border-red-600";
+                          textColor =
+                            "text-red-900 dark:text-red-100";
                         }
 
                         return (
@@ -180,24 +189,24 @@ export function PracticeQuizReview({
                             key={label}
                             className={`flex items-start gap-4 p-4 rounded-lg border-2 ${bgColor} ${borderColor}`}
                           >
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold ${
-                              isCorrectAnswer 
-                                ? 'border-green-600 bg-green-100 text-green-700'
+                            <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 font-semibold ${
+                              isCorrectAnswer
+                                ? "border-green-600 bg-green-100 text-green-700 dark:border-green-500 dark:bg-green-900/50 dark:text-green-200"
                                 : isUserAnswer && !isCorrect
-                                  ? 'border-red-600 bg-red-100 text-red-700'
-                                  : 'border-gray-400 bg-white'
+                                  ? "border-red-600 bg-red-100 text-red-700 dark:border-red-500 dark:bg-red-900/50 dark:text-red-200"
+                                  : "border-gray-400 bg-white dark:border-slate-500 dark:bg-slate-700 dark:text-slate-200"
                             }`}>
                               {label}
                             </div>
                             <div className={`flex-1 pt-1.5 ${textColor}`}>
                               <BlockRenderer blocks={getChoiceBlocks(label) ?? []} />
                               {isCorrectAnswer && (
-                                <div className="mt-2 text-sm font-semibold text-green-600">
+                                <div className="mt-2 text-sm font-semibold text-green-600 dark:text-green-400">
                                   ✓ Correct Answer
                                 </div>
                               )}
                               {isUserAnswer && !isCorrect && (
-                                <div className="mt-2 text-sm font-semibold text-red-600">
+                                <div className="mt-2 text-sm font-semibold text-red-600 dark:text-red-400">
                                   ✗ Your Answer
                                 </div>
                               )}

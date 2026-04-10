@@ -183,7 +183,7 @@ export function QuestionCard({
         <div className={toolbarClassName}>{toolbarBody}</div>
       )}
 
-      <div className="space-y-3 px-0.5">
+      <div className="min-w-0 space-y-3 px-0.5">
         {/* Question Counter for Practice Quizzes */}
         {hidePracticeQuizElements && totalQuestions && (
 <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -192,7 +192,7 @@ export function QuestionCard({
         )}
 
         {/* Question Prompt */}
-        <div className="min-h-0 text-sm leading-relaxed text-slate-900 dark:text-slate-100">
+        <div className="min-h-0 min-w-0 text-sm leading-relaxed text-slate-900 dark:text-slate-100">
           <BlockRenderer blocks={question.prompt_blocks || []} />
         </div>
 
@@ -208,18 +208,18 @@ export function QuestionCard({
                 isCrossedOut && !isAnswerSubmitted && !isReviewMode ? "opacity-40" : "opacity-100";
 
               const rowClass =
-                "min-h-[48px] rounded-lg border border-slate-200/90 bg-white p-3 text-slate-900 transition-colors dark:border-slate-200/25 dark:bg-white";
+                "min-h-[48px] rounded-lg border border-slate-200/90 bg-white p-3 text-slate-900 transition-colors dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
 
               const hoverRow =
                 !isAnswerSubmitted
-                  ? "cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-50"
+                  ? "cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-700/70"
                   : "cursor-default";
 
               const shouldShowCheatOutline =
                 cheatMode && isCorrectAnswer && !isAnswerSubmitted && !isReviewMode;
 
               let letterClass =
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-slate-300 text-xs font-bold text-slate-600 dark:border-slate-400 dark:text-slate-700";
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-slate-300 text-xs font-bold text-slate-600 dark:border-slate-500 dark:bg-slate-700/50 dark:text-slate-200";
 
               if (!isAnswerSubmitted) {
                 if (isUserAnswer) {
@@ -253,7 +253,7 @@ export function QuestionCard({
               return (
                 <div
                   key={label}
-                  className={`group/choice relative flex items-center gap-2 ${rowClass} ${hoverRow} ${opacity} ${
+                  className={`group/choice relative flex items-start gap-2 ${rowClass} ${hoverRow} ${opacity} ${
                     shouldShowCheatOutline
                       ? "border-emerald-300 bg-emerald-50/40 dark:border-emerald-400 dark:bg-emerald-500/10"
                       : ""
@@ -262,7 +262,7 @@ export function QuestionCard({
                 >
                   <div className={letterClass}>{label}</div>
                   <div
-                    className={`flex-1 text-xs leading-snug text-slate-900 dark:text-slate-900 ${
+                    className={`min-w-0 flex-1 text-xs leading-snug text-slate-900 dark:text-slate-100 ${
                       isCrossedOut && !isAnswerSubmitted && !isReviewMode ? "line-through decoration-2" : ""
                     }`}
                   >
@@ -279,8 +279,9 @@ export function QuestionCard({
                           return next;
                         });
                       }}
-                      className="opacity-0 group-hover/choice:opacity-100 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-opacity"
+                      className="shrink-0 touch-manipulation rounded-full p-1.5 text-slate-400 opacity-100 transition-opacity hover:bg-slate-200 dark:hover:bg-slate-700 sm:opacity-0 sm:group-hover/choice:opacity-100"
                       title="Cross out"
+                      type="button"
                     >
                       <XCircle className="w-4 h-4" />
                     </button>

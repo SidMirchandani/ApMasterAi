@@ -381,9 +381,10 @@ export function PracticeQuiz({
             : ""
         }`}
       >
-        <div className="min-h-0 flex-1 overflow-y-auto pb-32">
+        <div className="min-h-0 flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32">
           <div className={`mx-auto max-w-6xl px-2 sm:px-3 ${showToolHeader ? "pb-1 pt-0" : "py-2"}`}>
-            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="min-w-0">
               <PracticeQuizQuestionCard
                 question={currentQuestion}
                 questionNumber={currentQuestionIndex + 1}
@@ -395,7 +396,8 @@ export function PracticeQuiz({
                 mcqOptionCount={mcqOptionCount}
                 onReport={() => setShowReportDialog(true)}
               />
-              <div className={`md:sticky md:top-4 ${isAnswerSubmitted ? "md:self-start" : "md:self-stretch"}`}>
+              </div>
+              <div className={`min-w-0 md:sticky md:top-4 ${isAnswerSubmitted ? "md:self-start" : "md:self-stretch"}`}>
                 <ExplanationPanel
                   hasAnswered={isAnswerSubmitted}
                   isCorrect={isCurrentAnswerCorrect}
@@ -438,7 +440,7 @@ export function PracticeQuiz({
           </Button>
         </div>
       )}
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 sm:bottom-6">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-50 flex justify-center px-4 sm:bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
         <div className="pointer-events-auto">
           {!isAnswerSubmitted ? (
             <Button

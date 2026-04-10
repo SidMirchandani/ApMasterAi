@@ -29,7 +29,7 @@ export function ExplanationPanel({
   showEmptyHint = true,
 }: ExplanationPanelProps) {
   const basePanelClass =
-    "rounded-xl border px-4 py-3 text-sm leading-relaxed";
+    "min-w-0 max-w-full rounded-xl border px-4 py-3 text-sm leading-relaxed";
 
   if (!hasAnswered) {
     if (!showEmptyHint) return null;
@@ -54,7 +54,7 @@ export function ExplanationPanel({
   return (
     <div className={`${basePanelClass} ${answeredTintClass} ${className}`}>
       <p className="text-sm font-semibold">Explanation</p>
-      <div className="space-y-3 text-sm text-slate-800 dark:text-slate-200 [&_.prose]:max-w-none">
+      <div className="min-w-0 space-y-3 overflow-x-auto text-sm text-slate-800 dark:text-slate-200 [&_.prose]:max-w-none [&_.prose-pre]:max-w-full [&_.prose-pre]:overflow-x-auto">
         {children}
       </div>
     </div>

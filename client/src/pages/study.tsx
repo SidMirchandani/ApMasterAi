@@ -287,18 +287,18 @@ export default function Study() {
             Back to dashboard
           </Button>
 
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0 space-y-1.5">
+          <div className="flex flex-col gap-3">
+            <div className="min-w-0 w-full max-w-full space-y-1.5">
               <p className="text-sm font-medium text-blue-600/90 dark:text-blue-400/90">Study</p>
               <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
                 {currentSubject.name}
               </h1>
-              <p className="max-w-2xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+              <p className="max-w-full text-pretty text-[15px] leading-relaxed text-slate-600 dark:text-slate-400 sm:max-w-2xl">
                 {currentSubject.description}
               </p>
             </div>
 
-            <div className="flex flex-shrink-0 flex-wrap gap-2">
+            <div className="flex w-full flex-shrink-0 flex-wrap justify-center gap-2 sm:justify-start">
               <div
                 className="flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 dark:bg-white/[0.06]"
                 title="Predicted AP Score"
@@ -552,13 +552,13 @@ export default function Study() {
 
                   <div
                     ref={practiceMenuUnitId === unit.id ? practiceMenuRef : undefined}
-                    className="relative isolate w-full max-w-[min(100%,17rem)] shrink-0 self-end sm:w-auto sm:max-w-none sm:min-w-[188px] sm:self-center"
+                    className="relative isolate mx-auto w-full max-w-[min(100%,17rem)] shrink-0 self-center sm:mx-0 sm:w-auto sm:max-w-none sm:min-w-[188px] sm:self-center"
                   >
                     {/* Grid stack keeps controls in a fixed h-10 band (no absolute overflow over the card). */}
                     <div className="grid h-9 w-full grid-cols-1 grid-rows-1 overflow-hidden rounded-full">
                       <div
                         className={cn(
-                          "col-start-1 row-start-1 flex min-h-0 min-w-0 transition-all duration-300 ease-out",
+                          "col-start-1 row-start-1 flex min-h-0 min-w-0 justify-center transition-all duration-300 ease-out sm:justify-start",
                           practiceMenuUnitId === unit.id
                             ? "pointer-events-none scale-[0.92] opacity-0"
                             : "scale-100 opacity-100",
@@ -585,7 +585,7 @@ export default function Study() {
                       </div>
                       <div
                         className={cn(
-                          "col-start-1 row-start-1 flex min-h-0 min-w-0 items-stretch justify-end gap-1.5 transition-all duration-300 ease-out",
+                          "col-start-1 row-start-1 flex min-h-0 min-w-0 items-stretch justify-center gap-1.5 transition-all duration-300 ease-out sm:justify-end",
                           practiceMenuUnitId === unit.id
                             ? "scale-100 opacity-100"
                             : "pointer-events-none scale-[0.92] opacity-0",

@@ -75,7 +75,7 @@ export function PracticeQuizQuestionCard({
   const isCorrect = selectedAnswer === displayCorrectLabel;
 
   return (
-    <div className="space-y-4 transition-all duration-150 ease-out">
+    <div className="min-w-0 space-y-4 transition-all duration-150 ease-out">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2 dark:border-slate-800">
           <div className="flex flex-wrap items-center gap-2">
             {showQuestionCounter ? (
@@ -126,7 +126,7 @@ export function PracticeQuizQuestionCard({
           </div>
         </div>
 
-      <div className="text-sm leading-relaxed text-slate-900 dark:text-slate-100">
+      <div className="min-w-0 text-sm leading-relaxed text-slate-900 dark:text-slate-100">
           <BlockRenderer blocks={question.prompt_blocks || []} />
       </div>
 
@@ -139,17 +139,17 @@ export function PracticeQuizQuestionCard({
             const opacity = isCrossedOut && !isAnswerSubmitted ? "opacity-40" : "opacity-100";
 
             const rowClass =
-              "w-full rounded-lg border border-slate-200/90 bg-white p-3 text-left text-slate-900 transition-colors dark:border-slate-200/25 dark:bg-white";
+              "w-full rounded-lg border border-slate-200/90 bg-white p-3 text-left text-slate-900 transition-colors dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
 
             const hoverRow =
               !isAnswerSubmitted && !cheatMode
-                ? "hover:bg-slate-50/80 dark:hover:bg-slate-50"
+                ? "hover:bg-slate-50/80 dark:hover:bg-slate-700/70"
                 : "";
 
             const shouldShowCheatOutline = cheatMode && isCorrectAnswer && !isAnswerSubmitted;
 
             let letterClass =
-              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-slate-300 text-xs font-bold text-slate-600 dark:border-slate-400 dark:text-slate-700";
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-slate-300 text-xs font-bold text-slate-600 dark:border-slate-500 dark:bg-slate-700/50 dark:text-slate-200";
 
             if (!isAnswerSubmitted) {
               if (isUserAnswer) {
@@ -181,7 +181,7 @@ export function PracticeQuizQuestionCard({
               >
                 <div className={letterClass}>{label}</div>
                 <div
-                  className={`flex-1 text-sm leading-snug text-slate-900 dark:text-slate-900 ${
+                  className={`min-w-0 flex-1 text-sm leading-snug text-slate-900 dark:text-slate-100 ${
                     isCrossedOut && !isAnswerSubmitted ? "line-through decoration-2" : ""
                   }`}
                 >
@@ -189,6 +189,7 @@ export function PracticeQuizQuestionCard({
                 </div>
                 {!isAnswerSubmitted && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setCrossedOut(prev => {
@@ -198,7 +199,7 @@ export function PracticeQuizQuestionCard({
                         return next;
                       });
                     }}
-                    className="opacity-0 group-hover/choice:opacity-100 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-opacity"
+                    className="shrink-0 touch-manipulation rounded-full p-1.5 text-slate-400 opacity-100 transition-opacity hover:bg-slate-200 dark:hover:bg-slate-700 sm:opacity-0 sm:group-hover/choice:opacity-100"
                     title="Cross out"
                   >
                     <XCircle className="w-4 h-4" />

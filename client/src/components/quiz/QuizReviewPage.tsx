@@ -131,11 +131,16 @@ export function QuizReviewPage({
       {/* ====================== PALETTE MODE ====================== */}
       {selectedQuestion === null ? (
         <>
-          <div className={cn("flex-1 overflow-y-auto pb-32", contentTop)}>
-            <div className="mx-auto max-w-7xl px-4 py-3">
+          <div
+            className={cn(
+              "flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32",
+              contentTop,
+            )}
+          >
+            <div className="mx-auto min-w-0 max-w-7xl px-4 py-3">
               <Card className="border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-white/[0.04]">
                 {/* Legend */}
-                <div className="flex items-center justify-center gap-4 mb-4 text-xs">
+                <div className="mb-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-5 h-5 rounded border-2 border-gray-400 border-dashed"></div>
                     <span>Unanswered</span>
@@ -194,7 +199,7 @@ export function QuizReviewPage({
             </div>
           </div>
 
-          <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 sm:bottom-6">
+          <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-50 flex justify-center px-4 sm:bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
             {onSubmit && (
               <div className="pointer-events-auto">
                 <Button
@@ -210,8 +215,13 @@ export function QuizReviewPage({
         </>
       ) : (
         /* ====================== QUESTION MODE ====================== */
-        <div className={cn("flex-1 overflow-y-auto pb-32", contentTop)}>
-          <div className="mx-auto max-w-3xl px-2 pb-6 pt-0 sm:px-3">
+        <div
+          className={cn(
+            "flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32",
+            contentTop,
+          )}
+        >
+          <div className="mx-auto min-w-0 max-w-3xl px-2 pb-6 pt-0 sm:px-3">
             <QuestionCard
               question={questions[selectedQuestion]}
               questionNumber={selectedQuestion + 1}

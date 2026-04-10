@@ -227,11 +227,11 @@ export default function Dashboard() {
                   : "Welcome back"}
               </h1>
               <p className="max-w-xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
-                Pick up where you left off—your courses and projected scores stay in sync as you practice.
+                Continue your personalized AP preparation journey.
               </p>
             </div>
             {(activeList.length > 0 || subjects.length > 0) && (
-              <div className="flex flex-shrink-0 flex-wrap gap-2 sm:justify-end">
+              <div className="flex flex-shrink-0 flex-wrap justify-center gap-2 sm:justify-end">
                 <Button
                   onClick={() => archiveSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
                   variant="ghost"
@@ -286,7 +286,7 @@ export default function Dashboard() {
                   />
                 </div>
                 {subjectsFetching && (
-                  <div className="flex justify-end sm:justify-center">
+                  <div className="flex justify-center sm:justify-end">
                     <RefreshingState />
                   </div>
                 )}
@@ -459,9 +459,9 @@ const ArchivedSection = ({
           subjects.map((s) => (
             <li
               key={s.id}
-              className="flex flex-col gap-3 rounded-2xl px-4 py-4 transition-colors hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+              className="flex flex-col items-center gap-3 rounded-2xl px-4 py-4 text-center transition-colors hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:text-left"
             >
-              <div className="min-w-0">
+              <div className="min-w-0 w-full sm:w-auto">
                 <p className="font-semibold text-slate-900 dark:text-white">{s.name}</p>
                 {s.description ? (
                   <p className="mt-0.5 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{s.description}</p>
@@ -471,7 +471,7 @@ const ArchivedSection = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => onRestore(s)}
-                className="h-9 shrink-0 self-start rounded-full px-4 font-semibold text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/15 sm:self-center"
+                className="h-9 shrink-0 rounded-full px-4 font-semibold text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/15 sm:self-center"
               >
                 Restore
               </Button>
@@ -598,22 +598,23 @@ const SubjectCard = ({
     <article className="group relative overflow-hidden rounded-3xl bg-white shadow-none ring-1 ring-slate-200 transition-colors duration-200 hover:ring-slate-300 dark:bg-slate-900/40 dark:ring-white/[0.08] dark:hover:ring-white/[0.12]">
       <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-stretch sm:gap-6 sm:p-6">
         <div
-          className={`flex flex-row items-center justify-between gap-4 rounded-2xl px-4 py-4 sm:w-[9.5rem] sm:flex-col sm:justify-center sm:px-3 sm:py-5 ${
+          className={`flex flex-col items-center justify-center gap-3 rounded-2xl px-4 py-5 text-center sm:w-[9.5rem] sm:shrink-0 sm:gap-2 sm:px-3 sm:py-5 ${
             scoreColors ? scoreColors.bg : "bg-slate-100 dark:bg-white/[0.06]"
           }`}
+          title="Predicted AP Score"
         >
-          <div className="flex flex-col items-center gap-2 sm:w-full" title="Predicted AP Score">
+          <div className="flex w-full flex-col items-center gap-2 sm:w-full">
             <APScoreCircle
               score={predicted?.score ?? null}
               color={predicted ? predicted.color : "#94a3b8"}
               size="lg"
+              responsive
             />
             <APScoreExplainDialog inline triggerClassName="self-center" />
           </div>
-          <div className="text-right sm:text-center">
-            <p className="text-[11px] font-medium leading-tight text-slate-500 dark:text-slate-400">Projected</p>
-            <p className="text-[11px] font-medium leading-tight text-slate-500 dark:text-slate-400">AP score</p>
-          </div>
+          <p className="max-w-[11rem] text-[11px] font-medium leading-snug text-slate-600 dark:text-slate-400 sm:max-w-none">
+            Projected AP score
+          </p>
         </div>
 
         <div className="min-w-0 flex-1 space-y-4">
@@ -626,11 +627,11 @@ const SubjectCard = ({
                 <p className="line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{description}</p>
               ) : null}
             </div>
-            <div className="flex shrink-0 items-center gap-1 self-start sm:self-auto">
-              {/* Fixed width + stacked layers so switching states doesn’t shift the title or delete control */}
-              <div className="grid h-9 w-[200px] shrink-0 grid-cols-1 grid-rows-1 place-items-end sm:w-[220px]">
+            <div className="flex min-w-0 w-full shrink-0 flex-wrap items-center justify-center gap-2 self-stretch sm:w-auto sm:justify-end sm:gap-1 sm:self-auto">
+              {/* Fixed max width + stacked layers so switching states doesn’t shift the title or delete control */}
+              <div className="grid h-9 min-w-0 w-full max-w-[min(100%,220px)] grid-cols-1 grid-rows-1 place-items-center sm:w-[220px] sm:max-w-none sm:place-items-end">
                 <div
-                  className={`col-start-1 row-start-1 flex h-full items-center justify-end transition-opacity duration-300 ease-out ${
+                  className={`col-start-1 row-start-1 flex h-full w-full items-center justify-center transition-opacity duration-300 ease-out sm:justify-end ${
                     archiveConfirm ? "pointer-events-none opacity-0" : "opacity-100"
                   }`}
                 >
@@ -645,7 +646,7 @@ const SubjectCard = ({
                   </Button>
                 </div>
                 <div
-                  className={`col-start-1 row-start-1 flex h-full w-full items-center justify-end gap-2 text-xs font-medium text-blue-600 transition-opacity duration-300 ease-out dark:text-blue-400 ${
+                  className={`col-start-1 row-start-1 flex h-full w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-medium text-blue-600 transition-opacity duration-300 ease-out dark:text-blue-400 sm:flex-nowrap sm:justify-end ${
                     archiveConfirm ? "opacity-100" : "pointer-events-none opacity-0"
                   }`}
                 >
@@ -683,7 +684,7 @@ const SubjectCard = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center text-sm text-slate-500 dark:text-slate-400 sm:justify-start sm:text-left">
             <span className="inline-flex items-center gap-1.5">
               <Target className="h-4 w-4 shrink-0 opacity-70" />
               {unitCount} units
@@ -694,10 +695,12 @@ const SubjectCard = ({
             </span>
           </div>
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0 space-y-2">
-              <p className="text-xs font-medium text-slate-400 dark:text-slate-500">Unit progress</p>
-              <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 w-full space-y-2 sm:flex-1">
+              <p className="text-xs font-medium text-slate-400 dark:text-slate-500 sm:text-left text-center">
+                Unit progress
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
                 {units.slice(0, 10).map((u: { id: string }, i: number) => {
                   const unitData = unitProgressMap[u.id];
                   const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
@@ -724,7 +727,7 @@ const SubjectCard = ({
               onClick={onStudy}
               title={testHistory.length === 0 ? "Start practice" : "Continue practice"}
               variant="ghost"
-              className="group/btn h-11 shrink-0 rounded-full bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600 sm:self-end"
+              className="group/btn h-11 shrink-0 self-center rounded-full bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600 sm:self-end"
             >
               <span className="md:hidden">{testHistory.length === 0 ? "Start" : "Practice"}</span>
               <span className="hidden md:inline">{testHistory.length === 0 ? "Start practice" : "Continue practice"}</span>

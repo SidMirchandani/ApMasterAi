@@ -60,7 +60,7 @@ export function TestFloatingNav({
   };
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-3 sm:bottom-6 sm:px-6">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-50 flex justify-center px-2 sm:bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:px-6">
       <div className="pointer-events-auto flex max-w-lg items-center gap-1 rounded-2xl border border-slate-200/90 bg-white/95 px-2 py-2 shadow-lg shadow-slate-900/10 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-black/40 sm:gap-2 sm:px-3">
         <Button
           type="button"

@@ -315,13 +315,13 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       )}
 
       <div
-        className={`flex-1 overflow-y-auto pb-32 ${
+        className={`flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32 ${
           hasAppNav
             ? "pt-[calc(3.75rem+1px+3.25rem+1px)] max-md:pt-[calc(3.75rem+1px+4.25rem+1px)]"
             : "pt-[calc(3.25rem+1px)] max-md:pt-[calc(4.25rem+1px)]"
         }`}
       >
-        <div className="mx-auto max-w-3xl px-2 pb-3 pt-0 sm:px-3">
+        <div className="mx-auto min-w-0 max-w-3xl px-2 pb-3 pt-0 sm:px-3">
           <QuestionCard
             question={currentQuestion}
             questionNumber={currentQuestionIndex + 1}

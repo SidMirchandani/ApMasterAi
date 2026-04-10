@@ -253,7 +253,8 @@ export default function BookmarksPage() {
                             const isSelected = selectedAnswer === letter;
                             const isCorrectChoice = letter === correctLetter;
 
-                            let borderClass = "border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500";
+                            let borderClass =
+                              "border-gray-200 bg-white dark:border-gray-700 dark:bg-slate-800 hover:border-gray-400 dark:hover:border-gray-500";
                             if (isRevealed) {
                               if (isCorrectChoice) borderClass = "border-green-500 bg-green-50 dark:bg-green-900/30";
                               else if (isSelected && !isCorrectChoice) borderClass = "border-red-500 bg-red-50 dark:bg-red-900/30";

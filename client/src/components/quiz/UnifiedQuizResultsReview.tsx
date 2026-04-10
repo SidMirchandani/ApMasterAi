@@ -182,9 +182,12 @@ export function UnifiedQuizResultsReview({
             </Button>
           </div>
         </div>
-        <div className={`flex-1 overflow-y-auto pb-32 ${resultsContentTop}`}>
-          <div className="mx-auto max-w-6xl px-2 py-0 sm:px-3">
-            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div
+          className={`flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32 ${resultsContentTop}`}
+        >
+          <div className="mx-auto min-w-0 max-w-6xl px-2 py-0 sm:px-3">
+            <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="min-w-0">
               {isFullLength ? (
                 <QuestionCard
                   question={q as any}
@@ -210,8 +213,9 @@ export function UnifiedQuizResultsReview({
                   mcqOptionCount={mcqOptionCount}
                 />
               )}
+              </div>
 
-              <div className="md:sticky md:top-4 md:self-start">
+              <div className="min-w-0 md:sticky md:top-4 md:self-start">
                 <ExplanationPanel hasAnswered={true} isCorrect={isSelectedCorrect}>
                   <p className="text-sm font-medium">
                     {isSelectedCorrect

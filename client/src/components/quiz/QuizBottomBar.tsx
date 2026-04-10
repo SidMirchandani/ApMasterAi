@@ -48,11 +48,11 @@ export function QuizBottomBar({
     : "rounded-2xl border border-slate-200/90 bg-white/95 shadow-lg shadow-slate-900/10 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-black/40";
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 px-3 sm:bottom-6 sm:px-6">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-50 px-2 sm:bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:px-6">
       <div
-        className={`pointer-events-auto mx-auto flex max-w-5xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 ${islandClass}`}
+        className={`pointer-events-auto mx-auto flex min-w-0 max-w-5xl flex-wrap items-center justify-center gap-x-2 gap-y-2 px-2 py-2 sm:flex-nowrap sm:justify-between sm:gap-3 sm:px-4 sm:py-2.5 ${islandClass}`}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="flex min-w-0 flex-[1_1_auto] items-center gap-2 sm:flex-1">
           <span
             className={
               isApClass
@@ -106,7 +106,7 @@ export function QuizBottomBar({
           </span>
         )}
 
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2">
+        <div className="flex min-w-0 flex-[1_1_auto] items-center justify-end gap-1.5 sm:flex-1 sm:gap-2">
           <Button
             variant="outline"
             size="sm"
