@@ -216,14 +216,17 @@ export function UnifiedQuizResultsReview({
               </div>
 
               <div className="min-w-0 md:sticky md:top-4 md:self-start">
-                <ExplanationPanel hasAnswered={true} isCorrect={isSelectedCorrect}>
-                  <p className="text-sm font-medium">
+                <ExplanationPanel hasAnswered={true} isCorrect={isSelectedCorrect} compact>
+                  <p className="font-medium leading-snug">
                     {isSelectedCorrect
                       ? "Correct."
                       : `Incorrect. The correct answer is ${selectedCorrectLabel}.`}
                   </p>
                   {q.explanation ? (
-                    <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none">
+                    <PrettyExplanation
+                      compact
+                      className="prose prose-sm dark:prose-invert max-w-none text-inherit"
+                    >
                       {getDisplayExplanation(q.explanation, q, mcqOptionCount)}
                     </PrettyExplanation>
                   ) : null}

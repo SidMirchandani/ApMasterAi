@@ -10,6 +10,8 @@ interface ExplanationPanelProps {
   /** Rendered after the user answers (feedback + optional explanation body). */
   children?: ReactNode;
   className?: string;
+  /** Denser padding and typography (e.g. post-quiz review sidebar). */
+  compact?: boolean;
   /**
    * When true and the user has not answered yet, show a subtle hint instead of nothing.
    * Prefer false for practice flows so no “explanation” chrome appears early.
@@ -27,9 +29,11 @@ export function ExplanationPanel({
   children,
   className = "",
   showEmptyHint = true,
+  compact = false,
 }: ExplanationPanelProps) {
-  const basePanelClass =
-    "min-w-0 max-w-full rounded-xl border px-4 py-3 text-sm leading-relaxed";
+  const basePanelClass = compact
+    ? "min-w-0 max-w-full rounded-lg border px-3 py-2 text-xs leading-snug"
+    : "min-w-0 max-w-full rounded-xl border px-4 py-3 text-sm leading-relaxed";
 
   if (!hasAnswered) {
     if (!showEmptyHint) return null;
@@ -37,10 +41,12 @@ export function ExplanationPanel({
       <div
         className={`${basePanelClass} border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 ${className}`}
       >
-        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+        <p
+          className={`font-semibold text-slate-800 dark:text-slate-100 ${compact ? "text-xs" : "text-sm"}`}
+        >
           Explanation
         </p>
-        <p className="mt-2 text-sm">
+        <p className={`${compact ? "mt-1 text-xs" : "mt-2 text-sm"}`}>
           An explanation will appear here once you submit your answer.
         </p>
       </div>
@@ -53,8 +59,14 @@ export function ExplanationPanel({
 
   return (
     <div className={`${basePanelClass} ${answeredTintClass} ${className}`}>
-      <p className="text-sm font-semibold">Explanation</p>
-      <div className="min-w-0 space-y-3 overflow-x-auto text-sm text-slate-800 dark:text-slate-200 [&_.prose]:max-w-none [&_.prose-pre]:max-w-full [&_.prose-pre]:overflow-x-auto">
+      <p className={`font-semibold ${compact ? "text-xs" : "text-sm"}`}>Explanation</p>
+      <div
+        className={`min-w-0 overflow-x-auto text-slate-800 dark:text-slate-200 [&_.prose]:max-w-none [&_.prose-pre]:max-w-full [&_.prose-pre]:overflow-x-auto ${
+          compact
+            ? "mt-1 space-y-1.5 text-xs [&_.prose]:text-xs [&_.prose]:leading-snug [&_.prose_p]:!my-1 [&_.prose_ul]:!my-1 [&_.prose_li]:!my-0"
+            : "space-y-3 text-sm"
+        }`}
+      >
         {children}
       </div>
     </div>
