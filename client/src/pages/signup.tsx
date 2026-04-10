@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Loader2, Mail, Lock, ArrowLeft, Sparkles, BookOpen, BarChart3, Shield } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Lock, ArrowLeft, BookOpen, BarChart3, Shield } from "lucide-react";
 import { signUpWithEmail, signInWithGoogle, getGoogleRedirectResult } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { ApMasterLogoMark } from "@/components/ui/ap-master-logo-mark";
 
 export default function Signup() {
   const router = useRouter();
@@ -93,9 +94,7 @@ export default function Signup() {
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
           <div className="mb-10">
             <Link href="/" className="inline-flex items-center gap-2.5">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-glow">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
+              <ApMasterLogoMark size={40} className="rounded-xl shadow-glow" />
               <span className="text-xl font-display font-bold text-white">
                 APMaster
               </span>
@@ -149,9 +148,7 @@ export default function Signup() {
 
           <div className="lg:hidden mb-8">
             <Link href="/" className="inline-flex items-center gap-2.5">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-glow-sm">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
+              <ApMasterLogoMark size={40} className="rounded-xl shadow-glow-sm" />
               <span className="text-xl font-display font-bold text-slate-900 dark:text-white">
                 APMaster
               </span>

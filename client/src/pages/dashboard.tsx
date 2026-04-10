@@ -9,12 +9,12 @@ import {
   ArrowRight,
   Target,
   ChevronDown,
-  Sparkles,
   Crown,
   Search,
 } from "lucide-react";
 import { APScoreCircle } from "@/components/ui/APScoreCircle";
 import Navigation from "@/components/ui/navigation";
+import { ApMasterLogoMark } from "@/components/ui/ap-master-logo-mark";
 import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -377,7 +377,7 @@ const CenteredLoader = () => (
 const EmptyState = ({ router }: { router: any }) => (
   <div className="flex flex-col items-center px-4 py-16 text-center">
     <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/15 via-blue-400/10 to-violet-500/15 ring-1 ring-blue-500/10 dark:from-blue-500/20 dark:via-blue-400/10 dark:to-violet-500/15 dark:ring-white/10">
-      <Sparkles className="h-11 w-11 text-blue-600 dark:text-blue-400" strokeWidth={1.5} />
+      <ApMasterLogoMark size={72} className="rounded-2xl" />
     </div>
     <h2 className="mb-2 text-2xl font-display font-bold tracking-tight text-slate-900 dark:text-white">
       Start with a course

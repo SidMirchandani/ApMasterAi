@@ -186,7 +186,7 @@ export function UnifiedQuizResultsReview({
           className={`flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32 ${resultsContentTop}`}
         >
           <div className="mx-auto min-w-0 max-w-6xl px-2 py-0 sm:px-3">
-            <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="grid min-w-0 gap-6 md:grid-cols-[minmax(0,13fr)_minmax(0,7fr)] md:gap-8">
               <div className="min-w-0">
               {isFullLength ? (
                 <QuestionCard
@@ -217,16 +217,13 @@ export function UnifiedQuizResultsReview({
 
               <div className="min-w-0 md:sticky md:top-4 md:self-start">
                 <ExplanationPanel hasAnswered={true} isCorrect={isSelectedCorrect} compact>
-                  <p className="font-medium leading-snug">
+                  <p className="text-xs font-medium">
                     {isSelectedCorrect
                       ? "Correct."
                       : `Incorrect. The correct answer is ${selectedCorrectLabel}.`}
                   </p>
                   {q.explanation ? (
-                    <PrettyExplanation
-                      compact
-                      className="prose prose-sm dark:prose-invert max-w-none text-inherit"
-                    >
+                    <PrettyExplanation className="text-xs leading-snug max-w-none dark:prose-invert prose prose-sm prose-p:my-1 prose-p:text-[0.8125rem] prose-li:text-[0.8125rem] prose-headings:text-xs prose-ul:my-1">
                       {getDisplayExplanation(q.explanation, q, mcqOptionCount)}
                     </PrettyExplanation>
                   ) : null}

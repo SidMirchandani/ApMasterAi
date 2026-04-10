@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { LayoutDashboard, LogOut, User, ChevronRight, Sun, Moon, Menu, X, Info, Users, Sparkles } from "lucide-react";
+import { LayoutDashboard, LogOut, User, ChevronRight, Sun, Moon, Menu, X, Info, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ import { apiRequest } from "@/lib/api";
 import { useTheme } from "@/contexts/theme-context";
 import { getSubjectShortName } from "../../../../lib/subject-display-names";
 import { getApiCodeForSubject } from "@/subjects";
+import { ApMasterLogoMark } from "@/components/ui/ap-master-logo-mark";
 
 export default function Navigation() {
   const router = useRouter();
@@ -156,8 +157,8 @@ export default function Navigation() {
                 }`}
                 onClick={handleDisabledClick}
               >
-                <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-150 group-hover:scale-[1.03]">
-                  <Sparkles className="w-4 h-4 text-white" />
+                <div className="overflow-hidden rounded-lg shadow-sm transition-all duration-150 group-hover:scale-[1.03] group-hover:shadow-md">
+                  <ApMasterLogoMark size={32} />
                 </div>
                 <span className="text-[15px] font-bold text-slate-900 dark:text-white tracking-tight hidden sm:inline">
                   APMaster

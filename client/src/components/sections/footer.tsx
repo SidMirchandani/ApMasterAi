@@ -1,11 +1,6 @@
-import {
-  Sparkles,
-  ArrowUpRight,
-  Mail,
-  Github,
-  Twitter,
-} from "lucide-react";
+import { ArrowUpRight, Mail, Github, Twitter } from "lucide-react";
 import Link from "next/link";
+import { ApMasterLogoMark } from "@/components/ui/ap-master-logo-mark";
 
 export default function Footer() {
   return (
@@ -20,9 +15,7 @@ export default function Footer() {
             {/* Brand column */}
             <div className="md:col-span-5">
               <Link href="/" className="inline-flex items-center gap-2.5 mb-5 group">
-                <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center shadow-sm">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
+                <ApMasterLogoMark size={40} className="rounded-xl shadow-sm" />
                 <span className="text-xl font-display font-bold">
                   APMaster
                 </span>

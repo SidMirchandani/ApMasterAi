@@ -218,30 +218,15 @@ export function PracticeQuizReview({
 
                     {/* Explanation */}
                     {question.explanation && (
-                      <div
-                        className={`rounded-lg border-2 p-3 ${
-                          isCorrect
-                            ? "border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20"
-                            : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"
-                        }`}
-                      >
-                        <div
-                          className={`mb-1 text-xs font-semibold leading-snug ${
-                            isCorrect
-                              ? "text-emerald-900 dark:text-emerald-300"
-                              : "text-red-900 dark:text-red-300"
-                          }`}
-                        >
+                      <div className={`p-4 rounded-lg border-2 ${
+                        isCorrect
+                          ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800"
+                          : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                      }`}>
+                        <div className={`font-semibold mb-2 ${isCorrect ? "text-emerald-900 dark:text-emerald-300" : "text-red-900 dark:text-red-300"}`}>
                           {isCorrect ? "Correct — Explanation:" : "Incorrect — Explanation:"}
                         </div>
-                        <PrettyExplanation
-                          compact
-                          className={`prose prose-sm max-w-none text-xs leading-snug ${
-                            isCorrect
-                              ? "text-emerald-900 dark:text-emerald-200"
-                              : "text-red-900 dark:text-red-200"
-                          }`}
-                        >
+                        <PrettyExplanation className={`text-sm prose prose-sm max-w-none ${isCorrect ? "text-emerald-900 dark:text-emerald-200" : "text-red-900 dark:text-red-200"}`}>
                           {getDisplayExplanation(question.explanation, question, mcqOptionCount)}
                         </PrettyExplanation>
                       </div>

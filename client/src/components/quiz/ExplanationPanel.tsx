@@ -10,13 +10,13 @@ interface ExplanationPanelProps {
   /** Rendered after the user answers (feedback + optional explanation body). */
   children?: ReactNode;
   className?: string;
-  /** Denser padding and typography (e.g. post-quiz review sidebar). */
-  compact?: boolean;
   /**
    * When true and the user has not answered yet, show a subtle hint instead of nothing.
    * Prefer false for practice flows so no “explanation” chrome appears early.
    */
   showEmptyHint?: boolean;
+  /** Tighter padding and text (e.g. quiz results review column). */
+  compact?: boolean;
 }
 
 /**
@@ -32,7 +32,7 @@ export function ExplanationPanel({
   compact = false,
 }: ExplanationPanelProps) {
   const basePanelClass = compact
-    ? "min-w-0 max-w-full rounded-lg border px-3 py-2 text-xs leading-snug"
+    ? "min-w-0 max-w-full rounded-xl border px-3 py-2 text-xs leading-snug"
     : "min-w-0 max-w-full rounded-xl border px-4 py-3 text-sm leading-relaxed";
 
   if (!hasAnswered) {
@@ -42,11 +42,15 @@ export function ExplanationPanel({
         className={`${basePanelClass} border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 ${className}`}
       >
         <p
-          className={`font-semibold text-slate-800 dark:text-slate-100 ${compact ? "text-xs" : "text-sm"}`}
+          className={
+            compact
+              ? "text-xs font-semibold text-slate-800 dark:text-slate-100"
+              : "text-sm font-semibold text-slate-800 dark:text-slate-100"
+          }
         >
           Explanation
         </p>
-        <p className={`${compact ? "mt-1 text-xs" : "mt-2 text-sm"}`}>
+        <p className={compact ? "mt-1.5 text-xs" : "mt-2 text-sm"}>
           An explanation will appear here once you submit your answer.
         </p>
       </div>
@@ -57,18 +61,14 @@ export function ExplanationPanel({
     ? "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-700/70 dark:bg-emerald-950/30 dark:text-emerald-100"
     : "border-red-200 bg-red-50 text-red-950 dark:border-red-700/70 dark:bg-red-950/30 dark:text-red-100";
 
+  const bodyClass = compact
+    ? "min-w-0 space-y-2 overflow-x-auto text-xs text-slate-800 dark:text-slate-200 [&_.prose]:max-w-none [&_.prose]:text-xs [&_.prose]:leading-snug [&_.prose_p]:my-1.5 [&_.prose_li]:my-0.5 [&_.prose-pre]:max-w-full [&_.prose-pre]:overflow-x-auto"
+    : "min-w-0 space-y-3 overflow-x-auto text-sm text-slate-800 dark:text-slate-200 [&_.prose]:max-w-none [&_.prose-pre]:max-w-full [&_.prose-pre]:overflow-x-auto";
+
   return (
     <div className={`${basePanelClass} ${answeredTintClass} ${className}`}>
-      <p className={`font-semibold ${compact ? "text-xs" : "text-sm"}`}>Explanation</p>
-      <div
-        className={`min-w-0 overflow-x-auto text-slate-800 dark:text-slate-200 [&_.prose]:max-w-none [&_.prose-pre]:max-w-full [&_.prose-pre]:overflow-x-auto ${
-          compact
-            ? "mt-1 space-y-1.5 text-xs [&_.prose]:text-xs [&_.prose]:leading-snug [&_.prose_p]:!my-1 [&_.prose_ul]:!my-1 [&_.prose_li]:!my-0"
-            : "space-y-3 text-sm"
-        }`}
-      >
-        {children}
-      </div>
+      <p className={compact ? "text-xs font-semibold" : "text-sm font-semibold"}>Explanation</p>
+      <div className={bodyClass}>{children}</div>
     </div>
   );
 }
