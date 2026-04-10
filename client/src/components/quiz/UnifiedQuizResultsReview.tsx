@@ -11,7 +11,7 @@ import { TestFloatingNav } from "./TestFloatingNav";
 import { QuestionCard } from "./QuestionCard";
 import { PracticeQuizQuestionCard } from "./PracticeQuizQuestionCard";
 import { ExplanationPanel } from "./ExplanationPanel";
-import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
+import { PrettyExplanation, QUIZ_EXPLANATION_CLASSNAME, QUIZ_QUESTION_EXPL_GRID_CLASS } from "@/components/ui/PrettyExplanation";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
 
@@ -186,7 +186,7 @@ export function UnifiedQuizResultsReview({
           className={`flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32 ${resultsContentTop}`}
         >
           <div className="mx-auto min-w-0 max-w-6xl px-2 py-0 sm:px-3">
-            <div className="grid min-w-0 gap-6 md:grid-cols-[minmax(0,13fr)_minmax(0,7fr)] md:gap-8">
+            <div className={QUIZ_QUESTION_EXPL_GRID_CLASS}>
               <div className="min-w-0">
               {isFullLength ? (
                 <QuestionCard
@@ -216,14 +216,14 @@ export function UnifiedQuizResultsReview({
               </div>
 
               <div className="min-w-0 md:sticky md:top-4 md:self-start">
-                <ExplanationPanel hasAnswered={true} isCorrect={isSelectedCorrect} compact>
-                  <p className="text-xs font-medium">
+                <ExplanationPanel hasAnswered={true} isCorrect={isSelectedCorrect}>
+                  <p className="text-[0.775rem] font-medium leading-relaxed">
                     {isSelectedCorrect
                       ? "Correct."
                       : `Incorrect. The correct answer is ${selectedCorrectLabel}.`}
                   </p>
                   {q.explanation ? (
-                    <PrettyExplanation className="text-xs leading-snug max-w-none dark:prose-invert prose prose-sm prose-p:my-1 prose-p:text-[0.8125rem] prose-li:text-[0.8125rem] prose-headings:text-xs prose-ul:my-1">
+                    <PrettyExplanation className={QUIZ_EXPLANATION_CLASSNAME}>
                       {getDisplayExplanation(q.explanation, q, mcqOptionCount)}
                     </PrettyExplanation>
                   ) : null}
@@ -253,7 +253,7 @@ export function UnifiedQuizResultsReview({
     <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       <div className={`fixed left-0 right-0 z-50 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A] ${resultsHeaderTop}`}>
         <div className="mx-auto flex max-w-3xl items-center justify-between px-3 py-2.5 sm:px-4">
-          <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Quiz results</h1>
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Quiz Results</h1>
           <Button
             variant="ghost"
             size="sm"
@@ -281,7 +281,7 @@ export function UnifiedQuizResultsReview({
                   onClick={() => handleViewSection("all", questions.length)}
                   className="h-10 rounded-full bg-blue-600 px-5 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
-                  Review all questions
+                  Review All Questions
                 </Button>
                 <Button
                   variant="ghost"
@@ -290,7 +290,7 @@ export function UnifiedQuizResultsReview({
                   disabled={incorrectIndices.length === 0}
                   className="h-10 rounded-full bg-slate-100 px-5 font-semibold text-slate-900 hover:bg-slate-200/80 disabled:opacity-50 dark:bg-white/[0.06] dark:text-white dark:hover:bg-white/[0.09]"
                 >
-                  Review incorrect
+                  Review Incorrect
                   {incorrectIndices.length > 0 && (
                     <span className="ml-1.5 text-slate-500">({incorrectIndices.length})</span>
                   )}
@@ -304,7 +304,7 @@ export function UnifiedQuizResultsReview({
                   onClick={() => setSelectedQuestionIndex(0)}
                   className="h-10 rounded-full bg-blue-600 px-5 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
-                  Review all questions
+                  Review All Questions
                 </Button>
                 <Button
                   variant="ghost"
@@ -315,7 +315,7 @@ export function UnifiedQuizResultsReview({
                   disabled={incorrectIndices.length === 0}
                   className="h-10 rounded-full bg-slate-100 px-5 font-semibold text-slate-900 hover:bg-slate-200/80 disabled:opacity-50 dark:bg-white/[0.06] dark:text-white dark:hover:bg-white/[0.09]"
                 >
-                  Review incorrect
+                  Review Incorrect
                   {incorrectIndices.length > 0 && (
                     <span className="ml-1.5 text-slate-500">({incorrectIndices.length})</span>
                   )}
@@ -351,7 +351,7 @@ export function UnifiedQuizResultsReview({
 
         {allSectionEntries.length > 0 && (
           <div className="rounded-2xl bg-slate-100 p-4 dark:bg-white/[0.06]">
-            <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">Review by unit</h2>
+            <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">Review by Unit</h2>
             <div className="space-y-2">
               {allSectionEntries.map(([code, sec]) => {
                 const hasQuestions = sec.total > 0;

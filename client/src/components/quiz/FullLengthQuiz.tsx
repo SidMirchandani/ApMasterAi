@@ -289,7 +289,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
         }`}
       >
         <QuizHeader
-          title={`${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full Length MCQ Test`}
+          title={`${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full-Length MCQ Test`}
           timeElapsed={timeElapsed}
           timeRemaining={timeRemaining}
           onHideTimer={() => setTimerHidden(!timerHidden)}

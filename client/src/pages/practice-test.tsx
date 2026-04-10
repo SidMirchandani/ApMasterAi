@@ -84,7 +84,7 @@ export default function PracticeTest() {
             {testName}
           </h1>
           <p className="max-w-2xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
-            Real AP-style questions and instant feedback—coming soon as a dedicated flow. Use full-length MCQ from study for now.
+            Real AP-style questions and instant feedback—coming soon as a dedicated flow. Use Full-Length MCQ from Study for now.
           </p>
         </header>
 

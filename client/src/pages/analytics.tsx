@@ -281,7 +281,7 @@ export default function AnalyticsPage() {
             <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700">
               <BarChart3 className="h-8 w-8 text-slate-500" />
             </div>
-            <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-100">No analytics yet</h2>
+            <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-slate-100">No Analytics Yet</h2>
             <p className="mx-auto mb-6 max-w-md text-sm leading-relaxed text-slate-500 dark:text-slate-400">
               Start practice to see your projected score and performance.
             </p>
@@ -289,7 +289,7 @@ export default function AnalyticsPage() {
               onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 h-11 rounded-xl shadow-md"
             >
-              Start practice
+              Start Practice
             </Button>
             <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">
               Projected score is a statistical estimate based on MCQ performance.

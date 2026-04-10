@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, CheckCircle, ChevronRight, ChevronLeft, ChevronDown, Flag, Trash2 } from "lucide-react";
+import { RotateCcw, CheckCircle, ChevronRight, ChevronLeft, ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { ToastAction } from "@/components/ui/toast";
@@ -12,11 +12,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { getSubjectByLegacyId, getSubjectByCode, getUnitDisplayLabel } from "@/subjects";
 import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
-import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
+import { PrettyExplanation, QUIZ_EXPLANATION_CLASSNAME, QUIZ_QUESTION_EXPL_GRID_CLASS } from "@/components/ui/PrettyExplanation";
 import { ExplanationPanel } from "@/components/quiz/ExplanationPanel";
 import { PracticeQuizQuestionCard } from "@/components/quiz/PracticeQuizQuestionCard";
 import { ReportQuestionDialog } from "@/components/quiz/ReportQuestionDialog";
+import { ExamToolbar } from "@/components/quiz/ExamToolbar";
 import { normalizeQuestion } from "@/lib/normalizeQuestion";
+import { showPracticeExamToolHeader } from "@/lib/examTools";
 
 interface DueQuestion {
   questionId: string;
@@ -34,25 +36,6 @@ interface DueQuestion {
   explanation?: string;
   difficulty?: string;
   tags?: string[];
-}
-
-type ReviewSource = "due" | "bookmark" | "both";
-
-interface ReviewQuestion extends DueQuestion {
-  _source: ReviewSource;
-}
-
-interface BookmarkedItem {
-  questionId?: string;
-  id?: string;
-  subjectId: string;
-  unitId: string;
-  sectionCode?: string;
-  prompt?: string;
-  prompt_blocks?: any[];
-  choices?: string[] | Record<string, any>;
-  answerIndex?: number;
-  explanation?: string;
 }
 
 export default function ReviewPage() {
@@ -115,64 +98,11 @@ export default function ReviewPage() {
     enabled: isAuthenticated && !!user,
   });
 
-  const { data: bookmarksResponse, isLoading: bookmarksLoading, refetch: refetchBookmarks } = useQuery<{
-    success: boolean;
-    data: BookmarkedItem[];
-  }>({
-    queryKey: ["bookmarks", subjectId || "all", unit || ""],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (subjectId) params.set("subjectId", subjectId);
-      if (unit) params.set("unitId", unit);
-      const url = `/api/user/bookmarks?${params.toString()}`;
-      const res = await apiRequest("GET", url);
-      if (!res.ok) throw new Error("Failed to fetch bookmarks");
-      return res.json();
-    },
-    enabled: isAuthenticated && !!user,
-  });
+  const reviewQuestions = dueResponse?.data ?? [];
 
-  const dueList = dueResponse?.data || [];
-  const bookmarksList = bookmarksResponse?.data || [];
-
-  const reviewQuestions = useMemo((): ReviewQuestion[] => {
-    const dueIds = new Set(dueList.map((d) => d.questionId));
-    const bookmarkIds = new Set(
-      bookmarksList.map((b) => b.questionId || (b as any).id || "")
-    );
-    const dueWithSource: ReviewQuestion[] = dueList.map((d) => ({
-      ...d,
-      _source: bookmarkIds.has(d.questionId) ? "both" : "due",
-    }));
-    const bookmarkOnly = bookmarksList.filter(
-      (b) => !dueIds.has(b.questionId || (b as any).id || "")
-    );
-    const mapped: ReviewQuestion[] = bookmarkOnly.map((b) => {
-      const qId = b.questionId || (b as any).id || "";
-      return {
-        questionId: qId,
-        subjectId: b.subjectId,
-        unitId: b.unitId || "",
-        sectionCode: b.sectionCode,
-        correctStreak: 0,
-        totalAttempts: 0,
-        totalCorrect: 0,
-        nextReviewAt: "",
-        prompt: b.prompt,
-        prompt_blocks: (b as any).prompt_blocks,
-        choices: b.choices,
-        answerIndex: b.answerIndex,
-        explanation: b.explanation,
-        _source: "bookmark" as const,
-      };
-    });
-    return [...dueWithSource, ...mapped];
-  }, [dueList, bookmarksList]);
-
-  const isLoading = dueLoading || bookmarksLoading;
+  const isLoading = dueLoading;
   const refetch = () => {
-    refetchDue();
-    refetchBookmarks();
+    void refetchDue();
   };
 
   useEffect(() => {
@@ -257,51 +187,38 @@ export default function ReviewPage() {
 
   const handleRemove = async () => {
     if (!currentQuestion) return;
-    const removedQuestion = currentQuestion as ReviewQuestion;
-    const source = removedQuestion._source;
+    const removedQuestion = currentQuestion;
     setIsRemoving(true);
     try {
-      if (source === "due" || source === "both") {
-        await apiRequest("POST", "/api/user/questions/remove", {
-          questionId: removedQuestion.questionId,
-        });
-      }
-      if (source === "bookmark" || source === "both") {
-        await apiRequest("POST", "/api/user/bookmarks/toggle", {
-          questionId: removedQuestion.questionId,
-          subjectId: removedQuestion.subjectId,
-        });
-      }
+      await apiRequest("POST", "/api/user/questions/remove", {
+        questionId: removedQuestion.questionId,
+      });
       queryClient.invalidateQueries({ queryKey: ["dueReviews"] });
-      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
       await refetch();
       if (currentIndex >= reviewQuestions.length - 1 && reviewQuestions.length > 1) {
         setCurrentIndex(reviewQuestions.length - 2);
       }
       setSelectedAnswer(null);
       setIsSubmitted(false);
-      const hasDue = source === "due" || source === "both";
       toast({
         title: "Question removed from review",
-        ...(hasDue && {
-          action: (
-            <ToastAction
-              altText="Undo remove"
-              onClick={async () => {
-                try {
-                  await apiRequest("POST", "/api/user/questions/restore", {
-                    questionId: removedQuestion.questionId,
-                  });
-                  refetch();
-                } catch (e) {
-                  console.log("Could not undo removal");
-                }
-              }}
-            >
-              Undo
-            </ToastAction>
-          ),
-        }),
+        action: (
+          <ToastAction
+            altText="Undo remove"
+            onClick={async () => {
+              try {
+                await apiRequest("POST", "/api/user/questions/restore", {
+                  questionId: removedQuestion.questionId,
+                });
+                refetch();
+              } catch (e) {
+                console.log("Could not undo removal");
+              }
+            }}
+          >
+            Undo
+          </ToastAction>
+        ),
       });
     } catch (e) {
       console.log("Could not remove question");
@@ -343,7 +260,7 @@ export default function ReviewPage() {
             <CheckCircle className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
             <h2 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">All caught up!</h2>
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-              No questions to review. Questions you get wrong or bookmark during practice will appear here.
+              No questions to review. Items you miss during practice are added here so you can try them again.
             </p>
             <Button
               onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
@@ -356,7 +273,7 @@ export default function ReviewPage() {
       ) : currentQuestion && normalizedQuestion ? (
         <>
           <div className="fixed left-0 right-0 top-[calc(3.75rem+1px)] z-40 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A]">
-            <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:gap-3">
+            <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-3 py-1.5 sm:gap-3">
               <div className="flex flex-1 items-center justify-center gap-1 sm:justify-start">
                 <Button
                   type="button"
@@ -429,25 +346,9 @@ export default function ReviewPage() {
               </div>
 
               <div className="flex w-full flex-wrap items-center justify-center gap-1 sm:w-auto sm:justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowReportDialog(true)}
-                  className="h-8 rounded-full px-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
-                >
-                  <Flag className="mr-1 h-3.5 w-3.5" />
-                  Report
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRemove}
-                  disabled={isRemoving}
-                  className="h-8 rounded-full px-2 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
-                >
-                  <Trash2 className="mr-1 h-3.5 w-3.5" />
-                  Remove
-                </Button>
+                {showPracticeExamToolHeader(currentQuestion.subjectId) && (
+                  <ExamToolbar subjectId={currentQuestion.subjectId} size="sm" className="mr-0.5" />
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -460,14 +361,15 @@ export default function ReviewPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto pb-32 pt-[calc(3.75rem+1px+3.75rem+1px)]">
+          <div className="flex-1 overflow-y-auto pb-32 pt-[calc(3.75rem+1px+0.25rem)]">
             <div className="mx-auto max-w-6xl px-2 sm:px-3">
-              {subjectId && currentQuestion.unitId && (
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  {getUnitDisplayLabel(subjectId, currentQuestion.unitId)}
+              {(subjectId || currentQuestion.subjectId) && currentQuestion.unitId && (
+                <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  {getUnitDisplayLabel(subjectId || currentQuestion.subjectId, currentQuestion.unitId)}
                 </p>
               )}
-              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+              <div className={QUIZ_QUESTION_EXPL_GRID_CLASS}>
+                <div className="min-w-0">
                 <PracticeQuizQuestionCard
                   question={normalizedQuestion}
                   questionNumber={currentIndex + 1}
@@ -479,8 +381,11 @@ export default function ReviewPage() {
                   mcqOptionCount={mcqOptionCount}
                   showQuestionCounter={false}
                   onReport={() => setShowReportDialog(true)}
+                  onRemove={handleRemove}
+                  removeDisabled={isRemoving}
                 />
-                <div className={`md:sticky md:top-4 ${isSubmitted ? "md:self-start" : "md:self-stretch"}`}>
+                </div>
+                <div className={`min-w-0 md:sticky md:top-4 ${isSubmitted ? "md:self-start" : "md:self-stretch"}`}>
                   <ExplanationPanel
                     hasAnswered={isSubmitted}
                     isCorrect={isReviewAnswerCorrect}
@@ -488,13 +393,13 @@ export default function ReviewPage() {
                   >
                     {isSubmitted && (
                       <>
-                        <p className="text-sm font-medium">
+                        <p className="text-[0.775rem] font-medium leading-relaxed">
                           {isReviewAnswerCorrect
                             ? "Correct."
                             : `Incorrect. The correct answer is ${getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex ?? 0 }, mcqOptionCount)}.`}
                         </p>
                         {currentQuestion.explanation ? (
-                          <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none">
+                          <PrettyExplanation className={QUIZ_EXPLANATION_CLASSNAME}>
                             {getDisplayExplanation(
                               currentQuestion.explanation,
                               { answerIndex: currentQuestion.answerIndex ?? 0 },

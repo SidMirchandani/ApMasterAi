@@ -68,6 +68,16 @@ const isDevelopmentMode = () => {
   return (isDev || isReplit) && !db;
 };
 
+/** In-queue review entry: flagged for spaced review and tied to at least one incorrect attempt. */
+function isWrongAnswerReviewEntry(data: any): boolean {
+  const flaggedForReview =
+    data.needsReview === true || (data.needsReview === undefined && data.lastResult === "incorrect");
+  if (!flaggedForReview) return false;
+  const wrongAttempts = data.incorrectCount ?? 0;
+  const lastWrong = data.lastResult === "incorrect";
+  return wrongAttempts > 0 || lastWrong;
+}
+
 export class Storage {
   private db: admin.firestore.Firestore | null = null;
 
@@ -1523,7 +1533,7 @@ export class Storage {
     const snapshot = await query.get();
     let results = snapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter((doc: any) => doc.needsReview === true || (doc.needsReview === undefined && doc.lastResult === 'incorrect'));
+      .filter((doc: any) => isWrongAnswerReviewEntry(doc));
 
     if (unitId) {
       results = results.filter((doc: any) => doc.unitId === unitId);
@@ -1601,7 +1611,7 @@ export class Storage {
       stats.totalIncorrect += data.incorrectCount || 0;
       stats.totalTimeSpentSec += data.totalTimeSpentSec || 0;
 
-      if (data.needsReview === true || (data.needsReview === undefined && data.lastResult === 'incorrect')) {
+      if (isWrongAnswerReviewEntry(data)) {
         stats.dueForReview++;
       }
 

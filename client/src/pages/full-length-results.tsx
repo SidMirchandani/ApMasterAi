@@ -180,7 +180,7 @@ export default function FullLengthResults() {
           <div className="rounded-3xl bg-slate-100 px-6 py-10 text-center dark:bg-white/[0.06]">
             <p className="font-medium text-slate-900 dark:text-white">{fetchError}</p>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              The result may have been removed or the link is invalid. Open quiz & test history to see saved results.
+              The result may have been removed or the link is invalid. Open Quiz & Test History to see saved results.
             </p>
             <Button
               variant="ghost"
@@ -188,7 +188,7 @@ export default function FullLengthResults() {
               className="mt-6 h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Quiz & test history
+              Quiz & Test History
             </Button>
           </div>
         </main>
@@ -231,7 +231,7 @@ export default function FullLengthResults() {
               className="mt-6 h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Quiz & test history
+              Quiz & Test History
             </Button>
           </main>
         </div>
@@ -247,7 +247,7 @@ export default function FullLengthResults() {
         <main className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-10">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
-              {testData.type === "diagnostic" ? "Diagnostic" : "Test"} results
+              {testData.type === "diagnostic" ? "Diagnostic Results" : "Test Results"}
             </h1>
             <Button
               variant="ghost"
@@ -269,7 +269,7 @@ export default function FullLengthResults() {
               </p>
             </div>
             <div>
-              <h2 className="mb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Section breakdown</h2>
+              <h2 className="mb-3 text-sm font-medium text-slate-500 dark:text-slate-400">Section Breakdown</h2>
               <ul className="space-y-2">
                 {Object.entries(sectionBreakdown).map(([code, section]) => (
                   <li key={code} className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-white/[0.06]">
@@ -299,7 +299,7 @@ export default function FullLengthResults() {
             className="mt-6 h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Quiz & test history
+            Quiz & Test History
           </Button>
         </main>
       </div>

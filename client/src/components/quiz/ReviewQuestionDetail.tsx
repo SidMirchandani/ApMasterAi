@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle } from "lucide-react";
-import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
+import { PrettyExplanation, QUIZ_EXPLANATION_CLASSNAME } from "@/components/ui/PrettyExplanation";
 import { BlockRenderer } from "@/components/quiz/BlockRenderer";
 import { getDisplayChoicesAndCorrect, getDisplayExplanation } from "@/lib/mcqDisplay";
 
@@ -43,13 +43,13 @@ export function ReviewQuestionDetail({
   const explanationCard = question.explanation ? (
     <Card className="border-khan-blue bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700 h-fit md:sticky md:top-4">
       <CardHeader className="pb-2 pt-3">
-        <CardTitle className="text-sm flex items-center gap-2">
+        <CardTitle className="text-[0.775rem] flex items-center gap-2">
           <CheckCircle className="text-khan-blue h-4 w-4" />
           Explanation
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 pb-3">
-        <PrettyExplanation className="text-sm text-gray-700 dark:text-slate-300 prose prose-sm max-w-none dark:prose-invert">
+        <PrettyExplanation className={QUIZ_EXPLANATION_CLASSNAME}>
           {getDisplayExplanation(question.explanation, question, mcqOptionCount)}
         </PrettyExplanation>
       </CardContent>

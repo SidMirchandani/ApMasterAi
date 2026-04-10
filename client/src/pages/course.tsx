@@ -111,19 +111,19 @@ export default function Course() {
   const features = [
     {
       icon: Target,
-      title: "Practice questions",
+      title: "Practice Questions",
       desc: "Real AP-style problems and solutions",
       iconBg: "bg-blue-600 text-white dark:bg-blue-500",
     },
     {
       icon: BookOpen,
-      title: "Detailed explanations",
+      title: "Detailed Explanations",
       desc: "Comprehensive answer explanations",
       iconBg: "bg-emerald-600 text-white dark:bg-emerald-500",
     },
     {
       icon: Clock,
-      title: "Timed practice",
+      title: "Timed Practice",
       desc: "Exam simulation with real timing",
       iconBg: "bg-violet-600 text-white dark:bg-violet-500",
     },

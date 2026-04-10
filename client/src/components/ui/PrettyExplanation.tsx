@@ -6,8 +6,22 @@ import {
 } from "@/lib/parseExplanation";
 import { ExplanationMarkdown } from "@/components/ui/ExplanationMarkdown";
 
-const defaultClassName =
-  "text-xs text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none";
+/**
+ * Single typography scale for quiz explanations (~12.4px): between text-xs and text-sm.
+ * Use everywhere the explanation blurb appears (practice, review, bookmarks, results).
+ */
+export const QUIZ_EXPLANATION_CLASSNAME =
+  "max-w-none text-[0.775rem] leading-relaxed text-slate-800 dark:text-slate-200 prose prose-sm dark:prose-invert " +
+  "prose-p:my-1.5 prose-p:text-[0.775rem] prose-p:leading-relaxed " +
+  "prose-li:text-[0.775rem] prose-li:leading-relaxed " +
+  "prose-headings:text-[0.775rem] prose-headings:font-semibold prose-headings:my-1 " +
+  "prose-ul:my-1 prose-ol:my-1";
+
+/** Two-column layout: question ~65%, explanation ~35% (matches fr split below). */
+export const QUIZ_QUESTION_EXPL_GRID_CLASS =
+  "grid min-w-0 gap-4 md:grid-cols-[minmax(0,13fr)_minmax(0,7fr)] md:gap-6";
+
+const defaultClassName = `${QUIZ_EXPLANATION_CLASSNAME} text-gray-700 dark:text-gray-300`;
 
 interface PrettyExplanationProps {
   children: string;

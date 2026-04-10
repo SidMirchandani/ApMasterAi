@@ -278,7 +278,7 @@ export default function DualPathPage() {
         {!subjectId ? (
           <Card className="dark:bg-gray-900 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="text-lg dark:text-gray-100">Choose a subject</CardTitle>
+              <CardTitle className="text-lg dark:text-gray-100">Choose a Subject</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">

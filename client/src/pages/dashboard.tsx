@@ -213,20 +213,20 @@ export default function Dashboard() {
     <div className="relative min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">
+      <main className="relative z-10 mx-auto max-w-6xl px-4 py-5 md:px-6 md:py-7">
         {/* Header */}
-        <header className="mb-8 md:mb-10">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0 space-y-2">
+        <header className="mb-5 md:mb-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-1">
               <p className="text-sm font-medium text-blue-600/90 dark:text-blue-400/90">
                 {greeting}
               </p>
-              <h1 className="text-3xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+              <h1 className="text-2xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
                 {userProfile?.data?.firstName
                   ? `Welcome back, ${userProfile.data.firstName}`
                   : "Welcome back"}
               </h1>
-              <p className="max-w-xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+              <p className="max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400 sm:text-[15px]">
                 Continue your personalized AP preparation journey.
               </p>
             </div>
@@ -236,7 +236,7 @@ export default function Dashboard() {
                   onClick={() => archiveSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
                   variant="ghost"
                   size="sm"
-                  className="h-10 rounded-full px-4 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
+                  className="h-9 rounded-full px-3.5 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
                 >
                   View archive
                 </Button>
@@ -244,7 +244,7 @@ export default function Dashboard() {
                   onClick={() => router.push("/learn")}
                   variant="ghost"
                   size="sm"
-                  className="h-10 rounded-full bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+                  className="h-9 rounded-full bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
                   <Plus className="mr-1.5 h-4 w-4" /> Add course
                 </Button>
@@ -258,10 +258,10 @@ export default function Dashboard() {
         ) : subjects.length === 0 ? (
           <EmptyState router={router} />
         ) : (
-          <div className="space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="space-y-1">
-                <h2 className="text-xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-0.5">
+                <h2 className="text-lg font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
                   Your courses
                 </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -274,15 +274,15 @@ export default function Dashboard() {
                   )}
                 </p>
               </div>
-              <div className="flex w-full flex-col gap-3 sm:w-auto sm:min-w-[280px] sm:max-w-md sm:flex-row sm:items-center sm:justify-end">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[260px] sm:max-w-md sm:flex-row sm:items-center sm:justify-end">
                 <div className="relative w-full">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     placeholder="Search courses…"
                     value={subjectSearch}
                     onChange={(e) => setSubjectSearch(e.target.value)}
-                    className="h-11 w-full rounded-full border-0 bg-slate-900/[0.04] pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:bg-white/[0.06] dark:text-slate-100 dark:placeholder:text-slate-500"
+                    className="h-10 w-full rounded-full border-0 bg-slate-900/[0.04] pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:bg-white/[0.06] dark:text-slate-100 dark:placeholder:text-slate-500"
                   />
                 </div>
                 {subjectsFetching && (
@@ -293,7 +293,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-3.5">
               {activeSubjects.map((subject) => (
                 <SubjectCard
                   key={subject.id}
@@ -363,7 +363,7 @@ export default function Dashboard() {
 // ======================================================================================
 
 const CenteredLoader = () => (
-  <div className="flex items-center justify-center py-16">
+  <div className="flex items-center justify-center py-12">
     <div className="text-center">
       <div className="relative mx-auto mb-4 h-11 w-11">
         <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
@@ -375,20 +375,20 @@ const CenteredLoader = () => (
 );
 
 const EmptyState = ({ router }: { router: any }) => (
-  <div className="flex flex-col items-center px-4 py-16 text-center">
-    <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/15 via-blue-400/10 to-violet-500/15 ring-1 ring-blue-500/10 dark:from-blue-500/20 dark:via-blue-400/10 dark:to-violet-500/15 dark:ring-white/10">
-      <ApMasterLogoMark size={72} className="rounded-2xl" />
+  <div className="flex flex-col items-center px-4 py-12 text-center">
+    <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/15 via-blue-400/10 to-violet-500/15 ring-1 ring-blue-500/10 dark:from-blue-500/20 dark:via-blue-400/10 dark:to-violet-500/15 dark:ring-white/10">
+      <ApMasterLogoMark size={60} className="rounded-2xl" />
     </div>
-    <h2 className="mb-2 text-2xl font-display font-bold tracking-tight text-slate-900 dark:text-white">
+    <h2 className="mb-1.5 text-xl font-display font-bold tracking-tight text-slate-900 dark:text-white">
       Start with a course
     </h2>
-    <p className="mb-8 max-w-md text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+    <p className="mb-6 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-400 sm:text-[15px]">
       Add an AP subject to unlock practice, analytics, and a projected score that updates as you improve.
     </p>
     <Button
       onClick={() => router.push("/learn")}
       variant="ghost"
-      className="h-12 rounded-full bg-blue-600 px-8 text-base font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+      className="h-11 rounded-full bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600 sm:text-base"
     >
       <Plus className="mr-2 h-5 w-5" /> Browse courses
     </Button>
@@ -436,7 +436,7 @@ const ArchivedSection = ({
   toggle: () => void;
   onRestore: (s: DashboardSubject) => void;
 }) => (
-  <section className="mt-10 border-t border-slate-200/70 pt-8 dark:border-slate-800/80">
+  <section className="mt-6 border-t border-slate-200/70 pt-5 dark:border-slate-800/80">
     <button
       type="button"
       onClick={toggle}
@@ -452,14 +452,14 @@ const ArchivedSection = ({
     </button>
 
     {isOpen && (
-      <ul className="mt-4 space-y-1">
+      <ul className="mt-3 space-y-0.5">
         {subjects.length === 0 ? (
           <li className="py-3 text-sm text-slate-500 dark:text-slate-400">Nothing in the archive yet.</li>
         ) : (
           subjects.map((s) => (
             <li
               key={s.id}
-              className="flex flex-col items-center gap-3 rounded-2xl px-4 py-4 text-center transition-colors hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:text-left"
+              className="flex flex-col items-center gap-2.5 rounded-2xl px-3 py-3 text-center transition-colors hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:text-left"
             >
               <div className="min-w-0 w-full sm:w-auto">
                 <p className="font-semibold text-slate-900 dark:text-white">{s.name}</p>
@@ -595,10 +595,10 @@ const SubjectCard = ({
   const [archiveConfirm, setArchiveConfirm] = useState(false);
 
   return (
-    <article className="group relative overflow-hidden rounded-3xl bg-white shadow-none ring-1 ring-slate-200 transition-colors duration-200 hover:ring-slate-300 dark:bg-slate-900/40 dark:ring-white/[0.08] dark:hover:ring-white/[0.12]">
-      <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-stretch sm:gap-6 sm:p-6">
+    <article className="group relative overflow-hidden rounded-2xl bg-white shadow-none ring-1 ring-slate-200 transition-colors duration-200 hover:ring-slate-300 dark:bg-slate-900/40 dark:ring-white/[0.08] dark:hover:ring-white/[0.12] sm:rounded-3xl">
+      <div className="relative flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5">
         <div
-          className={`flex flex-col items-center justify-center gap-3 rounded-2xl px-4 py-5 text-center sm:w-[9.5rem] sm:shrink-0 sm:gap-2 sm:px-3 sm:py-5 ${
+          className={`flex flex-col items-center justify-center gap-2 rounded-xl px-3 py-4 text-center sm:w-[8.75rem] sm:shrink-0 sm:gap-1.5 sm:px-2.5 sm:py-4 sm:rounded-2xl ${
             scoreColors ? scoreColors.bg : "bg-slate-100 dark:bg-white/[0.06]"
           }`}
           title="Predicted AP Score"
@@ -617,10 +617,10 @@ const SubjectCard = ({
           </p>
         </div>
 
-        <div className="min-w-0 flex-1 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0 space-y-1">
-              <h3 className="font-display text-lg font-bold leading-snug tracking-tight text-slate-900 dark:text-white sm:text-xl">
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-0.5">
+              <h3 className="font-display text-base font-bold leading-snug tracking-tight text-slate-900 dark:text-white sm:text-lg">
                 {subject.name}
               </h3>
               {description ? (
@@ -684,7 +684,7 @@ const SubjectCard = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center text-sm text-slate-500 dark:text-slate-400 sm:justify-start sm:text-left">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-center text-xs text-slate-500 dark:text-slate-400 sm:justify-start sm:text-left sm:text-sm">
             <span className="inline-flex items-center gap-1.5">
               <Target className="h-4 w-4 shrink-0 opacity-70" />
               {unitCount} units
@@ -695,8 +695,8 @@ const SubjectCard = ({
             </span>
           </div>
 
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0 w-full space-y-2 sm:flex-1">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 w-full space-y-1.5 sm:flex-1">
               <p className="text-xs font-medium text-slate-400 dark:text-slate-500 sm:text-left text-center">
                 Unit progress
               </p>
@@ -727,7 +727,7 @@ const SubjectCard = ({
               onClick={onStudy}
               title={testHistory.length === 0 ? "Start practice" : "Continue practice"}
               variant="ghost"
-              className="group/btn h-11 shrink-0 self-center rounded-full bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600 sm:self-end"
+              className="group/btn h-10 shrink-0 self-center rounded-full bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600 sm:self-end sm:px-5"
             >
               <span className="md:hidden">{testHistory.length === 0 ? "Start" : "Practice"}</span>
               <span className="hidden md:inline">{testHistory.length === 0 ? "Start practice" : "Continue practice"}</span>

@@ -11,7 +11,7 @@ import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { getSubjectByLegacyId, getSubjectByCode, getUnitDisplayLabel } from "@/subjects";
 import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
-import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
+import { PrettyExplanation, QUIZ_EXPLANATION_CLASSNAME, QUIZ_QUESTION_EXPL_GRID_CLASS } from "@/components/ui/PrettyExplanation";
 import { ExplanationPanel } from "@/components/quiz/ExplanationPanel";
 import { ReportQuestionDialog } from "@/components/quiz/ReportQuestionDialog";
 
@@ -234,70 +234,77 @@ export default function BookmarksPage() {
                 {getUnitDisplayLabel(subjectId, currentQuestion.unitId)}
               </p>
             )}
-            <div className="mx-auto max-w-3xl space-y-0">
-                <div className="space-y-4">
-                    <p className="text-sm leading-relaxed text-gray-900 dark:text-gray-100">
-                      {typeof currentQuestion.prompt === "string" && currentQuestion.prompt
-                        ? currentQuestion.prompt
-                        : `Q${currentIndex + 1}`}
-                    </p>
+            {(() => {
+              const subject = currentQuestion.subjectId
+                ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId)
+                : undefined;
+              const displayCorrect = getDisplayCorrectLabel(
+                { answerIndex: currentQuestion.answerIndex },
+                subject?.metadata?.mcqOptionCount,
+              );
+              return (
+                <div className={QUIZ_QUESTION_EXPL_GRID_CLASS}>
+                  <div className="min-w-0 space-y-0">
+                    <div className="space-y-4">
+                      <p className="text-sm leading-relaxed text-gray-900 dark:text-gray-100">
+                        {typeof currentQuestion.prompt === "string" && currentQuestion.prompt
+                          ? currentQuestion.prompt
+                          : `Q${currentIndex + 1}`}
+                      </p>
 
-                    {(() => {
-                      const choicesArr = getChoicesArray(currentQuestion.choices);
-                      const subject = currentQuestion.subjectId ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId) : undefined;
-                      const correctLetter = getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, subject?.metadata?.mcqOptionCount);
+                      {(() => {
+                        const choicesArr = getChoicesArray(currentQuestion.choices);
+                        const correctLetter = displayCorrect;
 
-                      return (
-                        <div className="space-y-2">
-                          {choicesArr.map(({ letter, text }) => {
-                            const isSelected = selectedAnswer === letter;
-                            const isCorrectChoice = letter === correctLetter;
+                        return (
+                          <div className="space-y-2">
+                            {choicesArr.map(({ letter, text }) => {
+                              const isSelected = selectedAnswer === letter;
+                              const isCorrectChoice = letter === correctLetter;
 
-                            let borderClass =
-                              "border-gray-200 bg-white dark:border-gray-700 dark:bg-slate-800 hover:border-gray-400 dark:hover:border-gray-500";
-                            if (isRevealed) {
-                              if (isCorrectChoice) borderClass = "border-green-500 bg-green-50 dark:bg-green-900/30";
-                              else if (isSelected && !isCorrectChoice) borderClass = "border-red-500 bg-red-50 dark:bg-red-900/30";
-                              else borderClass = "border-gray-200 dark:border-gray-700";
-                            } else if (isSelected) {
-                              borderClass = "border-blue-500 bg-blue-50 dark:bg-blue-900/20";
-                            }
+                              let borderClass =
+                                "border-gray-200 bg-white dark:border-gray-700 dark:bg-slate-800 hover:border-gray-400 dark:hover:border-gray-500";
+                              if (isRevealed) {
+                                if (isCorrectChoice) borderClass = "border-green-500 bg-green-50 dark:bg-green-900/30";
+                                else if (isSelected && !isCorrectChoice) borderClass = "border-red-500 bg-red-50 dark:bg-red-900/30";
+                                else borderClass = "border-gray-200 dark:border-gray-700";
+                              } else if (isSelected) {
+                                borderClass = "border-blue-500 bg-blue-50 dark:bg-blue-900/20";
+                              }
 
-                            return (
-                              <button
-                                key={letter}
-                                onClick={() => !isRevealed && setSelectedAnswer(letter)}
-                                disabled={isRevealed}
-                                className={`w-full text-left p-3 rounded-lg border ${borderClass} transition-all disabled:cursor-default text-sm`}
-                              >
-                                <div className="flex items-start gap-3">
-                                  <span className={`font-bold mt-0.5 ${isRevealed && isCorrectChoice ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}>
-                                    {letter}.
-                                  </span>
-                                  <span className="text-gray-800 dark:text-gray-200 flex-1">{text}</span>
-                                  {isRevealed && isCorrectChoice && (
-                                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                                  )}
-                                  {isRevealed && isSelected && !isCorrectChoice && (
-                                    <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                                  )}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                </div>
-                {(() => {
-                  const subject = currentQuestion.subjectId ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId) : undefined;
-                  const displayCorrect = getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, subject?.metadata?.mcqOptionCount);
-                  return (
-                    <ExplanationPanel hasAnswered={isRevealed}>
+                              return (
+                                <button
+                                  key={letter}
+                                  onClick={() => !isRevealed && setSelectedAnswer(letter)}
+                                  disabled={isRevealed}
+                                  className={`w-full text-left p-3 rounded-lg border ${borderClass} transition-all disabled:cursor-default text-sm`}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <span className={`font-bold mt-0.5 ${isRevealed && isCorrectChoice ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}>
+                                      {letter}.
+                                    </span>
+                                    <span className="text-gray-800 dark:text-gray-200 flex-1">{text}</span>
+                                    {isRevealed && isCorrectChoice && (
+                                      <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                                    )}
+                                    {isRevealed && isSelected && !isCorrectChoice && (
+                                      <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                  <div className={`min-w-0 md:sticky md:top-4 ${isRevealed ? "md:self-start" : "md:self-stretch"}`}>
+                    <ExplanationPanel hasAnswered={isRevealed} className={isRevealed ? "" : "h-full"}>
                       {isRevealed && (
                         <>
                           <p
-                            className={`text-sm font-medium ${
+                            className={`text-[0.775rem] font-medium leading-relaxed ${
                               selectedAnswer === displayCorrect
                                 ? "text-emerald-700 dark:text-emerald-400"
                                 : "text-red-700 dark:text-red-300"
@@ -308,16 +315,21 @@ export default function BookmarksPage() {
                               : `Incorrect. The correct answer is ${displayCorrect}.`}
                           </p>
                           {currentQuestion.explanation ? (
-                            <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
-                              {getDisplayExplanation(currentQuestion.explanation, currentQuestion, subject?.metadata?.mcqOptionCount)}
+                            <PrettyExplanation className={QUIZ_EXPLANATION_CLASSNAME}>
+                              {getDisplayExplanation(
+                                currentQuestion.explanation,
+                                currentQuestion,
+                                subject?.metadata?.mcqOptionCount,
+                              )}
                             </PrettyExplanation>
                           ) : null}
                         </>
                       )}
                     </ExplanationPanel>
-                  );
-                })()}
-            </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Fixed bottom bar — identical to review questions */}

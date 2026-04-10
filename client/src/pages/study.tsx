@@ -244,7 +244,7 @@ export default function Study() {
               <HelpCircle className="h-8 w-8 text-slate-400" />
             </div>
             <h1 className="mb-2 font-display text-2xl font-bold text-slate-900 dark:text-white">
-              Subject not found
+              Subject Not Found
             </h1>
             <p className="mb-6 text-slate-600 dark:text-slate-400">
               The requested subject was not found in your dashboard.
@@ -287,8 +287,8 @@ export default function Study() {
             Back to dashboard
           </Button>
 
-          <div className="flex flex-col gap-3">
-            <div className="min-w-0 w-full max-w-full space-y-1.5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-6">
+            <div className="min-w-0 w-full max-w-full flex-1 space-y-1.5 md:pr-2">
               <p className="text-sm font-medium text-blue-600/90 dark:text-blue-400/90">Study</p>
               <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
                 {currentSubject.name}
@@ -298,7 +298,7 @@ export default function Study() {
               </p>
             </div>
 
-            <div className="flex w-full flex-shrink-0 flex-wrap justify-center gap-2 sm:justify-start">
+            <div className="flex w-full shrink-0 flex-wrap justify-center gap-2 sm:justify-start md:w-auto md:justify-end">
               <div
                 className="flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 dark:bg-white/[0.06]"
                 title="Predicted AP Score"
@@ -343,7 +343,7 @@ export default function Study() {
         <section>
           <div className="mb-2">
             <h2 className="text-xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
-              Quick actions
+              Quick Actions
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
@@ -358,8 +358,8 @@ export default function Study() {
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold leading-tight">
                   {subjectId
-                    ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} full-length MCQ`
-                    : "Full-length MCQ"}
+                    ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full-Length MCQ`
+                    : "Full-Length MCQ"}
                 </p>
                 <p className="mt-0.5 text-xs text-white/80">Exam-style timing</p>
               </div>
@@ -408,7 +408,7 @@ export default function Study() {
                   <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">Quiz & test history</p>
+                  <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">Quiz & Test History</p>
                   <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Past results</p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
@@ -424,7 +424,7 @@ export default function Study() {
                 <RotateCcw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">Review questions</p>
+                <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">Review Questions</p>
                 <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Due for review</p>
               </div>
             </button>
@@ -435,7 +435,7 @@ export default function Study() {
         <section className="space-y-3">
           <div className="space-y-1">
             <h2 className="text-xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
-              Course content
+              Course Content
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {totalTopics} units · {topicsMastered} mastered

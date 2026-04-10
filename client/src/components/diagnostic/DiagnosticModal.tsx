@@ -23,7 +23,7 @@ import { ExplanationPanel } from "@/components/quiz/ExplanationPanel";
 import { PracticeQuizQuestionCard } from "@/components/quiz/PracticeQuizQuestionCard";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
+import { PrettyExplanation, QUIZ_EXPLANATION_CLASSNAME, QUIZ_QUESTION_EXPL_GRID_CLASS } from "@/components/ui/PrettyExplanation";
 import { getDisplayChoicesAndCorrect, getDisplayExplanation } from "@/lib/mcqDisplay";
 import { normalizeQuestion } from "@/lib/normalizeQuestion";
 import { apiRequest } from "@/lib/api";
@@ -628,7 +628,7 @@ setQuestionSequence(seq);
       {/* Scrollable content area with bottom padding for fixed bar */}
       <div className="flex-1 overflow-y-auto pb-14">
         <div className="max-w-6xl mx-auto px-2 sm:px-3 py-2">
-          <div className="mx-auto max-w-3xl space-y-3">
+          <div className="mx-auto max-w-6xl space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-blue-500" />
@@ -643,42 +643,48 @@ setQuestionSequence(seq);
               </div>
               <Progress value={progressPct} className="h-1 rounded-full bg-slate-100 dark:bg-slate-800" />
 
-              <PracticeQuizQuestionCard
-                question={currentQuestion as any}
-                questionNumber={currentIndex + 1}
-                totalQuestions={sectionPlan.length}
-                selectedAnswer={selectedAnswer}
-                onAnswerSelect={handleAnswerSelect}
-                isAnswerSubmitted={showFeedback}
-                cheatMode={cheatMode}
-                mcqOptionCount={mcqOptionCount}
-              />
-              <ExplanationPanel hasAnswered={showFeedback}>
-                {showFeedback && (
-                  <>
-                    <p
-                      className={`text-sm font-medium ${
-                        selectedAnswer === correctLabel
-                          ? "text-emerald-700 dark:text-emerald-400"
-                          : "text-red-700 dark:text-red-300"
-                      }`}
-                    >
-                      {selectedAnswer === correctLabel
-                        ? "Correct."
-                        : `Incorrect. The correct answer is ${correctLabel}.`}
-                    </p>
-                    {(currentQuestion as any).explanation ? (
-                      <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
-                        {getDisplayExplanation(
-                        (currentQuestion as any).explanation,
-                        currentQuestion as any,
-                        mcqOptionCount
-                      )}
-                      </PrettyExplanation>
-                    ) : null}
-                  </>
-                )}
-              </ExplanationPanel>
+              <div className={QUIZ_QUESTION_EXPL_GRID_CLASS}>
+                <div className="min-w-0">
+                  <PracticeQuizQuestionCard
+                    question={currentQuestion as any}
+                    questionNumber={currentIndex + 1}
+                    totalQuestions={sectionPlan.length}
+                    selectedAnswer={selectedAnswer}
+                    onAnswerSelect={handleAnswerSelect}
+                    isAnswerSubmitted={showFeedback}
+                    cheatMode={cheatMode}
+                    mcqOptionCount={mcqOptionCount}
+                  />
+                </div>
+                <div className={`min-w-0 md:sticky md:top-4 ${showFeedback ? "md:self-start" : "md:self-stretch"}`}>
+                  <ExplanationPanel hasAnswered={showFeedback} className={showFeedback ? "" : "h-full"}>
+                    {showFeedback && (
+                      <>
+                        <p
+                          className={`text-[0.775rem] font-medium leading-relaxed ${
+                            selectedAnswer === correctLabel
+                              ? "text-emerald-700 dark:text-emerald-400"
+                              : "text-red-700 dark:text-red-300"
+                          }`}
+                        >
+                          {selectedAnswer === correctLabel
+                            ? "Correct."
+                            : `Incorrect. The correct answer is ${correctLabel}.`}
+                        </p>
+                        {(currentQuestion as any).explanation ? (
+                          <PrettyExplanation className={QUIZ_EXPLANATION_CLASSNAME}>
+                            {getDisplayExplanation(
+                            (currentQuestion as any).explanation,
+                            currentQuestion as any,
+                            mcqOptionCount
+                          )}
+                          </PrettyExplanation>
+                        ) : null}
+                      </>
+                    )}
+                  </ExplanationPanel>
+                </div>
+              </div>
           </div>
         </div>
       </div>

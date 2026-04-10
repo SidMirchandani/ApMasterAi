@@ -79,7 +79,13 @@ export default function Navigation() {
     if (location.startsWith("/quiz")) {
       const unit = router.query.unit as string;
       if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
-      if (unit) bc.push({ label: unit.replace("unit", "Unit ").replace("bigidea", "Unit "), href: "#" });
+      if (unit) {
+        const unitLabel =
+          unit === "full-length"
+            ? "Full-Length MCQ"
+            : unit.replace("unit", "Unit ").replace("bigidea", "Unit ");
+        bc.push({ label: unitLabel, href: "#" });
+      }
     }
     if (location.startsWith("/bookmarks")) {
       if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
@@ -95,18 +101,18 @@ export default function Navigation() {
     }
     if (location.startsWith("/full-length-history")) {
       if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
-      bc.push({ label: "Quiz/Test History", href: "#" });
+      bc.push({ label: "Quiz & Test History", href: "#" });
     }
     if (location.startsWith("/full-length-results")) {
       if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
-      bc.push({ label: "Quiz/Test History", href: `/full-length-history?subject=${subject}` });
+      bc.push({ label: "Quiz & Test History", href: `/full-length-history?subject=${subject}` });
       bc.push({ label: "Test Results", href: "#" });
     }
     if (location.startsWith("/section-review")) {
       const testId = router.query.testId as string;
       const section = router.query.section as string;
       if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
-      bc.push({ label: "Quiz/Test History", href: `/full-length-history?subject=${subject}` });
+      bc.push({ label: "Quiz & Test History", href: `/full-length-history?subject=${subject}` });
       bc.push({ label: "Test Results", href: `/full-length-results?subject=${subject}&testId=${testId}` });
       bc.push({ label: section === "all" ? "Full Test Review" : "Unit Review", href: "#" });
     }

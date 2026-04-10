@@ -121,7 +121,7 @@ export function QuizResults({
   return (
     <div className="max-w-6xl mx-auto space-y-6 px-4">
       <nav className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-        Dashboard &gt; {subjectId} &gt; Test History &gt; Full Length Test
+        Dashboard &gt; {subjectId} &gt; Test History &gt; Full-Length Test
       </nav>
 
       <Card className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-lg">

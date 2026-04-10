@@ -18,7 +18,7 @@ export function ApMasterLogoMark({
       width={size}
       height={size}
       priority={priority}
-      className={["shrink-0 rounded-lg object-cover", className].filter(Boolean).join(" ")}
+      className={["shrink-0 rounded-full object-cover", className].filter(Boolean).join(" ")}
     />
   );
 }

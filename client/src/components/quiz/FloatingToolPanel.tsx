@@ -4,6 +4,8 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+type ResizeCorner = "nw" | "ne" | "sw" | "se";
+
 interface FloatingToolPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -16,6 +18,36 @@ interface FloatingToolPanelProps {
   /** Extra class on outer panel (e.g. shadow) */
   className?: string;
 }
+
+const CORNER_GRIP_CLASS =
+  "absolute z-[55] h-6 w-6 touch-none select-none bg-slate-500 dark:bg-slate-600";
+
+/** Opaque clip-path triangles + corner highlight (gradient clips with shape; avoids box-shadow clipped by clip-path). */
+const CORNER_GRIP_VISUAL: Record<
+  ResizeCorner,
+  { clipPath: string; backgroundImage: string }
+> = {
+  nw: {
+    clipPath: "polygon(0 0, 100% 0, 0 100%)",
+    backgroundImage:
+      "linear-gradient(to bottom right, rgb(255 255 255 / 0.2), transparent 52%)",
+  },
+  ne: {
+    clipPath: "polygon(100% 0, 100% 100%, 0 0)",
+    backgroundImage:
+      "linear-gradient(to bottom left, rgb(255 255 255 / 0.2), transparent 52%)",
+  },
+  sw: {
+    clipPath: "polygon(0 0, 0 100%, 100% 100%)",
+    backgroundImage:
+      "linear-gradient(to top right, rgb(255 255 255 / 0.2), transparent 52%)",
+  },
+  se: {
+    clipPath: "polygon(100% 0, 0 100%, 100% 100%)",
+    backgroundImage:
+      "linear-gradient(to top left, rgb(255 255 255 / 0.2), transparent 52%)",
+  },
+};
 
 export function FloatingToolPanel({
   open,
@@ -33,7 +65,15 @@ export function FloatingToolPanel({
   const [size, setSize] = useState({ w: defaultWidth, h: defaultHeight });
   const prevOpen = useRef(false);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
-  const resizeRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+  const resizeRef = useRef<{
+    corner: ResizeCorner;
+    startPointerX: number;
+    startPointerY: number;
+    startX: number;
+    startY: number;
+    startW: number;
+    startH: number;
+  } | null>(null);
   const sizeRef = useRef(size);
   const positionRef = useRef(position);
   sizeRef.current = size;
@@ -96,10 +136,49 @@ export function FloatingToolPanel({
         setPosition(clampPosition(nx, ny, w, h));
       }
       if (resizeRef.current) {
-        const dw = e.clientX - resizeRef.current.x;
-        const dh = e.clientY - resizeRef.current.y;
-        const next = clampSize(resizeRef.current.w + dw, resizeRef.current.h + dh);
-        setSize(next);
+        const r = resizeRef.current;
+        const dx = e.clientX - r.startPointerX;
+        const dy = e.clientY - r.startPointerY;
+        let w = r.startW;
+        let h = r.startH;
+
+        switch (r.corner) {
+          case "se":
+            w = r.startW + dx;
+            h = r.startH + dy;
+            break;
+          case "sw":
+            w = r.startW - dx;
+            h = r.startH + dy;
+            break;
+          case "ne":
+            w = r.startW + dx;
+            h = r.startH - dy;
+            break;
+          case "nw":
+            w = r.startW - dx;
+            h = r.startH - dy;
+            break;
+        }
+
+        const clamped = clampSize(w, h);
+        w = clamped.w;
+        h = clamped.h;
+
+        const right = r.startX + r.startW;
+        const bottom = r.startY + r.startH;
+        let x = r.startX;
+        let y = r.startY;
+        if (r.corner === "sw" || r.corner === "nw") {
+          x = right - w;
+        }
+        if (r.corner === "ne" || r.corner === "nw") {
+          y = bottom - h;
+        }
+
+        const pos = clampPosition(x, y, w, h);
+        setPosition(pos);
+        setSize({ w, h });
       }
     };
 
@@ -129,17 +208,21 @@ export function FloatingToolPanel({
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
-  const onResizePointerDown = (e: React.PointerEvent) => {
+  const onResizePointerDown = (e: React.PointerEvent, corner: ResizeCorner) => {
     e.preventDefault();
     e.stopPropagation();
+    const pos = positionRef.current;
     const sz = sizeRef.current;
     resizeRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      w: sz.w,
-      h: sz.h,
+      corner,
+      startPointerX: e.clientX,
+      startPointerY: e.clientY,
+      startX: pos.x,
+      startY: pos.y,
+      startW: sz.w,
+      startH: sz.h,
     };
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   if (!open || !mounted) return null;
@@ -161,7 +244,7 @@ export function FloatingToolPanel({
       }}
     >
       <div
-        className="flex shrink-0 cursor-move select-none items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/80"
+        className="relative z-50 flex shrink-0 cursor-move select-none items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/80"
         onPointerDown={onHeaderPointerDown}
       >
         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</span>
@@ -169,22 +252,54 @@ export function FloatingToolPanel({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0 cursor-pointer"
+          className="relative z-[70] h-8 w-8 shrink-0 cursor-pointer"
           aria-label="Close"
           onClick={() => onOpenChange(false)}
         >
           <X className="h-4 w-4" />
         </Button>
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+      <div className="relative z-10 min-h-0 flex-1 overflow-hidden">{children}</div>
+      {/* Corner resize grips — above header (z-50); close stays above NE grip (z-70) */}
       <div
-        className="absolute bottom-0 right-0 z-10 h-6 w-6 cursor-nwse-resize touch-none rounded-br-lg"
-        onPointerDown={onResizePointerDown}
-        aria-hidden
-        title="Resize"
+        role="presentation"
+        className={cn(CORNER_GRIP_CLASS, "left-0 top-0 cursor-nwse-resize rounded-tl-lg")}
         style={{
-          background: "linear-gradient(135deg, transparent 55%, rgb(148 163 184 / 0.75) 55%)",
+          clipPath: CORNER_GRIP_VISUAL.nw.clipPath,
+          backgroundImage: CORNER_GRIP_VISUAL.nw.backgroundImage,
         }}
+        onPointerDown={(e) => onResizePointerDown(e, "nw")}
+        aria-label="Resize from top-left corner"
+      />
+      <div
+        role="presentation"
+        className={cn(CORNER_GRIP_CLASS, "right-0 top-0 cursor-nesw-resize rounded-tr-lg")}
+        style={{
+          clipPath: CORNER_GRIP_VISUAL.ne.clipPath,
+          backgroundImage: CORNER_GRIP_VISUAL.ne.backgroundImage,
+        }}
+        onPointerDown={(e) => onResizePointerDown(e, "ne")}
+        aria-label="Resize from top-right corner"
+      />
+      <div
+        role="presentation"
+        className={cn(CORNER_GRIP_CLASS, "bottom-0 left-0 cursor-nesw-resize rounded-bl-lg")}
+        style={{
+          clipPath: CORNER_GRIP_VISUAL.sw.clipPath,
+          backgroundImage: CORNER_GRIP_VISUAL.sw.backgroundImage,
+        }}
+        onPointerDown={(e) => onResizePointerDown(e, "sw")}
+        aria-label="Resize from bottom-left corner"
+      />
+      <div
+        role="presentation"
+        className={cn(CORNER_GRIP_CLASS, "bottom-0 right-0 cursor-nwse-resize rounded-br-lg")}
+        style={{
+          clipPath: CORNER_GRIP_VISUAL.se.clipPath,
+          backgroundImage: CORNER_GRIP_VISUAL.se.backgroundImage,
+        }}
+        onPointerDown={(e) => onResizePointerDown(e, "se")}
+        aria-label="Resize from bottom-right corner"
       />
     </div>
   );

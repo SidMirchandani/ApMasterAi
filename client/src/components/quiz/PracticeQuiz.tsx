@@ -8,7 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
 import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
 import { getStudyNoteFromQuestion } from "@/lib/studyNote";
-import { PrettyExplanation } from "@/components/ui/PrettyExplanation";
+import { PrettyExplanation, QUIZ_EXPLANATION_CLASSNAME, QUIZ_QUESTION_EXPL_GRID_CLASS } from "@/components/ui/PrettyExplanation";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
@@ -377,13 +377,14 @@ export function PracticeQuiz({
       <div
         className={`flex min-h-0 flex-1 flex-col overflow-hidden ${
           showToolHeader
-            ? "pt-[calc(3.75rem+1px+3.25rem+1px)] max-md:pt-[calc(3.75rem+1px+4.25rem+1px)]"
+            ? // Nav height is already offset by Navigation’s in-flow spacer; only reserve the fixed practice header (h-16 + border).
+              "md:pt-[calc(5rem+1px)] max-md:pt-[calc(3.75rem+1px+4.25rem+1px-5.5rem)]"
             : ""
         }`}
       >
         <div className="min-h-0 flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32">
           <div className={`mx-auto max-w-6xl px-2 sm:px-3 ${showToolHeader ? "pb-1 pt-0" : "py-2"}`}>
-            <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className={QUIZ_QUESTION_EXPL_GRID_CLASS}>
               <div className="min-w-0">
               <PracticeQuizQuestionCard
                 question={currentQuestion}
@@ -405,13 +406,13 @@ export function PracticeQuiz({
                 >
                   {isAnswerSubmitted && currentQuestion && (
                     <>
-                      <p className="text-sm font-medium">
+                      <p className="text-[0.775rem] font-medium leading-relaxed">
                         {selectedAnswer === feedbackCorrectLabel
                           ? "Correct."
                           : `Incorrect. The correct answer is ${feedbackCorrectLabel}.`}
                       </p>
                       {currentQuestion.explanation ? (
-                        <PrettyExplanation className="prose prose-sm dark:prose-invert max-w-none">
+                        <PrettyExplanation className={QUIZ_EXPLANATION_CLASSNAME}>
                           {getDisplayExplanation(
                             currentQuestion.explanation,
                             currentQuestion,

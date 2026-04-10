@@ -208,18 +208,18 @@ export function QuestionCard({
                 isCrossedOut && !isAnswerSubmitted && !isReviewMode ? "opacity-40" : "opacity-100";
 
               const rowClass =
-                "min-h-[48px] rounded-lg border border-slate-200/90 bg-white p-3 text-slate-900 transition-colors dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
+                "min-h-[48px] rounded-lg border-0 bg-slate-50 p-3 text-slate-900 transition-colors dark:bg-slate-900/90 dark:text-slate-100";
 
               const hoverRow =
                 !isAnswerSubmitted
-                  ? "cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-700/70"
+                  ? "cursor-pointer hover:bg-slate-100/90 dark:hover:bg-slate-800/90"
                   : "cursor-default";
 
               const shouldShowCheatOutline =
                 cheatMode && isCorrectAnswer && !isAnswerSubmitted && !isReviewMode;
 
               let letterClass =
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-slate-300 text-xs font-bold text-slate-600 dark:border-slate-500 dark:bg-slate-700/50 dark:text-slate-200";
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-0 bg-slate-200 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200";
 
               if (!isAnswerSubmitted) {
                 if (isUserAnswer) {

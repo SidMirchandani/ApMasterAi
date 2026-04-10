@@ -122,7 +122,9 @@ export function ReportQuestionDialog({
               <div className="space-y-1.5">
                 <Label htmlFor="report-details">
                   Additional details{" "}
-                  <span className="text-gray-400 font-normal text-xs">(optional)</span>
+                  <span className="font-normal text-xs text-gray-500 dark:text-zinc-400">
+                    (optional)
+                  </span>
                 </Label>
                 <Textarea
                   id="report-details"
