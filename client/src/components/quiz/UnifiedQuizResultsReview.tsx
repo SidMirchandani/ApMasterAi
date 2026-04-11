@@ -42,6 +42,11 @@ export interface UnifiedQuizResultsReviewProps {
   sectionReviewReturnTo?: string;
   /** Whether app navbar is visible above this screen. */
   hasAppNav?: boolean;
+  /**
+   * Marketing / landing: no full-screen fixed chrome — scrolls in a bordered card so it matches
+   * embedded previews without covering the page.
+   */
+  embedded?: boolean;
 }
 
 export function UnifiedQuizResultsReview({
@@ -55,6 +60,7 @@ export function UnifiedQuizResultsReview({
   testId,
   sectionReviewReturnTo,
   hasAppNav = true,
+  embedded = false,
 }: UnifiedQuizResultsReviewProps) {
   const router = useRouter();
   const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
@@ -62,10 +68,16 @@ export function UnifiedQuizResultsReview({
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
 
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
-  const resultsHeaderTop = hasAppNav ? "top-[calc(3.75rem+1px)]" : "top-0";
-  const resultsContentTop = hasAppNav
-    ? "pt-[calc(3.75rem+1px+3.75rem+1px)]"
-    : "pt-[calc(3.75rem+1px)]";
+  const resultsHeaderTop = embedded
+    ? ""
+    : hasAppNav
+      ? "top-[calc(3.75rem+1px)]"
+      : "top-0";
+  const resultsContentTop = embedded
+    ? "pt-0"
+    : hasAppNav
+      ? "pt-[calc(3.75rem+1px+3.75rem+1px)]"
+      : "pt-[calc(3.75rem+1px)]";
 
   const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
@@ -165,8 +177,20 @@ export function UnifiedQuizResultsReview({
     const isApClassroomSurface = isFullLength;
 
     return (
-      <div className="flex min-h-screen flex-col bg-white dark:bg-[#0B0F1A]">
-        <div className={`fixed left-0 right-0 z-50 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A] ${resultsHeaderTop}`}>
+      <div
+        className={
+          embedded
+            ? "flex max-h-[min(85vh,900px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0B0F1A]"
+            : "flex min-h-screen flex-col bg-white dark:bg-[#0B0F1A]"
+        }
+      >
+        <div
+          className={
+            embedded
+              ? "relative z-10 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A]"
+              : `fixed left-0 right-0 z-50 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A] ${resultsHeaderTop}`
+          }
+        >
           <div className="mx-auto flex max-w-3xl items-center justify-between px-3 py-2.5 sm:px-4">
             <h1 className="text-lg font-semibold text-slate-900 dark:text-white">
               Question {selectedQuestionIndex + 1} of {questions.length}
@@ -183,7 +207,11 @@ export function UnifiedQuizResultsReview({
           </div>
         </div>
         <div
-          className={`flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32 ${resultsContentTop}`}
+          className={
+            embedded
+              ? "flex-1 overflow-y-auto pb-4 pt-2 sm:pb-6"
+              : `flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32 ${resultsContentTop}`
+          }
         >
           <div className="mx-auto min-w-0 max-w-6xl px-2 py-0 sm:px-3">
             <div className={QUIZ_QUESTION_EXPL_GRID_CLASS}>
@@ -250,8 +278,20 @@ export function UnifiedQuizResultsReview({
 
   // Summary view: Close Review, score, grid, buttons, Review By Unit
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
-      <div className={`fixed left-0 right-0 z-50 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A] ${resultsHeaderTop}`}>
+    <div
+      className={
+        embedded
+          ? "max-h-[min(85vh,900px)] overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0B0F1A]"
+          : "min-h-screen bg-white dark:bg-[#0B0F1A]"
+      }
+    >
+      <div
+        className={
+          embedded
+            ? "relative z-10 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A]"
+            : `fixed left-0 right-0 z-50 border-b border-slate-100 bg-white dark:border-slate-800 dark:bg-[#0B0F1A] ${resultsHeaderTop}`
+        }
+      >
         <div className="mx-auto flex max-w-3xl items-center justify-between px-3 py-2.5 sm:px-4">
           <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Quiz Results</h1>
           <Button
@@ -266,7 +306,11 @@ export function UnifiedQuizResultsReview({
         </div>
       </div>
 
-      <div className={`mx-auto max-w-3xl space-y-4 px-2 pb-8 sm:px-3 ${resultsContentTop}`}>
+      <div
+        className={`mx-auto max-w-3xl space-y-4 overflow-y-auto px-2 pb-8 sm:px-3 ${
+          embedded ? "max-h-[calc(min(85vh,900px)-3.5rem)] pt-4" : resultsContentTop
+        }`}
+      >
         {/* Center-aligned score and review actions */}
         <div className="flex flex-col items-center gap-3 text-center">
           <p className="text-xl font-bold text-slate-900 dark:text-white">

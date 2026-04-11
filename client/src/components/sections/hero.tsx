@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { HeroPlatformStatsStrip } from "@/components/sections/hero-platform-stats";
 
 const ROTATING_SUBJECTS = [
   "AP Physics",
@@ -21,7 +22,7 @@ const ROTATING_SUBJECTS = [
   "AP Chemistry",
   "AP U.S. History",
   "AP Biology",
-  "AP Macroeconomics",
+  "AP Macro",
 ];
 
 export function Hero() {
@@ -46,7 +47,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="landing-hero-surface relative overflow-hidden min-h-[90vh] flex items-center">
+    <section className="landing-hero-surface landing-story-snap relative overflow-hidden min-h-[90vh]">
       {/* Subtle background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
@@ -67,9 +68,10 @@ export function Hero() {
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-20 md:py-28 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8 md:pb-24 md:pt-10 lg:px-8">
+        <HeroPlatformStatsStrip />
 
+        <div className="mt-6 grid grid-cols-1 items-center gap-12 lg:mt-10 lg:grid-cols-2 lg:gap-20">
           {/* LEFT: Content */}
           <div
             className={`transition-all duration-500 ease-out ${
@@ -170,7 +172,7 @@ export function Hero() {
                 {/* Header */}
                 <div className="px-5 pt-4 pb-3.5 border-b border-slate-100 dark:border-slate-800">
                   <p className="text-[15px] font-bold text-slate-900 dark:text-white leading-tight">
-                    AP Macroeconomics
+                    AP Macro
                   </p>
                   <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400 mt-1">
                     <span className="flex items-center gap-1">
@@ -358,10 +360,10 @@ export function HeroStats() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="landing-band-muted relative py-20 md:py-28">
+    <section ref={sectionRef} className="landing-band-muted landing-story-snap relative py-20 md:py-28">
       <div className="absolute inset-0 bg-gradient-to-b from-white dark:from-[#0B0F1A] to-transparent h-20 pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section header */}
         <div
           className={`text-center mb-14 transition-all duration-500 ease-out ${
@@ -371,12 +373,12 @@ export function HeroStats() {
           <div className="landing-eyebrow mb-5">
             <span className="text-[11px]">The AP Landscape</span>
           </div>
-          <h2 className="landing-section-title mb-3">
+          <h2 className="landing-section-title mb-3 capitalize">
             Why Students Need{" "}
             <span className="text-gradient">Better Prep</span>
           </h2>
           <p className="landing-section-desc max-w-md">
-            The data tells a clear story — and APMaster.ai was built to change it.
+            The numbers make the case — and APMaster.ai was built to change them.
           </p>
         </div>
 

@@ -487,18 +487,36 @@ html, body {
     border: 1px solid hsl(var(--primary) / 0.15);
   }
 
-  /* ── Landing / marketing page ── */
+  /* ── Landing / marketing page (match dashboard: white surfaces, subtle rings) ── */
   .landing-page {
-    @apply min-h-screen bg-slate-50 dark:bg-[#0B0F1A] text-slate-900 dark:text-slate-100 antialiased;
+    @apply min-h-screen bg-white dark:bg-[#0B0F1A] text-slate-900 dark:text-slate-100 antialiased;
+    scroll-snap-type: y proximity;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .landing-page {
+      scroll-snap-type: none;
+    }
+  }
+  .landing-story-snap {
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
   }
   .landing-hero-surface {
     @apply bg-white dark:bg-[#0B0F1A];
   }
+  /* Alternating bands: subtle tint vs clean white (dark: single deep base, slight lift on “muted”) */
   .landing-band-muted {
-    @apply bg-slate-50 dark:bg-[#090D14];
+    @apply bg-slate-50/80 dark:bg-[#080c14];
   }
   .landing-band-light {
     @apply bg-white dark:bg-[#0B0F1A];
+  }
+  .landing-section-divider {
+    @apply border-t border-slate-100 dark:border-slate-800/80;
+  }
+  /* Fixed nav offset for in-page anchors */
+  .landing-page section[id] {
+    scroll-margin-top: 5rem;
   }
   .landing-eyebrow {
     @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200/90 dark:border-slate-700/80 bg-white/90 dark:bg-white/[0.04] backdrop-blur-sm text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400;
@@ -514,6 +532,22 @@ html, body {
   }
   .landing-section-desc {
     @apply text-[15px] text-slate-500 dark:text-slate-400 max-w-lg mx-auto leading-relaxed;
+  }
+
+  /* Landing: infinite horizontal course strip — speed on hover via WAAPI playbackRate (see LandingCoursesGallery) */
+  .landing-marquee-track {
+    display: flex;
+    width: max-content;
+    gap: 1.25rem;
+    animation: landing-marquee 55s linear infinite;
+  }
+  @keyframes landing-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
 
   /* ── Divider ── */

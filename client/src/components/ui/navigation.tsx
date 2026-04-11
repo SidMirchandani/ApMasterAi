@@ -198,6 +198,43 @@ export default function Navigation() {
             {/* RIGHT: Theme + Nav links + User menu */}
             <div className="flex items-center gap-1">
               {/* Public nav links */}
+              {location === "/" && (
+                <>
+                  {/* Native in-document anchors avoid Next.js "Cancel rendering route" when already on /. */}
+                  <a
+                    href="#why-apmaster"
+                    onClick={handleDisabledClick}
+                    className={`text-[13.5px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors duration-100 hidden md:block px-2.5 py-1.5 rounded-md hover:bg-slate-100/70 dark:hover:bg-slate-800/70 ${isInQuizMode ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    Why APMaster?
+                  </a>
+                  <a
+                    href="#curriculum"
+                    onClick={handleDisabledClick}
+                    className={`text-[13.5px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors duration-100 hidden md:block px-2.5 py-1.5 rounded-md hover:bg-slate-100/70 dark:hover:bg-slate-800/70 ${isInQuizMode ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    Curriculum
+                  </a>
+                  <a
+                    href="#everything-you-need"
+                    onClick={handleDisabledClick}
+                    className={`text-[13.5px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors duration-100 hidden md:block px-2.5 py-1.5 rounded-md hover:bg-slate-100/70 dark:hover:bg-slate-800/70 ${isInQuizMode ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    Score a 5
+                  </a>
+                  <a
+                    href="#faq"
+                    onClick={handleDisabledClick}
+                    className={`text-[13.5px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors duration-100 hidden md:block px-2.5 py-1.5 rounded-md hover:bg-slate-100/70 dark:hover:bg-slate-800/70 ${isInQuizMode ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    FAQs
+                  </a>
+                  <span
+                    className="hidden md:block h-5 w-px shrink-0 bg-slate-200 dark:bg-slate-700 mx-1.5"
+                    aria-hidden
+                  />
+                </>
+              )}
               <Link
                 href="/about"
                 onClick={handleDisabledClick}

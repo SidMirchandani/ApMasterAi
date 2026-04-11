@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCountUp } from "@/hooks/use-count-up";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -232,25 +233,6 @@ function RegionDonutOutsideLabel(props: {
       </text>
     </g>
   );
-}
-
-function useCountUp(end: number, durationMs = 1200, enabled = true): number {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    if (!enabled || end === 0) {
-      setValue(end);
-      return;
-    }
-    let start = 0;
-    const startTime = Date.now();
-    const tick = () => {
-      const t = Math.min((Date.now() - startTime) / durationMs, 1);
-      setValue(Math.round(start + (end - start) * t));
-      if (t < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [end, durationMs, enabled]);
-  return value;
 }
 
 export function AdminInsightsTab({ token }: { token: string }) {

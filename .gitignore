@@ -8,6 +8,8 @@ dist
 
 # System files
 .DS_Store
+# Windows reserved device name; must never be a real file in the repo
+/NUL
 
 # Local env files
 .env

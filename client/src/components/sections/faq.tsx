@@ -107,11 +107,14 @@ export function FAQ() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="landing-band-muted relative py-24 md:py-32 overflow-hidden">
-      <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-white dark:from-[#0B0F1A] to-transparent pointer-events-none z-[1]" />
-      {/* Subtle bg decoration */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-violet-500/[0.06] rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/[0.05] rounded-full blur-[100px] pointer-events-none" />
+    <section
+      ref={sectionRef}
+      id="faq"
+      className="landing-band-muted landing-story-snap relative py-24 md:py-32 overflow-hidden scroll-mt-20"
+    >
+      <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-white dark:from-[#080c14] to-transparent pointer-events-none z-[1]" />
+      <div className="absolute top-0 right-0 w-[480px] h-[480px] bg-violet-500/[0.04] rounded-full blur-[100px] pointer-events-none dark:bg-violet-500/[0.06]" />
+      <div className="absolute bottom-0 left-0 w-[360px] h-[360px] bg-emerald-500/[0.03] rounded-full blur-[90px] pointer-events-none dark:bg-emerald-500/[0.05]" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16">
@@ -129,7 +132,7 @@ export function FAQ() {
                 <span className="text-[11px]">FAQ</span>
               </div>
 
-              <h2 className="landing-section-title mb-4 leading-tight">
+              <h2 className="landing-section-title mb-4 capitalize leading-tight">
                 Got Questions?<br />
                 <span className="text-gradient">We&apos;ve Got Answers.</span>
               </h2>

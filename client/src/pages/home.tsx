@@ -1,5 +1,11 @@
 import Navigation from "@/components/ui/navigation";
 import { Hero, HeroStats } from "@/components/sections/hero";
+import { LandingHowItWorks } from "@/components/sections/landing-how-it-works";
+import { LandingCoursesGallery } from "@/components/sections/landing-courses-gallery";
+import { LandingStudyPreview } from "@/components/sections/landing-study-preview";
+import { LandingUnitQuizzes } from "@/components/sections/landing-unit-quizzes";
+import { LandingExplanations } from "@/components/sections/landing-explanations";
+import { LandingApLevelEvaluations, LandingFullLengthTests } from "@/components/sections/landing-exam-demo";
 import { Features } from "@/components/sections/features";
 import { FAQ } from "@/components/sections/faq";
 import SimpleFooter from "@/components/sections/simple-footer";
@@ -40,6 +46,13 @@ export default function Home() {
       <Navigation />
       <Hero />
       <HeroStats />
+      <LandingHowItWorks />
+      <LandingCoursesGallery />
+      <LandingStudyPreview />
+      <LandingUnitQuizzes />
+      <LandingExplanations />
+      <LandingFullLengthTests />
+      <LandingApLevelEvaluations />
       <Features />
       <FAQ />
       <SimpleFooter />
