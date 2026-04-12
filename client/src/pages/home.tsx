@@ -1,5 +1,5 @@
 import Navigation from "@/components/ui/navigation";
-import { Hero, HeroStats } from "@/components/sections/hero";
+import { Hero } from "@/components/sections/hero";
 import { LandingHowItWorks } from "@/components/sections/landing-how-it-works";
 import { LandingCoursesGallery } from "@/components/sections/landing-courses-gallery";
 import { LandingStudyPreview } from "@/components/sections/landing-study-preview";
@@ -45,7 +45,6 @@ export default function Home() {
     <div className="landing-page min-h-screen bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
       <Navigation />
       <Hero />
-      <HeroStats />
       <LandingHowItWorks />
       <LandingCoursesGallery />
       <LandingStudyPreview />

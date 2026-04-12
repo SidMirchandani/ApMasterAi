@@ -24,12 +24,12 @@ async function fetchPlatformStats(): Promise<PlatformPublicStats> {
 const COUNT_MS = 1800;
 
 const HERO_KPIS = [
-  { key: "students", label: "Students", pick: (d: PlatformPublicStats) => d.totalStudents },
-  { key: "enrollments", label: "Subjects", pick: (d: PlatformPublicStats) => d.totalSubjectEnrollments },
-  { key: "bank", label: "Questions", pick: (d: PlatformPublicStats) => d.questionBank },
-  { key: "states", label: "States", pick: (d: PlatformPublicStats) => d.statesWithUsers },
-  { key: "quizzes", label: "Quizzes", pick: (d: PlatformPublicStats) => d.totalQuizzesTaken },
-  { key: "answered", label: "Answered", pick: (d: PlatformPublicStats) => d.totalQuestionsAnswered },
+  { key: "students", line1: "Students", line2: "registered", pick: (d: PlatformPublicStats) => d.totalStudents },
+  { key: "states", line1: "States", line2: "represented", pick: (d: PlatformPublicStats) => d.statesWithUsers },
+  { key: "enrollments", line1: "Courses", line2: "enrolled", pick: (d: PlatformPublicStats) => d.totalSubjectEnrollments },
+  { key: "quizzes", line1: "Quizzes", line2: "taken", pick: (d: PlatformPublicStats) => d.totalQuizzesTaken },
+  { key: "bank", line1: "Question", line2: "bank", pick: (d: PlatformPublicStats) => d.questionBank },
+  { key: "answered", line1: "Questions", line2: "answered", pick: (d: PlatformPublicStats) => d.totalQuestionsAnswered },
 ] as const;
 
 function StatValue({ end, ready, isError }: { end: number; ready: boolean; isError: boolean }) {
@@ -75,8 +75,12 @@ export function HeroPlatformStatsStrip() {
               <p className="font-display text-xl font-bold tabular-nums leading-none text-slate-900 dark:text-white sm:text-2xl lg:text-[1.65rem]">
                 <StatValue end={end} ready={ready} isError={isError} />
               </p>
-              <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 sm:text-xs">
-                {item.label}
+              <p
+                className="mt-2 flex min-h-[2.75em] flex-col justify-center gap-0 text-[11px] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-500 dark:text-slate-400 sm:text-xs"
+                aria-label={`${item.line1} ${item.line2}`}
+              >
+                <span className="block">{item.line1}</span>
+                <span className="block">{item.line2}</span>
               </p>
             </div>
           );
