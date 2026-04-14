@@ -2043,16 +2043,23 @@ export default function AdminPage() {
                 />
               </div>
               {genaiTopupRunning ? (
-                <Button type="button" onClick={stopGenaiTopup} variant="destructive" className="min-w-[140px]">
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={stopGenaiTopup}
+                  variant="destructive"
+                  className="min-w-[140px] shrink-0"
+                >
                   <Square className="w-4 h-4 mr-2" />
                   Stop
                 </Button>
               ) : (
                 <Button
                   type="button"
+                  size="lg"
                   onClick={() => void startGenaiTopup()}
                   disabled={!subject || section === "all" || !token}
-                  className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white min-w-[180px]"
+                  className="shrink-0 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white min-w-[180px]"
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Generate for section
