@@ -8,7 +8,6 @@ import { getDb } from "../../../server/db";
 import { isPlatformAdmin } from "../../../server/platform-admin";
 import { computeApScoreLiftBreakdown } from "../../../server/insights-score-lift";
 import { runNjBackfillChunkIfNeeded } from "../../../server/nj-backfill-migration";
-import { isInternationalInferredState } from "../../../server/inferred-region";
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
 
@@ -278,23 +277,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await computeApScoreLiftBreakdown(firestore, userSubjectsSnap.docs);
 
     const usersByStateMap: Record<string, number> = {};
-    let internationalRegionCount = 0;
     usersSnap.docs.forEach((doc) => {
       const st = doc.data().inferredState;
-      if (isInternationalInferredState(st)) {
-        internationalRegionCount++;
-        return;
-      }
       const key =
-        typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim()) ? st.trim().toUpperCase() : "Unknown";
+        typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim()) ? st.trim().toUpperCase() : "International";
       usersByStateMap[key] = (usersByStateMap[key] || 0) + 1;
     });
     const usersByState = Object.entries(usersByStateMap)
       .map(([stateCode, count]) => ({ stateCode, count }))
       .sort((a, b) => b.count - a.count);
-    const unknownRegionCount = usersByStateMap["Unknown"] ?? 0;
+    const internationalRegionCount = usersByStateMap["International"] ?? 0;
     const statesWithUsersCount = Object.entries(usersByStateMap).filter(
-      ([code, n]) => code !== "Unknown" && /^[A-Z]{2}$/.test(code) && n > 0
+      ([code, n]) => code !== "International" && /^[A-Z]{2}$/.test(code) && n > 0
     ).length;
 
     const [fullLengthQuizCount, diagnosticQuizCount, unitQuizCount, totalStudentQuestionAttempts] =
@@ -330,9 +324,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         averageScoreImprovement: averageApScoreLift,
         averageApScoreLiftBySubject,
         usersByState,
-        /** Users with no US state code and not International (stateCode "Unknown" in usersByState). */
-        unknownRegionCount,
-        /** Non-US / unresolvable geo — stored as International, excluded from US state chart. */
+        /** Users with missing or unresolvable inferred US state (stateCode "International" in usersByState). */
         internationalRegionCount,
         signUpsOverTime,
         enrollmentsOverTime,

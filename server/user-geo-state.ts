@@ -3,7 +3,6 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { NextApiRequest } from "next";
 import type { IncomingHttpHeaders } from "node:http";
 import { getClientIp } from "./client-ip";
-import { INTERNATIONAL_INFERRED_STATE, hasResolvedInferredRegion } from "./inferred-region";
 import { lookupUsStateFromIpWithReason } from "./us-state-from-ip";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -15,6 +14,10 @@ function timestampToMs(t: Timestamp | Date | undefined | null): number | null {
     return (t as Timestamp).toMillis();
   }
   return new Date(t as Date).getTime();
+}
+
+function hasValidInferredState(st: unknown): boolean {
+  return typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim());
 }
 
 /**
@@ -60,7 +63,7 @@ export async function maybeUpdateUserGeoStateFromIp(
 
     const data = snap.data() ?? {};
     const inferredState = data.inferredState;
-    const hasState = hasResolvedInferredRegion(inferredState);
+    const hasState = hasValidInferredState(inferredState);
 
     const lastAttempt =
       data.lastIpGeoAttemptAt ?? data.lastIpGeoResolveAt;
@@ -92,17 +95,15 @@ export async function maybeUpdateUserGeoStateFromIp(
       update.inferenceSource = inferenceSource === "vercel_geo" ? "vercel_geo" : "ip";
       update.inferredStateAt = now;
       update.lastIpGeoSuccessAt = now;
-    } else {
-      update.inferredState = INTERNATIONAL_INFERRED_STATE;
-      update.inferenceSource = "international";
-      update.inferredStateAt = now;
-      update.lastIpGeoSuccessAt = now;
-      console.info(
-        `[maybeUpdateUserGeoState] userId=${userId} assigned International reason=${reason} ip=${ip ?? "none"}`
-      );
     }
 
     await ref.update(update);
+
+    if (!state) {
+      console.info(
+        `[maybeUpdateUserGeoState] userId=${userId} reason=${reason} ip=${ip ?? "none"}`
+      );
+    }
   } catch (e) {
     console.warn("[maybeUpdateUserGeoStateFromIp]", e);
   }

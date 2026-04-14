@@ -51,11 +51,9 @@ interface InsightsData {
   platformAccuracyRate: number;
   averageApScoreLiftBySubject?: ApScoreLiftBySubjectRow[];
   usersByState?: StateCount[];
-  /** Count of users with no inferred US state (monitoring). */
-  unknownRegionCount?: number;
-  /** Users assigned non-US / unresolvable region (not counted as a US state in the chart). */
+  /** Count of users with no inferred US state (International bucket). */
   internationalRegionCount?: number;
-  /** Distinct US state codes (excluding Unknown) with at least one user. */
+  /** Distinct US state codes (excluding International) with at least one user. */
   statesWithUsersCount?: number;
   totalQuizzesTaken?: number;
   /** Sum of attemptCount in user_question_state (tracked answers). */
@@ -326,16 +324,14 @@ export function AdminInsightsTab({ token }: { token: string }) {
     .sort((a, b) => compareSubjectsByShortName(a.subjectId, b.subjectId));
 
   const usersByState = data.usersByState ?? [];
-  const unknownRegionCount = data.unknownRegionCount ?? 0;
-  const internationalRegionCount = data.internationalRegionCount ?? 0;
-  const hasUsersByState =
-    usersByState.some((s) => s.count > 0) || unknownRegionCount > 0 || internationalRegionCount > 0;
+  const hasUsersByState = usersByState.some((s) => s.count > 0);
   const usersByStateSorted = [...usersByState].filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
   const statePieData = usersByStateSorted.map((s, index) => {
-    const code = s.stateCode === "Unknown" ? "Unknown" : s.stateCode.trim().toUpperCase();
+    const code =
+      s.stateCode === "International" ? "International" : s.stateCode.trim().toUpperCase();
     const fullName =
-      s.stateCode === "Unknown" ? "Unknown or not set" : getUsStateDisplayName(s.stateCode);
-    const abbr = s.stateCode === "Unknown" ? "?" : code;
+      s.stateCode === "International" ? "International" : getUsStateDisplayName(s.stateCode);
+    const abbr = s.stateCode === "International" ? "INT" : code;
     return { fullName, abbr, code, value: s.count, fill: regionSliceFill(index) };
   });
   const totalAttributedUsers = statePieData.reduce((sum, row) => sum + row.value, 0);
@@ -440,39 +436,11 @@ export function AdminInsightsTab({ token }: { token: string }) {
                 <span className="text-slate-600 dark:text-slate-300 font-medium tabular-nums">
                   {totalAttributedUsers.toLocaleString()} {totalAttributedUsers === 1 ? "User" : "Users"}
                 </span>{" "}
-                across {statePieData.length} {statePieData.length === 1 ? "State" : "States"}
-                {internationalRegionCount > 0 ? (
-                  <span className="text-slate-500 dark:text-slate-500">
-                    {" "}
-                    · {internationalRegionCount.toLocaleString()} international (not a US state)
-                  </span>
-                ) : null}
-                {unknownRegionCount > 0 ? (
-                  <span className="text-slate-500 dark:text-slate-500">
-                    {" "}
-                    · {unknownRegionCount.toLocaleString()} unknown region
-                    {unknownRegionCount === 1 ? "" : "s"}
-                  </span>
-                ) : null}
+                across {statesWithUsers} US {statesWithUsers === 1 ? "state" : "states"}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2 overflow-visible">
-              {statePieData.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center px-4 leading-relaxed">
-                  No US state breakdown to display.{" "}
-                  {internationalRegionCount > 0 ? (
-                    <span className="tabular-nums">
-                      {internationalRegionCount.toLocaleString()} marked international (outside US state chart).
-                    </span>
-                  ) : null}
-                  {internationalRegionCount > 0 && unknownRegionCount > 0 ? " " : null}
-                  {unknownRegionCount > 0 ? (
-                    <span className="tabular-nums">
-                      {unknownRegionCount.toLocaleString()} unknown region{unknownRegionCount === 1 ? "" : "s"}.
-                    </span>
-                  ) : null}
-                </p>
-              ) : singleRegion ? (
+              {singleRegion ? (
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-10 py-2">
                   <div className={`relative shrink-0 ${narrow ? "h-[220px] w-[220px]" : "h-[260px] w-[260px]"}`}>
                     <ChartContainer
@@ -608,7 +576,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
                               />
                               <span
                                 className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate"
-                                title={row.code === "Unknown" ? row.fullName : `${row.fullName} (${row.abbr})`}
+                                title={row.code === "International" ? row.fullName : `${row.fullName} (${row.abbr})`}
                               >
                                 {row.fullName}
                               </span>

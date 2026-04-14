@@ -81,12 +81,9 @@ function compareUsers(a: AdminUser, b: AdminUser, key: UserSortKey, dir: "asc" |
       cmp = a.email.localeCompare(b.email, undefined, { sensitivity: "base" });
       break;
     case "state": {
-      const sa = a.state ?? "";
-      const sb = b.state ?? "";
-      if (!sa && !sb) cmp = 0;
-      else if (!sa) cmp = 1;
-      else if (!sb) cmp = -1;
-      else cmp = sa.localeCompare(sb, undefined, { sensitivity: "base" });
+      const sa = a.state ?? "International";
+      const sb = b.state ?? "International";
+      cmp = sa.localeCompare(sb, undefined, { sensitivity: "base" });
       break;
     }
     case "joinDate":
@@ -299,22 +296,15 @@ export function AdminUsersTab({
   }
 
   async function promptAndSetUserState(user: AdminUser) {
-    const next = window.prompt(
-      "Set 2-letter US state (e.g. NJ), or INTERNATIONAL, or leave blank to clear.",
-      user.state ?? "",
-    );
+    const next = window.prompt("Set 2-letter state code (e.g. NJ). Leave blank to clear.", user.state ?? "");
     if (next == null) return;
     const normalized = next.trim().toUpperCase();
     if (normalized === "") {
       await setUserState(user, null);
       return;
     }
-    if (normalized === "INTERNATIONAL") {
-      await setUserState(user, "INTERNATIONAL");
-      return;
-    }
     if (!/^[A-Z]{2}$/.test(normalized)) {
-      toast.error("Enter a valid 2-letter state code (e.g. CA) or INTERNATIONAL");
+      toast.error("Enter a valid 2-letter state code (example: CA)");
       return;
     }
     await setUserState(user, normalized);
@@ -426,7 +416,7 @@ export function AdminUsersTab({
                       {user.name || "—"}
                     </TableCell>
                     <TableCell className="dark:text-slate-300">{user.email}</TableCell>
-                    <TableCell className="dark:text-slate-300">{user.state || "—"}</TableCell>
+                    <TableCell className="dark:text-slate-300">{user.state || "International"}</TableCell>
                     <TableCell className="dark:text-slate-300">
                       {formatDate(user.joinDate)}
                     </TableCell>
