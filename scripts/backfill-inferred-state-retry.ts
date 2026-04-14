@@ -9,10 +9,7 @@
 import "./load-dotenv-local";
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "../server/firebase-admin";
-
-function hasValidInferredState(st: unknown): boolean {
-  return typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim());
-}
+import { hasResolvedInferredRegion } from "../server/inferred-region";
 
 async function main() {
   const admin = getFirebaseAdmin();
@@ -30,7 +27,7 @@ async function main() {
 
   for (const doc of snap.docs) {
     const data = doc.data();
-    if (hasValidInferredState(data.inferredState)) {
+    if (hasResolvedInferredRegion(data.inferredState)) {
       skipped++;
       continue;
     }

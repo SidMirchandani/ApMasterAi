@@ -7,6 +7,7 @@ import {
   isPlatformAdmin,
 } from "../../../../server/platform-admin";
 import { requireAdmin } from "../../../../server/next-api-auth";
+import { INTERNATIONAL_INFERRED_STATE } from "../../../../server/inferred-region";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "PATCH") {
@@ -40,8 +41,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const trimmed = rawInferredState.trim().toUpperCase();
       if (trimmed === "") {
         normalizedInferredState = null;
+      } else if (trimmed === "INTERNATIONAL") {
+        normalizedInferredState = INTERNATIONAL_INFERRED_STATE;
       } else if (!/^[A-Z]{2}$/.test(trimmed)) {
-        return res.status(400).json({ error: "inferredState must be a 2-letter US state code or empty" });
+        return res.status(400).json({ error: "inferredState must be a 2-letter US state code, INTERNATIONAL, or empty" });
       } else {
         normalizedInferredState = trimmed;
       }

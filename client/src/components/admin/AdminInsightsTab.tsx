@@ -53,6 +53,8 @@ interface InsightsData {
   usersByState?: StateCount[];
   /** Count of users with no inferred US state (monitoring). */
   unknownRegionCount?: number;
+  /** Users assigned non-US / unresolvable region (not counted as a US state in the chart). */
+  internationalRegionCount?: number;
   /** Distinct US state codes (excluding Unknown) with at least one user. */
   statesWithUsersCount?: number;
   totalQuizzesTaken?: number;
@@ -324,7 +326,10 @@ export function AdminInsightsTab({ token }: { token: string }) {
     .sort((a, b) => compareSubjectsByShortName(a.subjectId, b.subjectId));
 
   const usersByState = data.usersByState ?? [];
-  const hasUsersByState = usersByState.some((s) => s.count > 0);
+  const unknownRegionCount = data.unknownRegionCount ?? 0;
+  const internationalRegionCount = data.internationalRegionCount ?? 0;
+  const hasUsersByState =
+    usersByState.some((s) => s.count > 0) || unknownRegionCount > 0 || internationalRegionCount > 0;
   const usersByStateSorted = [...usersByState].filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
   const statePieData = usersByStateSorted.map((s, index) => {
     const code = s.stateCode === "Unknown" ? "Unknown" : s.stateCode.trim().toUpperCase();
@@ -436,17 +441,38 @@ export function AdminInsightsTab({ token }: { token: string }) {
                   {totalAttributedUsers.toLocaleString()} {totalAttributedUsers === 1 ? "User" : "Users"}
                 </span>{" "}
                 across {statePieData.length} {statePieData.length === 1 ? "State" : "States"}
-                {(data.unknownRegionCount ?? 0) > 0 ? (
+                {internationalRegionCount > 0 ? (
                   <span className="text-slate-500 dark:text-slate-500">
                     {" "}
-                    · {(data.unknownRegionCount ?? 0).toLocaleString()} unknown region
-                    {(data.unknownRegionCount ?? 0) === 1 ? "" : "s"}
+                    · {internationalRegionCount.toLocaleString()} international (not a US state)
+                  </span>
+                ) : null}
+                {unknownRegionCount > 0 ? (
+                  <span className="text-slate-500 dark:text-slate-500">
+                    {" "}
+                    · {unknownRegionCount.toLocaleString()} unknown region
+                    {unknownRegionCount === 1 ? "" : "s"}
                   </span>
                 ) : null}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2 overflow-visible">
-              {singleRegion ? (
+              {statePieData.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center px-4 leading-relaxed">
+                  No US state breakdown to display.{" "}
+                  {internationalRegionCount > 0 ? (
+                    <span className="tabular-nums">
+                      {internationalRegionCount.toLocaleString()} marked international (outside US state chart).
+                    </span>
+                  ) : null}
+                  {internationalRegionCount > 0 && unknownRegionCount > 0 ? " " : null}
+                  {unknownRegionCount > 0 ? (
+                    <span className="tabular-nums">
+                      {unknownRegionCount.toLocaleString()} unknown region{unknownRegionCount === 1 ? "" : "s"}.
+                    </span>
+                  ) : null}
+                </p>
+              ) : singleRegion ? (
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-10 py-2">
                   <div className={`relative shrink-0 ${narrow ? "h-[220px] w-[220px]" : "h-[260px] w-[260px]"}`}>
                     <ChartContainer

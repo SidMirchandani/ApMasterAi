@@ -299,15 +299,22 @@ export function AdminUsersTab({
   }
 
   async function promptAndSetUserState(user: AdminUser) {
-    const next = window.prompt("Set 2-letter state code (e.g. NJ). Leave blank to clear.", user.state ?? "");
+    const next = window.prompt(
+      "Set 2-letter US state (e.g. NJ), or INTERNATIONAL, or leave blank to clear.",
+      user.state ?? "",
+    );
     if (next == null) return;
     const normalized = next.trim().toUpperCase();
     if (normalized === "") {
       await setUserState(user, null);
       return;
     }
+    if (normalized === "INTERNATIONAL") {
+      await setUserState(user, "INTERNATIONAL");
+      return;
+    }
     if (!/^[A-Z]{2}$/.test(normalized)) {
-      toast.error("Enter a valid 2-letter state code (example: CA)");
+      toast.error("Enter a valid 2-letter state code (e.g. CA) or INTERNATIONAL");
       return;
     }
     await setUserState(user, normalized);

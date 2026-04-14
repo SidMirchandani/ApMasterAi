@@ -1,6 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 import { AggregateField } from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "./firebase-admin";
+import { isInternationalInferredState } from "./inferred-region";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -47,6 +48,7 @@ function countStatesFromUsersSnapshot(
   const usersByStateMap: Record<string, number> = {};
   for (const doc of docs) {
     const st = doc.data().inferredState;
+    if (isInternationalInferredState(st)) continue;
     const key =
       typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim()) ? st.trim().toUpperCase() : "Unknown";
     usersByStateMap[key] = (usersByStateMap[key] || 0) + 1;

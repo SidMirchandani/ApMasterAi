@@ -1,4 +1,4 @@
-import { SUBJECT_SECTION_CODES } from "../server/subject-sections";
+import { SUBJECT_SECTION_CODES, SUBJECT_SECTIONS } from "../server/subject-sections";
 
-export { SUBJECT_SECTION_CODES };
+export { SUBJECT_SECTION_CODES, SUBJECT_SECTIONS };
 

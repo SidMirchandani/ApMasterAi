@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import { auth } from "../../lib/firebase";
 import {
@@ -12,7 +12,7 @@ import {
   browserPopupRedirectResolver,
 } from "firebase/auth";
 import toast, { Toaster } from "react-hot-toast";
-import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square, Pencil, Trash2, Eye, X } from "lucide-react";
+import { BookOpen, Search, LogOut, AlertCircle, Loader2, Zap, Play, Square, Pencil, Trash2, Eye, X, Sparkles } from "lucide-react";
 import { Progress } from "../../client/src/components/ui/progress";
 import Link from "next/link";
 import { Button } from "../../client/src/components/ui/button";
@@ -45,7 +45,7 @@ import { AdminUsersTab } from "../../client/src/components/admin/AdminUsersTab";
 import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../lib/subject-display-names";
 import { ExplanationMarkdown } from "../../client/src/components/ui/ExplanationMarkdown";
 import { AdminQuestionQuizPreviewDialog } from "@/components/admin/AdminQuestionQuizPreviewDialog";
-import { SUBJECT_SECTION_CODES } from "../../lib/subject-sections-client";
+import { SUBJECT_SECTION_CODES, SUBJECT_SECTIONS } from "../../lib/subject-sections-client";
 import { hasMixedTextAndImageChoices } from "../../lib/mixed-choice-helpers";
 
 const googleProvider = new GoogleAuthProvider();
@@ -269,6 +269,18 @@ function extractChoicesData(q: Question): Record<'A' | 'B' | 'C' | 'D' | 'E', st
   return result;
 }
 
+function formatAdminSectionOptionLabel(
+  subjectKey: string,
+  sectionCode: string,
+  counts: Record<string, number>,
+  loading: boolean,
+): string {
+  const name =
+    SUBJECT_SECTIONS[subjectKey]?.find((s) => s.code === sectionCode)?.name ?? sectionCode;
+  const n = loading ? "…" : String(counts[sectionCode] ?? 0);
+  return `${sectionCode} — ${name} (${n})`;
+}
+
 function truncateText(text: string, maxWords: number = 10): string {
   if (!text || text.trim() === "") return "";
   const words = text.trim().split(/\s+/);
@@ -332,6 +344,16 @@ export default function AdminPage() {
   })).sort((a, b) => a.label.localeCompare(b.label));
   const availableSubjects = allApSubjectsRef.map(s => s.code);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
+  const [sectionCounts, setSectionCounts] = useState<Record<string, number>>({});
+  const [sectionCountsLoading, setSectionCountsLoading] = useState(false);
+  const [genaiTopupTargetCount, setGenaiTopupTargetCount] = useState(10);
+  const [genaiTopupRunning, setGenaiTopupRunning] = useState(false);
+  const [genaiTopupProgress, setGenaiTopupProgress] = useState<{
+    message: string;
+    saved?: number;
+    target?: number;
+  } | null>(null);
+  const genaiTopupAbortRef = useRef<AbortController | null>(null);
 
   const displayedItems = useMemo(() => {
     let list = items;
@@ -918,6 +940,35 @@ export default function AdminPage() {
     setSection("all"); // Reset section when subject changes
   }, [subject]);
 
+  const reloadSectionCounts = useCallback(async () => {
+    if (!token || !subject) {
+      setSectionCounts({});
+      setSectionCountsLoading(false);
+      return;
+    }
+    setSectionCountsLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/questions/section-counts?subject=${encodeURIComponent(subject)}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (res.ok) {
+        const json = (await res.json()) as { data?: Record<string, number> };
+        setSectionCounts(json.data && typeof json.data === "object" ? json.data : {});
+      } else {
+        setSectionCounts({});
+      }
+    } catch {
+      setSectionCounts({});
+    } finally {
+      setSectionCountsLoading(false);
+    }
+  }, [token, subject]);
+
+  useEffect(() => {
+    void reloadSectionCounts();
+  }, [reloadSectionCounts]);
+
   const isAllowed = adminStatus === "allowed";
 
   const router = useRouter();
@@ -965,6 +1016,134 @@ export default function AdminPage() {
       setMixedPromptsPinnedIds(
         nextItems.filter((q) => hasMixedTextAndImageChoices(q.choices)).map((q) => q.id),
       );
+    }
+  }
+
+  function stopGenaiTopup() {
+    genaiTopupAbortRef.current?.abort();
+    setGenaiTopupRunning(false);
+    toast("GenAI section top-up cancelled");
+    setGenaiTopupProgress(null);
+  }
+
+  async function startGenaiTopup() {
+    if (!token || !subject || section === "all") return;
+    const n = Math.min(40, Math.max(1, Math.floor(Number(genaiTopupTargetCount)) || 1));
+    setGenaiTopupTargetCount(n);
+
+    setGenaiTopupRunning(true);
+    setGenaiTopupProgress({
+      message: "Connecting…",
+      saved: 0,
+      target: n,
+    });
+
+    const controller = new AbortController();
+    genaiTopupAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/genai-topup-section", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectCode: subject,
+          sectionCode: section,
+          targetCount: n,
+          model: "2.5lite",
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error((err as { error?: string }).error || "Failed to start GenAI top-up");
+        setGenaiTopupRunning(false);
+        setGenaiTopupProgress(null);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        toast.error("No response stream");
+        setGenaiTopupRunning(false);
+        setGenaiTopupProgress(null);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6)) as {
+              type?: string;
+              message?: string;
+              saved?: number;
+              target?: number;
+            };
+            if (
+              event.type === "status" ||
+              event.type === "progress" ||
+              event.type === "rate_limit"
+            ) {
+              setGenaiTopupProgress({
+                message: event.message || "",
+                saved: typeof event.saved === "number" ? event.saved : undefined,
+                target: typeof event.target === "number" ? event.target : n,
+              });
+            }
+            if (event.type === "complete") {
+              toast.success(event.message || "GenAI top-up finished");
+              setGenaiTopupProgress({
+                message: event.message || "Done",
+                saved: event.saved,
+                target: event.target ?? n,
+              });
+              void loadSubjectStatus();
+              void reloadSectionCounts();
+              void fetchFiltered();
+              setGenaiTopupRunning(false);
+              genaiTopupAbortRef.current = null;
+              return;
+            }
+            if (event.type === "error") {
+              toast.error(event.message || "GenAI top-up failed");
+              setGenaiTopupProgress({
+                message: event.message || "Error",
+                saved: event.saved,
+                target: event.target ?? n,
+              });
+              void loadSubjectStatus();
+              void reloadSectionCounts();
+              void fetchFiltered();
+              setGenaiTopupRunning(false);
+              genaiTopupAbortRef.current = null;
+              return;
+            }
+          } catch {
+            // ignore malformed SSE
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if ((err as { name?: string }).name !== "AbortError") {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error("GenAI top-up failed: " + msg);
+      }
+    } finally {
+      setGenaiTopupRunning(false);
+      genaiTopupAbortRef.current = null;
     }
   }
 
@@ -1709,7 +1888,7 @@ export default function AdminPage() {
         <Card className="dark:bg-slate-900/60 dark:border-slate-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 dark:text-white">
-              <Search className="w-5 w-5" />
+              <Search className="w-5 h-5" />
               Filter Questions
             </CardTitle>
             <CardDescription className="dark:text-slate-400">Search by subject and section code</CardDescription>
@@ -1744,7 +1923,7 @@ export default function AdminPage() {
                   <SelectItem value="all">All Sections</SelectItem>
                   {availableSections.map((sect) => (
                     <SelectItem key={sect} value={sect}>
-                      {sect}
+                      {formatAdminSectionOptionLabel(subject, sect, sectionCounts, sectionCountsLoading)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1831,6 +2010,66 @@ export default function AdminPage() {
                 </Label>
               </div>
             </RadioGroup>
+          </CardContent>
+        </Card>
+
+        <Card className="dark:bg-slate-900/60 dark:border-slate-800 border-indigo-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 dark:text-white text-lg">
+              <Sparkles className="w-5 h-5 text-indigo-400" />
+              GenAI section top-up
+            </CardTitle>
+            <CardDescription className="dark:text-slate-400">
+              Generate new multiple-choice questions for the selected subject and unit (Gemini). Uses the same Subject and Section as Filter Questions above.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3 items-end flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                  Questions to add (1–40)
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={40}
+                  value={genaiTopupTargetCount}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setGenaiTopupTargetCount(Number.isFinite(v) ? v : 1);
+                  }}
+                  disabled={genaiTopupRunning || !subject || section === "all"}
+                  className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                />
+              </div>
+              {genaiTopupRunning ? (
+                <Button type="button" onClick={stopGenaiTopup} variant="destructive" className="min-w-[140px]">
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => void startGenaiTopup()}
+                  disabled={!subject || section === "all" || !token}
+                  className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white min-w-[180px]"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Generate for section
+                </Button>
+              )}
+            </div>
+            {genaiTopupProgress ? (
+              <div className="space-y-2 pt-1">
+                <p className="text-sm text-slate-600 dark:text-slate-400">{genaiTopupProgress.message}</p>
+                {genaiTopupProgress.target != null && genaiTopupProgress.target > 0 ? (
+                  <Progress
+                    value={((genaiTopupProgress.saved ?? 0) / Math.max(genaiTopupProgress.target, 1)) * 100}
+                    className="h-2"
+                  />
+                ) : null}
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 

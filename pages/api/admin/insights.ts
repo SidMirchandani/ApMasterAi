@@ -8,6 +8,7 @@ import { getDb } from "../../../server/db";
 import { isPlatformAdmin } from "../../../server/platform-admin";
 import { computeApScoreLiftBreakdown } from "../../../server/insights-score-lift";
 import { runNjBackfillChunkIfNeeded } from "../../../server/nj-backfill-migration";
+import { isInternationalInferredState } from "../../../server/inferred-region";
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
 
@@ -277,8 +278,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await computeApScoreLiftBreakdown(firestore, userSubjectsSnap.docs);
 
     const usersByStateMap: Record<string, number> = {};
+    let internationalRegionCount = 0;
     usersSnap.docs.forEach((doc) => {
       const st = doc.data().inferredState;
+      if (isInternationalInferredState(st)) {
+        internationalRegionCount++;
+        return;
+      }
       const key =
         typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim()) ? st.trim().toUpperCase() : "Unknown";
       usersByStateMap[key] = (usersByStateMap[key] || 0) + 1;
@@ -324,8 +330,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         averageScoreImprovement: averageApScoreLift,
         averageApScoreLiftBySubject,
         usersByState,
-        /** Users with missing or unresolvable inferred US state (same bucket as stateCode "Unknown"). */
+        /** Users with no US state code and not International (stateCode "Unknown" in usersByState). */
         unknownRegionCount,
+        /** Non-US / unresolvable geo — stored as International, excluded from US state chart. */
+        internationalRegionCount,
         signUpsOverTime,
         enrollmentsOverTime,
         courseEnrollments: courseEnrollmentsDistribution,
