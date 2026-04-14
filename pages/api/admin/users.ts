@@ -28,7 +28,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const emailQuery = (req.query.email as string) || "";
-    let usersSnap = await firestore.collection("users").get();
+    const [usersSnap, userSubjectsSnap] = await Promise.all([
+      firestore.collection("users").get(),
+      firestore.collection("user_subjects").get(),
+    ]);
+
+    const enrollCountByUser = new Map<string, number>();
+    for (const d of userSubjectsSnap.docs) {
+      const uid = d.data().userId as string | undefined;
+      if (!uid) continue;
+      enrollCountByUser.set(uid, (enrollCountByUser.get(uid) || 0) + 1);
+    }
 
     const users: {
       id: string;
@@ -66,12 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const joinDate = createdAt ? new Date(createdAt).toISOString() : "";
       const authMeta = authUids.get(id) || authUids.get(data.firebaseUid);
       const lastLogin = authMeta?.lastLogin || null;
-      const courseCountSnap = await firestore
-        .collection("user_subjects")
-        .where("userId", "==", id)
-        .count()
-        .get();
-      const totalCoursesEnrolled = courseCountSnap.data().count || 0;
+      const totalCoursesEnrolled = enrollCountByUser.get(id) || 0;
       const emailStr = email || "(no email)";
       if (emailStr.toLowerCase().endsWith("@firebase.user")) {
         continue;

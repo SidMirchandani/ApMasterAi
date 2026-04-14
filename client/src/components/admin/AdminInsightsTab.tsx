@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCountUp } from "@/hooks/use-count-up";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, PieChart, Pie } from "recharts";
 import { Users, MessageCircle, Loader2, Calendar, BookOpen, MapPin, ClipboardList, ListChecks } from "lucide-react";
@@ -237,18 +238,45 @@ function RegionDonutOutsideLabel(props: {
 
 export function AdminInsightsTab({ token }: { token: string }) {
   const narrow = useNarrowInsights(640);
-  const [data, setData] = useState<InsightsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<Partial<InsightsData> | null>(null);
+  const [analytics, setAnalytics] = useState<Partial<InsightsData> | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRangeKey>("all");
 
+  const data = useMemo((): InsightsData => {
+    const s = summary ?? {};
+    const a = analytics ?? {};
+    return {
+      totalStudents: s.totalStudents ?? 0,
+      activeUsersDAU: s.activeUsersDAU ?? 0,
+      activeUsersMAU: s.activeUsersMAU ?? 0,
+      totalSubjectsEnrolled: s.totalSubjectsEnrolled ?? 0,
+      totalQuestionsAnswered: s.totalQuestionsAnswered ?? 0,
+      questionBankTotal: s.questionBankTotal ?? s.totalQuestionsAnswered ?? 0,
+      platformAccuracyRate: a.platformAccuracyRate ?? s.platformAccuracyRate ?? 0,
+      averageApScoreLift: a.averageApScoreLift ?? s.averageApScoreLift,
+      averageApScoreLiftBySubject: a.averageApScoreLiftBySubject ?? s.averageApScoreLiftBySubject,
+      usersByState: a.usersByState ?? s.usersByState ?? [],
+      internationalRegionCount: a.internationalRegionCount ?? s.internationalRegionCount,
+      statesWithUsersCount: a.statesWithUsersCount ?? s.statesWithUsersCount ?? 0,
+      totalQuizzesTaken: s.totalQuizzesTaken ?? 0,
+      totalStudentQuestionAttempts: s.totalStudentQuestionAttempts ?? 0,
+      signUpsOverTime: a.signUpsOverTime ?? [],
+      enrollmentsOverTime: a.enrollmentsOverTime ?? [],
+      courseEnrollments: a.courseEnrollments ?? [],
+    };
+  }, [summary, analytics]);
+
   // Hooks must run unconditionally before any early return
-  const totalStudents = data?.totalStudents ?? 0;
-  const totalQuestions = data?.questionBankTotal ?? data?.totalQuestionsAnswered ?? 0;
-  const totalSubjects = data?.totalSubjectsEnrolled ?? 0;
-  const statesWithUsers = data?.statesWithUsersCount ?? 0;
-  const totalQuizzes = data?.totalQuizzesTaken ?? 0;
-  const totalStudentAnswers = data?.totalStudentQuestionAttempts ?? 0;
+  const totalStudents = data.totalStudents;
+  const totalQuestions = data.questionBankTotal ?? data.totalQuestionsAnswered ?? 0;
+  const totalSubjects = data.totalSubjectsEnrolled;
+  const statesWithUsers = data.statesWithUsersCount ?? 0;
+  const totalQuizzes = data.totalQuizzesTaken ?? 0;
+  const totalStudentAnswers = data.totalStudentQuestionAttempts ?? 0;
   const countUpStudents = useCountUp(totalStudents);
   const countUpQuestions = useCountUp(totalQuestions);
   const countUpSubjects = useCountUp(totalSubjects);
@@ -258,34 +286,42 @@ export function AdminInsightsTab({ token }: { token: string }) {
 
   useEffect(() => {
     if (!token) return;
-    setLoading(true);
-    setError(null);
-    const url = `/api/admin/insights${dateRange ? `?range=${dateRange}` : ""}`;
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    setSummaryLoading(true);
+    setSummaryError(null);
+    fetch("/api/admin/insights?part=summary", { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to Load Insights");
+        if (!res.ok) throw new Error("Failed to load summary metrics");
         return res.json();
       })
       .then((json) => {
-        setData(json.data || null);
+        setSummary(json.data || null);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => setSummaryError(err.message))
+      .finally(() => setSummaryLoading(false));
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    const url = `/api/admin/insights?part=analytics&range=${encodeURIComponent(dateRange)}`;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load charts and breakdowns");
+        return res.json();
+      })
+      .then((json) => {
+        setAnalytics(json.data || null);
+      })
+      .catch((err) => setAnalyticsError(err.message))
+      .finally(() => setAnalyticsLoading(false));
   }, [token, dateRange]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
-  if (error || !data) {
+  if (summaryError && !summaryLoading) {
     return (
       <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
         <CardContent className="py-5 text-center text-slate-500 dark:text-slate-400">
-          {error || "No insights data available."}
+          {summaryError}
         </CardContent>
       </Card>
     );
@@ -358,6 +394,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpStudents.toLocaleString(),
             icon: Users,
             sub: null as string | null,
+            needsAnalytics: false,
           },
           {
             key: "subjects",
@@ -365,6 +402,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpSubjects.toLocaleString(),
             icon: BookOpen,
             sub: null as string | null,
+            needsAnalytics: false,
           },
           {
             key: "questions",
@@ -372,6 +410,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpQuestions.toLocaleString(),
             icon: MessageCircle,
             sub: null as string | null,
+            needsAnalytics: false,
           },
           {
             key: "states",
@@ -379,6 +418,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpStates.toLocaleString(),
             icon: MapPin,
             sub: null as string | null,
+            needsAnalytics: true,
           },
           {
             key: "quizzes",
@@ -386,6 +426,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpQuizzes.toLocaleString(),
             icon: ClipboardList,
             sub: null as string | null,
+            needsAnalytics: false,
           },
           {
             key: "answered",
@@ -393,8 +434,15 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpStudentAnswers.toLocaleString(),
             icon: ListChecks,
             sub: null as string | null,
+            needsAnalytics: false,
           },
-        ].map((item, i) => (
+        ].map((item, i) => {
+          const kpiPending = item.needsAnalytics
+            ? analyticsLoading && !analytics
+            : summaryLoading && !summary;
+          const showStatesUnavailable = item.needsAnalytics && analyticsError && !analyticsLoading;
+          const valueDisplay = showStatesUnavailable ? "—" : item.display;
+          return (
           <motion.div
             key={item.key}
             initial={{ opacity: 0, y: 12 }}
@@ -409,20 +457,100 @@ export function AdminInsightsTab({ token }: { token: string }) {
                 <item.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
+                {kpiPending ? (
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-8 w-28" />
+                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-blue-500/70" />
+                  </div>
+                ) : (
                 <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {item.display}
+                  {valueDisplay}
                 </div>
+                )}
                 {item.sub ? (
                   <p className="text-xs text-muted-foreground mt-1.5 leading-snug">{item.sub}</p>
                 ) : null}
               </CardContent>
             </Card>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
 
+      {analyticsError && !analyticsLoading ? (
+        <Card className="border-amber-200 bg-amber-50/80 dark:border-amber-900/50 dark:bg-amber-950/30">
+          <CardContent className="py-4 text-sm text-amber-900 dark:text-amber-200/90">
+            Charts and regional data could not be loaded: {analyticsError}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {analyticsLoading && !analyticsError ? (
+        <div className="space-y-4">
+          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+            <CardHeader className="pb-2">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-72 mt-2 max-w-full" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className={narrow ? "h-[220px] w-full rounded-lg" : "h-[280px] w-full rounded-lg"} />
+            </CardContent>
+          </Card>
+          <div className="flex flex-wrap items-center gap-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-16 rounded-md" />
+            <Skeleton className="h-8 w-16 rounded-md" />
+            <Skeleton className="h-8 w-20 rounded-md" />
+            <Skeleton className="h-8 w-20 rounded-md" />
+          </div>
+          <Card className="dark:bg-slate-900/70 dark:border-slate-800 overflow-hidden">
+            <CardHeader className="pb-2">
+              <Skeleton className="h-6 w-56" />
+              <Skeleton className="h-4 w-64 mt-1" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[320px] w-full rounded-lg" />
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+            <CardHeader>
+              <Skeleton className="h-5 w-48" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[220px] w-full rounded-lg" />
+            </CardContent>
+          </Card>
+          <Card className="dark:bg-slate-900/70 dark:border-slate-800 overflow-hidden">
+            <CardHeader className="pb-2">
+              <Skeleton className="h-6 w-64" />
+              <Skeleton className="h-4 w-72 mt-1" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[320px] w-full rounded-lg" />
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+            <CardHeader>
+              <Skeleton className="h-5 w-52" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[220px] w-full rounded-lg" />
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+            <CardHeader>
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-full max-w-md mt-1" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[360px] w-full rounded-lg" />
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
       {/* Users by inferred region (US state) — donut + legend / single-region hero */}
-      {hasUsersByState && (
+      {!analyticsLoading && !analyticsError && hasUsersByState && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -614,7 +742,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
       )}
 
       {/* Average AP Score Lift per Subject — hidden unless SHOW_AVERAGE_AP_SCORE_LIFT_UI; API still returns lift data. */}
-      {hasLiftBySubject && (
+      {!analyticsLoading && !analyticsError && hasLiftBySubject && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -664,6 +792,8 @@ export function AdminInsightsTab({ token }: { token: string }) {
         </motion.div>
       )}
 
+      {!analyticsLoading && !analyticsError ? (
+      <>
       {/* Date range selector */}
       <div className="flex flex-wrap items-center gap-2">
         <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -995,8 +1125,10 @@ export function AdminInsightsTab({ token }: { token: string }) {
           </Card>
         </motion.div>
       )}
+      </>
+      ) : null}
 
-      {!hasSignupData && courseEnrollmentsOrdered.length === 0 && (
+      {!analyticsLoading && !analyticsError && !hasSignupData && courseEnrollmentsOrdered.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}>
           <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
             <CardContent className="py-5 text-center text-slate-500 dark:text-slate-400">

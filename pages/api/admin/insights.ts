@@ -27,8 +27,7 @@ function getDateRange(range: string): { start: Date; end: Date } | null {
       start.setDate(start.getDate() - 90);
       break;
     case "all": {
-      // Start from Sep 1 of current academic year (most recent Sep 1 that has passed)
-      const sep1 = new Date(end.getFullYear(), 8, 1); // month 8 = September
+      const sep1 = new Date(end.getFullYear(), 8, 1);
       start.setTime(sep1.getTime());
       if (end < sep1) start.setFullYear(end.getFullYear() - 1);
       break;
@@ -92,6 +91,202 @@ async function aggregateStudentQuestionAttempts(firestore: Firestore): Promise<n
   }
 }
 
+/** Fast aggregates only — no full collection scans for users / user_subjects. */
+async function buildSummaryData(firestore: Firestore) {
+  const allCodes = getAllSubjectCodes();
+  const [usersCountSnap, userSubjectsCountSnap, questionCountSnaps, quizBundle] = await Promise.all([
+    firestore.collection("users").count().get(),
+    firestore.collection("user_subjects").count().get(),
+    Promise.all(
+      allCodes.map((code) =>
+        firestore.collection("questions").where("subject_code", "==", code).count().get(),
+      ),
+    ),
+    Promise.all([
+      aggregateCollectionGroupCount(firestore, "fullLengthTests"),
+      aggregateCollectionGroupCount(firestore, "diagnosticTests"),
+      aggregateCollectionGroupCount(firestore, "unitQuizResults"),
+      aggregateStudentQuestionAttempts(firestore),
+    ]),
+  ]);
+
+  let totalQuestionsAnswered = 0;
+  for (const snap of questionCountSnaps) {
+    totalQuestionsAnswered += snap.data().count || 0;
+  }
+
+  const totalStudents = usersCountSnap.data().count || 0;
+  const totalSubjectsEnrolled = userSubjectsCountSnap.data().count || 0;
+  const [fullLengthQuizCount, diagnosticQuizCount, unitQuizCount, totalStudentQuestionAttempts] = quizBundle;
+  const totalQuizzesTaken = fullLengthQuizCount + diagnosticQuizCount + unitQuizCount;
+
+  const activeUsersDAU = 0;
+  const activeUsersMAU = totalStudents;
+
+  return {
+    totalStudents,
+    activeUsersDAU,
+    activeUsersMAU,
+    totalSubjectsEnrolled,
+    totalQuestionsAnswered,
+    questionBankTotal: totalQuestionsAnswered,
+    totalQuizzesTaken,
+    totalStudentQuestionAttempts,
+  };
+}
+
+/** Charts, geo, and score lift — requires full user and enrollment reads. */
+async function buildAnalyticsData(firestore: Firestore, rangeParam: string) {
+  const allCodes = getAllSubjectCodes();
+  const [usersSnap, userSubjectsSnap, backfillSnap] = await Promise.all([
+    firestore.collection("users").get(),
+    firestore.collection("user_subjects").get(),
+    firestore.collection("insights_enrollment_backfill").doc("default").get(),
+  ]);
+
+  const dateRange = getDateRange(rangeParam);
+
+  const totalSubjectsEnrolled = userSubjectsSnap.size;
+  const enrollmentsBySubject: Record<string, number> = {};
+  const byDateEnrollments: Record<string, number> = {};
+  userSubjectsSnap.docs.forEach((doc) => {
+    const data = doc.data();
+    const rawId = data.subjectId || data.subject_id || "";
+    if (!rawId) return;
+    const canonicalCode = getApiCodeForSubject(rawId) ?? rawId.toUpperCase();
+    const createdAt = parseEnrollmentCreated(data as Record<string, unknown>);
+    const countTowardSubjectBar =
+      dateRange == null ||
+      (createdAt != null &&
+        createdAt.getTime() >= dateRange.start.getTime() &&
+        createdAt.getTime() <= dateRange.end.getTime());
+    if (countTowardSubjectBar) {
+      enrollmentsBySubject[canonicalCode] = (enrollmentsBySubject[canonicalCode] || 0) + 1;
+    }
+    if (createdAt) {
+      const dateStr = createdAt.toISOString().slice(0, 10);
+      byDateEnrollments[dateStr] = (byDateEnrollments[dateStr] || 0) + 1;
+    }
+  });
+
+  const enrollmentSubjectCodes = allCodes.length > 0 ? allCodes : Object.keys(SUBJECT_DISPLAY_NAMES);
+  const courseEnrollmentsDistribution = enrollmentSubjectCodes
+    .map((subjectId) => ({
+      subjectId,
+      count: enrollmentsBySubject[subjectId] ?? 0,
+      displayName: getSubjectDisplayName(subjectId),
+    }))
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+  const byDate: Record<string, number> = {};
+  usersSnap.docs.forEach((doc) => {
+    const data = doc.data();
+    const created = data.createdAt?.toDate?.() || data.createdAt;
+    const dateStr = created ? new Date(created).toISOString().slice(0, 10) : "unknown";
+    if (dateStr !== "unknown") {
+      byDate[dateStr] = (byDate[dateStr] || 0) + 1;
+    }
+  });
+
+  const sortedDates = Object.keys(byDate).sort();
+  const start = dateRange
+    ? dateRange.start.toISOString().slice(0, 10)
+    : sortedDates[0] ?? new Date().toISOString().slice(0, 10);
+  const end = dateRange
+    ? dateRange.end.toISOString().slice(0, 10)
+    : sortedDates[sortedDates.length - 1] ?? new Date().toISOString().slice(0, 10);
+  const allDates = getDatesBetween(new Date(start), new Date(end));
+
+  let running = 0;
+  sortedDates.forEach((d) => {
+    if (d < start) running += byDate[d] ?? 0;
+  });
+  const signUpsOverTime: { date: string; count: number; cumulative: number }[] = allDates.map((date) => {
+    const count = byDate[date] ?? 0;
+    running += count;
+    return { date, count, cumulative: running };
+  });
+
+  const backfillByDate = (backfillSnap.data()?.byDate as Record<string, number>) || {};
+  Object.entries(backfillByDate).forEach(([d, n]) => {
+    if (typeof n === "number" && n > 0) {
+      byDateEnrollments[d] = (byDateEnrollments[d] || 0) + n;
+    }
+  });
+
+  const sortedEnrollmentDatesForShortfall = Object.keys(byDateEnrollments).sort();
+  let runningEnrollmentsForShortfall = 0;
+  sortedEnrollmentDatesForShortfall.forEach((d) => {
+    if (d < start) runningEnrollmentsForShortfall += byDateEnrollments[d] ?? 0;
+  });
+  allDates.forEach((d) => {
+    runningEnrollmentsForShortfall += byDateEnrollments[d] ?? 0;
+  });
+  const cumulativeAtEnd = runningEnrollmentsForShortfall;
+  let shortfall = totalSubjectsEnrolled - cumulativeAtEnd;
+  if (shortfall > 0) {
+    const totalSignupsInRange = allDates.reduce((s, d) => s + (byDate[d] ?? 0), 0);
+    const weights = allDates.map((date) => {
+      const signupsHere = byDate[date] ?? 0;
+      const idx = allDates.indexOf(date);
+      const nextDaysSignups = allDates.slice(idx + 1, idx + 8).reduce((s, d) => s + (byDate[d] ?? 0), 0);
+      return signupsHere * 0.5 + nextDaysSignups * 0.3 + (totalSignupsInRange > 0 ? 0.2 / allDates.length : 1 / allDates.length);
+    });
+    const sumW = weights.reduce((a, b) => a + b, 0) || 1;
+    let remaining = shortfall;
+    for (let i = 0; i < allDates.length && remaining > 0; i++) {
+      const add = Math.min(remaining, Math.max(0, Math.round((shortfall * weights[i]) / sumW)));
+      if (add > 0) {
+        byDateEnrollments[allDates[i]] = (byDateEnrollments[allDates[i]] || 0) + add;
+        remaining -= add;
+      }
+    }
+    if (remaining > 0) byDateEnrollments[allDates[allDates.length - 1]] = (byDateEnrollments[allDates[allDates.length - 1]] || 0) + remaining;
+  }
+
+  const sortedEnrollmentDates = Object.keys(byDateEnrollments).sort();
+  let runningEnrollments = 0;
+  sortedEnrollmentDates.forEach((d) => {
+    if (d < start) runningEnrollments += byDateEnrollments[d] ?? 0;
+  });
+  const enrollmentsOverTime: { date: string; count: number; cumulative: number }[] = allDates.map((date) => {
+    const count = byDateEnrollments[date] ?? 0;
+    runningEnrollments += count;
+    return { date, count, cumulative: runningEnrollments };
+  });
+
+  const { average: averageApScoreLift, bySubject: averageApScoreLiftBySubject } =
+    await computeApScoreLiftBreakdown(firestore, userSubjectsSnap.docs);
+
+  const usersByStateMap: Record<string, number> = {};
+  usersSnap.docs.forEach((doc) => {
+    const st = doc.data().inferredState;
+    const key =
+      typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim()) ? st.trim().toUpperCase() : "International";
+    usersByStateMap[key] = (usersByStateMap[key] || 0) + 1;
+  });
+  const usersByState = Object.entries(usersByStateMap)
+    .map(([stateCode, count]) => ({ stateCode, count }))
+    .sort((a, b) => b.count - a.count);
+  const internationalRegionCount = usersByStateMap["International"] ?? 0;
+  const statesWithUsersCount = Object.entries(usersByStateMap).filter(
+    ([code, n]) => code !== "International" && /^[A-Z]{2}$/.test(code) && n > 0,
+  ).length;
+
+  return {
+    signUpsOverTime,
+    enrollmentsOverTime,
+    courseEnrollments: courseEnrollmentsDistribution,
+    averageApScoreLift,
+    platformAccuracyRate: averageApScoreLift ?? 0,
+    averageScoreImprovement: averageApScoreLift,
+    averageApScoreLiftBySubject,
+    usersByState,
+    internationalRegionCount,
+    statesWithUsersCount,
+  };
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -115,220 +310,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   const { firestore } = firebaseAdmin;
 
+  const rangeParam = String((req.query.range as string) || "all").trim();
+  const part = String((req.query.part as string) || "").trim().toLowerCase();
+
   try {
+    if (part === "summary") {
+      const data = await buildSummaryData(firestore);
+      return res.status(200).json({ success: true, data });
+    }
+
+    if (part === "analytics") {
+      await runNjBackfillChunkIfNeeded(firestore);
+      const data = await buildAnalyticsData(firestore, rangeParam);
+      return res.status(200).json({ success: true, data });
+    }
+
     await runNjBackfillChunkIfNeeded(firestore);
-
-    // Total students: count users in Firestore
-    const usersSnap = await firestore.collection("users").get();
-    const totalStudents = usersSnap.size;
-
-    // Total questions in platform (content library)
-    const allCodes = getAllSubjectCodes();
-    let totalQuestionsAnswered = 0;
-    const courseEnrollments: { subjectId: string; count: number; displayName: string }[] = [];
-
-    for (const code of allCodes) {
-      const countSnap = await firestore
-        .collection("questions")
-        .where("subject_code", "==", code)
-        .count()
-        .get();
-      const count = countSnap.data().count || 0;
-      totalQuestionsAnswered += count;
-      if (count > 0) {
-        courseEnrollments.push({
-          subjectId: code,
-          count,
-          displayName: getSubjectDisplayName(code),
-        });
-      }
-    }
-
-    const rangeParam = String((req.query.range as string) || "all").trim();
-    const dateRange = getDateRange(rangeParam);
-
-    // User enrollments: count user_subjects per subject for distribution (normalize to canonical codes)
-    const userSubjectsSnap = await firestore.collection("user_subjects").get();
-    const totalSubjectsEnrolled = userSubjectsSnap.size;
-    const enrollmentsBySubject: Record<string, number> = {};
-    // Enrollment timestamps for time-series (createdAt/enrolledAt/created_at); future writes should set createdAt.
-    const byDateEnrollments: Record<string, number> = {};
-    userSubjectsSnap.docs.forEach((doc) => {
-      const data = doc.data();
-      const rawId = data.subjectId || data.subject_id || "";
-      if (!rawId) return;
-      const canonicalCode = getApiCodeForSubject(rawId) ?? rawId.toUpperCase();
-      const createdAt = parseEnrollmentCreated(data as Record<string, unknown>);
-      // Bar chart "Enrollments by Subject": respect selected date range when valid; unknown range → all-time.
-      const countTowardSubjectBar =
-        dateRange == null ||
-        (createdAt != null &&
-          createdAt.getTime() >= dateRange.start.getTime() &&
-          createdAt.getTime() <= dateRange.end.getTime());
-      if (countTowardSubjectBar) {
-        enrollmentsBySubject[canonicalCode] = (enrollmentsBySubject[canonicalCode] || 0) + 1;
-      }
-      if (createdAt) {
-        const dateStr = createdAt.toISOString().slice(0, 10);
-        byDateEnrollments[dateStr] = (byDateEnrollments[dateStr] || 0) + 1;
-      }
-    });
-
-    // Full subject list for enrollment chart: use registry, or fallback to display-names keys so chart always has all subjects
-    const enrollmentSubjectCodes =
-      allCodes.length > 0 ? allCodes : Object.keys(SUBJECT_DISPLAY_NAMES);
-    // All subjects in alphabetical order by display name (include 0 enrollments); always use enrollment counts, never question counts
-    const courseEnrollmentsDistribution = enrollmentSubjectCodes
-      .map((subjectId) => ({
-        subjectId,
-        count: enrollmentsBySubject[subjectId] ?? 0,
-        displayName: getSubjectDisplayName(subjectId),
-      }))
-      .sort((a, b) => a.displayName.localeCompare(b.displayName));
-
-    // Sign-ups over time: daily counts + cumulative. Chart starts from Sep 1 (or range start); cumulative includes all signups up to each date.
-    const byDate: Record<string, number> = {};
-    usersSnap.docs.forEach((doc) => {
-      const data = doc.data();
-      const created = data.createdAt?.toDate?.() || data.createdAt;
-      const dateStr = created
-        ? new Date(created).toISOString().slice(0, 10)
-        : "unknown";
-      if (dateStr !== "unknown") {
-        byDate[dateStr] = (byDate[dateStr] || 0) + 1;
-      }
-    });
-
-    const sortedDates = Object.keys(byDate).sort();
-    const start = dateRange
-      ? dateRange.start.toISOString().slice(0, 10)
-      : sortedDates[0] ?? new Date().toISOString().slice(0, 10);
-    const end = dateRange
-      ? dateRange.end.toISOString().slice(0, 10)
-      : sortedDates[sortedDates.length - 1] ?? new Date().toISOString().slice(0, 10);
-    const allDates = getDatesBetween(new Date(start), new Date(end));
-
-    // Cumulative from beginning: include signups before start so the line doesn't reset at Sep 1
-    let running = 0;
-    sortedDates.forEach((d) => {
-      if (d < start) running += byDate[d] ?? 0;
-    });
-    const signUpsOverTime: { date: string; count: number; cumulative: number }[] = allDates.map((date) => {
-      const count = byDate[date] ?? 0;
-      running += count;
-      return { date, count, cumulative: running };
-    });
-
-    // Merge backfill from Firestore so cumulative enrollments can reach totalSubjectsEnrolled
-    const backfillSnap = await firestore.collection("insights_enrollment_backfill").doc("default").get();
-    const backfillByDate = (backfillSnap.data()?.byDate as Record<string, number>) || {};
-    Object.entries(backfillByDate).forEach(([d, n]) => {
-      if (typeof n === "number" && n > 0) {
-        byDateEnrollments[d] = (byDateEnrollments[d] || 0) + n;
-      }
-    });
-
-    // Ensure cumulative subjects enrolled over time is at least totalSubjectsEnrolled (chart must not show less than total)
-    const sortedEnrollmentDatesForShortfall = Object.keys(byDateEnrollments).sort();
-    let runningEnrollmentsForShortfall = 0;
-    sortedEnrollmentDatesForShortfall.forEach((d) => {
-      if (d < start) runningEnrollmentsForShortfall += byDateEnrollments[d] ?? 0;
-    });
-    allDates.forEach((d) => {
-      runningEnrollmentsForShortfall += byDateEnrollments[d] ?? 0;
-    });
-    const cumulativeAtEnd = runningEnrollmentsForShortfall;
-    let shortfall = totalSubjectsEnrolled - cumulativeAtEnd;
-    if (shortfall > 0) {
-      // Distribute shortfall across dates correlated with signups (not all on signup day: some spread 0–7 days after)
-      const totalSignupsInRange = allDates.reduce((s, d) => s + (byDate[d] ?? 0), 0);
-      const weights = allDates.map((date) => {
-        const signupsHere = byDate[date] ?? 0;
-        const idx = allDates.indexOf(date);
-        const nextDaysSignups = allDates.slice(idx + 1, idx + 8).reduce((s, d) => s + (byDate[d] ?? 0), 0);
-        return signupsHere * 0.5 + nextDaysSignups * 0.3 + (totalSignupsInRange > 0 ? 0.2 / allDates.length : 1 / allDates.length);
-      });
-      const sumW = weights.reduce((a, b) => a + b, 0) || 1;
-      let remaining = shortfall;
-      for (let i = 0; i < allDates.length && remaining > 0; i++) {
-        const add = Math.min(remaining, Math.max(0, Math.round((shortfall * weights[i]) / sumW)));
-        if (add > 0) {
-          byDateEnrollments[allDates[i]] = (byDateEnrollments[allDates[i]] || 0) + add;
-          remaining -= add;
-        }
-      }
-      if (remaining > 0) byDateEnrollments[allDates[allDates.length - 1]] = (byDateEnrollments[allDates[allDates.length - 1]] || 0) + remaining;
-    }
-
-    // Enrollments over time: daily counts + cumulative (same date range as signups)
-    const sortedEnrollmentDates = Object.keys(byDateEnrollments).sort();
-    let runningEnrollments = 0;
-    sortedEnrollmentDates.forEach((d) => {
-      if (d < start) runningEnrollments += byDateEnrollments[d] ?? 0;
-    });
-    const enrollmentsOverTime: { date: string; count: number; cumulative: number }[] = allDates.map((date) => {
-      const count = byDateEnrollments[date] ?? 0;
-      runningEnrollments += count;
-      return { date, count, cumulative: runningEnrollments };
-    });
-
-    // Average AP score lift: first diagnostic vs latest score_history or latest full-length (see insights-score-lift.ts).
-    const { average: averageApScoreLift, bySubject: averageApScoreLiftBySubject } =
-      await computeApScoreLiftBreakdown(firestore, userSubjectsSnap.docs);
-
-    const usersByStateMap: Record<string, number> = {};
-    usersSnap.docs.forEach((doc) => {
-      const st = doc.data().inferredState;
-      const key =
-        typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim()) ? st.trim().toUpperCase() : "International";
-      usersByStateMap[key] = (usersByStateMap[key] || 0) + 1;
-    });
-    const usersByState = Object.entries(usersByStateMap)
-      .map(([stateCode, count]) => ({ stateCode, count }))
-      .sort((a, b) => b.count - a.count);
-    const internationalRegionCount = usersByStateMap["International"] ?? 0;
-    const statesWithUsersCount = Object.entries(usersByStateMap).filter(
-      ([code, n]) => code !== "International" && /^[A-Z]{2}$/.test(code) && n > 0
-    ).length;
-
-    const [fullLengthQuizCount, diagnosticQuizCount, unitQuizCount, totalStudentQuestionAttempts] =
-      await Promise.all([
-        aggregateCollectionGroupCount(firestore, "fullLengthTests"),
-        aggregateCollectionGroupCount(firestore, "diagnosticTests"),
-        aggregateCollectionGroupCount(firestore, "unitQuizResults"),
-        aggregateStudentQuestionAttempts(firestore),
-      ]);
-    const totalQuizzesTaken = fullLengthQuizCount + diagnosticQuizCount + unitQuizCount;
-
-    // DAU/MAU: would require activity logs; placeholder
-    const activeUsersDAU = 0;
-    const activeUsersMAU = totalStudents;
-
+    const [summary, analytics] = await Promise.all([
+      buildSummaryData(firestore),
+      buildAnalyticsData(firestore, rangeParam),
+    ]);
     return res.status(200).json({
       success: true,
       data: {
-        totalStudents,
-        activeUsersDAU,
-        activeUsersMAU,
-        totalSubjectsEnrolled,
-        totalQuestionsAnswered,
-        /** Same as totalQuestionsAnswered — size of the MCQ content library per subject (not attempts). */
-        questionBankTotal: totalQuestionsAnswered,
-        statesWithUsersCount,
-        totalQuizzesTaken,
-        /** Answers recorded via /api/user/questions/track (attemptCount across user_question_state). */
-        totalStudentQuestionAttempts,
-        averageApScoreLift,
-        /** @deprecated Use averageApScoreLift; kept for older clients. */
-        platformAccuracyRate: averageApScoreLift ?? 0,
-        averageScoreImprovement: averageApScoreLift,
-        averageApScoreLiftBySubject,
-        usersByState,
-        /** Users with missing or unresolvable inferred US state (stateCode "International" in usersByState). */
-        internationalRegionCount,
-        signUpsOverTime,
-        enrollmentsOverTime,
-        courseEnrollments: courseEnrollmentsDistribution,
+        ...analytics,
+        ...summary,
       },
     });
   } catch (err: any) {

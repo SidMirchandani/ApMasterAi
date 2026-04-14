@@ -23,7 +23,6 @@ import {
   MoreVertical,
   User,
   Ban,
-  Loader2,
   Users,
   Shield,
   ShieldOff,
@@ -33,6 +32,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AdminUser {
   id: string;
@@ -323,14 +323,6 @@ export function AdminUsersTab({
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
@@ -347,6 +339,7 @@ export function AdminUsersTab({
               placeholder="Search by email..."
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
+              disabled={loading}
               className="pl-9 bg-white dark:bg-slate-900/70 dark:border-slate-800 dark:text-white"
             />
           </div>
@@ -410,7 +403,39 @@ export function AdminUsersTab({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedUsers.map((user) => (
+                {loading &&
+                  Array.from({ length: 8 }).map((_, idx) => (
+                    <TableRow key={`sk-${idx}`} className="dark:border-slate-700">
+                      <TableCell>
+                        <Skeleton className="h-4 w-28" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-44 max-w-[min(100%,280px)]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-12" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-8" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-14 rounded-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-8" />
+                      </TableCell>
+                      {canMutateUsers && (
+                        <TableCell className="text-right">
+                          <Skeleton className="ml-auto h-8 w-8 rounded-md" />
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                {!loading &&
+                  sortedUsers.map((user) => (
                   <TableRow key={user.id} className="dark:border-slate-700">
                     <TableCell className="font-medium dark:text-slate-200">
                       {user.name || "—"}
@@ -504,7 +529,7 @@ export function AdminUsersTab({
             </Table>
           </div>
 
-          {filteredUsers.length === 0 && (
+          {!loading && filteredUsers.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Users className="h-12 w-12 text-slate-500 dark:text-slate-500 mb-4" />
               <p className="text-lg font-medium text-slate-900 dark:text-slate-300">
