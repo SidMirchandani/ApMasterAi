@@ -1,12 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin } from "../../../../server/firebase-admin";
 import { getDb } from "../../../../server/db";
-import {
-  isAdminEmailFromEnv,
-  isEnvAdminEmail,
-  isPlatformAdmin,
-} from "../../../../server/platform-admin";
+import { isAdminEmailFromEnv, isPlatformAdmin } from "../../../../server/platform-admin";
 import { requireAdmin } from "../../../../server/next-api-auth";
+import { buildUserSearchFields } from "../../../../server/user-search-fields";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "PATCH") {
@@ -23,9 +20,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!admin) return;
 
   if (!(await isPlatformAdmin(db, admin.email, admin.uid ?? null))) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  if (!isEnvAdminEmail(admin.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
@@ -97,6 +91,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     patch.inferredStateAt = new Date().toISOString();
     patch.inferenceSource = normalizedInferredState ? "admin" : null;
   }
+  const resolvedState =
+    hasInferredStateUpdate
+      ? normalizedInferredState
+      : typeof targetData.inferredState === "string"
+        ? targetData.inferredState
+        : null;
+  Object.assign(
+    patch,
+    buildUserSearchFields({
+      displayName:
+        typeof targetData.displayName === "string"
+          ? targetData.displayName
+          : typeof targetData.username === "string"
+            ? targetData.username
+            : null,
+      username: typeof targetData.username === "string" ? targetData.username : null,
+      email: typeof targetData.email === "string" ? targetData.email : targetEmail,
+      inferredState: resolvedState,
+    }),
+  );
 
   if (typeof wantBanned === "boolean") {
     if (!firebaseAdmin) {

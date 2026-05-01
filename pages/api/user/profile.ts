@@ -4,6 +4,7 @@ import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { isPlatformAdmin } from "../../../server/platform-admin";
 import { maybeUpdateUserGeoState } from "../../../server/user-geo-state";
+import { buildUserSearchFields } from "../../../server/user-search-fields";
 
 export default async function handler(
   req: NextApiRequest,
@@ -100,6 +101,10 @@ export default async function handler(
       photoURL: photoURL || null,
       firebaseUid: userId,
       updatedAt: new Date().toISOString(),
+      ...buildUserSearchFields({
+        displayName: displayNameValue,
+        email: String(email),
+      }),
     };
     if (experimentalFeatures !== undefined && (await isPlatformAdmin(db, decodedToken.email, decodedToken.uid))) {
       userData.experimentalFeaturesEnabled = experimentalFeatures === true;

@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getAllSubjectCodes } from "../../../server/subjects-helper";
 import { getDb } from "../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -18,9 +18,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const decoded = await verifyFirebaseToken(token);
   const db = getDb();
   if (!decoded || !(await isPlatformAdmin(db, decoded.email, decoded.uid))) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  if (!isEnvAdminEmail(decoded.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

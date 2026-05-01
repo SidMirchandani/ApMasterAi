@@ -5,7 +5,7 @@ import { getModelName, getGeminiClientOptions } from "../../../lib/gemini-models
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { flattenPromptText, callWithRetry, STUDY_NOTE_PROMPT } from "../../../server/study-notes-helpers";
 import { getDb } from "../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 import { requireAdmin } from "../../../server/next-api-auth";
 
 export const config = {
@@ -30,9 +30,6 @@ export default async function handler(
 
   if (!(await isPlatformAdmin(db, admin.email, admin.uid ?? null))) {
     return res.status(403).json({ error: "Not an admin" });
-  }
-  if (!isEnvAdminEmail(admin.email)) {
-    return res.status(403).json({ error: "Forbidden" });
   }
 
   const { questionIds, model = "2.5lite" } = req.body || {};

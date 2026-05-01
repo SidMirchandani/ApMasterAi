@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method !== "POST") return res.status(405).end();
 
     const admin = await requireAdmin(req, res);
-    if (!admin || !admin.isEnvAdmin) return res.status(403).json({ error: "Forbidden" });
+    if (!admin) return res.status(403).json({ error: "Forbidden" });
 
     const parseResult = bulkRequestSchema.safeParse(req.body);
     if (!parseResult.success) {

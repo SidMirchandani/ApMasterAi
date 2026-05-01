@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, LogOut, BarChart3, Library, Users } from "lucide-react";
+import { BookOpen, LogOut, BarChart3, Library, Users, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ const TABS = [
   { id: "insights", label: "Platform Insights", shortLabel: "Insights", icon: BarChart3 },
   { id: "library", label: "Content Library", shortLabel: "Library", icon: Library },
   { id: "users", label: "User Management", shortLabel: "Users", icon: Users },
+  { id: "backfill", label: "Backfill", shortLabel: "Backfill", icon: Database },
 ] as const;
 
 export type AdminTabId = (typeof TABS)[number]["id"];
@@ -19,8 +20,10 @@ export type AdminTabId = (typeof TABS)[number]["id"];
 interface AdminDashboardLayoutProps {
   children: React.ReactNode;
   tab: AdminTabId;
-  /** When false, Content Library tab is hidden (DB-only admins). */
+  /** When false, Content Library tab is hidden. */
   showContentLibraryTab?: boolean;
+  /** When false, Backfill tab is hidden. */
+  showBackfillTab?: boolean;
   userEmail: string | null;
   cheatMode: boolean;
   onCheatModeChange: (checked: boolean) => void;
@@ -30,11 +33,16 @@ export function AdminDashboardLayout({
   children,
   tab,
   showContentLibraryTab = true,
+  showBackfillTab = true,
   userEmail,
   cheatMode,
   onCheatModeChange,
 }: AdminDashboardLayoutProps) {
-  const tabs = showContentLibraryTab ? TABS : TABS.filter((t) => t.id !== "library");
+  const tabs = TABS.filter((t) => {
+    if (!showContentLibraryTab && t.id === "library") return false;
+    if (!showBackfillTab && t.id === "backfill") return false;
+    return true;
+  });
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A]">
       {/* Header with tab nav — stacks on small screens; tabs scroll horizontally when needed */}

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../../server/firebase-admin";
 import { getDb } from "../../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../../server/platform-admin";
+import { isPlatformAdmin } from "../../../../server/platform-admin";
 import { SUBJECT_SECTIONS } from "../../../../server/subject-sections";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -18,9 +18,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const db = getDb();
     if (!(await isPlatformAdmin(db, decoded.email, decoded.uid ?? null))) {
       return res.status(403).json({ error: "Not an admin" });
-    }
-    if (!isEnvAdminEmail(decoded.email)) {
-      return res.status(403).json({ error: "Forbidden" });
     }
 
     const subject = typeof req.query.subject === "string" ? req.query.subject.trim() : "";

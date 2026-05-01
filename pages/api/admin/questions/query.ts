@@ -5,7 +5,7 @@ import {
   verifyFirebaseToken,
 } from "../../../../server/firebase-admin";
 import { getDb } from "../../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../../server/platform-admin";
+import { isPlatformAdmin } from "../../../../server/platform-admin";
 
 export default async function handler(
   req: NextApiRequest,
@@ -21,8 +21,6 @@ export default async function handler(
     const decoded = await verifyFirebaseToken(token);
     const db = getDb();
     if (!(await isPlatformAdmin(db, decoded.email, decoded.uid)))
-      return res.status(403).json({ error: "Not an admin" });
-    if (!isEnvAdminEmail(decoded.email))
       return res.status(403).json({ error: "Not an admin" });
 
     const firebaseAdmin = getFirebaseAdmin();

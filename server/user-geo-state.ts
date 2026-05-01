@@ -4,6 +4,7 @@ import type { NextApiRequest } from "next";
 import type { IncomingHttpHeaders } from "node:http";
 import { getClientIp } from "./client-ip";
 import { lookupUsStateFromIpWithReason } from "./us-state-from-ip";
+import { buildUserSearchFields } from "./user-search-fields";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -96,6 +97,28 @@ export async function maybeUpdateUserGeoStateFromIp(
       update.inferredStateAt = now;
       update.lastIpGeoSuccessAt = now;
     }
+    const displayName =
+      typeof data.displayName === "string"
+        ? data.displayName
+        : typeof data.username === "string"
+          ? data.username
+          : null;
+    const email = typeof data.email === "string" ? data.email : null;
+    const inferredStateForSearch =
+      typeof update.inferredState === "string"
+        ? update.inferredState
+        : typeof data.inferredState === "string"
+          ? data.inferredState
+          : null;
+    Object.assign(
+      update,
+      buildUserSearchFields({
+        displayName,
+        username: typeof data.username === "string" ? data.username : null,
+        email,
+        inferredState: inferredStateForSearch,
+      }),
+    );
 
     await ref.update(update);
 

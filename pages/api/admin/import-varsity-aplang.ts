@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin } from "../../../server/firebase-admin";
 import { getDb } from "../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 import { requireAdmin } from "../../../server/next-api-auth";
 
 type Block = { type: "text"; value: string } | { type: "image"; url: string };
@@ -151,9 +151,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const db = getDb();
   if (!(await isPlatformAdmin(db, admin.email, admin.uid))) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  if (!isEnvAdminEmail(admin.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

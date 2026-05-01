@@ -31,6 +31,9 @@ export interface User {
   email: string;
   username?: string;
   createdAt: Date;
+  /** Set by admin user-stats backfill; when true, backfill skips this user. */
+  userStatsBackfilled?: boolean;
+  userStatsBackfilledAt?: string | number | Date | { seconds: number } | null;
 }
 
 export interface QuestionReport {

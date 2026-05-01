@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import type FirebaseFirestore from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "../../../server/firebase-admin";
 import { getDb } from "../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 import { requireAdmin } from "../../../server/next-api-auth";
 import { uploadExternalImagesInQuestion } from "../../../server/upload-image-from-url";
 import { scrapeVarsityForSubject } from "../../../server/scrapers/varsity-tutors";
@@ -58,9 +58,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const db = getDb();
   if (!(await isPlatformAdmin(db, admin.email, admin.uid))) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  if (!isEnvAdminEmail(admin.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

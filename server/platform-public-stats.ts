@@ -1,6 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 import { AggregateField } from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "./firebase-admin";
+import { aggregateGlobalStatsFromUserStats } from "./user-stats";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -73,8 +74,8 @@ export async function getPlatformPublicStats(): Promise<PlatformPublicStats> {
   const { firestore } = firebaseAdmin;
 
   const [
-    totalStudents,
-    totalSubjectEnrollments,
+    totalStudentsLegacy,
+    totalSubjectEnrollmentsLegacy,
     questionBank,
     usersStateSnap,
     fullLengthQuizCount,
@@ -103,9 +104,14 @@ export async function getPlatformPublicStats(): Promise<PlatformPublicStats> {
     aggregateCollectionGroupCount(firestore, "unitQuizResults"),
     aggregateStudentQuestionAttempts(firestore),
   ]);
+  const rollupTotals = await aggregateGlobalStatsFromUserStats(firestore);
 
   const statesWithUsers = countStatesFromUsersSnapshot(usersStateSnap.docs);
-  const totalQuizzesTaken = fullLengthQuizCount + diagnosticQuizCount + unitQuizCount;
+  const totalQuizzesTakenLegacy = fullLengthQuizCount + diagnosticQuizCount + unitQuizCount;
+  const totalStudents = rollupTotals?.totalStudents ?? totalStudentsLegacy;
+  const totalSubjectEnrollments = rollupTotals?.totalSubjectEnrollments ?? totalSubjectEnrollmentsLegacy;
+  const totalQuizzesTaken = rollupTotals?.totalQuizzesTaken ?? totalQuizzesTakenLegacy;
+  const totalQuestionsAnsweredFinal = rollupTotals?.totalQuestionsAnswered ?? totalQuestionsAnswered;
 
   const data: PlatformPublicStats = {
     totalStudents,
@@ -113,7 +119,7 @@ export async function getPlatformPublicStats(): Promise<PlatformPublicStats> {
     questionBank,
     statesWithUsers,
     totalQuizzesTaken,
-    totalQuestionsAnswered,
+    totalQuestionsAnswered: totalQuestionsAnsweredFinal,
     computedAt: new Date().toISOString(),
   };
 

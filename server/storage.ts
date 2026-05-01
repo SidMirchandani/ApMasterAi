@@ -2,6 +2,13 @@ import { getDb, databaseManager } from './db';
 import { DatabaseRetryHandler } from './db-retry-handler';
 import * as admin from 'firebase-admin'; // Assuming admin is needed for FieldValue
 import { maybeUpdateUserGeoStateFromIp } from './user-geo-state';
+import {
+  decrementCourseEnrollment,
+  incrementCourseEnrollment,
+  incrementQuestionAnswered,
+  incrementQuizTaken,
+} from './user-stats';
+import { buildUserSearchFields } from './user-search-fields';
 
 export interface UserSubject {
   id: string;
@@ -37,6 +44,9 @@ export interface User {
   email: string;
   username?: string;
   createdAt: Date;
+  /** Set by admin user-stats backfill; when true, backfill skips this user. */
+  userStatsBackfilled?: boolean;
+  userStatsBackfilledAt?: Date | admin.firestore.Timestamp;
 }
 
 export interface QuestionReport {
@@ -246,11 +256,16 @@ export class Storage {
         } as User;
       }
 
-      const user: Omit<User, 'id'> & { firebaseUid: string } = {
+      const user: Omit<User, 'id'> & { firebaseUid: string; [k: string]: unknown } = {
         firebaseUid,
         email,
         username,
         createdAt: new Date(),
+        ...buildUserSearchFields({
+          displayName: username ?? firebaseUid,
+          username: username ?? firebaseUid,
+          email,
+        }),
       };
 
       await docRef.set(user);
@@ -366,6 +381,11 @@ export class Storage {
       };
 
       await docRef.set(subjectData);
+      try {
+        await incrementCourseEnrollment(db, subject.userId, subject.subjectId);
+      } catch (e) {
+        console.warn("[storage.addUserSubject] failed to update user_stats", e);
+      }
 
       return {
         id: docRef.id,
@@ -421,8 +441,17 @@ export class Storage {
       await this.ensureConnection();
       const db = this.getDbInstance();
       if (!db) throw new Error("Firestore not available");
-
+      const docRef = db.collection('user_subjects').doc(subjectId);
+      const existing = await docRef.get();
+      const data = existing.exists ? existing.data() : null;
       await db.collection('user_subjects').doc(subjectId).delete();
+      if (data?.userId && data?.subjectId) {
+        try {
+          await decrementCourseEnrollment(db, String(data.userId), String(data.subjectId));
+        } catch (e) {
+          console.warn("[storage.deleteUserSubject] failed to update user_stats", e);
+        }
+      }
     });
   }
 
@@ -767,6 +796,11 @@ export class Storage {
 
       // Save complete test data in a subcollection
       await doc.ref.collection("fullLengthTests").doc(testId).set(testData);
+      try {
+        await incrementQuizTaken(db, userId, subjectId, 1);
+      } catch (e) {
+        console.warn("[storage.saveFullLengthTest] failed to update user_stats", e);
+      }
     }
 
     return testData;
@@ -893,6 +927,11 @@ export class Storage {
 
       // Store diagnostic in its own subcollection
       await doc.ref.collection("diagnosticTests").doc(testId).set(testData);
+      try {
+        await incrementQuizTaken(db, userId, subjectId, 1);
+      } catch (e) {
+        console.warn("[storage.saveDiagnosticTest] failed to update user_stats", e);
+      }
 
       // Also clear any in-progress diagnostic state
       await doc.ref.update({
@@ -1025,6 +1064,11 @@ export class Storage {
 
     if (!snapshot.empty) {
       await snapshot.docs[0].ref.collection("unitQuizResults").doc(docId).set(testData);
+      try {
+        await incrementQuizTaken(db, userId, subjectId, 1);
+      } catch (e) {
+        console.warn("[storage.saveUnitQuizResult] failed to update user_stats", e);
+      }
     } else {
       console.error("[storage.saveUnitQuizResult] No user_subjects doc found after ensureUserSubject", {
         userId,
@@ -1509,6 +1553,11 @@ export class Storage {
       if (data.answerIndex !== undefined) updateData.answerIndex = data.answerIndex;
       if (data.explanation != null) updateData.explanation = data.explanation;
       await doc.ref.update(updateData);
+    }
+    try {
+      await incrementQuestionAnswered(db, userId, data.subjectId, 1);
+    } catch (e) {
+      console.warn("[storage.trackQuestionPerformance] failed to update user_stats", e);
     }
   }
 

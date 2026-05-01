@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import type FirebaseFirestore from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "../../../server/firebase-admin";
 import { getDb } from "../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 import { requireAdmin } from "../../../server/next-api-auth";
 import { getModelName, getGeminiClientOptions } from "../../../lib/gemini-models";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
@@ -132,9 +132,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const db = getDb();
   if (!(await isPlatformAdmin(db, admin.email, admin.uid ?? null))) {
     return res.status(403).json({ error: "Not an admin" });
-  }
-  if (!isEnvAdminEmail(admin.email)) {
-    return res.status(403).json({ error: "Forbidden" });
   }
 
   const body = req.body || {};

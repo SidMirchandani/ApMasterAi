@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getDb } from "../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 
 export const config = {
   api: {
@@ -38,9 +38,6 @@ export default async function handler(
   const dbMove = getDb();
   if (!(await isPlatformAdmin(dbMove, decoded.email, decoded.uid ?? null))) {
     return res.status(403).json({ error: "Not an admin" });
-  }
-  if (!isEnvAdminEmail(decoded.email)) {
-    return res.status(403).json({ error: "Forbidden" });
   }
 
   const { questionIds } = req.body || {};

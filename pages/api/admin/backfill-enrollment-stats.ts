@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getDb } from "../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 
 function getDatesBetween(start: Date, end: Date): string[] {
   const out: string[] = [];
@@ -44,9 +44,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const decoded = await verifyFirebaseToken(token);
   const db = getDb();
   if (!decoded || !(await isPlatformAdmin(db, decoded.email, decoded.uid))) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  if (!isEnvAdminEmail(decoded.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

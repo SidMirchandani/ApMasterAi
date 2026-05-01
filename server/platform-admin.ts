@@ -12,8 +12,8 @@ export function isAdminEmailFromEnv(email?: string | null): boolean {
 }
 
 /**
- * Alias for call sites that distinguish env admins from Firestore-only (`isAdmin`) admins.
- * Content library and user mutations require this, not just `isPlatformAdmin`.
+ * True when the email is on ADMIN_EMAILS (break-glass). Prefer `isPlatformAdmin` for
+ * authorization unless an operation must stay env-only (e.g. self-revoke safeguards).
  */
 export function isEnvAdminEmail(email?: string | null): boolean {
   return isAdminEmailFromEnv(email);

@@ -14,12 +14,26 @@ export interface AdminContext extends AuthenticatedUser {
   isEnvAdmin: boolean;
 }
 
+const AUTH_CACHE_TTL_MS = 30_000;
+const authSuccessCache = new Map<string, { expiresAt: number; user: AuthenticatedUser }>();
+const adminSuccessCache = new Map<string, { expiresAt: number; admin: AdminContext }>();
+
 async function getBearerToken(req: NextApiRequest): Promise<string | null> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
     return null;
   }
   return authHeader.slice("Bearer ".length);
+}
+
+function cacheHit<T>(cache: Map<string, { expiresAt: number; [k: string]: unknown }>, key: string): T | null {
+  const hit = cache.get(key);
+  if (!hit) return null;
+  if (hit.expiresAt <= Date.now()) {
+    cache.delete(key);
+    return null;
+  }
+  return (hit.user ?? hit.admin) as T;
 }
 
 export async function requireUser(
@@ -31,6 +45,11 @@ export async function requireUser(
   if (!token) {
     res.status(401).json({ success: false, message: "Unauthorized" });
     return null;
+  }
+
+  const cached = cacheHit<AuthenticatedUser>(authSuccessCache as Map<string, { expiresAt: number; [k: string]: unknown }>, token);
+  if (cached) {
+    return cached;
   }
 
   let decoded: any;
@@ -48,11 +67,13 @@ export async function requireUser(
   );
   if (!bannedOk) return null;
 
-  return {
+  const user = {
     uid: decoded.uid,
     email: decoded.email,
     decodedToken: decoded,
   };
+  authSuccessCache.set(token, { expiresAt: Date.now() + AUTH_CACHE_TTL_MS, user });
+  return user;
 }
 
 export async function requireAdmin(
@@ -60,6 +81,14 @@ export async function requireAdmin(
   res: NextApiResponse,
   options?: { bannedVariant?: BannedResponseVariant },
 ): Promise<AdminContext | null> {
+  const token = await getBearerToken(req);
+  if (!token) {
+    res.status(401).json({ success: false, message: "Unauthorized" });
+    return null;
+  }
+  const adminCached = cacheHit<AdminContext>(adminSuccessCache as Map<string, { expiresAt: number; [k: string]: unknown }>, token);
+  if (adminCached) return adminCached;
+
   const user = await requireUser(req, res, options);
   if (!user) return null;
 
@@ -70,9 +99,11 @@ export async function requireAdmin(
     return null;
   }
 
-  return {
+  const admin = {
     ...user,
     isEnvAdmin: isEnvAdminEmail(user.email),
   };
+  adminSuccessCache.set(token, { expiresAt: Date.now() + AUTH_CACHE_TTL_MS, admin });
+  return admin;
 }
 

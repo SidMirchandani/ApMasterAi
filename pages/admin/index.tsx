@@ -42,6 +42,7 @@ import {
 import { AdminDashboardLayout } from "../../client/src/components/admin/AdminDashboardLayout";
 import { AdminInsightsTab } from "../../client/src/components/admin/AdminInsightsTab";
 import { AdminUsersTab } from "../../client/src/components/admin/AdminUsersTab";
+import { AdminBackfillTab } from "../../client/src/components/admin/AdminBackfillTab";
 import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../lib/subject-display-names";
 import { ExplanationMarkdown } from "../../client/src/components/ui/ExplanationMarkdown";
 import { AdminQuestionQuizPreviewDialog } from "@/components/admin/AdminQuestionQuizPreviewDialog";
@@ -59,7 +60,7 @@ const AP_SUBJECT_CODES: string[] = [
 /** Subjects with legacy→canonical section migration (`/api/admin/fix-legacy-section-codes`). */
 const SUBJECTS_WITH_LEGACY_SECTION_FIX: readonly string[] = ["APMACRO", "APWORLD"];
 
-const VALID_TABS = ["insights", "library", "users"] as const;
+const VALID_TABS = ["insights", "library", "users", "backfill"] as const;
 type AdminTab = (typeof VALID_TABS)[number];
 
 /** Mutually exclusive row filters in Content Library (radio group). */
@@ -316,8 +317,11 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   /** Admin access: derived from `/api/admin/session`. */
   const [adminStatus, setAdminStatus] = useState<"pending" | "allowed" | "forbidden">("pending");
-  /** True when email is on ADMIN_EMAILS (env admin). */
-  const [isEnvAdmin, setIsEnvAdmin] = useState(false);
+  /**
+   * Full admin tools (content library, user mutations, subject status): true for env-listed
+   * admins or Firestore `isAdmin` users. Mirrors `/api/admin/session` → `canManageContentAndUsers`.
+   */
+  const [canManageContentAndUsers, setCanManageContentAndUsers] = useState(false);
 
   // Data
   const [items, setItems] = useState<Question[]>([]);
@@ -516,19 +520,20 @@ export default function AdminPage() {
       });
       if (res.status === 403) {
         setAdminStatus("forbidden");
-        setIsEnvAdmin(false);
+        setCanManageContentAndUsers(false);
         return;
       }
       if (!res.ok) {
         setAdminStatus("forbidden");
-        setIsEnvAdmin(false);
+        setCanManageContentAndUsers(false);
         return;
       }
       const json = await res.json();
       setAdminStatus("allowed");
-      const env = json.data?.isEnvAdmin === true;
-      setIsEnvAdmin(env);
-      if (env) {
+      const full =
+        json.data?.canManageContentAndUsers === true || json.data?.isEnvAdmin === true;
+      setCanManageContentAndUsers(full);
+      if (full) {
         await loadSubjectStatus();
       } else {
         setSubjectStatus({});
@@ -537,7 +542,7 @@ export default function AdminPage() {
     } catch (err) {
       console.error("Failed to verify admin session:", err);
       setAdminStatus("forbidden");
-      setIsEnvAdmin(false);
+      setCanManageContentAndUsers(false);
     }
   }
 
@@ -910,7 +915,7 @@ export default function AdminPage() {
       } else {
         setToken("");
         setAdminStatus("pending");
-        setIsEnvAdmin(false);
+        setCanManageContentAndUsers(false);
       }
       setLoading(false);
     });
@@ -978,23 +983,23 @@ export default function AdminPage() {
       ? (tabFromQuery as AdminTab)
       : "insights";
 
-  const layoutTab: AdminTab = tab === "library" && !isEnvAdmin ? "insights" : tab;
-  const showInsights = tab === "insights" || (tab === "library" && !isEnvAdmin);
+  const layoutTab: AdminTab = tab === "library" && !canManageContentAndUsers ? "insights" : tab;
+  const showInsights = tab === "insights" || (tab === "library" && !canManageContentAndUsers);
 
   useEffect(() => {
     if (!router.isReady) return;
     const q = router.query.tab;
-    if (q !== "insights" && q !== "library" && q !== "users") {
+    if (q !== "insights" && q !== "library" && q !== "users" && q !== "backfill") {
       router.replace("/admin?tab=insights", undefined, { shallow: true });
     }
   }, [router.isReady, router.query.tab]);
 
   useEffect(() => {
     if (!router.isReady || adminStatus !== "allowed") return;
-    if (!isEnvAdmin && router.query.tab === "library") {
+    if (!canManageContentAndUsers && router.query.tab === "library") {
       router.replace("/admin?tab=insights", undefined, { shallow: true });
     }
-  }, [router.isReady, router.query.tab, adminStatus, isEnvAdmin, router]);
+  }, [router.isReady, router.query.tab, adminStatus, canManageContentAndUsers, router]);
 
   async function fetchFiltered(): Promise<Question[] | undefined> {
     if (!token) return undefined;
@@ -1609,13 +1614,14 @@ export default function AdminPage() {
       <Toaster position="top-right" />
       <AdminDashboardLayout
         tab={layoutTab}
-        showContentLibraryTab={isEnvAdmin}
+        showContentLibraryTab={canManageContentAndUsers}
+        showBackfillTab={true}
         userEmail={user?.email ?? null}
         cheatMode={cheatMode}
         onCheatModeChange={handleCheatModeToggle}
       >
         {showInsights && <AdminInsightsTab token={token} />}
-        {tab === "library" && isEnvAdmin && (
+        {tab === "library" && canManageContentAndUsers && (
       <div className="space-y-4">
         {/* Subjects Overview */}
         <Card className="dark:bg-slate-900/60 dark:border-slate-800">
@@ -2283,7 +2289,10 @@ export default function AdminPage() {
         </Card>
       </div>
         )}
-        {tab === "users" && <AdminUsersTab token={token} canMutateUsers={isEnvAdmin} />}
+        {tab === "users" && (
+          <AdminUsersTab token={token} canMutateUsers={canManageContentAndUsers} />
+        )}
+        {tab === "backfill" && <AdminBackfillTab token={token} />}
       </AdminDashboardLayout>
     </div>
   );

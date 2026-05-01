@@ -4,7 +4,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
 import { getModelName, getGeminiClientOptions } from "../../../lib/gemini-models";
 import { getDb } from "../../../server/db";
-import { isEnvAdminEmail, isPlatformAdmin } from "../../../server/platform-admin";
+import { isPlatformAdmin } from "../../../server/platform-admin";
 
 export const config = {
   api: {
@@ -117,9 +117,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   const db = getDb();
   if (!decoded || !(await isPlatformAdmin(db, decoded.email, decoded.uid ?? null))) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  if (!isEnvAdminEmail(decoded.email)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

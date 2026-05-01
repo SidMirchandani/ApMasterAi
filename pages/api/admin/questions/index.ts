@@ -6,7 +6,7 @@ import { requireAdmin } from "../../../../server/next-api-auth";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const admin = await requireAdmin(req, res);
-    if (!admin || !admin.isEnvAdmin) return;
+    if (!admin) return;
 
     const firebaseAdmin = getFirebaseAdmin();
     if (!firebaseAdmin) {

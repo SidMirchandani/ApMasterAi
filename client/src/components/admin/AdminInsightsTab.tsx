@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCountUp } from "@/hooks/use-count-up";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import {
 } from "../../../../lib/subject-display-names";
 import { getUsStateDisplayName } from "../../../../lib/us-state-display-name";
 
-type DateRangeKey = "7d" | "30d" | "90d" | "all";
+type DateRangeKey = "7d" | "30d" | "90d" | "180d" | "365d" | "ytd" | "custom";
 
 interface SignUpPoint {
   date: string;
@@ -72,7 +72,10 @@ const chartConfig = {
   enrollmentsCumulative: { label: "Total Enrollments", color: "hsl(200, 70%, 40%)" },
 };
 
-/** When true, shows the Average AP Score Lift per Subject table. Lift data is always returned by the insights API. */
+/**
+ * When true, shows the Average AP Score Lift per Subject table.
+ * Request `includeLift=1` on the insights API when enabled (expensive).
+ */
 const SHOW_AVERAGE_AP_SCORE_LIFT_UI = false;
 
 /** Alternating shades of blue (theme) for enrollment bar chart so each subject bar is easy to distinguish. */
@@ -99,24 +102,57 @@ function regionSliceFill(index: number): string {
 const RANGE_OPTIONS: { value: DateRangeKey; label: string }[] = [
   { value: "7d", label: "7 Days" },
   { value: "30d", label: "30 Days" },
-  { value: "90d", label: "90 Days" },
-  { value: "all", label: "All Time" },
+  { value: "90d", label: "3 Months" },
+  { value: "180d", label: "6 Months" },
+  { value: "365d", label: "1 Year" },
+  { value: "ytd", label: "YTD" },
 ];
 
+function getRangeLabel(range: DateRangeKey, startDate?: string, endDate?: string) {
+  if (range === "custom" || startDate || endDate) {
+    if (startDate && endDate) return `${startDate} to ${endDate}`;
+    if (startDate) return `From ${startDate}`;
+    if (endDate) return `Until ${endDate}`;
+    return "Custom Range";
+  }
+  return RANGE_OPTIONS.find((o) => o.value === range)?.label ?? range;
+}
+
+/** Chart axis/tooltips use Eastern Time (matches API bucketing). */
+const CHART_TIMEZONE = "America/New_York";
+
+function parseChartDateKey(dateStr: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return new Date(`${dateStr}T12:00:00`);
+  }
+  return new Date(dateStr);
+}
+
 function formatChartDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString(undefined, {
+  const d = parseChartDateKey(dateStr);
+  const yEt = Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: CHART_TIMEZONE, year: "numeric" }).format(d),
+  );
+  const thisYearEt = Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: CHART_TIMEZONE, year: "numeric" }).format(new Date()),
+  );
+  return d.toLocaleDateString("en-US", {
+    timeZone: CHART_TIMEZONE,
     month: "short",
     day: "numeric",
-    year: d.getFullYear() !== new Date().getFullYear() ? "2-digit" : undefined,
+    year: yEt !== thisYearEt ? "2-digit" : undefined,
   });
 }
 
 /** Shorter x-axis labels to avoid overlap on dense series / narrow widths. */
 function formatAxisDate(dateStr: string, compact: boolean) {
-  const d = new Date(dateStr);
+  const d = parseChartDateKey(dateStr);
   if (compact) {
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return d.toLocaleDateString("en-US", {
+      timeZone: CHART_TIMEZONE,
+      month: "short",
+      day: "numeric",
+    });
   }
   return formatChartDate(dateStr);
 }
@@ -236,19 +272,45 @@ function RegionDonutOutsideLabel(props: {
   );
 }
 
+type GeoSnapshot = Pick<
+  InsightsData,
+  "usersByState" | "internationalRegionCount" | "statesWithUsersCount"
+>;
+
 export function AdminInsightsTab({ token }: { token: string }) {
   const narrow = useNarrowInsights(640);
   const [summary, setSummary] = useState<Partial<InsightsData> | null>(null);
   const [analytics, setAnalytics] = useState<Partial<InsightsData> | null>(null);
+  const [geoSnapshot, setGeoSnapshot] = useState<GeoSnapshot | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRangeKey>("all");
+  const [geoLoading, setGeoLoading] = useState(true);
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRangeKey>("7d");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
+  const [debouncedStartDate, setDebouncedStartDate] = useState<string>("");
+  const [debouncedEndDate, setDebouncedEndDate] = useState<string>("");
+  const analyticsCacheRef = useRef<Map<string, Partial<InsightsData>>>(new Map());
+
+  /** First load: no cached analytics yet. Range change: keep showing charts/geo. */
+  const analyticsInitialLoading = analyticsLoading && !analytics;
+  const rangeChartsLoading = analyticsLoading && !!analytics;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedStartDate(customStartDate);
+      setDebouncedEndDate(customEndDate);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [customStartDate, customEndDate]);
 
   const data = useMemo((): InsightsData => {
     const s = summary ?? {};
     const a = analytics ?? {};
+    const g = geoSnapshot;
     return {
       totalStudents: s.totalStudents ?? 0,
       activeUsersDAU: s.activeUsersDAU ?? 0,
@@ -259,16 +321,16 @@ export function AdminInsightsTab({ token }: { token: string }) {
       platformAccuracyRate: a.platformAccuracyRate ?? s.platformAccuracyRate ?? 0,
       averageApScoreLift: a.averageApScoreLift ?? s.averageApScoreLift,
       averageApScoreLiftBySubject: a.averageApScoreLiftBySubject ?? s.averageApScoreLiftBySubject,
-      usersByState: a.usersByState ?? s.usersByState ?? [],
-      internationalRegionCount: a.internationalRegionCount ?? s.internationalRegionCount,
-      statesWithUsersCount: a.statesWithUsersCount ?? s.statesWithUsersCount ?? 0,
+      usersByState: g?.usersByState ?? a.usersByState ?? s.usersByState ?? [],
+      internationalRegionCount: g?.internationalRegionCount ?? a.internationalRegionCount ?? s.internationalRegionCount,
+      statesWithUsersCount: g?.statesWithUsersCount ?? a.statesWithUsersCount ?? s.statesWithUsersCount ?? 0,
       totalQuizzesTaken: s.totalQuizzesTaken ?? 0,
       totalStudentQuestionAttempts: s.totalStudentQuestionAttempts ?? 0,
       signUpsOverTime: a.signUpsOverTime ?? [],
       enrollmentsOverTime: a.enrollmentsOverTime ?? [],
       courseEnrollments: a.courseEnrollments ?? [],
     };
-  }, [summary, analytics]);
+  }, [summary, analytics, geoSnapshot]);
 
   // Hooks must run unconditionally before any early return
   const totalStudents = data.totalStudents;
@@ -302,20 +364,60 @@ export function AdminInsightsTab({ token }: { token: string }) {
 
   useEffect(() => {
     if (!token) return;
+    setGeoLoading(true);
+    setGeoError(null);
+    fetch("/api/admin/insights?part=geo", { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load region breakdown");
+        return res.json();
+      })
+      .then((json) => {
+        const payload = json.data || null;
+        setGeoSnapshot(payload);
+      })
+      .catch((err) => setGeoError(err.message))
+      .finally(() => setGeoLoading(false));
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const useCustomRange = dateRange === "custom";
+    if (useCustomRange && !debouncedStartDate && !debouncedEndDate) return;
+    if (dateRange === "custom" && !debouncedStartDate && !debouncedEndDate) return;
+    const resolvedRange = useCustomRange ? "custom" : dateRange;
+    const cacheKey = `${resolvedRange}:${debouncedStartDate || ""}:${debouncedEndDate || ""}:${SHOW_AVERAGE_AP_SCORE_LIFT_UI ? "lift" : "nolift"}`;
+    const cached = analyticsCacheRef.current.get(cacheKey);
+    if (cached) {
+      setAnalytics(cached);
+      setAnalyticsLoading(false);
+      setAnalyticsError(null);
+      return;
+    }
+
     setAnalyticsLoading(true);
     setAnalyticsError(null);
-    const url = `/api/admin/insights?part=analytics&range=${encodeURIComponent(dateRange)}`;
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    const lift = SHOW_AVERAGE_AP_SCORE_LIFT_UI ? "&includeLift=1" : "";
+    const startQ = debouncedStartDate ? `&startDate=${encodeURIComponent(debouncedStartDate)}` : "";
+    const endQ = debouncedEndDate ? `&endDate=${encodeURIComponent(debouncedEndDate)}` : "";
+    const url = `/api/admin/insights?part=analytics&range=${encodeURIComponent(resolvedRange)}${lift}${startQ}${endQ}`;
+    const ctrl = new AbortController();
+    fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: ctrl.signal })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load charts and breakdowns");
         return res.json();
       })
       .then((json) => {
-        setAnalytics(json.data || null);
+        const payload = json.data || null;
+        setAnalytics(payload);
+        if (payload) analyticsCacheRef.current.set(cacheKey, payload);
       })
-      .catch((err) => setAnalyticsError(err.message))
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        setAnalyticsError(err.message);
+      })
       .finally(() => setAnalyticsLoading(false));
-  }, [token, dateRange]);
+    return () => ctrl.abort();
+  }, [token, dateRange, debouncedStartDate, debouncedEndDate]);
 
   if (summaryError && !summaryLoading) {
     return (
@@ -331,12 +433,13 @@ export function AdminInsightsTab({ token }: { token: string }) {
     data.signUpsOverTime.length > 0 &&
     data.signUpsOverTime.some((p) => p.cumulative > 0);
 
-  const enrollmentsOverTime = data.enrollmentsOverTime ?? [];
-  const hasEnrollmentData =
-    enrollmentsOverTime.length > 0 &&
-    enrollmentsOverTime.some((p) => p.cumulative > 0);
-  const signupDates = data.signUpsOverTime.map((p) => p.date);
-  const enrollmentDates = enrollmentsOverTime.map((p) => p.date);
+  const enrollmentsOverTime = useMemo(() => data.enrollmentsOverTime ?? [], [data.enrollmentsOverTime]);
+  const hasEnrollmentData = useMemo(
+    () => enrollmentsOverTime.length > 0 && enrollmentsOverTime.some((p) => p.cumulative > 0),
+    [enrollmentsOverTime],
+  );
+  const signupDates = useMemo(() => data.signUpsOverTime.map((p) => p.date), [data.signUpsOverTime]);
+  const enrollmentDates = useMemo(() => enrollmentsOverTime.map((p) => p.date), [enrollmentsOverTime]);
   const axisTickBudget = narrow ? 6 : 11;
   const signupXTicks = getXAxisTicks(signupDates, axisTickBudget);
   const enrollmentXTicks = getXAxisTicks(enrollmentDates, axisTickBudget);
@@ -350,38 +453,44 @@ export function AdminInsightsTab({ token }: { token: string }) {
     SHOW_AVERAGE_AP_SCORE_LIFT_UI && (data.averageApScoreLiftBySubject?.length ?? 0) > 0;
 
   const HIDDEN_SUBJECTS = new Set(["APES", "APHUG"]);
-  const courseEnrollmentsOrdered = [...data.courseEnrollments]
-    .map((e) => {
-      const id = e.subjectId?.toUpperCase?.() ?? e.subjectId;
-      const normalizedId = id === "APWH" ? "APWORLD" : id;
-      return { ...e, subjectId: normalizedId };
-    })
-    .filter((e) => !HIDDEN_SUBJECTS.has(e.subjectId))
-    .sort((a, b) => compareSubjectsByShortName(a.subjectId, b.subjectId));
+  const courseEnrollmentsOrdered = useMemo(
+    () =>
+      [...data.courseEnrollments]
+        .map((e) => {
+          const id = e.subjectId?.toUpperCase?.() ?? e.subjectId;
+          const normalizedId = id === "APWH" ? "APWORLD" : id;
+          return { ...e, subjectId: normalizedId };
+        })
+        .filter((e) => !HIDDEN_SUBJECTS.has(e.subjectId))
+        .sort((a, b) => compareSubjectsByShortName(a.subjectId, b.subjectId)),
+    [data.courseEnrollments],
+  );
 
   const usersByState = data.usersByState ?? [];
   const hasUsersByState = usersByState.some((s) => s.count > 0);
-  const usersByStateSorted = [...usersByState].filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
-  const statePieData = usersByStateSorted.map((s, index) => {
-    const code =
-      s.stateCode === "International" ? "International" : s.stateCode.trim().toUpperCase();
-    const fullName =
-      s.stateCode === "International" ? "International" : getUsStateDisplayName(s.stateCode);
-    const abbr = s.stateCode === "International" ? "INT" : code;
-    return { fullName, abbr, code, value: s.count, fill: regionSliceFill(index) };
-  });
+  const statePieData = useMemo(() => {
+    const usersByStateSorted = [...usersByState].filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
+    return usersByStateSorted.map((s, index) => {
+      const code =
+        s.stateCode === "International" ? "International" : s.stateCode.trim().toUpperCase();
+      const fullName =
+        s.stateCode === "International" ? "International" : getUsStateDisplayName(s.stateCode);
+      const abbr = s.stateCode === "International" ? "INT" : code;
+      return { fullName, abbr, code, value: s.count, fill: regionSliceFill(index) };
+    });
+  }, [usersByState]);
   const totalAttributedUsers = statePieData.reduce((sum, row) => sum + row.value, 0);
   const singleRegion = statePieData.length === 1 ? statePieData[0] : null;
   const regionChartHeight =
-    singleRegion ? 260 : Math.min(420, 196 + Math.min(statePieData.length, 12) * 18);
+    singleRegion ? 300 : Math.min(500, 250 + Math.min(statePieData.length, 12) * 18);
   const regionDonutRadii =
     statePieData.length > 14
       ? narrow
-        ? { inner: 48, outer: 76 }
-        : { inner: 58, outer: 92 }
-      : narrow
         ? { inner: 56, outer: 88 }
-        : { inner: 68, outer: 104 };
+        : { inner: 70, outer: 110 }
+      : narrow
+        ? { inner: 64, outer: 98 }
+        : { inner: 78, outer: 120 };
 
   return (
     <div className="space-y-4">
@@ -394,7 +503,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpStudents.toLocaleString(),
             icon: Users,
             sub: null as string | null,
-            needsAnalytics: false,
+            needsGeo: false,
           },
           {
             key: "subjects",
@@ -402,7 +511,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpSubjects.toLocaleString(),
             icon: BookOpen,
             sub: null as string | null,
-            needsAnalytics: false,
+            needsGeo: false,
           },
           {
             key: "questions",
@@ -410,7 +519,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpQuestions.toLocaleString(),
             icon: MessageCircle,
             sub: null as string | null,
-            needsAnalytics: false,
+            needsGeo: false,
           },
           {
             key: "states",
@@ -418,7 +527,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpStates.toLocaleString(),
             icon: MapPin,
             sub: null as string | null,
-            needsAnalytics: true,
+            needsGeo: true,
           },
           {
             key: "quizzes",
@@ -426,7 +535,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpQuizzes.toLocaleString(),
             icon: ClipboardList,
             sub: null as string | null,
-            needsAnalytics: false,
+            needsGeo: false,
           },
           {
             key: "answered",
@@ -434,13 +543,13 @@ export function AdminInsightsTab({ token }: { token: string }) {
             display: countUpStudentAnswers.toLocaleString(),
             icon: ListChecks,
             sub: null as string | null,
-            needsAnalytics: false,
+            needsGeo: false,
           },
         ].map((item, i) => {
-          const kpiPending = item.needsAnalytics
-            ? analyticsLoading && !analytics
+          const kpiPending = item.needsGeo
+            ? !geoSnapshot && geoLoading
             : summaryLoading && !summary;
-          const showStatesUnavailable = item.needsAnalytics && analyticsError && !analyticsLoading;
+          const showStatesUnavailable = item.needsGeo && geoError && !geoSnapshot;
           const valueDisplay = showStatesUnavailable ? "—" : item.display;
           return (
           <motion.div
@@ -485,7 +594,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
         </Card>
       ) : null}
 
-      {analyticsLoading && !analyticsError ? (
+      {analyticsInitialLoading && !analyticsError ? (
         <div className="space-y-4">
           <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
             <CardHeader className="pb-2">
@@ -549,8 +658,8 @@ export function AdminInsightsTab({ token }: { token: string }) {
         </div>
       ) : null}
 
-      {/* Users by inferred region (US state) — donut + legend / single-region hero */}
-      {!analyticsLoading && !analyticsError && hasUsersByState && (
+      {/* Users by inferred region (US state) — donut + legend / single-region hero (stable while changing date range) */}
+      {hasUsersByState && (geoSnapshot != null || !!analytics) && !(analyticsError && !analytics && !geoSnapshot) && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -567,10 +676,10 @@ export function AdminInsightsTab({ token }: { token: string }) {
                 across {statesWithUsers} US {statesWithUsers === 1 ? "state" : "states"}
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-2 overflow-visible">
+            <CardContent className="pt-1 pb-3 overflow-visible">
               {singleRegion ? (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-10 py-2">
-                  <div className={`relative shrink-0 ${narrow ? "h-[220px] w-[220px]" : "h-[260px] w-[260px]"}`}>
+                <div className="flex flex-col items-center justify-center gap-5 py-1">
+                  <div className={`relative shrink-0 ${narrow ? "h-[250px] w-[250px]" : "h-[300px] w-[300px]"}`}>
                     <ChartContainer
                       config={chartConfig}
                       className="aspect-auto absolute inset-0 h-full w-full [&_.recharts-responsive-container]:!h-full [&_.recharts-responsive-container]:!w-full"
@@ -605,7 +714,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
                       </span>
                     </div>
                   </div>
-                  <div className="text-center sm:text-left space-y-3 max-w-sm">
+                  <div className="text-center space-y-3 max-w-sm">
                     <div>
                       <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Region</p>
                       <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-0.5">
@@ -622,9 +731,9 @@ export function AdminInsightsTab({ token }: { token: string }) {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:items-start min-w-0">
+                <div className="flex flex-col gap-3 lg:gap-4 min-w-0">
                   <div
-                    className="mx-auto w-full max-w-[440px] shrink-0 pt-1 min-w-0"
+                    className="mx-auto w-full max-w-[520px] shrink-0 pt-0 min-w-0"
                     style={{ height: regionChartHeight }}
                   >
                     <ChartContainer
@@ -633,8 +742,8 @@ export function AdminInsightsTab({ token }: { token: string }) {
                     >
                       <PieChart
                         margin={{
-                          top: narrow ? 44 : 52,
-                          bottom: narrow ? 40 : 46,
+                          top: narrow ? 22 : 28,
+                          bottom: narrow ? 18 : 24,
                           left: narrow ? 68 : 88,
                           right: narrow ? 68 : 88,
                         }}
@@ -684,7 +793,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
                     </ChartContainer>
                   </div>
                   <ul
-                    className="flex-1 min-w-0 list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 content-start"
+                    className="flex-1 min-w-0 list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1.5 content-start"
                     aria-label="Users by region breakdown"
                   >
                     {statePieData.map((row) => {
@@ -742,7 +851,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
       )}
 
       {/* Average AP Score Lift per Subject — hidden unless SHOW_AVERAGE_AP_SCORE_LIFT_UI; API still returns lift data. */}
-      {!analyticsLoading && !analyticsError && hasLiftBySubject && (
+      {analytics && !analyticsError && hasLiftBySubject && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -792,12 +901,19 @@ export function AdminInsightsTab({ token }: { token: string }) {
         </motion.div>
       )}
 
-      {!analyticsLoading && !analyticsError ? (
+      {analytics && !analyticsError ? (
+      <div className="relative">
+      {rangeChartsLoading ? (
+        <div className="absolute right-0 top-0 z-10 flex items-center gap-2 rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm border border-border/50">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500/80" />
+          Updating charts…
+        </div>
+      ) : null}
       <>
       {/* Date range selector */}
       <div className="flex flex-wrap items-center gap-2">
         <Calendar className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-slate-500 dark:text-slate-400">Date Range:</span>
+        <span className="text-sm text-slate-500 dark:text-slate-400">Date Range (US Eastern):</span>
         {RANGE_OPTIONS.map((opt) => (
           <button
             key={opt.value}
@@ -811,8 +927,31 @@ export function AdminInsightsTab({ token }: { token: string }) {
             {opt.label}
           </button>
         ))}
+        <input
+          type="date"
+          value={customStartDate}
+          onChange={(e) => {
+            setCustomStartDate(e.target.value);
+            setDateRange("custom");
+          }}
+          className="rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground"
+          aria-label="Start date"
+          title="Start Pick"
+        />
+        <input
+          type="date"
+          value={customEndDate}
+          onChange={(e) => {
+            setCustomEndDate(e.target.value);
+            setDateRange("custom");
+          }}
+          className="rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground"
+          aria-label="End date"
+          title="End Pick"
+        />
       </div>
 
+      <div className="space-y-6 mt-4">
       {/* Hero: Cumulative signups */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -1061,8 +1200,8 @@ export function AdminInsightsTab({ token }: { token: string }) {
               <CardTitle className="dark:text-white">Enrollments by Subject</CardTitle>
               <CardDescription className="dark:text-slate-400">
                 New enrollments per subject with a recorded date in{" "}
-                {RANGE_OPTIONS.find((o) => o.value === dateRange)?.label ?? dateRange}
-                {dateRange === "all" ? " (academic year to date)" : ""}. Matches the date range control above.
+                {getRangeLabel(dateRange, customStartDate, customEndDate)}
+                {dateRange === "ytd" ? " (year to date)" : ""}. Matches the date range control above.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1125,10 +1264,12 @@ export function AdminInsightsTab({ token }: { token: string }) {
           </Card>
         </motion.div>
       )}
+      </div>
       </>
+      </div>
       ) : null}
 
-      {!analyticsLoading && !analyticsError && !hasSignupData && courseEnrollmentsOrdered.length === 0 && (
+      {analytics && !analyticsError && !rangeChartsLoading && !hasSignupData && courseEnrollmentsOrdered.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}>
           <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
             <CardContent className="py-5 text-center text-slate-500 dark:text-slate-400">

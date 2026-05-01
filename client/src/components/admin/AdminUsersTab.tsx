@@ -16,6 +16,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -40,7 +42,7 @@ interface AdminUser {
   email: string;
   state: string | null;
   joinDate: string;
-  totalCoursesEnrolled: number;
+  totalCoursesEnrolled: number | null;
   status: "active" | "banned";
   isAdmin: boolean;
   hasEnvAdmin: boolean;
@@ -152,26 +154,26 @@ export function AdminUsersTab({
   canMutateUsers,
 }: {
   token: string;
-  /** Ban, grant/revoke DB admin, set state — env admins only */
+  /** Ban, grant/revoke DB admin, set state — platform admins (session allows). */
   canMutateUsers: boolean;
 }) {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchEmail, setSearchEmail] = useState("");
+  const [searchText, setSearchText] = useState("");
+  const [debouncedSearchText, setDebouncedSearchText] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentCursor, setCurrentCursor] = useState("");
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [cursorStack, setCursorStack] = useState<string[]>([]);
+  const [hasMore, setHasMore] = useState(false);
   const [sortKey, setSortKey] = useState<UserSortKey>("email");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  const filteredUsers = useMemo(() => {
-    if (!searchEmail.trim()) return users;
-    const q = searchEmail.trim().toLowerCase();
-    return users.filter((u) => u.email.toLowerCase().includes(q));
-  }, [users, searchEmail]);
-
   const sortedUsers = useMemo(() => {
-    const arr = [...filteredUsers];
+    const arr = [...users];
     arr.sort((a, b) => compareUsers(a, b, sortKey, sortDir));
     return arr;
-  }, [filteredUsers, sortKey, sortDir]);
+  }, [users, sortKey, sortDir]);
 
   function handleSort(key: UserSortKey) {
     if (sortKey === key) {
@@ -183,17 +185,69 @@ export function AdminUsersTab({
   }
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearchText(searchText.trim());
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchText]);
+
+  useEffect(() => {
     if (!token) return;
-    setLoading(true);
-    fetch("/api/admin/users", { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load users");
-        return res.json();
-      })
-      .then((json) => setUsers(json.data?.users || []))
-      .catch(() => setUsers([]))
-      .finally(() => setLoading(false));
-  }, [token]);
+    void fetchUsersPage("");
+  }, [token, debouncedSearchText]);
+
+  async function fetchUsersPage(cursor: string) {
+    const isInitial = !cursor;
+    if (isInitial) setLoading(true);
+    else setLoadingMore(true);
+    try {
+      const qs = new URLSearchParams({ limit: "100" });
+      if (cursor) qs.set("cursor", cursor);
+      if (debouncedSearchText) qs.set("q", debouncedSearchText);
+      const res = await fetch(`/api/admin/users?${qs.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to load users");
+      const json = await res.json();
+      setUsers(json.data?.users || []);
+      const newNextCursor =
+        typeof json.data?.nextCursor === "string" && json.data.nextCursor.trim()
+          ? json.data.nextCursor
+          : null;
+      setNextCursor(newNextCursor);
+      setHasMore(Boolean(json.data?.hasMore && newNextCursor));
+      if (isInitial) {
+        setCursorStack([]);
+        setCurrentCursor("");
+      }
+      setCurrentCursor(cursor);
+    } catch {
+      setUsers([]);
+      setNextCursor(null);
+      setHasMore(false);
+      if (isInitial) {
+        setCursorStack([]);
+        setCurrentCursor("");
+      }
+    } finally {
+      if (isInitial) setLoading(false);
+      else setLoadingMore(false);
+    }
+  }
+
+  async function handleNextPage() {
+    if (!nextCursor || loading || loadingMore) return;
+    setCursorStack((prev) => [...prev, currentCursor]);
+    await fetchUsersPage(nextCursor);
+  }
+
+  async function handlePrevPage() {
+    if (cursorStack.length === 0 || loading || loadingMore) return;
+    const prevStack = [...cursorStack];
+    const prevCursor = prevStack.pop() ?? "";
+    setCursorStack(prevStack);
+    await fetchUsersPage(prevCursor);
+  }
 
   function handleViewProfile(user: AdminUser) {
     toast.success(`View Profile: ${user.email} (shell action)`);
@@ -336,12 +390,37 @@ export function AdminUsersTab({
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by email..."
-              value={searchEmail}
-              onChange={(e) => setSearchEmail(e.target.value)}
-              disabled={loading}
+              placeholder="Search name, email, or state..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              disabled={loading || loadingMore}
               className="pl-9 bg-white dark:bg-slate-900/70 dark:border-slate-800 dark:text-white"
             />
+          </div>
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span className="text-slate-500 dark:text-slate-400">
+              Showing up to 100 users per page
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePrevPage}
+                disabled={loading || loadingMore || cursorStack.length === 0}
+              >
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={loading || loadingMore || !hasMore || !nextCursor}
+              >
+                Next
+              </Button>
+            </div>
           </div>
 
           <div className="rounded-md border dark:border-slate-700 overflow-hidden">
@@ -397,13 +476,11 @@ export function AdminUsersTab({
                     sortDir={sortDir}
                     onSort={handleSort}
                   />
-                  {canMutateUsers && (
-                    <TableHead className="w-[70px] font-semibold text-right align-middle">Actions</TableHead>
-                  )}
+                  <TableHead className="w-[70px] font-semibold text-right align-middle">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading &&
+                {(loading || loadingMore) &&
                   Array.from({ length: 8 }).map((_, idx) => (
                     <TableRow key={`sk-${idx}`} className="dark:border-slate-700">
                       <TableCell>
@@ -427,14 +504,12 @@ export function AdminUsersTab({
                       <TableCell>
                         <Skeleton className="h-4 w-8" />
                       </TableCell>
-                      {canMutateUsers && (
-                        <TableCell className="text-right">
-                          <Skeleton className="ml-auto h-8 w-8 rounded-md" />
-                        </TableCell>
-                      )}
+                      <TableCell className="text-right">
+                        <Skeleton className="ml-auto h-8 w-8 rounded-md" />
+                      </TableCell>
                     </TableRow>
                   ))}
-                {!loading &&
+                {!loading && !loadingMore &&
                   sortedUsers.map((user) => (
                   <TableRow key={user.id} className="dark:border-slate-700">
                     <TableCell className="font-medium dark:text-slate-200">
@@ -446,7 +521,7 @@ export function AdminUsersTab({
                       {formatDate(user.joinDate)}
                     </TableCell>
                     <TableCell className="dark:text-slate-300">
-                      {user.totalCoursesEnrolled}
+                      {user.totalCoursesEnrolled == null ? "—" : user.totalCoursesEnrolled}
                     </TableCell>
                     <TableCell>
                       <span
@@ -471,75 +546,84 @@ export function AdminUsersTab({
                         <span className="text-slate-500">No</span>
                       )}
                     </TableCell>
-                    {canMutateUsers && (
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-52">
-                            <DropdownMenuItem onClick={() => handleViewProfile(user)}>
-                              <User className="mr-2 h-4 w-4" />
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => promptAndSetUserState(user)}>
-                              <MapPin className="mr-2 h-4 w-4" />
-                              {user.state ? "Update/Clear State" : "Set State"}
-                            </DropdownMenuItem>
-                            {user.status === "active" ? (
-                              <DropdownMenuItem
-                                onClick={() => setUserBanned(user, true)}
-                                className="text-red-600 focus:text-red-600 dark:text-red-400"
-                              >
-                                <Ban className="mr-2 h-4 w-4" />
-                                Ban User
+                    <TableCell className="text-right">
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for ${user.email}`}>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem onClick={() => handleViewProfile(user)}>
+                            <User className="mr-2 h-4 w-4" />
+                            View Profile
+                          </DropdownMenuItem>
+                          {canMutateUsers ? (
+                            <>
+                              <DropdownMenuItem onClick={() => promptAndSetUserState(user)}>
+                                <MapPin className="mr-2 h-4 w-4" />
+                                {user.state ? "Update/Clear State" : "Set State"}
                               </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={() => setUserBanned(user, false)}
-                                className="text-emerald-700 focus:text-emerald-700 dark:text-emerald-400"
-                              >
-                                <Ban className="mr-2 h-4 w-4" />
-                                Unban User
-                              </DropdownMenuItem>
-                            )}
-                            {!user.hasDbAdmin && (
-                              <DropdownMenuItem onClick={() => setUserDbAdmin(user, true)}>
-                                <Shield className="mr-2 h-4 w-4" />
-                                Grant admin (DB)
-                              </DropdownMenuItem>
-                            )}
-                            {user.hasDbAdmin && (
-                              <DropdownMenuItem onClick={() => setUserDbAdmin(user, false)}>
-                                <ShieldOff className="mr-2 h-4 w-4" />
-                                {user.hasEnvAdmin
-                                  ? "Clear DB admin (still admin if on ADMIN_EMAILS)"
-                                  : "Revoke admin (DB)"}
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    )}
+                              {user.status === "active" ? (
+                                <DropdownMenuItem
+                                  onClick={() => setUserBanned(user, true)}
+                                  className="text-red-600 focus:text-red-600 dark:text-red-400"
+                                >
+                                  <Ban className="mr-2 h-4 w-4" />
+                                  Ban User
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => setUserBanned(user, false)}
+                                  className="text-emerald-700 focus:text-emerald-700 dark:text-emerald-400"
+                                >
+                                  <Ban className="mr-2 h-4 w-4" />
+                                  Unban User
+                                </DropdownMenuItem>
+                              )}
+                              {!user.hasDbAdmin && (
+                                <DropdownMenuItem onClick={() => setUserDbAdmin(user, true)}>
+                                  <Shield className="mr-2 h-4 w-4" />
+                                  Grant admin (DB)
+                                </DropdownMenuItem>
+                              )}
+                              {user.hasDbAdmin && (
+                                <DropdownMenuItem onClick={() => setUserDbAdmin(user, false)}>
+                                  <ShieldOff className="mr-2 h-4 w-4" />
+                                  {user.hasEnvAdmin
+                                    ? "Clear DB admin (still admin if on ADMIN_EMAILS)"
+                                    : "Revoke admin (DB)"}
+                                </DropdownMenuItem>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                                More actions require admin access
+                              </DropdownMenuLabel>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
 
-          {!loading && filteredUsers.length === 0 && (
+          {!loading && !loadingMore && sortedUsers.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Users className="h-12 w-12 text-slate-500 dark:text-slate-500 mb-4" />
               <p className="text-lg font-medium text-slate-900 dark:text-slate-300">
-                {searchEmail.trim()
+                {debouncedSearchText
                   ? "No users match your search"
                   : "No users yet"}
               </p>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {searchEmail.trim()
-                  ? "Try a different email or clear the search."
+                {debouncedSearchText
+                  ? "Try a different name, email, or state."
                   : "Users will appear here once they sign up."}
               </p>
             </div>
