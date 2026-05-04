@@ -30,6 +30,15 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
+    if (!router.isReady) return;
+    const raw = router.query.email;
+    const fromQuery = Array.isArray(raw) ? raw[0] : raw;
+    if (typeof fromQuery === "string" && fromQuery.trim()) {
+      setFormData((prev) => ({ ...prev, email: fromQuery.trim() }));
+    }
+  }, [router.isReady, router.query.email]);
+
+  useEffect(() => {
     let cancelled = false;
 
     // 1. Immediate Session Check: If Firebase already has a user, move them now
@@ -286,6 +295,18 @@ export default function Login() {
                 >
                   {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                 </button>
+              </div>
+              <div className="flex justify-center pt-1">
+                <Link
+                  href={
+                    formData.email.trim()
+                      ? `/forgot-password?email=${encodeURIComponent(formData.email.trim())}`
+                      : "/forgot-password"
+                  }
+                  className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                >
+                  Forgot password?
+                </Link>
               </div>
             </div>
 

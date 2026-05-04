@@ -1,5 +1,7 @@
 import {
+  confirmPasswordReset,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithRedirect,
   getRedirectResult,
@@ -7,6 +9,7 @@ import {
   signOut,
   User,
   UserCredential,
+  verifyPasswordResetCode,
 } from "firebase/auth";
 import { auth, isFirebaseEnabled } from "./firebase";
 
@@ -25,6 +28,103 @@ export interface LoginData {
   email: string;
   password: string;
 }
+
+function getFirebaseAuthErrorCode(error: unknown): string | null {
+  if (error && typeof error === "object" && "code" in error) {
+    const code = (error as { code: unknown }).code;
+    return typeof code === "string" ? code : null;
+  }
+  return null;
+}
+
+function mapFirebaseAuthError(error: unknown, fallback: string): string {
+  const code = getFirebaseAuthErrorCode(error);
+  switch (code) {
+    case "auth/invalid-email":
+      return "Please enter a valid email address.";
+    case "auth/missing-email":
+      return "Please enter your email address.";
+    case "auth/user-not-found":
+      return "No account found with this email.";
+    case "auth/invalid-action-code":
+    case "auth/expired-action-code":
+      return "This reset link is invalid or has expired. Please request a new one.";
+    case "auth/weak-password":
+      return "Password is too weak. Choose a stronger password (at least 6 characters).";
+    default:
+      return error instanceof Error ? error.message : fallback;
+  }
+}
+
+function getPasswordResetContinueUrl(): string {
+  const base =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL) || "";
+  if (!base) {
+    throw new Error(
+      "Cannot build password reset URL. Set NEXT_PUBLIC_SITE_URL for server contexts or use the app in a browser.",
+    );
+  }
+  return `${base.replace(/\/$/, "")}/reset-password`;
+}
+
+/** Sends Firebase password reset email when the account supports email/password sign-in. */
+export const requestPasswordResetEmail = async (email: string): Promise<void> => {
+  if (!isFirebaseEnabled || !auth) {
+    throw new Error(
+      "Authentication is not configured. Please contact support.",
+    );
+  }
+
+  const trimmed = email.trim();
+  if (!trimmed) {
+    throw new Error("Please enter your email address.");
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, trimmed, {
+      url: getPasswordResetContinueUrl(),
+      handleCodeInApp: false,
+    });
+  } catch (error: unknown) {
+    throw new Error(mapFirebaseAuthError(error, "Failed to send reset email."));
+  }
+};
+
+/** Returns the account email if `oobCode` from the reset link is still valid. */
+export const getEmailFromPasswordResetCode = async (
+  oobCode: string,
+): Promise<string> => {
+  if (!isFirebaseEnabled || !auth) {
+    throw new Error(
+      "Authentication is not configured. Please contact support.",
+    );
+  }
+
+  try {
+    return await verifyPasswordResetCode(auth, oobCode);
+  } catch (error: unknown) {
+    throw new Error(mapFirebaseAuthError(error, "Invalid or expired reset link."));
+  }
+};
+
+export const completePasswordReset = async (
+  oobCode: string,
+  newPassword: string,
+): Promise<void> => {
+  if (!isFirebaseEnabled || !auth) {
+    throw new Error(
+      "Authentication is not configured. Please contact support.",
+    );
+  }
+
+  try {
+    await confirmPasswordReset(auth, oobCode, newPassword);
+  } catch (error: unknown) {
+    throw new Error(mapFirebaseAuthError(error, "Failed to reset password."));
+  }
+};
 
 // Sign up with email and password
 export const signUpWithEmail = async ({
