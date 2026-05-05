@@ -9,32 +9,57 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import type { APScoreDisplayState } from "@/lib/ap-score-utils";
 import { cn } from "@/lib/utils";
 
-const EXPLANATION = (
-  <>
-    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-      We estimate your AP score using our proprietary scoring model and subject-specific AP calibration.
-    </p>
-    <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
-      <li>
-        <strong className="text-gray-800 dark:text-gray-200">We combine multiple performance signals.</strong> Our model weights evidence by relevance and quality.
-      </li>
-      <li>
-        <strong className="text-gray-800 dark:text-gray-200">If full-length and unit evidence both exist,</strong> we use the stronger signal at the unit level.
-      </li>
-      <li>
-        <strong className="text-gray-800 dark:text-gray-200">If no full-length evidence exists,</strong> we project from unit-level evidence only.
-      </li>
-      <li>
-        <strong className="text-gray-800 dark:text-gray-200">If evidence is insufficient,</strong> we show <span className="font-semibold">N/A</span> instead of forcing a score.
-      </li>
-      <li>
-        <strong className="text-gray-800 dark:text-gray-200">Final conversion:</strong> the model output is mapped to AP 1-5 using subject-specific calibration.
-      </li>
-    </ol>
-  </>
-);
+function buildExplanation(projectionState?: APScoreDisplayState) {
+  const isHidden = projectionState != null && !projectionState.canShowProjectedScore;
+  const isPartialEstimate =
+    projectionState != null &&
+    projectionState.canShowProjectedScore &&
+    !projectionState.hasFullLengthEvidence &&
+    !projectionState.allUnitsHaveData;
+
+  return (
+    <>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+        We estimate your AP score using our proprietary scoring model and subject-specific AP calibration.
+      </p>
+      <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
+        <li>
+          <strong className="text-gray-800 dark:text-gray-200">We combine multiple performance signals.</strong> Our model weights evidence by relevance and quality.
+        </li>
+        <li>
+          <strong className="text-gray-800 dark:text-gray-200">If full-length and unit evidence both exist,</strong> we use the stronger signal at the unit level.
+        </li>
+        <li>
+          <strong className="text-gray-800 dark:text-gray-200">If no full-length evidence exists,</strong> we project from unit-level evidence only.
+        </li>
+        <li>
+          <strong className="text-gray-800 dark:text-gray-200">If evidence is insufficient,</strong> we show <span className="font-semibold">N/A</span> instead of forcing a score.
+        </li>
+        <li>
+          <strong className="text-gray-800 dark:text-gray-200">Final conversion:</strong> the model output is mapped to AP 1-5 using subject-specific calibration.
+        </li>
+      </ol>
+      {isHidden && (
+        <p className="text-xs text-gray-500 dark:text-gray-500 mt-3">
+          More unit evidence is required before we can show a reliable projection.
+        </p>
+      )}
+      {isPartialEstimate && (
+        <p className="text-xs text-gray-500 dark:text-gray-500 mt-3">
+          This is an early projection and will become more stable as additional units are completed.
+        </p>
+      )}
+      {projectionState?.hasFullLengthEvidence && (
+        <p className="text-xs text-gray-500 dark:text-gray-500 mt-3">
+          Full-length section evidence can raise unit-level estimates, but never lowers existing best performance.
+        </p>
+      )}
+    </>
+  );
+}
 
 interface APScoreExplainDialogProps {
   /** Optional custom trigger; defaults to Info icon. */
@@ -43,12 +68,14 @@ interface APScoreExplainDialogProps {
   triggerClassName?: string;
   /** If true, trigger is inline (e.g. next to label) with no button chrome. */
   inline?: boolean;
+  projectionState?: APScoreDisplayState;
 }
 
 export function APScoreExplainDialog({
   trigger,
   triggerClassName,
   inline = false,
+  projectionState,
 }: APScoreExplainDialogProps) {
   return (
     <Dialog>
@@ -75,7 +102,7 @@ export function APScoreExplainDialog({
             How we calculate your predicted AP score
           </DialogTitle>
         </DialogHeader>
-        <div className="mt-1">{EXPLANATION}</div>
+        <div className="mt-1">{buildExplanation(projectionState)}</div>
       </DialogContent>
     </Dialog>
   );

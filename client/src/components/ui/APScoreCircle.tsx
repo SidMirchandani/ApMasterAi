@@ -10,6 +10,7 @@ interface APScoreCircleProps {
   /** With size lg, use a slightly smaller circle below the sm breakpoint (narrow cards / mobile). */
   responsive?: boolean;
   className?: string;
+  emptyLabel?: string;
 }
 
 const sizeClasses = {
@@ -33,6 +34,7 @@ export function APScoreCircle({
   variant = "default",
   responsive = false,
   className = "",
+  emptyLabel = "?",
 }: APScoreCircleProps) {
   const showCrown = score === 5;
   const isDashboard = variant === "dashboard";
@@ -52,6 +54,9 @@ export function APScoreCircle({
     ? { backgroundColor: "white", borderWidth: 2, borderStyle: "solid" as const, borderColor: color }
     : { backgroundColor: color };
 
+  const displayText = score !== null ? String(score) : emptyLabel;
+  const textClass = displayText.length > 1 ? "text-xs tracking-wide" : "";
+
   return (
     <div
       className={`${baseClasses} ${isDashboard ? "text-black" : "text-white"}`}
@@ -66,7 +71,7 @@ export function APScoreCircle({
           aria-hidden
         />
       )}
-      <span>{score !== null ? score : "?"}</span>
+      <span className={textClass}>{displayText}</span>
     </div>
   );
 }

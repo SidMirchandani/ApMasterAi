@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { getApiCodeForSubject, getSectionByCode, getUnitWeightsBySectionCode } from "@/subjects";
-import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject, getUnitTierFromScore, getAPScoreColor, percentageToAPScore } from "@/lib/ap-score-utils";
+import { getProjectedAPScoreDisplay, getTargetPercentagesForSubject, getUnitTierFromScore, getAPScoreColor, percentageToAPScore } from "@/lib/ap-score-utils";
 import { safeDateParse } from "@/lib/date";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
@@ -243,9 +243,13 @@ export default function AnalyticsPage() {
     };
   });
 
-  const lastTestPercentage = testChartData.length >= 1 ? testChartData[testChartData.length - 1]?.percentage ?? 0 : 0;
-  const hasEnoughForPrediction = testChartData.length >= 1;
-  const predicted = getPredictedAPScoreFromTests(lastTestPercentage, subjectCode);
+  const projectionState = getProjectedAPScoreDisplay({
+    unitProgressMap,
+    testHistory,
+    unitWeights,
+    subjectCode,
+  });
+  const predicted = projectionState.predicted;
 
   if (loading || isLoading) {
     return (
@@ -302,16 +306,17 @@ export default function AnalyticsPage() {
                 <CardContent className="p-4 flex flex-col items-center justify-center min-h-[120px] text-center">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <APScoreCircle
-                      score={subjectId && hasEnoughForPrediction ? predicted.score : null}
-                      color={subjectId && hasEnoughForPrediction ? predicted.color : "#9ca3af"}
+                      score={subjectId ? projectionState.displayScore : null}
+                      color={subjectId && predicted ? predicted.color : "#9ca3af"}
                       size="sm"
+                      emptyLabel="N/A"
                     />
                     <p className="flex flex-wrap items-center justify-center gap-x-1 gap-y-0 text-sm font-bold text-slate-900 dark:text-slate-100">
                       <span>Predicted</span>
                       <span className="relative pr-5">
                         AP Score
                         <span className="absolute right-0 top-1/2 -translate-y-1/2 leading-none">
-                          <APScoreExplainDialog inline triggerClassName="ml-0.5" />
+                          <APScoreExplainDialog inline triggerClassName="ml-0.5" projectionState={projectionState} />
                         </span>
                       </span>
                     </p>

@@ -27,7 +27,7 @@ import { apiRequest } from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { getUnitsForSubject, getSubjectByCode, getApiCodeForSubject, getUnitWeightsBySectionCode } from "@/subjects";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
-import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
+import { getProjectedAPScoreDisplay, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 import { APScoreCircle } from "@/components/ui/APScoreCircle";
 import { cn } from "@/lib/utils";
@@ -159,51 +159,14 @@ export default function Study() {
   const subjectCode = subjectId ? getApiCodeForSubject(subjectId) : undefined;
   const targets = getTargetPercentagesForSubject(subjectCode);
 
-  // Compute Student Score for prediction using the same idea as Analytics:
-  // - Use unit weights when available (best-per-unit × weight, summed)
-  // - Otherwise fall back to latest test percentage
-  const unitBestMap: Record<string, number> = {};
-  Object.entries(unitProgressMap).forEach(([code, prog]) => {
-    unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, prog.highestScore ?? prog.mcqScore ?? 0);
-  });
-  const unitPerformanceMap: { [sectionCode: string]: { correct: number; total: number } } = {};
-  testHistory.forEach((test) => {
-    if (test.sectionBreakdown) {
-      Object.entries(test.sectionBreakdown).forEach(([code, section]) => {
-        if (!unitPerformanceMap[code]) {
-          unitPerformanceMap[code] = { correct: 0, total: 0 };
-        }
-        unitPerformanceMap[code].correct += section.correct;
-        unitPerformanceMap[code].total += section.total;
-      });
-    }
-  });
-  Object.entries(unitPerformanceMap).forEach(([code, stats]) => {
-    const pct = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
-    unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, pct);
-  });
-
   const unitWeights = subjectId ? getUnitWeightsBySectionCode(subjectId) : {};
-  const hasWeights = Object.keys(unitWeights).length > 0;
-
-  let studentScore = 0;
-  let hasEnoughForPrediction = false;
-
-  if (hasWeights && Object.values(unitBestMap).some((v) => v > 0)) {
-    const weightedScore = Object.entries(unitWeights).reduce(
-      (sum, [code, weight]) => sum + ((unitBestMap[code] ?? 0) / 100) * weight,
-      0
-    );
-    studentScore = Math.round(weightedScore);
-    hasEnoughForPrediction = true;
-  } else if (testHistory.length > 0) {
-    studentScore = Math.round(testHistory[testHistory.length - 1].percentage);
-    hasEnoughForPrediction = true;
-  }
-
-  const predicted = hasEnoughForPrediction
-    ? getPredictedAPScoreFromTests(studentScore, subjectCode)
-    : null;
+  const projectionState = getProjectedAPScoreDisplay({
+    unitProgressMap,
+    testHistory,
+    unitWeights,
+    subjectCode,
+  });
+  const predicted = projectionState.predicted;
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.push("/login");
@@ -304,9 +267,10 @@ export default function Study() {
                 title="Predicted AP Score"
               >
                 <APScoreCircle
-                  score={predicted?.score ?? null}
+                  score={projectionState.displayScore}
                   color={predicted ? predicted.color : "#94a3b8"}
                   size="sm"
+                  emptyLabel="N/A"
                 />
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -316,7 +280,7 @@ export default function Study() {
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       AP score
                     </p>
-                    <APScoreExplainDialog inline triggerClassName="mt-0" />
+                    <APScoreExplainDialog inline triggerClassName="mt-0" projectionState={projectionState} />
                   </div>
                 </div>
               </div>

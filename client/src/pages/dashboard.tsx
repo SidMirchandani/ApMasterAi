@@ -23,7 +23,7 @@ import { formatDate } from "@/lib/date";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { getSubjectByCode, getApiCodeForSubject, getUnitWeightsBySectionCode } from "@/subjects";
-import { getPredictedAPScoreFromTests, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
+import { getProjectedAPScoreDisplay, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 import {
   AlertDialog,
@@ -483,56 +483,6 @@ const ArchivedSection = ({
   </section>
 );
 
-// Shared helper: compute weighted Student Score for prediction so Dashboard matches Analytics logic
-function computeStudentScoreForPrediction(params: {
-  unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }>;
-  testHistory: { percentage: number; sectionBreakdown?: Record<string, { correct: number; total: number }> }[];
-  subjectId: string;
-}): { studentScore: number; hasEnoughForPrediction: boolean } {
-  const { unitProgressMap, testHistory, subjectId } = params;
-
-  const unitBestMap: Record<string, number> = {};
-  Object.entries(unitProgressMap).forEach(([code, prog]) => {
-    unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, prog.highestScore ?? prog.mcqScore ?? 0);
-  });
-
-  const unitPerformanceMap: Record<string, { correct: number; total: number }> = {};
-  testHistory.forEach((test) => {
-    if (test.sectionBreakdown) {
-      Object.entries(test.sectionBreakdown).forEach(([code, section]) => {
-        if (!unitPerformanceMap[code]) {
-          unitPerformanceMap[code] = { correct: 0, total: 0 };
-        }
-        unitPerformanceMap[code].correct += section.correct;
-        unitPerformanceMap[code].total += section.total;
-      });
-    }
-  });
-
-  Object.entries(unitPerformanceMap).forEach(([code, stats]) => {
-    const pct = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
-    unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, pct);
-  });
-
-  const unitWeights = getUnitWeightsBySectionCode(subjectId);
-  const hasWeights = Object.keys(unitWeights).length > 0;
-
-  if (hasWeights && Object.values(unitBestMap).some((v) => v > 0)) {
-    const weightedScore = Object.entries(unitWeights).reduce(
-      (sum, [code, weight]) => sum + ((unitBestMap[code] ?? 0) / 100) * weight,
-      0
-    );
-    return { studentScore: Math.round(weightedScore), hasEnoughForPrediction: true };
-  }
-
-  if (testHistory.length > 0) {
-    const last = testHistory[testHistory.length - 1];
-    return { studentScore: Math.round(last.percentage), hasEnoughForPrediction: true };
-  }
-
-  return { studentScore: 0, hasEnoughForPrediction: false };
-}
-
 /* 5-scale: 1=dark red, 2=light red, 3=light green, 4=medium green, 5=dark green */
 const scoreColorMap: Record<number, { text: string; bg: string; border: string; gradient: string }> = {
   1: { text: "text-red-700 dark:text-red-400", bg: "bg-red-50 dark:bg-red-500/10", border: "border-red-200 dark:border-red-800", gradient: "from-red-700 to-red-800" },
@@ -583,12 +533,13 @@ const SubjectCard = ({
 
   const subjectCode = getApiCodeForSubject(subject.subjectId);
   const targets = getTargetPercentagesForSubject(subjectCode);
-  const { studentScore, hasEnoughForPrediction } = computeStudentScoreForPrediction({
+  const projectionState = getProjectedAPScoreDisplay({
     unitProgressMap,
     testHistory,
-    subjectId: subject.subjectId,
+    unitWeights: getUnitWeightsBySectionCode(subject.subjectId),
+    subjectCode,
   });
-  const predicted = hasEnoughForPrediction ? getPredictedAPScoreFromTests(studentScore, subjectCode) : null;
+  const predicted = projectionState.predicted;
   const scoreColors = predicted ? scoreColorMap[predicted.score] : null;
 
   const description = subject.description || subjectMeta?.metadata?.description || "";
@@ -605,12 +556,12 @@ const SubjectCard = ({
         >
           <div className="flex w-full flex-col items-center gap-2 sm:w-full">
             <APScoreCircle
-              score={predicted?.score ?? null}
+              score={projectionState.displayScore}
               color={predicted ? predicted.color : "#94a3b8"}
               size="lg"
-              responsive
+              emptyLabel="N/A"
             />
-            <APScoreExplainDialog inline triggerClassName="self-center" />
+            <APScoreExplainDialog inline triggerClassName="self-center" projectionState={projectionState} />
           </div>
           <p className="max-w-[11rem] text-[11px] font-medium leading-snug text-slate-600 dark:text-slate-400 sm:max-w-none">
             Projected AP score
