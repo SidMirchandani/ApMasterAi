@@ -216,6 +216,34 @@ function assignSectionFromConceptContext(
       bestCode = code;
     }
   }
+
+  if (bestScore <= 0) {
+    // Avoid systematic first-unit bias (e.g., APUSH P1) when context has no strong signal.
+    const stableSource = [
+      opts.topicName || "",
+      opts.pageTitle || "",
+      opts.linkTitle || "",
+      opts.conceptPath.join(" "),
+      opts.promptBlocks
+        .filter((b) => b.type === "text")
+        .map((b) => b.value)
+        .join(" "),
+    ].join("|");
+    let hash = 0;
+    for (let i = 0; i < stableSource.length; i++) {
+      hash = (hash * 31 + stableSource.charCodeAt(i)) >>> 0;
+    }
+    const fallbackCode = unitIds[hash % unitIds.length] || unitIds[0];
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.warn("[VarsityScraper] Low-confidence section assignment fallback", {
+        subjectCode,
+        fallbackCode,
+      });
+    }
+    return fallbackCode;
+  }
+
   return bestCode;
 }
 

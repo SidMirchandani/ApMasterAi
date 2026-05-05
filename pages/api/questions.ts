@@ -52,6 +52,18 @@ const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
     "SOC": 20,     // Social Psychology and Personality: 15-25% (avg 20%)
     "MPH": 20,     // Mental and Physical Health: 15-25% (avg 20%)
   },
+  // APUSH periods use midpoints of official AP ranges (sum 100)
+  "APUSH": {
+    "P1": 5,       // Period 1: 1491-1607 (4-6%)
+    "P2": 7,       // Period 2: 1607-1754 (6-8%)
+    "P3": 13.5,    // Period 3: 1754-1800 (10-17%)
+    "P4": 13.5,    // Period 4: 1800-1848 (10-17%)
+    "P5": 13.5,    // Period 5: 1844-1877 (10-17%)
+    "P6": 13.5,    // Period 6: 1865-1898 (10-17%)
+    "P7": 13.5,    // Period 7: 1890-1945 (10-17%)
+    "P8": 13.5,    // Period 8: 1945-1980 (10-17%)
+    "P9": 5,       // Period 9: 1980-Present (4-6%)
+  },
   // AP CSA 2026: 4 units, midpoints of official ranges (sum 99)
   "APCSA": {
     "U1": 20,      // Unit 1 Using Objects and Methods: 15–25% (mid 20%)
@@ -149,6 +161,14 @@ export default async function handler(
       const weights = EXAM_WEIGHTS[subject as string];
       const questionsRef = db.collection('questions');
       const selectedQuestions: any[] = [];
+      const sectionSelectionTelemetry: Array<{
+        sectionCode: string;
+        weight: number;
+        targetCount: number;
+        availableCount: number;
+        selectedCount: number;
+        shortfall: number;
+      }> = [];
 
       if (process.env.NODE_ENV !== "production") {
         // eslint-disable-next-line no-console
@@ -200,8 +220,21 @@ export default async function handler(
           const selected = shuffled.slice(0, sectionQuestionCount);
           selectedQuestions.push(...selected);
           remainingQuestions -= selected.length;
+          sectionSelectionTelemetry.push({
+            sectionCode,
+            weight,
+            targetCount: sectionQuestionCount,
+            availableCount: sectionQuestions.length,
+            selectedCount: selected.length,
+            shortfall: Math.max(0, sectionQuestionCount - selected.length),
+          });
 
-          console.log(`  📊 ${sectionCode}: ${selected.length} questions (${weight}% weight) from ${sectionQuestions.length} available`);
+          if (process.env.NODE_ENV !== "production") {
+            // eslint-disable-next-line no-console
+            console.log(
+              `  📊 ${sectionCode}: selected=${selected.length}, target=${sectionQuestionCount}, available=${sectionQuestions.length}, weight=${weight}%`,
+            );
+          }
         }
       }
 
@@ -210,10 +243,13 @@ export default async function handler(
 
       const isAPCSA = (subject as string) === "APCSA";
       if (process.env.NODE_ENV !== "production") {
+        const totalShortfall = sectionSelectionTelemetry.reduce((sum, entry) => sum + entry.shortfall, 0);
         // eslint-disable-next-line no-console
         console.log("✅ Returning proportional questions:", {
           requested: questionLimit,
           returning: finalQuestions.length,
+          totalShortfall,
+          sectionSelectionTelemetry,
           breakdown: Object.entries(weights).map(([section, weight]) => ({
             section,
             count: isAPCSA
@@ -222,6 +258,16 @@ export default async function handler(
             weight: `${weight}%`,
           })),
         });
+        if (totalShortfall > 0) {
+          // eslint-disable-next-line no-console
+          console.warn("[API/questions] Weighted full-length generation had section shortfall", {
+            subject,
+            requested: questionLimit,
+            returning: finalQuestions.length,
+            totalShortfall,
+            sectionSelectionTelemetry,
+          });
+        }
       }
 
       return res.status(200).json({
@@ -348,8 +394,8 @@ export default async function handler(
         totalFound: allQuestions.length,
         returning: questions.length,
         firstQuestionId: questions[0]?.id,
-        firstQuestionSubject: questions[0]?.subject_code,
-        firstQuestionSection: questions[0]?.section_code,
+        firstQuestionSubject: (questions[0] as any)?.subject_code,
+        firstQuestionSection: (questions[0] as any)?.section_code,
       });
     }
 

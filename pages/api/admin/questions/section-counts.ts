@@ -50,7 +50,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }),
     );
 
-    return res.status(200).json({ success: true, data });
+    const total = Object.values(data).reduce((sum, count) => sum + count, 0);
+    const percentages: Record<string, number> = {};
+    for (const [sectionCode, count] of Object.entries(data)) {
+      percentages[sectionCode] = total > 0 ? Number(((count / total) * 100).toFixed(2)) : 0;
+    }
+
+    const subjectUpper = subject.toUpperCase();
+    const overrepresentedSection = Object.entries(data).reduce(
+      (best, entry) => (entry[1] > best[1] ? entry : best),
+      ["", -1] as [string, number],
+    );
+    const p1SharePercent = subjectUpper === "APUSH" ? percentages.P1 ?? 0 : undefined;
+
+    return res.status(200).json({
+      success: true,
+      data,
+      diagnostics: {
+        total,
+        percentages,
+        overrepresentedSection: {
+          code: overrepresentedSection[0],
+          count: overrepresentedSection[1] < 0 ? 0 : overrepresentedSection[1],
+        },
+        ...(subjectUpper === "APUSH" ? { p1SharePercent } : {}),
+      },
+    });
   } catch (err) {
     console.error("section-counts:", err);
     return res.status(500).json({ error: "Failed to load section counts" });
