@@ -252,36 +252,6 @@ function getBestFullLengthDerivedPercent(testHistory: ProjectionTestHistoryEntry
   return best;
 }
 
-function getExplicitUnitWeightedPercent(params: {
-  unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }>;
-  unitWeights: Record<string, number>;
-}): { percent: number | null; unitsCompleted: number; weightedCoverage: number } {
-  const { unitProgressMap, unitWeights } = params;
-  const weightedUnits = Object.entries(unitWeights);
-  if (weightedUnits.length === 0) {
-    return { percent: null, unitsCompleted: 0, weightedCoverage: 0 };
-  }
-
-  const totalWeight = weightedUnits.reduce((sum, [, weight]) => sum + weight, 0);
-  let observedWeight = 0;
-  let observedWeightedSum = 0;
-  let unitsCompleted = 0;
-
-  for (const [code, weight] of weightedUnits) {
-    const progress = unitProgressMap[code];
-    const best = Math.max(progress?.highestScore ?? 0, progress?.mcqScore ?? 0);
-    if (best > 0) {
-      unitsCompleted += 1;
-      observedWeight += weight;
-      observedWeightedSum += best * weight;
-    }
-  }
-
-  const weightedCoverage = totalWeight > 0 ? Math.round((observedWeight / totalWeight) * 100) : 0;
-  const percent = observedWeight > 0 ? Math.round(observedWeightedSum / observedWeight) : null;
-  return { percent, unitsCompleted, weightedCoverage };
-}
-
 /** Sparse map for subjects without unit weights (legacy / diagnostics-only views). */
 function buildSparseUnitEvidenceNoWeights(params: {
   unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }>;
@@ -315,7 +285,26 @@ export function getProjectedAPScoreDisplay(params: {
   const { unitProgressMap, testHistory, unitWeights, subjectCode } = params;
   const hasWeights = Object.keys(unitWeights).length > 0;
   const hasFullLengthEvidence = testHistory.some((test) => isFullLengthTest(test));
-  const explicitUnit = getExplicitUnitWeightedPercent({ unitProgressMap, unitWeights });
+  const unitBestMap = hasWeights
+    ? getPerUnitScoresForWeightedProjection({ unitProgressMap, testHistory, unitWeights })
+    : buildSparseUnitEvidenceNoWeights({ unitProgressMap, testHistory });
+  const weightedUnits = Object.entries(unitWeights);
+  const totalWeight = weightedUnits.reduce((sum, [, weight]) => sum + weight, 0);
+  const explicitPercent =
+    hasWeights && weightedUnits.length > 0
+      ? Math.round(
+          weightedUnits.reduce((sum, [code, weight]) => {
+            const best = unitBestMap[code] ?? 0;
+            return sum + (best / 100) * weight;
+          }, 0)
+        )
+      : null;
+  const unitsCompleted = Object.values(unitBestMap).filter((score) => score > 0).length;
+  const observedWeight = weightedUnits.reduce((sum, [code, weight]) => {
+    const best = unitBestMap[code] ?? 0;
+    return best > 0 ? sum + weight : sum;
+  }, 0);
+  const weightedCoverage = totalWeight > 0 ? Math.round((observedWeight / totalWeight) * 100) : 0;
   const fullLengthDerivedPercent = getBestFullLengthDerivedPercent(testHistory);
 
   if (!hasWeights) {
@@ -339,12 +328,8 @@ export function getProjectedAPScoreDisplay(params: {
     };
   }
 
-  const explicitPercent = explicitUnit.percent;
   const hasExplicitUnitEvidence = explicitPercent != null;
-  const allUnitsHaveData = Object.keys(unitWeights).every((code) => {
-    const progress = unitProgressMap[code];
-    return Math.max(progress?.highestScore ?? 0, progress?.mcqScore ?? 0) > 0;
-  });
+  const allUnitsHaveData = Object.keys(unitWeights).every((code) => (unitBestMap[code] ?? 0) > 0);
   const candidatePercent = hasFullLengthEvidence
     ? hasExplicitUnitEvidence && fullLengthDerivedPercent != null
       ? Math.max(explicitPercent, fullLengthDerivedPercent)
@@ -356,8 +341,8 @@ export function getProjectedAPScoreDisplay(params: {
     candidatePercent != null ? getPredictedAPScoreFromTests(candidatePercent, subjectCode) : null;
   const reachedThree = predictedFromObserved != null && predictedFromObserved.score >= 3;
   const hasMinimumUnitEvidence =
-    explicitUnit.unitsCompleted >= MIN_UNITS_FOR_UNIT_ONLY_PROJECTION &&
-    explicitUnit.weightedCoverage >= MIN_WEIGHTED_COVERAGE_FOR_UNIT_ONLY;
+    unitsCompleted >= MIN_UNITS_FOR_UNIT_ONLY_PROJECTION &&
+    weightedCoverage >= MIN_WEIGHTED_COVERAGE_FOR_UNIT_ONLY;
   const canShowProjectedScore = hasFullLengthEvidence
     ? predictedFromObserved != null
     : hasMinimumUnitEvidence && reachedThree;

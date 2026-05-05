@@ -37,7 +37,7 @@ test("unit-only sufficient evidence can show projected score", () => {
       BEC: { highestScore: 70 },
       EIBC: { highestScore: 66 },
       NIPD: { highestScore: 64 },
-      FS: { highestScore: 62 },
+      FS: { highestScore: 70 },
     },
     testHistory: [],
     unitWeights: macroWeights,
@@ -47,7 +47,7 @@ test("unit-only sufficient evidence can show projected score", () => {
   assert.equal(state.canShowProjectedScore, true);
   assert.ok(state.displayScore != null);
   assert.equal(state.reason, "reached_three");
-  assert.equal(state.studentScore, 66);
+  assert.equal(state.studentScore, 54);
 });
 
 test("full-length only uses derived section-weighted score", () => {
@@ -101,12 +101,14 @@ test("full-length plus explicit unit data uses higher signal", () => {
   assert.equal(state.studentScore, 73);
 });
 
-test("unit-only exactly 3 units and 60 percent passes gate", () => {
+test("unit-only all units at 60 percent passes gate", () => {
   const state = getProjectedAPScoreDisplay({
     unitProgressMap: {
       BEC: { highestScore: 60 },
       EIBC: { highestScore: 60 },
       NIPD: { highestScore: 60 },
+      FS: { highestScore: 60 },
+      LRCSP: { highestScore: 60 },
     },
     testHistory: [],
     unitWeights: macroWeights,
@@ -114,7 +116,7 @@ test("unit-only exactly 3 units and 60 percent passes gate", () => {
   });
 
   assert.equal(state.canShowProjectedScore, true);
-  assert.equal(state.reason, "reached_three");
+  assert.equal(state.reason, "all_units");
   assert.equal(state.studentScore, 60);
   assert.ok(state.displayScore != null);
 });
@@ -261,4 +263,51 @@ test("computeProjectedPercentage returns zero when no evidence exists", () => {
 
   assert.equal(projected.projectedPercentage, 0);
   assert.equal(projected.hasEnoughForPrediction, false);
+});
+
+test("APUSH mixed evidence no longer inflates to a 5", () => {
+  const apushWeights = {
+    P1: 5.1,
+    P2: 7.14,
+    P3: 13.78,
+    P4: 13.78,
+    P5: 13.78,
+    P6: 13.78,
+    P7: 13.78,
+    P8: 13.78,
+    P9: 5.1,
+  };
+
+  const state = getProjectedAPScoreDisplay({
+    unitProgressMap: {
+      P1: { highestScore: 33 },
+      P2: { highestScore: 67 },
+      P5: { highestScore: 100 },
+      P6: { highestScore: 67 },
+      P9: { highestScore: 79 },
+    },
+    testHistory: [
+      {
+        type: "full-length",
+        percentage: 49,
+        sectionBreakdown: {
+          P1: { correct: 1, total: 3, percentage: 33 },
+          P2: { correct: 2, total: 3, percentage: 67 },
+          P3: { correct: 0, total: 1, percentage: 0 },
+          P4: { correct: 0, total: 4, percentage: 0 },
+          P5: { correct: 2, total: 2, percentage: 100 },
+          P6: { correct: 2, total: 3, percentage: 67 },
+          P7: { correct: 0, total: 1, percentage: 0 },
+          P8: { correct: 0, total: 3, percentage: 0 },
+          P9: { correct: 12, total: 19, percentage: 63 },
+        },
+      },
+    ],
+    unitWeights: apushWeights,
+    subjectCode: "APUSH",
+  });
+
+  assert.equal(state.studentScore, 49);
+  assert.equal(state.displayScore, 3);
+  assert.equal(state.reason, "full_length");
 });
