@@ -160,7 +160,6 @@ export default async function handler(
     if (!section && EXAM_WEIGHTS[subject as string]) {
       const weights = EXAM_WEIGHTS[subject as string];
       const questionsRef = db.collection('questions');
-      const selectedQuestions: any[] = [];
       const sectionSelectionTelemetry: Array<{
         sectionCode: string;
         weight: number;
@@ -168,6 +167,7 @@ export default async function handler(
         availableCount: number;
         selectedCount: number;
         shortfall: number;
+        redistributedCount: number;
       }> = [];
 
       if (process.env.NODE_ENV !== "production") {
@@ -183,6 +183,9 @@ export default async function handler(
       const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
       const sectionEntries = Object.entries(weights);
       let remainingQuestions = questionLimit;
+      const sectionPools: Record<string, any[]> = {};
+      const sectionTargets: Record<string, number> = {};
+      const selectedBySection: Record<string, any[]> = {};
 
       for (let i = 0; i < sectionEntries.length; i++) {
         const [sectionCode, weight] = sectionEntries[i];
@@ -191,6 +194,9 @@ export default async function handler(
         const sectionQuestionCount = i === sectionEntries.length - 1 
           ? remainingQuestions 
           : Math.round((weight / totalWeight) * questionLimit);
+        sectionTargets[sectionCode] = sectionQuestionCount;
+        sectionPools[sectionCode] = [];
+        selectedBySection[sectionCode] = [];
 
         if (sectionQuestionCount > 0) {
           // Fetch ALL questions for this section (no limit)
@@ -215,10 +221,11 @@ export default async function handler(
             return { id: doc.id, ...data, tags: normalizeTags(data) };
           });
 
-          // Shuffle all questions and select the needed amount
+          // Shuffle and keep as a section pool; selection happens after all pools are loaded.
           const shuffled = sectionQuestions.sort(() => Math.random() - 0.5);
+          sectionPools[sectionCode] = shuffled;
           const selected = shuffled.slice(0, sectionQuestionCount);
-          selectedQuestions.push(...selected);
+          selectedBySection[sectionCode] = selected;
           remainingQuestions -= selected.length;
           sectionSelectionTelemetry.push({
             sectionCode,
@@ -227,6 +234,7 @@ export default async function handler(
             availableCount: sectionQuestions.length,
             selectedCount: selected.length,
             shortfall: Math.max(0, sectionQuestionCount - selected.length),
+            redistributedCount: 0,
           });
 
           if (process.env.NODE_ENV !== "production") {
@@ -235,9 +243,44 @@ export default async function handler(
               `  📊 ${sectionCode}: selected=${selected.length}, target=${sectionQuestionCount}, available=${sectionQuestions.length}, weight=${weight}%`,
             );
           }
+        } else {
+          sectionSelectionTelemetry.push({
+            sectionCode,
+            weight,
+            targetCount: 0,
+            availableCount: 0,
+            selectedCount: 0,
+            shortfall: 0,
+            redistributedCount: 0,
+          });
         }
       }
 
+      // Redistribute any shortfall to sections that still have unused inventory.
+      let remainingNeeded = questionLimit - Object.values(selectedBySection).reduce((sum, list) => sum + list.length, 0);
+      if (remainingNeeded > 0) {
+        const poolOrder = sectionEntries.map(([sectionCode]) => sectionCode);
+        while (remainingNeeded > 0) {
+          let addedInPass = 0;
+          for (const sectionCode of poolOrder) {
+            if (remainingNeeded <= 0) break;
+            const pool = sectionPools[sectionCode] || [];
+            const alreadySelected = selectedBySection[sectionCode]?.length || 0;
+            if (alreadySelected >= pool.length) continue;
+            const nextQuestion = pool[alreadySelected];
+            if (!nextQuestion) continue;
+            selectedBySection[sectionCode].push(nextQuestion);
+            const telemetry = sectionSelectionTelemetry.find((entry) => entry.sectionCode === sectionCode);
+            if (telemetry) telemetry.redistributedCount += 1;
+            remainingNeeded -= 1;
+            addedInPass += 1;
+          }
+          // No section had spare inventory; cannot fill further.
+          if (addedInPass === 0) break;
+        }
+      }
+
+      const selectedQuestions = Object.values(selectedBySection).flat();
       // Final shuffle of all selected questions
       const finalQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
 
