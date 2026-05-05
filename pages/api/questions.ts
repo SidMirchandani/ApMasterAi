@@ -71,6 +71,120 @@ const EXAM_WEIGHTS: Record<string, Record<string, number>> = {
     "U3": 14,      // Unit 3 Class Creation: 10–18% (mid 14%)
     "U4": 35,      // Unit 4 Data Collections: 30–40% (mid 35%)
   },
+  "APLANG": {
+    "CRE": 22.5,   // Claims, Reasoning, and Evidence: 18-25%
+    "SS": 22.5,    // Synthesizing Sources: 18-25%
+    "RS": 22.5,    // Rhetorical Situation: 18-25%
+    "OC": 17.5,    // Organization and Commentary: 15-20%
+    "ARG": 17.5,   // Argumentation: 15-20%
+  },
+  "APLIT": {
+    "SF1": 10,     // Short Fiction I: 7-13%
+    "PO1": 10,     // Poetry I: 7-13%
+    "LF1": 10,     // Longer Fiction or Drama I: 7-13%
+    "SF2": 12.5,   // Short Fiction II: 10-15%
+    "PO2": 12.5,   // Poetry II: 10-15%
+    "LF2": 12.5,   // Longer Fiction or Drama II: 10-15%
+    "SF3": 12.5,   // Short Fiction III: 10-15%
+    "PO3": 12.5,   // Poetry III: 10-15%
+    "LF3": 12.5,   // Longer Fiction or Drama III: 10-15%
+  },
+  "APBIO": {
+    "CL": 9.5,     // Chemistry of Life: 8-11%
+    "CSF": 11.5,   // Cell Structure and Function: 10-13%
+    "CE": 14,      // Cellular Energetics: 12-16%
+    "CCC": 12.5,   // Cell Communication and Cell Cycle: 10-15%
+    "HER": 9.5,    // Heredity: 8-11%
+    "GER": 14,     // Gene Expression and Regulation: 12-16%
+    "NS": 16.5,    // Natural Selection: 13-20%
+    "ECO": 12.5,   // Ecology: 10-15%
+  },
+  "APSTATS": {
+    "EOV": 19,     // Exploring One-Variable Data: 15-23%
+    "ETV": 6,      // Exploring Two-Variable Data: 5-7%
+    "CD": 13.5,    // Collecting Data: 12-15%
+    "PRD": 15,     // Probability, Random Variables, and Distributions: 10-20%
+    "SD": 9.5,     // Sampling Distributions: 7-12%
+    "ICP": 13.5,   // Inference for Categorical Data: Proportions: 12-15%
+    "IQM": 14,     // Inference for Quantitative Data: Means: 10-18%
+    "ICC": 3.5,    // Inference for Categorical Data: Chi-Square: 2-5%
+    "IQS": 3.5,    // Inference for Quantitative Data: Slopes: 2-5%
+  },
+  "APCALCAB": {
+    "LIM": 11,     // Limits and Continuity: 10-12%
+    "DDF": 11,     // Differentiation: Definition and Fundamental Properties: 10-12%
+    "DCI": 11,     // Differentiation: Composite, Implicit, and Inverse Functions: 9-13%
+    "CAD": 12.5,   // Contextual Applications of Differentiation: 10-15%
+    "AAD": 16.5,   // Analytical Applications of Differentiation: 15-18%
+    "IAC": 18.5,   // Integration and Accumulation of Change: 17-20%
+    "DE": 9,       // Differential Equations: 6-12%
+    "AI": 12.5,    // Applications of Integration: 10-15%
+  },
+  "APCALCBC": {
+    "LIM": 5.5,    // Limits and Continuity: 4-7%
+    "DDF": 5.5,    // Differentiation: Definition and Fundamental Properties: 4-7%
+    "DCI": 5.5,    // Differentiation: Composite, Implicit, and Inverse Functions: 4-7%
+    "CAD": 7.5,    // Contextual Applications of Differentiation: 6-9%
+    "AAD": 9.5,    // Analytical Applications of Differentiation: 8-11%
+    "IAC": 18.5,   // Integration and Accumulation of Change: 17-20%
+    "DE": 7.5,     // Differential Equations: 6-9%
+    "AI": 7.5,     // Applications of Integration: 6-9%
+    "PPV": 11.5,   // Parametric, Polar, and Vector-Valued Functions: 11-12%
+    "ISS": 17.5,   // Infinite Sequences and Series: 17-18%
+  },
+  "APPHYS1": {
+    "KIN": 12.5,   // Kinematics: 10-15%
+    "FTD": 20.5,   // Force and Translational Dynamics: 18-23%
+    "WEP": 20.5,   // Work, Energy, and Power: 18-23%
+    "LMO": 12.5,   // Linear Momentum: 10-15%
+    "TRD": 12.5,   // Torque and Rotational Dynamics: 10-15%
+    "EMR": 6.5,    // Energy and Momentum of Rotating Systems: 5-8%
+    "OSC": 6.5,    // Oscillations: 5-8%
+    "FLU": 12.5,   // Fluids: 10-15%
+  },
+  "APPHYS2": {
+    "THD": 16.5,   // Thermodynamics: 15-18%
+    "EFP": 16.5,   // Electric Force, Field, and Potential: 15-18%
+    "EC": 16.5,    // Electric Circuits: 15-18%
+    "MEI": 13.5,   // Magnetism and Electromagnetism: 12-15%
+    "GPO": 13.5,   // Geometric Optics: 12-15%
+    "WPO": 13.5,   // Waves, Sound, and Physical Optics: 12-15%
+    "MOD": 13.5,   // Modern Physics: 12-15%
+  },
+  "APWORLD": {
+    "GT": 9,       // The Global Tapestry: 8-10%
+    "NE": 9,       // Networks of Exchange: 8-10%
+    "LBE": 13.5,   // Land-Based Empires: 12-15%
+    "TI": 13.5,    // Transoceanic Interconnections: 12-15%
+    "REV": 13.5,   // Revolutions: 12-15%
+    "COI": 13.5,   // Consequences of Industrialization: 12-15%
+    "GC": 9,       // Global Conflict: 8-10%
+    "CWD": 9,      // Cold War and Decolonization: 8-10%
+    "GLO": 9,      // Globalization: 8-10%
+  },
+  // Backward compatibility alias for AP World History
+  "APWH": {
+    "GT": 9,
+    "NE": 9,
+    "LBE": 13.5,
+    "TI": 13.5,
+    "REV": 13.5,
+    "COI": 13.5,
+    "GC": 9,
+    "CWD": 9,
+    "GLO": 9,
+  },
+  "APEURO": {
+    "RE": 12.5,    // Renaissance and Exploration: 10-15%
+    "AR": 12.5,    // Age of Reformation: 10-15%
+    "AC": 12.5,    // Absolutism and Constitutionalism: 10-15%
+    "SPP": 12.5,   // Scientific, Philosophical, and Political Developments: 10-15%
+    "CRR": 12.5,   // Conflict, Revolution, and Reaction: 10-15%
+    "IND": 12.5,   // Industrialization and Its Effects: 10-15%
+    "NPP": 12.5,   // 19th-Century Perspectives and Political Developments: 10-15%
+    "GCF": 12.5,   // 20th-Century Global Conflicts: 10-15%
+    "CCE": 12.5,   // Cold War and Contemporary Europe: 10-15%
+  },
 };
 
 if (process.env.NODE_ENV !== "production") {
