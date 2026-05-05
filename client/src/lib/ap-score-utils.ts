@@ -52,12 +52,13 @@ const AP_SCORE_LABELS: Record<number, string> = {
   1: "Needs improvement",
 };
 
-/* 5-scale: dark green (5) → medium green (4) → light green (3) → light red (2) → dark red (1) */
+/* 5-scale: deep red (1) → orange-red (2) → light/bright green (3) → green (4) → deep green (5).
+ * Chosen for stronger separation in both light and dark UI backgrounds. */
 const AP_SCORE_COLORS: Record<number, string> = {
-  5: "#15803d",
+  5: "#166534",
   4: "#16a34a",
   3: "#22c55e",
-  2: "#f87171",
+  2: "#ea580c",
   1: "#b91c1c",
 };
 
@@ -437,13 +438,13 @@ export interface UnitTierResult {
   textClass: string;
 }
 
-/* 5-scale: 1=dark red, 2=light red, 3=light green, 4=medium green, 5=dark green */
+/* Tailwind classes for non-inline tier UI elements. Keep tiers visually distinct in light/dark mode. */
 const UNIT_TIER_STYLES: Record<Exclude<UnitTier, "none">, { label: string; bg: string; textClass: string }> = {
-  "1": { label: "Weak", bg: "bg-red-700 dark:bg-red-800", textClass: "text-red-700 dark:text-red-400" },
-  "2": { label: "Needs Practice", bg: "bg-red-400 dark:bg-red-500", textClass: "text-red-600 dark:text-red-300" },
-  "3": { label: "In Progress", bg: "bg-green-300 dark:bg-green-400", textClass: "text-green-600 dark:text-green-400" },
-  "4": { label: "Proficient", bg: "bg-green-600 dark:bg-green-600", textClass: "text-green-700 dark:text-green-300" },
-  "5": { label: "Mastered", bg: "bg-green-700 dark:bg-green-800", textClass: "text-green-800 dark:text-green-200" },
+  "1": { label: "Weak", bg: "bg-red-700 dark:bg-red-800", textClass: "text-red-700 dark:text-red-300" },
+  "2": { label: "Needs Practice", bg: "bg-orange-600 dark:bg-orange-500", textClass: "text-orange-700 dark:text-orange-300" },
+  "3": { label: "In Progress", bg: "bg-lime-500 dark:bg-lime-400", textClass: "text-lime-700 dark:text-lime-300" },
+  "4": { label: "Proficient", bg: "bg-emerald-600 dark:bg-emerald-500", textClass: "text-emerald-700 dark:text-emerald-300" },
+  "5": { label: "Mastered", bg: "bg-green-700 dark:bg-green-600", textClass: "text-green-800 dark:text-green-200" },
 };
 
 /**

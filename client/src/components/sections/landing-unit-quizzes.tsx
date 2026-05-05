@@ -168,7 +168,7 @@ export function LandingUnitQuizzes({ story = defaultStory }: { story?: LandingSt
                     barColor: "from-green-500 to-green-600",
                   },
                   "In Progress": {
-                    badge: "bg-green-300 dark:bg-green-400 text-white",
+                    badge: "bg-green-300 dark:bg-green-400 text-green-900 dark:text-green-950",
                     numBg: "bg-green-50 dark:bg-green-500/20 text-green-600 dark:text-green-400",
                     barColor: "from-green-300 to-green-400",
                   },
