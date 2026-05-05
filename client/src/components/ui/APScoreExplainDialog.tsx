@@ -14,25 +14,25 @@ import { cn } from "@/lib/utils";
 const EXPLANATION = (
   <>
     <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-      Your predicted AP score is an estimate based on your practice test results and the exam's scoring curve. Here's how we calculate it:
+      We estimate your AP score using our proprietary scoring model and subject-specific AP calibration.
     </p>
     <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
       <li>
-        <strong className="text-gray-800 dark:text-gray-200">Your average %</strong> from your diagnostic test and full-length tests is treated as your multiple-choice (MCQ) performance.
+        <strong className="text-gray-800 dark:text-gray-200">We combine multiple performance signals.</strong> Our model weights evidence by relevance and quality.
       </li>
       <li>
-        <strong className="text-gray-800 dark:text-gray-200">We project free-response (FRQ) performance</strong> from that, using a subject-specific factor (FRQs are typically harder, so we scale down slightly).
+        <strong className="text-gray-800 dark:text-gray-200">If full-length and unit evidence both exist,</strong> we use the stronger signal at the unit level.
       </li>
       <li>
-        <strong className="text-gray-800 dark:text-gray-200">We combine MCQ + projected FRQ</strong> using the exam's official weights (e.g. 67% MCQ / 33% FRQ) into a composite score.
+        <strong className="text-gray-800 dark:text-gray-200">If no full-length evidence exists,</strong> we project from unit-level evidence only.
       </li>
       <li>
-        <strong className="text-gray-800 dark:text-gray-200">That composite</strong> is compared to the subject's cutoffs (College Board–style curves) to get the 1–5 score.
+        <strong className="text-gray-800 dark:text-gray-200">If evidence is insufficient,</strong> we show <span className="font-semibold">N/A</span> instead of forcing a score.
+      </li>
+      <li>
+        <strong className="text-gray-800 dark:text-gray-200">Final conversion:</strong> the model output is mapped to AP 1-5 using subject-specific calibration.
       </li>
     </ol>
-    <p className="text-xs text-gray-500 dark:text-gray-500 mt-3">
-      Example: 80% average → projected FRQ ~68% → composite points → maps to a 4 or 5 depending on the subject's curve.
-    </p>
   </>
 );
 

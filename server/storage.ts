@@ -789,6 +789,25 @@ export class Storage {
         }]
       };
 
+      // Sync per-unit progress from full-length section performance, but never downgrade.
+      Object.entries(sectionBreakdown).forEach(([sectionCode, section]) => {
+        if (sectionCode === "Unknown") return;
+        const existing = unitProgress[sectionCode] || {
+          status: "not-started",
+          highestScore: 0,
+          scores: [],
+        };
+        const existingBest = Math.max(existing.highestScore || 0, existing.mcqScore || 0);
+        const syncedBest = Math.max(existingBest, section.percentage || 0);
+        unitProgress[sectionCode] = {
+          ...existing,
+          mcqScore: syncedBest,
+          highestScore: syncedBest,
+          status: calculateUnitStatus(syncedBest),
+          lastPracticed: admin.firestore.FieldValue.serverTimestamp(),
+        };
+      });
+
       await doc.ref.update({
         unitProgress,
         lastStudied: admin.firestore.FieldValue.serverTimestamp(),

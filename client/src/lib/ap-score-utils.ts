@@ -20,6 +20,12 @@ export interface APScoreResult {
   color: string;
 }
 
+export interface ProjectionTestHistoryEntry {
+  percentage: number;
+  type?: "full-length" | "diagnostic" | "unit";
+  sectionBreakdown?: Record<string, { correct: number; total: number; percentage?: number }>;
+}
+
 const AP_SCORE_LABELS: Record<number, string> = {
   5: "Extremely well qualified",
   4: "Well qualified",
@@ -38,6 +44,8 @@ const AP_SCORE_COLORS: Record<number, string> = {
 };
 
 const CONFIG = apSubjectConfig as APSubjectConfigEntry[];
+const MIN_UNITS_FOR_UNIT_ONLY_PROJECTION = 3;
+const MIN_WEIGHTED_COVERAGE_FOR_UNIT_ONLY = 40;
 
 function findSubjectConfig(subjectCode: string): APSubjectConfigEntry | null {
   if (!subjectCode) return null;
@@ -144,6 +152,104 @@ export function getPredictedAPScoreFromTests(
   return directResult ?? fallbackAPScore(avgTestPercentage);
 }
 
+function isFullLengthTest(test: ProjectionTestHistoryEntry): boolean {
+  return test.type === "full-length" || test.type == null;
+}
+
+export function getPerUnitScoresForWeightedProjection(params: {
+  unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }>;
+  testHistory: ProjectionTestHistoryEntry[];
+  unitWeights: Record<string, number>;
+}): Record<string, number> {
+  const { unitProgressMap, testHistory, unitWeights } = params;
+  const weightKeys = Object.keys(unitWeights);
+  if (weightKeys.length === 0) return {};
+
+  const sectionBest: Record<string, number> = {};
+  for (const test of testHistory) {
+    if (!isFullLengthTest(test)) continue;
+    const breakdown = test.sectionBreakdown;
+    if (!breakdown) continue;
+    for (const [code, section] of Object.entries(breakdown)) {
+      const pct = section.total > 0 ? Math.round((section.correct / section.total) * 100) : 0;
+      sectionBest[code] = Math.max(sectionBest[code] ?? 0, pct);
+    }
+  }
+
+  const unitBest: Record<string, number> = {};
+  for (const [code, progress] of Object.entries(unitProgressMap)) {
+    unitBest[code] = Math.max(progress.highestScore ?? 0, progress.mcqScore ?? 0);
+  }
+
+  const out: Record<string, number> = {};
+  for (const code of weightKeys) {
+    out[code] = Math.max(unitBest[code] ?? 0, sectionBest[code] ?? 0);
+  }
+  return out;
+}
+
+function getBestFullLengthDerivedPercent(testHistory: ProjectionTestHistoryEntry[]): number | null {
+  let best: number | null = null;
+  for (const test of testHistory) {
+    if (!isFullLengthTest(test)) continue;
+    const breakdown = test.sectionBreakdown;
+    if (!breakdown || Object.keys(breakdown).length === 0) {
+      const fallbackPct = Math.round(test.percentage);
+      best = best == null ? fallbackPct : Math.max(best, fallbackPct);
+      continue;
+    }
+
+    let weightedSum = 0;
+    let totalWeight = 0;
+    for (const section of Object.values(breakdown)) {
+      const sectionWeight = section.total > 0 ? section.total : 0;
+      if (sectionWeight <= 0) continue;
+      const sectionPct =
+        typeof section.percentage === "number"
+          ? section.percentage
+          : Math.round((section.correct / section.total) * 100);
+      weightedSum += sectionPct * sectionWeight;
+      totalWeight += sectionWeight;
+    }
+    if (totalWeight > 0) {
+      const derived = Math.round(weightedSum / totalWeight);
+      best = best == null ? derived : Math.max(best, derived);
+    }
+  }
+  return best;
+}
+
+function getExplicitUnitWeightedPercent(params: {
+  unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }>;
+  unitWeights: Record<string, number>;
+}): { percent: number | null; unitsCompleted: number; weightedCoverage: number } {
+  const { unitProgressMap, unitWeights } = params;
+  const weightedEntries = Object.entries(unitWeights);
+  if (weightedEntries.length === 0) {
+    return { percent: null, unitsCompleted: 0, weightedCoverage: 0 };
+  }
+
+  const totalWeight = weightedEntries.reduce((sum, [, weight]) => sum + weight, 0);
+  let observedWeight = 0;
+  let observedWeightedSum = 0;
+  let unitsCompleted = 0;
+
+  for (const [code, weight] of weightedEntries) {
+    const best = Math.max(unitProgressMap[code]?.highestScore ?? 0, unitProgressMap[code]?.mcqScore ?? 0);
+    if (best > 0) {
+      unitsCompleted += 1;
+      observedWeight += weight;
+      observedWeightedSum += best * weight;
+    }
+  }
+
+  return {
+    percent: observedWeight > 0 ? Math.round(observedWeightedSum / observedWeight) : null,
+    unitsCompleted,
+    weightedCoverage: totalWeight > 0 ? Math.round((observedWeight / totalWeight) * 100) : 0,
+  };
+}
+
 /**
  * Computes the projected percentage used for AP score prediction.
  *
@@ -155,48 +261,31 @@ export function getPredictedAPScoreFromTests(
  */
 export function computeProjectedPercentage(params: {
   unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }>;
-  testHistory: Array<{
-    percentage: number;
-    sectionBreakdown?: Record<string, { correct: number; total: number }>;
-  }>;
+  testHistory: ProjectionTestHistoryEntry[];
+  unitWeights?: Record<string, number>;
 }): { projectedPercentage: number; hasEnoughForPrediction: boolean } {
-  const { unitProgressMap, testHistory } = params;
+  const { unitProgressMap, testHistory, unitWeights } = params;
+  const hasFullLengthEvidence = testHistory.some((test) => isFullLengthTest(test));
+  const hasWeights = unitWeights != null && Object.keys(unitWeights).length > 0;
+  const weightedFromUnits =
+    hasWeights && unitWeights
+      ? getExplicitUnitWeightedPercent({ unitProgressMap, unitWeights })
+      : { percent: null, unitsCompleted: 0, weightedCoverage: 0 };
+  const fullLengthDerived = getBestFullLengthDerivedPercent(testHistory);
 
-  // Build per-unit best score: max of diagnostic/unitProgress and test sectionBreakdown
-  const unitBestMap: Record<string, number> = {};
-  Object.entries(unitProgressMap).forEach(([code, prog]) => {
-    unitBestMap[code] = Math.max(
-      unitBestMap[code] ?? 0,
-      prog.highestScore ?? prog.mcqScore ?? 0
-    );
-  });
+  const projectedPercentage = hasFullLengthEvidence
+    ? Math.max(weightedFromUnits.percent ?? 0, fullLengthDerived ?? 0)
+    : weightedFromUnits.percent != null
+      ? weightedFromUnits.percent
+      : testHistory.length > 0
+        ? Math.round(testHistory[testHistory.length - 1].percentage)
+        : 0;
 
-  const unitPerformanceMap: Record<string, { correct: number; total: number }> = {};
-  testHistory.forEach((test) => {
-    if (test.sectionBreakdown) {
-      Object.entries(test.sectionBreakdown).forEach(([code, section]) => {
-        if (!unitPerformanceMap[code]) {
-          unitPerformanceMap[code] = { correct: 0, total: 0 };
-        }
-        unitPerformanceMap[code].correct += section.correct;
-        unitPerformanceMap[code].total += section.total;
-      });
-    }
-  });
-  Object.entries(unitPerformanceMap).forEach(([code, stats]) => {
-    const pct = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
-    unitBestMap[code] = Math.max(unitBestMap[code] ?? 0, pct);
-  });
-
-  const unitBestValues = Object.values(unitBestMap).filter((v) => v > 0);
-  const hasEnoughForPrediction = unitBestValues.length > 0 || testHistory.length >= 1;
-  // Use latest student score (last test history entry) for prediction when available; otherwise fall back to unit-best average or test average
-  const projectedPercentage =
-    testHistory.length > 0
-      ? Math.round(testHistory[testHistory.length - 1].percentage)
-      : unitBestValues.length > 0
-      ? Math.round(unitBestValues.reduce((s, v) => s + v, 0) / unitBestValues.length)
-      : 0;
+  const hasEnoughForPrediction = hasFullLengthEvidence
+    ? projectedPercentage > 0
+    : weightedFromUnits.unitsCompleted >= MIN_UNITS_FOR_UNIT_ONLY_PROJECTION &&
+      weightedFromUnits.weightedCoverage >= MIN_WEIGHTED_COVERAGE_FOR_UNIT_ONLY &&
+      projectedPercentage > 0;
 
   return { projectedPercentage, hasEnoughForPrediction };
 }
