@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
 import { useQuizEngine } from "@/hooks/useQuizEngine";
 import { showPracticeExamToolHeader } from "@/lib/examTools";
+import { getAnalyticsPageParams, trackVersionedAnalyticsEvent } from "@/lib/firebase";
 
 interface Question {
   id: string;
@@ -98,6 +99,7 @@ export function PracticeQuiz({
 
   const appliedSavedState = useRef(false);
   const hasSetInitialPrimer = useRef(false);
+  const trackedPracticeStartRef = useRef<string | null>(null);
   // Initialize from saved state when resuming a unit quiz (only once)
   useEffect(() => {
     if (savedState && questions.length > 0 && !appliedSavedState.current) {
@@ -126,8 +128,28 @@ export function PracticeQuiz({
   const { user } = useAuth();
   const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
+  const unitParam = typeof router.query.unit === "string" ? router.query.unit : undefined;
 
   const showToolHeader = showPracticeExamToolHeader(subjectId);
+
+  const getQuizAnalyticsParams = () =>
+    getAnalyticsPageParams({
+      surface: "quiz",
+      subject: subjectId,
+      unit: unitParam,
+    });
+
+  useEffect(() => {
+    if (!router.isReady || questions.length === 0) return;
+    const trackingKey = `${subjectId}:${unitParam ?? ""}:${questions.length}`;
+    if (trackedPracticeStartRef.current === trackingKey) return;
+    trackedPracticeStartRef.current = trackingKey;
+
+    void trackVersionedAnalyticsEvent({
+      action: "practice_start",
+      params: getQuizAnalyticsParams(),
+    });
+  }, [router.isReady, subjectId, unitParam, questions.length]);
 
   useEffect(() => {
     const syncCheatMode = () => {
@@ -183,6 +205,11 @@ export function PracticeQuiz({
     const isCorrect = selectedAnswer === correctLabel;
     if (isCorrect) setScore((s) => s + 1);
 
+    void trackVersionedAnalyticsEvent({
+      action: "question_answered",
+      params: getQuizAnalyticsParams(),
+    });
+
     if (user) {
       apiRequest("POST", "/api/user/questions/track", {
         questionId: currentQuestion.id,
@@ -216,6 +243,10 @@ export function PracticeQuiz({
       } else {
         setShowResults(true);
         const answersWithLast = { ...finalUserAnswers, [currentQuestionIndex]: selectedAnswer ?? "" };
+        void trackVersionedAnalyticsEvent({
+          action: "practice_complete",
+          params: getQuizAnalyticsParams(),
+        });
         onComplete(score, answersWithLast);
       }
     }

@@ -1,6 +1,7 @@
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
+import type { Analytics } from "firebase/analytics";
 
 // Check if all required Firebase config is available
 const hasFirebaseConfig = !!(
@@ -34,6 +35,7 @@ const firebaseConfig = hasFirebaseConfig ? {
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
+let analytics: Analytics | null = null;
 
 function initializeFirebase(): { app: FirebaseApp | null, auth: Auth | null, db: Firestore | null } {
   if (!hasFirebaseConfig || !firebaseConfig) {
@@ -95,6 +97,119 @@ app = firebaseInstances.app;
 auth = firebaseInstances.auth;
 db = firebaseInstances.db;
 
+type AnalyticsParamValue = string | number | boolean | null | undefined;
+
+export type AnalyticsSurface = "home" | "dashboard" | "study" | "quiz" | "analytics" | "result" | "login" | "signup" | "profile" | "other";
+
+export type VersionedAnalyticsAction =
+  | "dashboard"
+  | "study"
+  | "quiz"
+  | "result_viewed"
+  | "practice_start"
+  | "question_answered"
+  | "practice_complete"
+  | "quiz_taken";
+
+export type AnalyticsEventParams = Record<string, AnalyticsParamValue>;
+
+async function getAnalyticsIfSupported(): Promise<{
+  analyticsModule: typeof import("firebase/analytics");
+  analytics: Analytics;
+} | null> {
+  if (!app || typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const analyticsModule = await import("firebase/analytics");
+    if (!(await analyticsModule.isSupported())) {
+      return null;
+    }
+
+    analytics = analytics ?? analyticsModule.getAnalytics(app);
+    return { analyticsModule, analytics };
+  } catch (error) {
+    console.warn("Unable to initialize Firebase Analytics", error);
+    return null;
+  }
+}
+
+function cleanAnalyticsParams(params: AnalyticsEventParams = {}): Record<string, string | number | boolean | null> {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined),
+  ) as Record<string, string | number | boolean | null>;
+}
+
+export function getAnalyticsPageParams(params: {
+  surface: AnalyticsSurface;
+  subject?: string | null;
+  unit?: string | null;
+  pagePath?: string;
+  pageTitle?: string;
+  pageReferrer?: string;
+}): AnalyticsEventParams {
+  const pagePath =
+    params.pagePath ??
+    (typeof window !== "undefined"
+      ? `${window.location.pathname}${window.location.search}`
+      : "");
+
+  return {
+    surface: params.surface,
+    page_path: pagePath,
+    page_location:
+      typeof window !== "undefined" && pagePath
+        ? `${window.location.origin}${pagePath}`
+        : undefined,
+    page_title:
+      params.pageTitle ??
+      (typeof document !== "undefined" ? document.title : undefined),
+    page_referrer:
+      params.pageReferrer ??
+      (typeof document !== "undefined" ? document.referrer || null : undefined),
+    subject: params.subject ?? undefined,
+    unit: params.unit ?? undefined,
+  };
+}
+
+export async function trackPageView(params: AnalyticsEventParams): Promise<boolean> {
+  const supported = await getAnalyticsIfSupported();
+  if (!supported) return false;
+
+  try {
+    supported.analyticsModule.logEvent(
+      supported.analytics,
+      "page_view",
+      cleanAnalyticsParams(params),
+    );
+    return true;
+  } catch (error) {
+    console.warn("Unable to track page_view", error);
+    return false;
+  }
+}
+
+export async function trackVersionedAnalyticsEvent(params: {
+  action: VersionedAnalyticsAction;
+  params?: AnalyticsEventParams;
+}): Promise<boolean> {
+  const supported = await getAnalyticsIfSupported();
+  if (!supported) return false;
+
+  try {
+    supported.analyticsModule.logEvent(
+      supported.analytics,
+      `v2_${params.action}`,
+      cleanAnalyticsParams(params.params),
+    );
+    return true;
+  } catch (error) {
+    console.warn("Unable to track analytics event", error);
+    return false;
+  }
+}
+
 // Helper function to ensure auth is ready
 export function waitForAuth(): Promise<Auth> {
   return new Promise((resolve, reject) => {
@@ -130,6 +245,6 @@ export function waitForAuth(): Promise<Auth> {
 import "./replit-auth-fix";
 import "./new-tab-auth-handler";
 
-export { auth, db };
+export { auth, db, analytics };
 export const isFirebaseEnabled = hasFirebaseConfig && !!auth;
 export default app;

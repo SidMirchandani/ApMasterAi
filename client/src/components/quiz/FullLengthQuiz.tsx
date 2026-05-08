@@ -18,6 +18,7 @@ import { getDisplayCorrectLabel, getStoredAnswerForSubmit } from '@/lib/mcqDispl
 import { getSubjectDisplayName } from '../../../../lib/subject-display-names';
 import { useQuizEngine } from "@/hooks/useQuizEngine";
 import type { Question } from "@/lib/types/question";
+import { getAnalyticsPageParams, trackVersionedAnalyticsEvent } from "@/lib/firebase";
 interface FullLengthQuizProps {
   questions: Question[];
   subjectId: string;
@@ -127,6 +128,12 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   }, [isReviewMode, isSubmitting]);
 
   const currentQuestion = questions[currentQuestionIndex];
+  const getQuizAnalyticsParams = () =>
+    getAnalyticsPageParams({
+      surface: "quiz",
+      subject: subjectId,
+      unit: "full-length",
+    });
 
   const handleExitExam = () => {
     setShowExitDialog(true);
@@ -203,6 +210,11 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
 
       const result = await response.json();
       const testId = result.data.id;
+
+      void trackVersionedAnalyticsEvent({
+        action: "quiz_taken",
+        params: getQuizAnalyticsParams(),
+      });
 
       // Invalidate and refetch so study/dashboard show updated data when user navigates back
       queryClient.invalidateQueries({ queryKey: ["subjects"] });

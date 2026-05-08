@@ -10,6 +10,7 @@ import { ThemeProvider } from '../client/src/contexts/theme-context';
 import { Toaster } from '../client/src/components/ui/toaster';
 import { TooltipProvider } from '../client/src/components/ui/tooltip';
 import { getSectionByCode, getSectionCodeForUnit, getSubjectByCode, getSubjectByLegacyId } from '../client/src/subjects';
+import { useFirebasePageViews } from '../client/src/hooks/useFirebasePageViews';
 import 'katex/dist/katex.min.css';
 import '../client/src/index.css';
 
@@ -124,6 +125,7 @@ function FirstTouchAttributionCapture() {
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  useFirebasePageViews();
   const pageTitle = useMemo(() => {
     const base = routeBaseTitle(router.asPath, router.query as Record<string, string | string[] | undefined>);
     return base === HOMEPAGE_SEO_TITLE ? base : `${base} - ${BRAND_NAME}`;
