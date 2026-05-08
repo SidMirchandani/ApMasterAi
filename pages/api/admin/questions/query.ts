@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
   getFirebaseAdmin,
@@ -38,8 +37,6 @@ export default async function handler(
     if (section) q = q.where("section_code", "==", section);
 
     const snap = await q.get();
-    console.log("Docs found:", snap.size);
-
     const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
     return res.status(200).json({ items });

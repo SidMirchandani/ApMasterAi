@@ -4,12 +4,19 @@ import { storage } from "../../../../../server/storage";
 import { saveFullLengthTestForUser } from "../../../../../server/services/assessments-service";
 import { getClientIp } from "../../../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
+async function getOrCreateUser(
+  firebaseUid: string,
+  req: NextApiRequest,
+): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
 
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, undefined, getClientIp(req));
-    console.log("[full-length-test API] Created new user for Firebase UID:", firebaseUid);
+    user = await storage.createUser(
+      firebaseUid,
+      `${firebaseUid}@firebase.user`,
+      undefined,
+      getClientIp(req),
+    );
   }
 
   return user.id;
@@ -36,7 +43,8 @@ export default async function handler(
     const token = authHeader.split(" ")[1];
     let decodedToken;
     try {
-      const { verifyFirebaseToken } = await import("../../../../../server/firebase-admin");
+      const { verifyFirebaseToken } =
+        await import("../../../../../server/firebase-admin");
       decodedToken = await verifyFirebaseToken(token);
     } catch (error) {
       console.error("[full-length-test API] Token verification failed:", error);
@@ -56,9 +64,14 @@ export default async function handler(
       });
     }
 
-    const { score, percentage, totalQuestions, questions, userAnswers } = req.body;
+    const { score, percentage, totalQuestions, questions, userAnswers } =
+      req.body;
 
-    if (typeof score !== "number" || typeof percentage !== "number" || typeof totalQuestions !== "number") {
+    if (
+      typeof score !== "number" ||
+      typeof percentage !== "number" ||
+      typeof totalQuestions !== "number"
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid test data",
@@ -74,9 +87,6 @@ export default async function handler(
       questions,
       userAnswers,
     );
-
-    console.log("✅ [full-length-test API] Test saved successfully");
-
     return res.status(200).json({
       success: true,
       message: "Test saved successfully",

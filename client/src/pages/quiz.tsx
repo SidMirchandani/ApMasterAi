@@ -10,7 +10,16 @@ import { PracticeQuiz } from "@/components/quiz/PracticeQuiz";
 import { UnifiedQuizResultsReview } from "@/components/quiz/UnifiedQuizResultsReview";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface Question {
@@ -32,11 +41,20 @@ interface Question {
   };
 }
 
-import { getApiCodeForSubject, getSectionByCode, getSectionCodeForUnit, getUnitIdForSectionCode, getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
+import {
+  getApiCodeForSubject,
+  getSectionByCode,
+  getSectionCodeForUnit,
+  getUnitIdForSectionCode,
+  getSubjectByLegacyId,
+  getSubjectByCode,
+} from "@/subjects";
 import { getDisplayCorrectLabel } from "@/lib/mcqDisplay";
 
 // Exam configurations: questions and time per test (2026 Digital/Hybrid standards)
-const EXAM_CONFIGS: { [key: string]: { questions: number; timeMinutes: number } } = {
+const EXAM_CONFIGS: {
+  [key: string]: { questions: number; timeMinutes: number };
+} = {
   APLANG: { questions: 45, timeMinutes: 60 },
   APLIT: { questions: 55, timeMinutes: 60 },
   APPSYCH: { questions: 75, timeMinutes: 90 },
@@ -58,7 +76,9 @@ const EXAM_CONFIGS: { [key: string]: { questions: number; timeMinutes: number } 
 };
 
 // Helper to get exam config by legacy subject ID
-function getExamConfig(subjectId: string): { questions: number; timeMinutes: number } | null {
+function getExamConfig(
+  subjectId: string,
+): { questions: number; timeMinutes: number } | null {
   const apiCode = getApiCodeForSubject(subjectId);
   return apiCode ? EXAM_CONFIGS[apiCode] || null : null;
 }
@@ -68,7 +88,12 @@ export default function Quiz() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { subject: subjectId, unit, limit: limitParam, primer: primerParam } = router.query;
+  const {
+    subject: subjectId,
+    unit,
+    limit: limitParam,
+    primer: primerParam,
+  } = router.query;
   const primerEnabled = primerParam === "1";
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -82,9 +107,14 @@ export default function Quiz() {
   const [savedUnitQuizState, setSavedUnitQuizState] = useState<any>(null);
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(
+    new Set(),
+  );
   /** Ref to hold completion payload so results view has answers on first paint (avoids stale empty userAnswers) */
-  const completionPayloadRef = useRef<{ score: number; userAnswers: { [key: number]: string } } | null>(null);
+  const completionPayloadRef = useRef<{
+    score: number;
+    userAnswers: { [key: number]: string };
+  } | null>(null);
 
   // Determine quiz type early
   const isFullLength = unit === "full-length";
@@ -112,7 +142,9 @@ export default function Quiz() {
     if (!quizCompleted || !router.isReady) return;
     const q = { ...router.query, review: "1" };
     if (router.query.review === "1") return;
-    router.replace({ pathname: "/quiz", query: q }, undefined, { shallow: true });
+    router.replace({ pathname: "/quiz", query: q }, undefined, {
+      shallow: true,
+    });
   }, [quizCompleted, router.isReady, router.query.review]);
 
   // FETCH QUESTIONS
@@ -150,9 +182,7 @@ export default function Quiz() {
                 return; // Don't fetch questions yet
               }
             }
-          } catch (err) {
-            console.log("No saved exam state found");
-          }
+          } catch {}
         }
 
         if (isFullLength) {
@@ -166,40 +196,32 @@ export default function Quiz() {
           const data = await response.json();
           if (data.success && data.data?.length > 0) {
             // Shuffle all questions and select the required number
-            const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
+            const shuffled = [...normalizeQuestions(data.data)].sort(
+              () => Math.random() - 0.5,
+            );
             setQuestions(shuffled.slice(0, questionLimit));
           } else {
             setError("No questions found for this subject");
           }
         } else {
-          console.log("🔍 [Quiz] Practice quiz - Starting lookup:", {
-            subjectId,
-            unit,
-            subjectApiCode
-          });
-
           // Check if unit is already a section code (3-letter uppercase) or needs to be mapped
           let sectionCode: string | undefined;
           if (unit && /^[A-Z]{2,}$/.test(unit as string)) {
             // Already a section code (like CRD, DAT, AAP, etc.)
             sectionCode = unit as string;
-            console.log("🔍 [Quiz] Unit is already a section code:", { sectionCode });
           } else {
             // Need to map unit ID to section code
-            sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
-            console.log("🔍 [Quiz] Unit mapping lookup result:", {
-              subjectId,
-              unit,
-              sectionCode,
-              foundMapping: !!sectionCode
-            });
+            sectionCode = getSectionCodeForUnit(
+              subjectId as string,
+              unit as string,
+            );
           }
 
           if (!sectionCode) {
             console.error("❌ [Quiz] No section code found for unit:", {
               subjectId,
               unit,
-              message: "Check unitToSectionMap in subject index.ts file"
+              message: "Check unitToSectionMap in subject index.ts file",
             });
             setError("Invalid unit");
             setIsLoading(false);
@@ -221,26 +243,18 @@ export default function Quiz() {
                 return;
               }
             }
-          } catch (err) {
-            console.log("No saved unit quiz state found");
-          }
+          } catch {}
 
-          const limit = typeof limitParam === "string" && /^\d+$/.test(limitParam) ? Math.min(100, Math.max(1, parseInt(limitParam, 10))) : 25;
+          const limit =
+            typeof limitParam === "string" && /^\d+$/.test(limitParam)
+              ? Math.min(100, Math.max(1, parseInt(limitParam, 10)))
+              : 25;
           const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=${limit}`;
-          console.log("📡 [Quiz] Fetching questions with:", {
-            url: apiUrl,
-            params: {
-              subject_code: subjectApiCode,
-              section_code: sectionCode,
-              limit
-            }
-          });
-
           const response = await apiRequest("GET", apiUrl);
           if (!response.ok) {
             console.error("❌ [Quiz] API request failed:", {
               status: response.status,
-              statusText: response.statusText
+              statusText: response.statusText,
             });
             throw new Error("Failed to fetch");
           }
@@ -249,30 +263,16 @@ export default function Quiz() {
 
           // DEBUG: test_slug for study notes primer (micro drills)
           const rawQuestions = data.data || [];
-          console.log("📥 [Quiz] API response received:", {
-            success: data.success,
-            questionCount: rawQuestions.length,
-            hasData: !!data.data,
-            firstQuestionKeys: rawQuestions[0] ? Object.keys(rawQuestions[0]) : [],
-            test_slug_debug: rawQuestions.slice(0, 5).map((q: any, i: number) => ({
-              i,
-              id: q.id,
-              test_slug: q.test_slug,
-              test_slug_len: (q.test_slug && String(q.test_slug).length) || 0,
-              has_tags: Array.isArray(q.tags),
-            })),
-            allSectionCodes: rawQuestions.map((q: any) => q.section_code).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i)
-          });
-
           if (data.success && data.data?.length > 0) {
-            const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
+            const shuffled = [...normalizeQuestions(data.data)].sort(
+              () => Math.random() - 0.5,
+            );
             setQuestions(shuffled.slice(0, limit));
-            console.log("✅ [Quiz] Questions loaded successfully:", shuffled.length);
           } else {
             console.error("❌ [Quiz] No questions found in response:", {
               requestedSubject: subjectApiCode,
               requestedSection: sectionCode,
-              responseData: data
+              responseData: data,
             });
             setError("No questions found");
           }
@@ -295,24 +295,30 @@ export default function Quiz() {
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
       queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
       await queryClient.refetchQueries({ queryKey: ["subjects"] });
-      await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
+      await queryClient.refetchQueries({
+        queryKey: ["unitProgress", subjectId],
+      });
     }
     router.replace(`/study?subject=${subjectId}`);
   };
 
-  const handleSubmitFullLength = async (finalAnswers?: { [key: number]: string }) => {
+  const handleSubmitFullLength = async (finalAnswers?: {
+    [key: number]: string;
+  }) => {
     const answersToUse = finalAnswers || userAnswers;
     let correct = 0;
     questions.forEach((q, i) => {
       const userAns = answersToUse[i];
       // Ensure answerIndex is valid and convert to char code
-      const correctAns = (q.answerIndex !== undefined && q.answerIndex >= 0 && q.answerIndex < 5)
-        ? String.fromCharCode(65 + q.answerIndex)
-        : ''; // Handle cases where answerIndex might be missing or invalid
+      const correctAns =
+        q.answerIndex !== undefined && q.answerIndex >= 0 && q.answerIndex < 5
+          ? String.fromCharCode(65 + q.answerIndex)
+          : ""; // Handle cases where answerIndex might be missing or invalid
       if (userAns === correctAns) correct++;
     });
 
-    const percentage = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
+    const percentage =
+      questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
 
     // Save the test results
     try {
@@ -344,7 +350,9 @@ export default function Quiz() {
         }
 
         // Save wrong answers per unit with unit info so they appear in Review for that unit (await before redirect)
-        const subject = getSubjectByLegacyId(subjectId as string) || getSubjectByCode(subjectId as string);
+        const subject =
+          getSubjectByLegacyId(subjectId as string) ||
+          getSubjectByCode(subjectId as string);
         const mcqOptionCount = subject?.metadata?.mcqOptionCount;
         const trackPromises: Promise<unknown>[] = [];
         questions.forEach((q, idx) => {
@@ -353,7 +361,10 @@ export default function Quiz() {
           const isCorrect = userAns === displayCorrect;
           if (!isCorrect && q.id) {
             const sectionCode = q.section_code || "";
-            const unitId = getUnitIdForSectionCode(subjectId as string, sectionCode) || sectionCode || "unknown";
+            const unitId =
+              getUnitIdForSectionCode(subjectId as string, sectionCode) ||
+              sectionCode ||
+              "unknown";
             const promptStr =
               q.prompt && typeof q.prompt === "string"
                 ? q.prompt
@@ -376,16 +387,20 @@ export default function Quiz() {
                 choices: q.choices,
                 answerIndex: q.answerIndex,
                 explanation: q.explanation,
-              })
+              }),
             );
           }
         });
         await Promise.all(trackPromises);
 
-        queryClient.invalidateQueries({ queryKey: ["dueReviews", subjectId, "all"] });
+        queryClient.invalidateQueries({
+          queryKey: ["dueReviews", subjectId, "all"],
+        });
         // Redirect to the full-length results page
         if (testId) {
-          router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
+          router.push(
+            `/full-length-results?subject=${subjectId}&testId=${testId}`,
+          );
         } else {
           // Fallback if testId is not returned
           setScore(correct);
@@ -405,9 +420,15 @@ export default function Quiz() {
     }
   };
 
-  const handleCompletePractice = (finalScore: number, answers?: { [key: number]: string }) => {
+  const handleCompletePractice = (
+    finalScore: number,
+    answers?: { [key: number]: string },
+  ) => {
     const answersToStore = answers ?? {};
-    completionPayloadRef.current = { score: finalScore, userAnswers: answersToStore };
+    completionPayloadRef.current = {
+      score: finalScore,
+      userAnswers: answersToStore,
+    };
     if (Object.keys(answersToStore).length > 0) setUserAnswers(answersToStore);
     setScore(finalScore);
     setQuizCompleted(true);
@@ -438,14 +459,19 @@ export default function Quiz() {
           if (!response.ok) throw new Error("Failed to fetch questions");
           const data = await response.json();
           if (data.success && data.data?.length > 0) {
-            const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
+            const shuffled = [...normalizeQuestions(data.data)].sort(
+              () => Math.random() - 0.5,
+            );
             setQuestions(shuffled.slice(0, questionLimit));
           } else {
             setError("No questions found for this subject");
           }
         } else {
           // For practice quizzes, re-fetch based on unit
-          const sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
+          const sectionCode = getSectionCodeForUnit(
+            subjectId as string,
+            unit as string,
+          );
           if (!sectionCode) {
             setError("Invalid unit");
             setIsLoading(false);
@@ -456,7 +482,9 @@ export default function Quiz() {
           if (!response.ok) throw new Error("Failed to fetch");
           const data = await response.json();
           if (data.success && data.data?.length > 0) {
-            const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
+            const shuffled = [...normalizeQuestions(data.data)].sort(
+              () => Math.random() - 0.5,
+            );
             setQuestions(shuffled.slice(0, 25));
           } else {
             setError("No questions found");
@@ -484,7 +512,8 @@ export default function Quiz() {
       const subjectApiCode = getApiCodeForSubject(subjectId as string);
       if (!subjectApiCode) throw new Error("Invalid subject");
 
-      const savedQuestionIds: string[] | undefined = savedExamState?.questionIds;
+      const savedQuestionIds: string[] | undefined =
+        savedExamState?.questionIds;
 
       // When we have saved question IDs, fetch those exact questions by ID so resume shows the same exam
       const url =
@@ -550,7 +579,12 @@ export default function Quiz() {
     }
   };
 
-  const handleSaveAndExitUnit = async (unitState: { questionIds: string[]; currentQuestionIndex: number; userAnswers: { [key: number]: string }; flaggedQuestions?: number[] }) => {
+  const handleSaveAndExitUnit = async (unitState: {
+    questionIds: string[];
+    currentQuestionIndex: number;
+    userAnswers: { [key: number]: string };
+    flaggedQuestions?: number[];
+  }) => {
     try {
       await apiRequest(
         "POST",
@@ -559,9 +593,13 @@ export default function Quiz() {
       );
       if (subjectId) {
         queryClient.invalidateQueries({ queryKey: ["subjects"] });
-        queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
+        queryClient.invalidateQueries({
+          queryKey: ["unitProgress", subjectId],
+        });
         await queryClient.refetchQueries({ queryKey: ["subjects"] });
-        await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
+        await queryClient.refetchQueries({
+          queryKey: ["unitProgress", subjectId],
+        });
       }
     } catch (error) {
       console.error("Failed to save unit quiz state:", error);
@@ -612,7 +650,10 @@ export default function Quiz() {
     try {
       const subjectApiCode = getApiCodeForSubject(subjectId as string);
       if (!subjectApiCode) throw new Error("Invalid subject");
-      const sectionCode = getSectionCodeForUnit(subjectId as string, unit as string);
+      const sectionCode = getSectionCodeForUnit(
+        subjectId as string,
+        unit as string,
+      );
       if (!sectionCode) {
         setError("Invalid unit");
         setIsLoading(false);
@@ -623,7 +664,9 @@ export default function Quiz() {
       if (!response.ok) throw new Error("Failed to fetch");
       const data = await response.json();
       if (data.success && data.data?.length > 0) {
-        const shuffled = [...normalizeQuestions(data.data)].sort(() => Math.random() - 0.5);
+        const shuffled = [...normalizeQuestions(data.data)].sort(
+          () => Math.random() - 0.5,
+        );
         setQuestions(shuffled.slice(0, 25));
       } else {
         setError("No questions found");
@@ -641,7 +684,8 @@ export default function Quiz() {
   useEffect(() => {
     const getSubjectAndUnitFromUrl = (): { subject: string; unit: string } => {
       try {
-        const search = typeof window !== "undefined" ? window.location.search : "";
+        const search =
+          typeof window !== "undefined" ? window.location.search : "";
         const params = new URLSearchParams(search);
         const subject = params.get("subject") ?? "";
         const unit = params.get("unit") ?? "";
@@ -654,47 +698,42 @@ export default function Quiz() {
     const saveScore = async (retryCount = 0) => {
       const fromUrl = getSubjectAndUnitFromUrl();
       // When quiz is completed, prefer URL so we never miss save due to empty router.query
-      const subj = quizCompleted && fromUrl.subject
-        ? fromUrl.subject
-        : (typeof subjectId === "string" ? subjectId : Array.isArray(subjectId) ? subjectId[0] : "") || fromUrl.subject;
-      const unitStr = quizCompleted && fromUrl.unit
-        ? fromUrl.unit
-        : (unit != null ? (typeof unit === "string" ? unit : Array.isArray(unit) ? unit[0] : String(unit)) : "") || fromUrl.unit;
+      const subj =
+        quizCompleted && fromUrl.subject
+          ? fromUrl.subject
+          : (typeof subjectId === "string"
+              ? subjectId
+              : Array.isArray(subjectId)
+                ? subjectId[0]
+                : "") || fromUrl.subject;
+      const unitStr =
+        quizCompleted && fromUrl.unit
+          ? fromUrl.unit
+          : (unit != null
+              ? typeof unit === "string"
+                ? unit
+                : Array.isArray(unit)
+                  ? unit[0]
+                  : String(unit)
+              : "") || fromUrl.unit;
 
-      const skip = !quizCompleted || !subj || !unitStr || unitStr === "full-length";
-      console.log("[quiz saveScore] effect run", {
-        quizCompleted,
-        subj,
-        unitStr,
-        fromUrl,
-        isFullLength,
-        skip,
-        retryCount,
-      });
+      const skip =
+        !quizCompleted || !subj || !unitStr || unitStr === "full-length";
       if (skip) return;
-      const pct = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
+      const pct =
+        questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
       const sectionCode =
         typeof unitStr === "string" && /^[A-Z]{2,}$/.test(unitStr)
           ? unitStr
           : getSectionCodeForUnit(subj, unitStr);
-      const sectionInfo = sectionCode && subj ? getSectionByCode(subj, sectionCode) : undefined;
-
-      console.log("[quiz saveScore] starting save", {
-        subj,
-        unitStr,
-        pct,
-        sectionCode,
-        retryCount,
-      });
-
+      const sectionInfo =
+        sectionCode && subj ? getSectionByCode(subj, sectionCode) : undefined;
       try {
         const putRes = await apiRequest(
           "PUT",
           `/api/user/subjects/${subj}/unit-progress`,
           { unitId: unitStr, mcqScore: pct },
         );
-        console.log("[quiz saveScore] unit-progress OK", putRes.status);
-
         const answersToSave = completionPayloadRef.current?.userAnswers ?? {};
         const postRes = await apiRequest(
           "POST",
@@ -711,23 +750,23 @@ export default function Quiz() {
             questions,
           },
         );
-        console.log("[quiz saveScore] unit-quiz-result OK", postRes.status);
-
         const deleteRes = await apiRequest(
           "DELETE",
           `/api/user/subjects/${subj}/unit-quiz-state?unitId=${encodeURIComponent(unitStr)}`,
         );
-        console.log("[quiz saveScore] unit-quiz-state deleted", deleteRes.status);
-
         setSavedUnitQuizState(null);
         queryClient.invalidateQueries({ queryKey: ["testHistory", subj] });
         queryClient.invalidateQueries({ queryKey: ["testHistory", "all"] });
       } catch (e) {
-        console.error("[quiz saveScore] Failed to save practice quiz score:", e);
+        console.error(
+          "[quiz saveScore] Failed to save practice quiz score:",
+          e,
+        );
         toast({
           variant: "destructive",
           title: "Score not saved",
-          description: "Your quiz score couldn't be saved. Your progress may not appear in Analytics or Quiz/Test History.",
+          description:
+            "Your quiz score couldn't be saved. Your progress may not appear in Analytics or Quiz/Test History.",
         });
         if (retryCount < 1) {
           setTimeout(() => saveScore(retryCount + 1), 2000);
@@ -757,7 +796,9 @@ export default function Quiz() {
               <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
               <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500" />
             </div>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              Loading…
+            </p>
           </div>
         </div>
       </div>
@@ -770,8 +811,12 @@ export default function Quiz() {
         <Navigation />
         <main className="mx-auto max-w-lg px-4 py-12">
           <div className="rounded-3xl bg-slate-100 px-6 py-10 text-center dark:bg-white/[0.06]">
-            <h1 className="mb-2 font-display text-xl font-bold text-slate-900 dark:text-white">Couldn&apos;t load quiz</h1>
-            <p className="mb-6 text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">{error}</p>
+            <h1 className="mb-2 font-display text-xl font-bold text-slate-900 dark:text-white">
+              Couldn&apos;t load quiz
+            </h1>
+            <p className="mb-6 text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+              {error}
+            </p>
             <Button
               variant="ghost"
               onClick={() => router.push(`/study?subject=${subjectId}`)}
@@ -787,7 +832,8 @@ export default function Quiz() {
   }
 
   if (quizCompleted) {
-    const resultsUserAnswers = completionPayloadRef.current?.userAnswers ?? userAnswers;
+    const resultsUserAnswers =
+      completionPayloadRef.current?.userAnswers ?? userAnswers;
     return (
       <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
         <Navigation />
@@ -842,7 +888,9 @@ export default function Quiz() {
         <AlertDialogContent className="max-w-md rounded-2xl shadow-none">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {savedUnitQuizState ? "Resume unit quiz?" : "Resume Previous Exam?"}
+              {savedUnitQuizState
+                ? "Resume unit quiz?"
+                : "Resume Previous Exam?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {savedUnitQuizState
@@ -851,10 +899,18 @@ export default function Quiz() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={savedUnitQuizState ? handleStartNewUnitQuiz : handleStartNewExam}>
+            <AlertDialogCancel
+              onClick={
+                savedUnitQuizState ? handleStartNewUnitQuiz : handleStartNewExam
+              }
+            >
               {savedUnitQuizState ? "Start New Quiz" : "Start New Exam"}
             </AlertDialogCancel>
-            <AlertDialogAction onClick={savedUnitQuizState ? handleResumeUnitQuiz : handleResumeExam}>
+            <AlertDialogAction
+              onClick={
+                savedUnitQuizState ? handleResumeUnitQuiz : handleResumeExam
+              }
+            >
               {savedUnitQuizState ? "Resume Quiz" : "Resume Exam"}
             </AlertDialogAction>
           </AlertDialogFooter>

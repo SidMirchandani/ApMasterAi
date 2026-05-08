@@ -42,8 +42,6 @@ export default async function handler(
     const questionsRef = firestore.collection("questions");
 
     const total = questionIds.length;
-    console.log(`Fixing text for ${total} selected questions...`);
-
     let updated = 0;
 
     for (let i = 0; i < questionIds.length; i++) {
@@ -53,16 +51,10 @@ export default async function handler(
         const doc = await questionsRef.doc(questionId).get();
 
         if (!doc.exists) {
-          console.log(`Question ${questionId} not found, skipping...`);
           continue;
         }
 
         const question = doc.data();
-
-        console.log(
-          `Fixing text for Question ${i + 1}/${total} (ID: ${questionId})`,
-        );
-
         const promptText = `Fix any formatting or OCR errors in this text. Return ONLY the corrected text, nothing else:\n\n${question.prompt || ""}`;
 
         const result = await ai.models.generateContent({
@@ -78,19 +70,12 @@ export default async function handler(
         });
 
         updated++;
-        console.log(`✓ Fixed text for question ${doc.id}`);
       } catch (error) {
-        console.error(
-          `✗ Failed to fix text for ${questionId}:`,
-          error,
-        );
+        console.error(`✗ Failed to fix text for ${questionId}:`, error);
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-
-    console.log(`✅ Completed: Fixed ${updated}/${total} questions`);
-
     return res.status(200).json({
       total,
       updated,

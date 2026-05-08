@@ -1,9 +1,21 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { User, onAuthStateChanged, onIdTokenChanged } from "firebase/auth";
 import { auth, isFirebaseEnabled, waitForAuth } from "@/lib/firebase";
 import { AuthUser, convertFirebaseUser } from "@/lib/auth";
-import { initializeAuthPersistence, monitorAuthStability } from "@/lib/auth-persistence";
-import { AuthDomainHandler, initializeCrossDomainAuth } from "@/lib/auth-domain-handler";
+import {
+  initializeAuthPersistence,
+  monitorAuthStability,
+} from "@/lib/auth-persistence";
+import {
+  AuthDomainHandler,
+  initializeCrossDomainAuth,
+} from "@/lib/auth-domain-handler";
 import {
   clearPendingAttribution,
   takePendingAttributionForRequest,
@@ -39,8 +51,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const authUser = convertFirebaseUser(auth.currentUser);
       setUser(authUser);
     } catch (error) {
-      console.error('Failed to refresh auth token:', error);
-      setError('Authentication refresh failed');
+      console.error("Failed to refresh auth token:", error);
+      setError("Authentication refresh failed");
     }
   };
 
@@ -53,18 +65,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         email: firebaseUser.email,
         photoURL: firebaseUser.photoURL,
       };
-      if (
-        pendingAttribution &&
-        Object.keys(pendingAttribution).length > 0
-      ) {
+      if (pendingAttribution && Object.keys(pendingAttribution).length > 0) {
         body.firstTouchAttribution = pendingAttribution;
       }
 
-      const response = await fetch('/api/user/profile', {
-        method: 'POST',
+      const response = await fetch("/api/user/profile", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
       });
@@ -72,16 +81,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error('Failed to save user profile');
+        throw new Error("Failed to save user profile");
       }
 
       if (pendingAttribution && result?.data?.attributionSettled) {
         clearPendingAttribution();
       }
-
-      console.log('User profile saved successfully');
     } catch (error) {
-      console.error('Error saving user profile:', error);
+      console.error("Error saving user profile:", error);
     }
   };
 
@@ -91,10 +98,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const initializeAuth = async () => {
       if (!isFirebaseEnabled) {
-        console.warn('Firebase is not enabled or configured properly');
+        console.warn("Firebase is not enabled or configured properly");
         if (mounted) {
           setLoading(false);
-          setError('Firebase authentication is not configured');
+          setError("Firebase authentication is not configured");
         }
         return;
       }
@@ -126,29 +133,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
               const authUser = convertFirebaseUser(firebaseUser);
               setUser(authUser);
               setError(null);
-              console.log('Auth state changed (cross-domain):', { 
-                uid: firebaseUser?.uid, 
-                email: firebaseUser?.email,
-                authenticated: !!firebaseUser,
-                domain: window.location.hostname
-              });
-
               // Save user profile when they log in (Google, email, etc.)
               if (firebaseUser && firebaseUser.email) {
                 await saveUserProfile(firebaseUser);
               }
             } catch (error) {
-              console.error('Error processing auth state change:', error);
-              setError('Authentication processing error');
+              console.error("Error processing auth state change:", error);
+              setError("Authentication processing error");
               setUser(null);
             } finally {
               setLoading(false);
             }
-          }
+          },
         );
 
         // Also keep the standard listener for fallback
-        const standardUnsubscribe = onAuthStateChanged(authInstance, 
+        const standardUnsubscribe = onAuthStateChanged(
+          authInstance,
           (firebaseUser: User | null) => {
             if (!mounted) return;
 
@@ -156,14 +157,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
               const authUser = convertFirebaseUser(firebaseUser);
               setUser(authUser);
               setError(null);
-              console.log('Auth state changed (standard):', { 
-                uid: firebaseUser?.uid, 
-                email: firebaseUser?.email,
-                authenticated: !!firebaseUser 
-              });
             } catch (error) {
-              console.error('Error processing auth state change:', error);
-              setError('Authentication processing error');
+              console.error("Error processing auth state change:", error);
+              setError("Authentication processing error");
               setUser(null);
             } finally {
               setLoading(false);
@@ -171,15 +167,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
           },
           (error) => {
             if (!mounted) return;
-            console.error('Auth state change error:', error);
+            console.error("Auth state change error:", error);
             setError(error.message);
             setUser(null);
             setLoading(false);
-          }
+          },
         );
 
         // Also listen to ID token changes for more reliable auth state
-        const tokenUnsubscribe = onIdTokenChanged(authInstance, 
+        const tokenUnsubscribe = onIdTokenChanged(
+          authInstance,
           (firebaseUser: User | null) => {
             if (!mounted) return;
 
@@ -190,12 +187,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (currentUserId !== newUserId) {
               const authUser = convertFirebaseUser(firebaseUser);
               setUser(authUser);
-              console.log('ID token changed:', { 
-                oldUid: currentUserId, 
-                newUid: newUserId 
-              });
             }
-          }
+          },
         );
 
         // Cleanup function
@@ -207,11 +200,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
             stabilityCleanup();
           }
         };
-
       } catch (error) {
         if (!mounted) return;
-        console.error('Auth initialization failed:', error);
-        setError(error instanceof Error ? error.message : 'Authentication initialization failed');
+        console.error("Auth initialization failed:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Authentication initialization failed",
+        );
         setLoading(false);
       }
     };
@@ -220,7 +216,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return () => {
       mounted = false;
-      cleanup?.then(cleanupFn => cleanupFn?.());
+      cleanup?.then((cleanupFn) => cleanupFn?.());
     };
   }, []);
 
@@ -231,14 +227,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isFirebaseEnabled,
     error,
     refreshAuth,
-    saveUserProfile
+    saveUserProfile,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

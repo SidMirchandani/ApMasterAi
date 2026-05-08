@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../../server/db";
 import { requireAdmin } from "../../../server/next-api-auth";
@@ -6,33 +5,33 @@ import { requireAdmin } from "../../../server/next-api-auth";
 // Mapping of old unit IDs to new section codes
 const unitMappings: { [subjectId: string]: { [oldKey: string]: string } } = {
   "computer-science-principles": {
-    "bigidea1": "CRD",
-    "bigidea2": "DAT",
-    "bigidea3": "AAP",
-    "bigidea4": "CSN",
-    "bigidea5": "IOC",
+    bigidea1: "CRD",
+    bigidea2: "DAT",
+    bigidea3: "AAP",
+    bigidea4: "CSN",
+    bigidea5: "IOC",
   },
-  "macroeconomics": {
-    "unit1": "BEC",
-    "unit2": "EIBC",
-    "unit3": "NIPD",
-    "unit4": "FS",
-    "unit5": "LRCSP",
-    "unit6": "OEITF",
+  macroeconomics: {
+    unit1: "BEC",
+    unit2: "EIBC",
+    unit3: "NIPD",
+    unit4: "FS",
+    unit5: "LRCSP",
+    unit6: "OEITF",
   },
-  "microeconomics": {
-    "unit1": "BEC",
-    "unit2": "SD",
-    "unit3": "PC",
-    "unit4": "IMP",
-    "unit5": "FM",
-    "unit6": "MF",
+  microeconomics: {
+    unit1: "BEC",
+    unit2: "SD",
+    unit3: "PC",
+    unit4: "IMP",
+    unit5: "FM",
+    unit6: "MF",
   },
 };
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -54,10 +53,9 @@ export default async function handler(
       const data = doc.data();
       const subjectId = data.subjectId;
       const unitProgress = data.unitProgress || {};
-      
+
       const mapping = unitMappings[subjectId];
       if (!mapping) {
-        console.log(`No mapping for subject: ${subjectId}`);
         continue;
       }
 
@@ -70,7 +68,6 @@ export default async function handler(
           newUnitProgress[newKey] = unitProgress[oldKey];
           delete newUnitProgress[oldKey];
           hasChanges = true;
-          console.log(`Migrated ${subjectId}: ${oldKey} -> ${newKey}`);
         }
       }
 

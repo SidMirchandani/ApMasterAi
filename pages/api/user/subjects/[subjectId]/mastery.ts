@@ -7,10 +7,11 @@ async function getOrCreateUser(firebaseUid: string, req: NextApiRequest) {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
 
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid, getClientIp(req));
-    console.log(
-      "[mastery API] Created new user for Firebase UID:",
+    user = await storage.createUser(
       firebaseUid,
+      `${firebaseUid}@firebase.user`,
+      firebaseUid,
+      getClientIp(req),
     );
   }
 
@@ -31,9 +32,8 @@ export default async function handler(
     const token = authHeader.split(" ")[1];
     let decodedToken;
     try {
-      const { verifyFirebaseToken } = await import(
-        "../../../../../server/firebase-admin"
-      );
+      const { verifyFirebaseToken } =
+        await import("../../../../../server/firebase-admin");
       decodedToken = await verifyFirebaseToken(token);
     } catch (error) {
       console.error("[mastery API] Token verification failed:", error);

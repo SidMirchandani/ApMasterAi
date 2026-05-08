@@ -16,14 +16,12 @@ export async function initializeAuthPersistence(): Promise<void> {
     // Use local persistence for better user experience
     // This means users stay logged in even after closing the browser
     await setPersistence(auth, browserLocalPersistence);
-    console.log("Firebase auth persistence set to local");
   } catch (error) {
     console.error("Failed to set auth persistence:", error);
 
     // Fallback to session persistence
     try {
       await setPersistence(auth, browserSessionPersistence);
-      console.log("Firebase auth persistence set to session (fallback)");
     } catch (fallbackError) {
       console.error("Failed to set fallback auth persistence:", fallbackError);
     }
@@ -70,7 +68,6 @@ export function monitorAuthStability(): (() => void) | undefined {
     // Mark as stable after 2 seconds of no changes
     authStateTimeout = setTimeout(() => {
       authStateStable = true;
-      console.log("Auth state stabilized");
     }, 2000);
   });
 

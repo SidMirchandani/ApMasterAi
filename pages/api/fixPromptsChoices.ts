@@ -1,10 +1,12 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
 import { getModelName, getGeminiClientOptions } from "../../lib/gemini-models";
 import { requireAdmin } from "../../server/next-api-auth";
-import { flattenChoiceText, fetchImageAsBase64 } from "../../server/explanation-helpers";
+import {
+  flattenChoiceText,
+  fetchImageAsBase64,
+} from "../../server/explanation-helpers";
 
 export const config = {
   api: {
@@ -50,14 +52,21 @@ function isQuotaError(error: any): boolean {
   const msg = (error?.message || error?.toString() || "").toLowerCase();
   const status = error?.status || error?.code || error?.httpCode || 0;
   if (status === 429 || status === "429") return true;
-  return msg.includes("quota") || msg.includes("rate") || msg.includes("429") || msg.includes("resource_exhausted") || msg.includes("too many requests") || msg.includes("limit");
+  return (
+    msg.includes("quota") ||
+    msg.includes("rate") ||
+    msg.includes("429") ||
+    msg.includes("resource_exhausted") ||
+    msg.includes("too many requests") ||
+    msg.includes("limit")
+  );
 }
 
 async function callWithRetry(
   fn: () => Promise<any>,
   maxRetries: number = 5,
   baseDelayMs: number = 5000,
-  onRetry?: (attempt: number, waitSec: number) => void
+  onRetry?: (attempt: number, waitSec: number) => void,
 ): Promise<any> {
   let lastError: any;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -66,10 +75,11 @@ async function callWithRetry(
     } catch (error: any) {
       lastError = error;
       if (isQuotaError(error) && attempt < maxRetries) {
-        const waitMs = baseDelayMs * Math.pow(2, attempt) + Math.random() * 2000;
+        const waitMs =
+          baseDelayMs * Math.pow(2, attempt) + Math.random() * 2000;
         const waitSec = Math.round(waitMs / 1000);
         onRetry?.(attempt + 1, waitSec);
-        await new Promise(resolve => setTimeout(resolve, waitMs));
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
       } else {
         throw error;
       }
@@ -114,7 +124,10 @@ function hasInlineMathOrLatex(text: string): boolean {
   return looksLikeLatexServer(t);
 }
 
-function countImageAndTextChoices(question: any): { imageChoices: number; textChoices: number } {
+function countImageAndTextChoices(question: any): {
+  imageChoices: number;
+  textChoices: number;
+} {
   let imageChoices = 0;
   let textChoices = 0;
   const choices = question.choices || {};
@@ -158,7 +171,9 @@ async function buildFixPromptsParts(question: any): Promise<any[]> {
           parts.push({
             inlineData: { mimeType: "image/png", data: base64Data },
           });
-          parts.push({ text: "\n(above: image from question stem — for context)\n\n" });
+          parts.push({
+            text: "\n(above: image from question stem — for context)\n\n",
+          });
         } catch (e) {
           console.error("fixPromptsChoices: stem image fetch failed", e);
         }
@@ -168,7 +183,9 @@ async function buildFixPromptsParts(question: any): Promise<any[]> {
     parts.push({ text: `${question.prompt}\n\n` });
   }
 
-  parts.push({ text: "Current answer choices (text only; images will follow):\n" });
+  parts.push({
+    text: "Current answer choices (text only; images will follow):\n",
+  });
 
   const choices = question.choices ?? {};
   for (const letter of LETTERS) {
@@ -190,7 +207,10 @@ async function buildFixPromptsParts(question: any): Promise<any[]> {
           });
           parts.push({ text: "\n" });
         } catch (e) {
-          console.error(`fixPromptsChoices: choice ${letter} image fetch failed`, e);
+          console.error(
+            `fixPromptsChoices: choice ${letter} image fetch failed`,
+            e,
+          );
         }
       }
     }
@@ -241,7 +261,9 @@ export default async function handler(
   const total = questionIds.length;
 
   let aborted = false;
-  req.on("close", () => { aborted = true; });
+  req.on("close", () => {
+    aborted = true;
+  });
 
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -269,7 +291,11 @@ export default async function handler(
 
   sendEvent({
     type: "progress",
-    current: 0, total, updated: 0, skipped: 0, failed: 0,
+    current: 0,
+    total,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
     message: `Starting prompt/choice fixes for ${total} questions...`,
   });
 
@@ -277,7 +303,6 @@ export default async function handler(
     const questionId = questionIds[i];
 
     if (aborted) {
-      console.log("Client disconnected, stopping prompt fixing.");
       break;
     }
 
@@ -286,34 +311,64 @@ export default async function handler(
 
       if (!doc.exists) {
         skipped++;
-        sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Q${i + 1}/${total}: not found, skipped` });
+        sendEvent({
+          type: "progress",
+          current: i + 1,
+          total,
+          updated,
+          skipped,
+          failed,
+          message: `Q${i + 1}/${total}: not found, skipped`,
+        });
         continue;
       }
 
       const question = doc.data();
 
-      sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Fixing Q${i + 1}/${total}...` });
+      sendEvent({
+        type: "progress",
+        current: i + 1,
+        total,
+        updated,
+        skipped,
+        failed,
+        message: `Fixing Q${i + 1}/${total}...`,
+      });
 
       const promptParts = await buildFixPromptsParts(question);
 
       const result = await callWithRetry(
-        () => ai.models.generateContent({
-          model: selectedModel,
-          contents: [{ role: "user", parts: promptParts }],
-        }),
-        5, 5000,
+        () =>
+          ai.models.generateContent({
+            model: selectedModel,
+            contents: [{ role: "user", parts: promptParts }],
+          }),
+        5,
+        5000,
         (attempt, waitSec) => {
-          sendEvent({ type: "rate_limit", current: i + 1, total, updated, skipped, failed, message: `Rate limit hit — waiting ${waitSec}s before retry ${attempt}/5...` });
-        }
+          sendEvent({
+            type: "rate_limit",
+            current: i + 1,
+            total,
+            updated,
+            skipped,
+            failed,
+            message: `Rate limit hit — waiting ${waitSec}s before retry ${attempt}/5...`,
+          });
+        },
       );
 
       let responseText = result.text?.trim() || "";
-      responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      
+      responseText = responseText
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
+
       const corrected = JSON.parse(responseText);
 
       const rawStem =
-        typeof corrected.question === "string" && corrected.question.trim().length > 0
+        typeof corrected.question === "string" &&
+        corrected.question.trim().length > 0
           ? corrected.question
           : flattenChoiceText(question.prompt_blocks || []);
       const normalizedStem = normalizeChoiceTextForRender(rawStem);
@@ -335,19 +390,21 @@ export default async function handler(
         ...imageBlocks,
       ];
 
-      const deduplicatedPromptBlocks = removeDuplicateBlocks(updatedPromptBlocks);
+      const deduplicatedPromptBlocks =
+        removeDuplicateBlocks(updatedPromptBlocks);
 
       const updatedChoices: any = {};
       const { imageChoices, textChoices } = countImageAndTextChoices(question);
-      const imageHeavyMixed =
-        imageChoices >= 3 && textChoices <= 2; // e.g., 3–4 image options + 1 text meta-option
+      const imageHeavyMixed = imageChoices >= 3 && textChoices <= 2; // e.g., 3–4 image options + 1 text meta-option
 
       for (const letter of LETTERS) {
         const existingBlocks = question.choices?.[letter];
         if (!existingBlocks) continue;
 
         const newText = corrected.choices?.[letter];
-        const hasImage = Array.isArray(existingBlocks) && existingBlocks.some((b: any) => b?.type === "image");
+        const hasImage =
+          Array.isArray(existingBlocks) &&
+          existingBlocks.some((b: any) => b?.type === "image");
         const flattenedExisting = flattenChoiceText(existingBlocks);
         const finalText =
           typeof newText === "string" && newText.trim().length > 0
@@ -358,7 +415,9 @@ export default async function handler(
           // For CSP/Chem style items where most options are images (code, diagrams, structures)
           // and only a meta-text option like "All of the above" is plain text, keep the
           // image-based choices as image blocks so we don't mangle rich content.
-          updatedChoices[letter] = removeDuplicateBlocks(existingBlocks as any[]);
+          updatedChoices[letter] = removeDuplicateBlocks(
+            existingBlocks as any[],
+          );
         } else {
           // Normal path: collapse into a single text block so math renders cleanly.
           updatedChoices[letter] = removeDuplicateBlocks([
@@ -368,8 +427,8 @@ export default async function handler(
       }
 
       const existingTags = question.tags || [];
-      const updatedTags = existingTags.includes("prompt_fixed") 
-        ? existingTags 
+      const updatedTags = existingTags.includes("prompt_fixed")
+        ? existingTags
         : [...existingTags, "prompt_fixed"];
 
       await doc.ref.update({
@@ -380,7 +439,15 @@ export default async function handler(
       });
 
       updated++;
-      sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Fixed ${updated}/${total - skipped} prompts` });
+      sendEvent({
+        type: "progress",
+        current: i + 1,
+        total,
+        updated,
+        skipped,
+        failed,
+        message: `Fixed ${updated}/${total - skipped} prompts`,
+      });
     } catch (error: any) {
       failed++;
       try {
@@ -394,7 +461,9 @@ export default async function handler(
               lintErrors: [],
               lintWarnings: [],
               imageErrors: [],
-              issues: [(error?.message || "Prompt/choice fix failed").slice(0, 500)],
+              issues: [
+                (error?.message || "Prompt/choice fix failed").slice(0, 500),
+              ],
               checks: null,
               confidence: null,
             },
@@ -403,7 +472,15 @@ export default async function handler(
           { merge: true },
         );
       } catch {}
-      sendEvent({ type: "progress", current: i + 1, total, updated, skipped, failed, message: `Q${i + 1}: Failed — ${(error.message || "").substring(0, 80)}` });
+      sendEvent({
+        type: "progress",
+        current: i + 1,
+        total,
+        updated,
+        skipped,
+        failed,
+        message: `Q${i + 1}: Failed — ${(error.message || "").substring(0, 80)}`,
+      });
     }
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -411,7 +488,10 @@ export default async function handler(
 
   sendEvent({
     type: "complete",
-    total, updated, skipped, failed,
+    total,
+    updated,
+    skipped,
+    failed,
     message: `Done! Fixed ${updated} questions. ${skipped} skipped, ${failed} failed.`,
   });
 

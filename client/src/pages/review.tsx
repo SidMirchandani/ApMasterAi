@@ -1,8 +1,18 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, CheckCircle, ChevronRight, ChevronLeft, ChevronDown } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  RotateCcw,
+  CheckCircle,
+  ChevronRight,
+  ChevronLeft,
+  ChevronDown,
+} from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { ToastAction } from "@/components/ui/toast";
 import Navigation from "@/components/ui/navigation";
@@ -10,9 +20,20 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
-import { getSubjectByLegacyId, getSubjectByCode, getUnitDisplayLabel } from "@/subjects";
-import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
-import { PrettyExplanation, QUIZ_EXPLANATION_CLASSNAME, QUIZ_QUESTION_EXPL_GRID_CLASS } from "@/components/ui/PrettyExplanation";
+import {
+  getSubjectByLegacyId,
+  getSubjectByCode,
+  getUnitDisplayLabel,
+} from "@/subjects";
+import {
+  getDisplayCorrectLabel,
+  getDisplayExplanation,
+} from "@/lib/mcqDisplay";
+import {
+  PrettyExplanation,
+  QUIZ_EXPLANATION_CLASSNAME,
+  QUIZ_QUESTION_EXPL_GRID_CLASS,
+} from "@/components/ui/PrettyExplanation";
 import { ExplanationPanel } from "@/components/quiz/ExplanationPanel";
 import { PracticeQuizQuestionCard } from "@/components/quiz/PracticeQuizQuestionCard";
 import { ReportQuestionDialog } from "@/components/quiz/ReportQuestionDialog";
@@ -70,7 +91,10 @@ export default function ReviewPage() {
     window.addEventListener("admin-cheat-mode-changed", onCheatModeChanged);
     return () => {
       window.removeEventListener("storage", onStorage);
-      window.removeEventListener("admin-cheat-mode-changed", onCheatModeChanged);
+      window.removeEventListener(
+        "admin-cheat-mode-changed",
+        onCheatModeChanged,
+      );
     };
   }, []);
 
@@ -80,7 +104,11 @@ export default function ReviewPage() {
     }
   }, [loading, isAuthenticated, router]);
 
-  const { data: dueResponse, isLoading: dueLoading, refetch: refetchDue } = useQuery<{
+  const {
+    data: dueResponse,
+    isLoading: dueLoading,
+    refetch: refetchDue,
+  } = useQuery<{
     success: boolean;
     data: DueQuestion[];
   }>({
@@ -113,15 +141,20 @@ export default function ReviewPage() {
 
   const currentQuestion = reviewQuestions[currentIndex];
   const subject = currentQuestion?.subjectId
-    ? getSubjectByLegacyId(currentQuestion.subjectId) || getSubjectByCode(currentQuestion.subjectId)
-    : getSubjectByLegacyId(subjectId || "") || getSubjectByCode(subjectId || "");
+    ? getSubjectByLegacyId(currentQuestion.subjectId) ||
+      getSubjectByCode(currentQuestion.subjectId)
+    : getSubjectByLegacyId(subjectId || "") ||
+      getSubjectByCode(subjectId || "");
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
   const normalizedQuestion = currentQuestion
     ? normalizeQuestion({ ...currentQuestion, id: currentQuestion.questionId })
     : null;
   const reviewCorrectLabel =
     currentQuestion?.answerIndex !== undefined
-      ? getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, mcqOptionCount)
+      ? getDisplayCorrectLabel(
+          { answerIndex: currentQuestion.answerIndex },
+          mcqOptionCount,
+        )
       : "";
   const isReviewAnswerCorrect =
     isSubmitted && !!selectedAnswer && selectedAnswer === reviewCorrectLabel;
@@ -136,7 +169,10 @@ export default function ReviewPage() {
 
     const correctLetter =
       currentQuestion.answerIndex !== undefined
-        ? getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex }, mcqOptionCount)
+        ? getDisplayCorrectLabel(
+            { answerIndex: currentQuestion.answerIndex },
+            mcqOptionCount,
+          )
         : null;
     const isCorrect = selectedAnswer === correctLetter;
 
@@ -149,9 +185,7 @@ export default function ReviewPage() {
         timeSpentSec: 0,
         sectionCode: currentQuestion.sectionCode || "",
       });
-    } catch (e) {
-      console.log("Could not track review");
-    }
+    } catch {}
   };
 
   const handleNext = () => {
@@ -195,7 +229,10 @@ export default function ReviewPage() {
       });
       queryClient.invalidateQueries({ queryKey: ["dueReviews"] });
       await refetch();
-      if (currentIndex >= reviewQuestions.length - 1 && reviewQuestions.length > 1) {
+      if (
+        currentIndex >= reviewQuestions.length - 1 &&
+        reviewQuestions.length > 1
+      ) {
         setCurrentIndex(reviewQuestions.length - 2);
       }
       setSelectedAnswer(null);
@@ -211,17 +248,14 @@ export default function ReviewPage() {
                   questionId: removedQuestion.questionId,
                 });
                 refetch();
-              } catch (e) {
-                console.log("Could not undo removal");
-              }
+              } catch {}
             }}
           >
             Undo
           </ToastAction>
         ),
       });
-    } catch (e) {
-      console.log("Could not remove question");
+    } catch {
     } finally {
       setIsRemoving(false);
     }
@@ -237,7 +271,9 @@ export default function ReviewPage() {
               <div className="absolute inset-0 rounded-full border-2 border-blue-200/80 dark:border-blue-900/60" />
               <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400" />
             </div>
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading…</span>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              Loading…
+            </span>
           </div>
         </div>
       </div>
@@ -258,12 +294,19 @@ export default function ReviewPage() {
           </div>
           <div className="py-10 text-center">
             <CheckCircle className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
-            <h2 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">All caught up!</h2>
+            <h2 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">
+              All caught up!
+            </h2>
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-              No questions to review. Items you miss during practice are added here so you can try them again.
+              No questions to review. Items you miss during practice are added
+              here so you can try them again.
             </p>
             <Button
-              onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
+              onClick={() =>
+                router.push(
+                  subjectId ? `/study?subject=${subjectId}` : "/dashboard",
+                )
+              }
               className="rounded-full bg-blue-600 px-6 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               {subjectId ? "Back to study" : "Start Practicing"}
@@ -287,7 +330,10 @@ export default function ReviewPage() {
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
 
-                <Popover open={questionGridOpen} onOpenChange={setQuestionGridOpen}>
+                <Popover
+                  open={questionGridOpen}
+                  onOpenChange={setQuestionGridOpen}
+                >
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -347,12 +393,20 @@ export default function ReviewPage() {
 
               <div className="flex w-full flex-wrap items-center justify-center gap-1 sm:w-auto sm:justify-end">
                 {showPracticeExamToolHeader(currentQuestion.subjectId) && (
-                  <ExamToolbar subjectId={currentQuestion.subjectId} size="sm" className="mr-0.5" />
+                  <ExamToolbar
+                    subjectId={currentQuestion.subjectId}
+                    size="sm"
+                    className="mr-0.5"
+                  />
                 )}
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
+                  onClick={() =>
+                    router.push(
+                      subjectId ? `/study?subject=${subjectId}` : "/dashboard",
+                    )
+                  }
                   className="h-8 rounded-full px-2 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
                 >
                   Exit
@@ -363,29 +417,35 @@ export default function ReviewPage() {
 
           <div className="flex-1 overflow-y-auto pb-32 pt-[calc(3.75rem+1px+0.25rem)]">
             <div className="mx-auto max-w-6xl px-2 sm:px-3">
-              {(subjectId || currentQuestion.subjectId) && currentQuestion.unitId && (
-                <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  {getUnitDisplayLabel(subjectId || currentQuestion.subjectId, currentQuestion.unitId)}
-                </p>
-              )}
+              {(subjectId || currentQuestion.subjectId) &&
+                currentQuestion.unitId && (
+                  <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {getUnitDisplayLabel(
+                      subjectId || currentQuestion.subjectId,
+                      currentQuestion.unitId,
+                    )}
+                  </p>
+                )}
               <div className={QUIZ_QUESTION_EXPL_GRID_CLASS}>
                 <div className="min-w-0">
-                <PracticeQuizQuestionCard
-                  question={normalizedQuestion}
-                  questionNumber={currentIndex + 1}
-                  totalQuestions={reviewQuestions.length}
-                  selectedAnswer={selectedAnswer}
-                  onAnswerSelect={handleAnswerSelect}
-                  isAnswerSubmitted={isSubmitted}
-                  cheatMode={cheatMode}
-                  mcqOptionCount={mcqOptionCount}
-                  showQuestionCounter={false}
-                  onReport={() => setShowReportDialog(true)}
-                  onRemove={handleRemove}
-                  removeDisabled={isRemoving}
-                />
+                  <PracticeQuizQuestionCard
+                    question={normalizedQuestion}
+                    questionNumber={currentIndex + 1}
+                    totalQuestions={reviewQuestions.length}
+                    selectedAnswer={selectedAnswer}
+                    onAnswerSelect={handleAnswerSelect}
+                    isAnswerSubmitted={isSubmitted}
+                    cheatMode={cheatMode}
+                    mcqOptionCount={mcqOptionCount}
+                    showQuestionCounter={false}
+                    onReport={() => setShowReportDialog(true)}
+                    onRemove={handleRemove}
+                    removeDisabled={isRemoving}
+                  />
                 </div>
-                <div className={`min-w-0 md:sticky md:top-4 ${isSubmitted ? "md:self-start" : "md:self-stretch"}`}>
+                <div
+                  className={`min-w-0 md:sticky md:top-4 ${isSubmitted ? "md:self-start" : "md:self-stretch"}`}
+                >
                   <ExplanationPanel
                     hasAnswered={isSubmitted}
                     isCorrect={isReviewAnswerCorrect}
@@ -399,7 +459,9 @@ export default function ReviewPage() {
                             : `Incorrect. The correct answer is ${getDisplayCorrectLabel({ answerIndex: currentQuestion.answerIndex ?? 0 }, mcqOptionCount)}.`}
                         </p>
                         {currentQuestion.explanation ? (
-                          <PrettyExplanation className={QUIZ_EXPLANATION_CLASSNAME}>
+                          <PrettyExplanation
+                            className={QUIZ_EXPLANATION_CLASSNAME}
+                          >
                             {getDisplayExplanation(
                               currentQuestion.explanation,
                               { answerIndex: currentQuestion.answerIndex ?? 0 },

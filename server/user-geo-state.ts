@@ -56,7 +56,7 @@ export async function maybeUpdateUserGeoStateFromIp(
   firestore: Firestore,
   userId: string,
   ip: string | null,
-  headers?: IncomingHttpHeaders
+  headers?: IncomingHttpHeaders,
 ): Promise<void> {
   try {
     const ref = firestore.collection("users").doc(userId);
@@ -67,8 +67,7 @@ export async function maybeUpdateUserGeoStateFromIp(
     const inferredState = data.inferredState;
     const hasState = hasValidInferredState(inferredState);
 
-    const lastAttempt =
-      data.lastIpGeoAttemptAt ?? data.lastIpGeoResolveAt;
+    const lastAttempt = data.lastIpGeoAttemptAt ?? data.lastIpGeoResolveAt;
     const lastSuccess = data.lastIpGeoSuccessAt;
 
     const lastAttemptMs = timestampToMs(lastAttempt as Timestamp | undefined);
@@ -84,7 +83,10 @@ export async function maybeUpdateUserGeoStateFromIp(
       return;
     }
 
-    const { state, reason, inferenceSource } = lookupUsStateFromIpWithReason(ip, headers);
+    const { state, reason, inferenceSource } = lookupUsStateFromIpWithReason(
+      ip,
+      headers,
+    );
     const now = FieldValue.serverTimestamp();
 
     const update: Record<string, unknown> = {
@@ -94,7 +96,8 @@ export async function maybeUpdateUserGeoStateFromIp(
 
     if (state) {
       update.inferredState = state;
-      update.inferenceSource = inferenceSource === "vercel_geo" ? "vercel_geo" : "ip";
+      update.inferenceSource =
+        inferenceSource === "vercel_geo" ? "vercel_geo" : "ip";
       update.inferredStateAt = now;
       update.lastIpGeoSuccessAt = now;
     }
@@ -133,12 +136,6 @@ export async function maybeUpdateUserGeoStateFromIp(
     });
 
     await ref.update(update);
-
-    if (!state) {
-      console.info(
-        `[maybeUpdateUserGeoState] userId=${userId} reason=${reason} ip=${ip ?? "none"}`
-      );
-    }
   } catch (e) {
     console.warn("[maybeUpdateUserGeoStateFromIp]", e);
   }
@@ -151,7 +148,7 @@ export async function maybeUpdateUserGeoStateFromIp(
 export async function maybeUpdateUserGeoState(
   firestore: Firestore,
   userId: string,
-  req: NextApiRequest
+  req: NextApiRequest,
 ): Promise<void> {
   const ip = getClientIp(req);
   await maybeUpdateUserGeoStateFromIp(firestore, userId, ip, req.headers);

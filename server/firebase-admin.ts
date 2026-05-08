@@ -1,8 +1,14 @@
-import { initializeApp, getApps, cert, App, ServiceAccount } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
-import { loadServiceAccountJson } from './firebase-service-account';
+import {
+  initializeApp,
+  getApps,
+  cert,
+  App,
+  ServiceAccount,
+} from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
+import { loadServiceAccountJson } from "./firebase-service-account";
 
 let adminApp: App | null = null;
 
@@ -15,16 +21,14 @@ export function getFirebaseAdmin() {
       const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
       if (!projectId) {
-        throw new Error('NEXT_PUBLIC_FIREBASE_PROJECT_ID environment variable is required');
+        throw new Error(
+          "NEXT_PUBLIC_FIREBASE_PROJECT_ID environment variable is required",
+        );
       }
-
-      console.log('Initializing Firebase Admin with project ID:', projectId);
-
       try {
-        const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'gen-lang-client-0260042933.firebasestorage.app';
-
-        console.log('Storage bucket configuration:', storageBucket);
-
+        const storageBucket =
+          process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+          "gen-lang-client-0260042933.firebasestorage.app";
         const serviceAccount = loadServiceAccountJson();
 
         if (serviceAccount) {
@@ -33,17 +37,15 @@ export function getFirebaseAdmin() {
             projectId,
             storageBucket,
           });
-          console.log('Firebase Admin initialized with service account for project:', projectId);
         } else {
           // Fallback to default credentials (e.g. GCP metadata / gcloud ADC)
           adminApp = initializeApp({
             projectId,
             storageBucket,
           });
-          console.log('Firebase Admin initialized with default credentials for project:', projectId);
         }
       } catch (error) {
-        console.error('Failed to initialize Firebase Admin:', error);
+        console.error("Failed to initialize Firebase Admin:", error);
         throw error;
       }
     } else {
@@ -51,12 +53,14 @@ export function getFirebaseAdmin() {
     }
   }
 
-  return adminApp ? {
-    auth: getAuth(adminApp),
-    firestore: getFirestore(adminApp),
-    storage: getStorage(adminApp),
-    app: adminApp
-  } : null;
+  return adminApp
+    ? {
+        auth: getAuth(adminApp),
+        firestore: getFirestore(adminApp),
+        storage: getStorage(adminApp),
+        app: adminApp,
+      }
+    : null;
 }
 
 export async function verifyFirebaseToken(token: string) {
@@ -64,13 +68,13 @@ export async function verifyFirebaseToken(token: string) {
     const firebaseAdmin = getFirebaseAdmin();
 
     if (!firebaseAdmin) {
-      throw new Error('Firebase Admin not available');
+      throw new Error("Firebase Admin not available");
     }
 
     const { auth } = firebaseAdmin;
     return await auth.verifyIdToken(token);
   } catch (error) {
-    console.error('Token verification failed:', error);
-    throw new Error('Invalid authentication token');
+    console.error("Token verification failed:", error);
+    throw new Error("Invalid authentication token");
   }
 }

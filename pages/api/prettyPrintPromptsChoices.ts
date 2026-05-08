@@ -31,7 +31,7 @@ async function callWithRetry(
   fn: () => Promise<any>,
   maxRetries: number = 5,
   baseDelayMs: number = 5000,
-  onRetry?: (attempt: number, waitSec: number) => void
+  onRetry?: (attempt: number, waitSec: number) => void,
 ): Promise<any> {
   let lastError: any;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -40,7 +40,8 @@ async function callWithRetry(
     } catch (error: any) {
       lastError = error;
       if (isQuotaError(error) && attempt < maxRetries) {
-        const waitMs = baseDelayMs * Math.pow(2, attempt) + Math.random() * 2000;
+        const waitMs =
+          baseDelayMs * Math.pow(2, attempt) + Math.random() * 2000;
         const waitSec = Math.round(waitMs / 1000);
         onRetry?.(attempt + 1, waitSec);
         await new Promise((resolve) => setTimeout(resolve, waitMs));
@@ -152,7 +153,6 @@ export default async function handler(
     const questionId = questionIds[i];
 
     if (aborted) {
-      console.log("Client disconnected, stopping pretty-print.");
       break;
     }
 
@@ -210,7 +210,10 @@ export default async function handler(
             `{\n  \"question\": \"...\",              // cleaned, student-ready stem\n  \"choices\": { \"A\": \"...\", \"B\": \"...\", \"C\": \"...\", \"D\": \"...\", \"E\": \"...\" }\n}\n\n` +
             `Question stem (text):\n${originalStem || "(no text)"}\n\n` +
             `Current answer choices (text only):\n` +
-            LETTERS.map((letter) => `${letter}. ${originalChoices[letter] || "(no text)"}`).join("\n") +
+            LETTERS.map(
+              (letter) =>
+                `${letter}. ${originalChoices[letter] || "(no text)"}`,
+            ).join("\n") +
             `\n\nJSON:`,
         },
       ];
@@ -237,12 +240,16 @@ export default async function handler(
       );
 
       let responseText = result.text?.trim() || "";
-      responseText = responseText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      responseText = responseText
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
 
       const corrected = JSON.parse(responseText);
 
       const normalizedStem = normalizeChoiceTextForRender(
-        typeof corrected.question === "string" && corrected.question.trim().length > 0
+        typeof corrected.question === "string" &&
+          corrected.question.trim().length > 0
           ? corrected.question
           : originalStem,
       );
@@ -278,11 +285,15 @@ export default async function handler(
 
       const updatedChoices: any = {};
       for (const letter of LETTERS) {
-        const existingBlocks = Array.isArray(choices[letter]) ? choices[letter] : [];
+        const existingBlocks = Array.isArray(choices[letter])
+          ? choices[letter]
+          : [];
         const originalChoice = originalChoices[letter] || "";
         const newText = corrected.choices?.[letter];
         const finalText = normalizeChoiceTextForRender(
-          typeof newText === "string" && newText.trim().length > 0 ? newText : originalChoice,
+          typeof newText === "string" && newText.trim().length > 0
+            ? newText
+            : originalChoice,
         );
 
         if (existingBlocks.length === 0) {
@@ -358,7 +369,12 @@ export default async function handler(
               lintErrors: [],
               lintWarnings: [],
               imageErrors: [],
-              issues: [(error?.message || "Prompt/choice pretty-print failed").slice(0, 500)],
+              issues: [
+                (error?.message || "Prompt/choice pretty-print failed").slice(
+                  0,
+                  500,
+                ),
+              ],
               checks: null,
               confidence: null,
             },
@@ -392,4 +408,3 @@ export default async function handler(
 
   res.end();
 }
-

@@ -6,9 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { getSubjectByLegacyId, getSubjectByCode } from "@/subjects";
-import { getDisplayCorrectLabel, getDisplayExplanation } from "@/lib/mcqDisplay";
+import {
+  getDisplayCorrectLabel,
+  getDisplayExplanation,
+} from "@/lib/mcqDisplay";
 import { getStudyNoteFromQuestion } from "@/lib/studyNote";
-import { PrettyExplanation, QUIZ_EXPLANATION_CLASSNAME, QUIZ_QUESTION_EXPL_GRID_CLASS } from "@/components/ui/PrettyExplanation";
+import {
+  PrettyExplanation,
+  QUIZ_EXPLANATION_CLASSNAME,
+  QUIZ_QUESTION_EXPL_GRID_CLASS,
+} from "@/components/ui/PrettyExplanation";
 import { useRouter } from "next/router";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
@@ -18,7 +25,10 @@ import { useAuth } from "@/contexts/auth-context";
 import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
 import { useQuizEngine } from "@/hooks/useQuizEngine";
 import { showPracticeExamToolHeader } from "@/lib/examTools";
-import { getAnalyticsPageParams, trackVersionedAnalyticsEvent } from "@/lib/firebase";
+import {
+  getAnalyticsPageParams,
+  trackVersionedAnalyticsEvent,
+} from "@/lib/firebase";
 
 interface Question {
   id: string;
@@ -74,12 +84,7 @@ export function PracticeQuiz({
   savedState,
   enableStudyNotesPrimer = false,
 }: PracticeQuizProps) {
-  const {
-    currentQuestionIndex,
-    userAnswers,
-    setAnswer,
-    next,
-  } = useQuizEngine({
+  const { currentQuestionIndex, userAnswers, setAnswer, next } = useQuizEngine({
     initialIndex: 0,
     initialAnswers: {},
     totalQuestions: questions.length,
@@ -90,7 +95,9 @@ export function PracticeQuiz({
   const [timerHidden, setTimerHidden] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
-  const [finalUserAnswers, setFinalUserAnswers] = useState<{ [key: number]: string }>({});
+  const [finalUserAnswers, setFinalUserAnswers] = useState<{
+    [key: number]: string;
+  }>({});
   const [cheatMode, setCheatMode] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showConceptPrimer, setShowConceptPrimer] = useState(false);
@@ -104,7 +111,10 @@ export function PracticeQuiz({
   useEffect(() => {
     if (savedState && questions.length > 0 && !appliedSavedState.current) {
       appliedSavedState.current = true;
-      const idx = Math.min(savedState.currentQuestionIndex, questions.length - 1);
+      const idx = Math.min(
+        savedState.currentQuestionIndex,
+        questions.length - 1,
+      );
       setFinalUserAnswers(savedState.userAnswers || {});
       if (enableStudyNotesPrimer && idx % 5 === 0) {
         setShowConceptPrimer(true);
@@ -113,7 +123,12 @@ export function PracticeQuiz({
   }, [savedState, questions.length, enableStudyNotesPrimer]);
   // Show concept primer on fresh start (no saved state) when primer is enabled
   useEffect(() => {
-    if (enableStudyNotesPrimer && questions.length > 0 && !savedState && !hasSetInitialPrimer.current) {
+    if (
+      enableStudyNotesPrimer &&
+      questions.length > 0 &&
+      !savedState &&
+      !hasSetInitialPrimer.current
+    ) {
       hasSetInitialPrimer.current = true;
       setShowConceptPrimer(true);
     }
@@ -126,9 +141,11 @@ export function PracticeQuiz({
 
   const router = useRouter();
   const { user } = useAuth();
-  const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
+  const subject =
+    getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
-  const unitParam = typeof router.query.unit === "string" ? router.query.unit : undefined;
+  const unitParam =
+    typeof router.query.unit === "string" ? router.query.unit : undefined;
 
   const showToolHeader = showPracticeExamToolHeader(subjectId);
 
@@ -168,7 +185,10 @@ export function PracticeQuiz({
     window.addEventListener("admin-cheat-mode-changed", onCheatModeChanged);
     return () => {
       window.removeEventListener("storage", onStorage);
-      window.removeEventListener("admin-cheat-mode-changed", onCheatModeChanged);
+      window.removeEventListener(
+        "admin-cheat-mode-changed",
+        onCheatModeChanged,
+      );
     };
   }, []);
 
@@ -184,7 +204,9 @@ export function PracticeQuiz({
     ? getDisplayCorrectLabel(currentQuestion, mcqOptionCount)
     : "";
   const isCurrentAnswerCorrect =
-    isAnswerSubmitted && !!selectedAnswer && selectedAnswer === feedbackCorrectLabel;
+    isAnswerSubmitted &&
+    !!selectedAnswer &&
+    selectedAnswer === feedbackCorrectLabel;
 
   const handleAnswerSelect = (answer: string) => {
     if (!isAnswerSubmitted) {
@@ -201,7 +223,10 @@ export function PracticeQuiz({
       [currentQuestionIndex]: selectedAnswer,
     }));
 
-    const correctLabel = getDisplayCorrectLabel(currentQuestion, mcqOptionCount);
+    const correctLabel = getDisplayCorrectLabel(
+      currentQuestion,
+      mcqOptionCount,
+    );
     const isCorrect = selectedAnswer === correctLabel;
     if (isCorrect) setScore((s) => s + 1);
 
@@ -214,14 +239,21 @@ export function PracticeQuiz({
       apiRequest("POST", "/api/user/questions/track", {
         questionId: currentQuestion.id,
         subjectId,
-        unitId: currentQuestion.id.split("_")[1] || '',
+        unitId: currentQuestion.id.split("_")[1] || "",
         correct: isCorrect,
         timeSpentSec: 0,
-        sectionCode: currentQuestion.section_code || '',
-        prompt: currentQuestion.prompt || (currentQuestion.prompt_blocks ? currentQuestion.prompt_blocks.filter((b: any) => b.type === 'text').map((b: any) => b.value).join(' ') : ''),
+        sectionCode: currentQuestion.section_code || "",
+        prompt:
+          currentQuestion.prompt ||
+          (currentQuestion.prompt_blocks
+            ? currentQuestion.prompt_blocks
+                .filter((b: any) => b.type === "text")
+                .map((b: any) => b.value)
+                .join(" ")
+            : ""),
         choices: currentQuestion.choices,
         answerIndex: currentQuestion.answerIndex,
-        explanation: currentQuestion.explanation || '',
+        explanation: currentQuestion.explanation || "",
       }).catch(() => {});
     }
 
@@ -239,10 +271,15 @@ export function PracticeQuiz({
       }
     } else {
       if (isFullLength && lastSavedTestId) {
-        router.push(`/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`);
+        router.push(
+          `/full-length-results?subject=${subjectId}&testId=${lastSavedTestId}`,
+        );
       } else {
         setShowResults(true);
-        const answersWithLast = { ...finalUserAnswers, [currentQuestionIndex]: selectedAnswer ?? "" };
+        const answersWithLast = {
+          ...finalUserAnswers,
+          [currentQuestionIndex]: selectedAnswer ?? "",
+        };
         void trackVersionedAnalyticsEvent({
           action: "practice_complete",
           params: getQuizAnalyticsParams(),
@@ -313,30 +350,20 @@ export function PracticeQuiz({
   const chunkIndex = Math.floor(currentQuestionIndex / CHUNK_SIZE);
   const chunkQuestions = orderedQuestions.slice(
     chunkIndex * CHUNK_SIZE,
-    chunkIndex * CHUNK_SIZE + CHUNK_SIZE
+    chunkIndex * CHUNK_SIZE + CHUNK_SIZE,
   );
 
-  if (showConceptPrimer && enableStudyNotesPrimer && chunkQuestions.length > 0) {
+  if (
+    showConceptPrimer &&
+    enableStudyNotesPrimer &&
+    chunkQuestions.length > 0
+  ) {
     const currentPrimerQuestion = chunkQuestions[primerStepIndex];
-    const note = currentPrimerQuestion ? getStudyNoteFromQuestion(currentPrimerQuestion) : "";
+    const note = currentPrimerQuestion
+      ? getStudyNoteFromQuestion(currentPrimerQuestion)
+      : "";
     const isLastStep = primerStepIndex >= chunkQuestions.length - 1;
     const isFirstStep = primerStepIndex === 0;
-
-    // DEBUG: log test_slug and study note for all primer questions (open browser DevTools → Console)
-    if (typeof window !== "undefined") {
-      console.log("[Study Notes Primer DEBUG] chunkQuestions:", chunkQuestions.map((q, i) => ({
-        index: i,
-        id: q.id,
-        test_slug: q.test_slug,
-        test_slug_type: typeof q.test_slug,
-        test_slug_length: (q.test_slug && String(q.test_slug).length) || 0,
-        tags: q.tags,
-        extractedNote: getStudyNoteFromQuestion(q),
-        extractedNote_length: getStudyNoteFromQuestion(q).length,
-      })));
-      console.log("[Study Notes Primer DEBUG] current step:", primerStepIndex, "current question test_slug:", currentPrimerQuestion?.test_slug, "note length:", note.length);
-    }
-
     return (
       <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
         <div className="flex flex-1 overflow-y-auto">
@@ -381,7 +408,11 @@ export function PracticeQuiz({
                 </Button>
               ) : (
                 <Button
-                  onClick={() => setPrimerStepIndex((i) => Math.min(chunkQuestions.length - 1, i + 1))}
+                  onClick={() =>
+                    setPrimerStepIndex((i) =>
+                      Math.min(chunkQuestions.length - 1, i + 1),
+                    )
+                  }
                   className="rounded-full bg-blue-600 px-5 py-2.5 font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
                   Next
@@ -414,22 +445,26 @@ export function PracticeQuiz({
         }`}
       >
         <div className="min-h-0 flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32">
-          <div className={`mx-auto max-w-6xl px-2 sm:px-3 ${showToolHeader ? "pb-1 pt-0" : "py-2"}`}>
+          <div
+            className={`mx-auto max-w-6xl px-2 sm:px-3 ${showToolHeader ? "pb-1 pt-0" : "py-2"}`}
+          >
             <div className={QUIZ_QUESTION_EXPL_GRID_CLASS}>
               <div className="min-w-0">
-              <PracticeQuizQuestionCard
-                question={currentQuestion}
-                questionNumber={currentQuestionIndex + 1}
-                totalQuestions={orderedQuestions.length}
-                selectedAnswer={selectedAnswer}
-                onAnswerSelect={handleAnswerSelect}
-                isAnswerSubmitted={isAnswerSubmitted}
-                cheatMode={cheatMode}
-                mcqOptionCount={mcqOptionCount}
-                onReport={() => setShowReportDialog(true)}
-              />
+                <PracticeQuizQuestionCard
+                  question={currentQuestion}
+                  questionNumber={currentQuestionIndex + 1}
+                  totalQuestions={orderedQuestions.length}
+                  selectedAnswer={selectedAnswer}
+                  onAnswerSelect={handleAnswerSelect}
+                  isAnswerSubmitted={isAnswerSubmitted}
+                  cheatMode={cheatMode}
+                  mcqOptionCount={mcqOptionCount}
+                  onReport={() => setShowReportDialog(true)}
+                />
               </div>
-              <div className={`min-w-0 md:sticky md:top-4 ${isAnswerSubmitted ? "md:self-start" : "md:self-stretch"}`}>
+              <div
+                className={`min-w-0 md:sticky md:top-4 ${isAnswerSubmitted ? "md:self-start" : "md:self-stretch"}`}
+              >
                 <ExplanationPanel
                   hasAnswered={isAnswerSubmitted}
                   isCorrect={isCurrentAnswerCorrect}
@@ -443,7 +478,9 @@ export function PracticeQuiz({
                           : `Incorrect. The correct answer is ${feedbackCorrectLabel}.`}
                       </p>
                       {currentQuestion.explanation ? (
-                        <PrettyExplanation className={QUIZ_EXPLANATION_CLASSNAME}>
+                        <PrettyExplanation
+                          className={QUIZ_EXPLANATION_CLASSNAME}
+                        >
                           {getDisplayExplanation(
                             currentQuestion.explanation,
                             currentQuestion,
@@ -487,7 +524,9 @@ export function PracticeQuiz({
               onClick={handleNextQuestion}
               className="min-h-12 rounded-full border border-slate-200/80 bg-blue-600 px-8 py-3 font-sans text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 dark:border-blue-500/30 dark:bg-blue-500 dark:shadow-lg dark:hover:bg-blue-600"
             >
-              {currentQuestionIndex === orderedQuestions.length - 1 ? "Finish" : "Next"}
+              {currentQuestionIndex === orderedQuestions.length - 1
+                ? "Finish"
+                : "Next"}
             </Button>
           )}
         </div>
@@ -514,7 +553,9 @@ export function PracticeQuiz({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <Card className="w-full max-w-md rounded-2xl border-0 bg-slate-100 shadow-none dark:bg-white/[0.06]">
             <CardHeader>
-              <CardTitle className="text-center text-base text-gray-900 dark:text-gray-100">Quiz Complete!</CardTitle>
+              <CardTitle className="text-center text-base text-gray-900 dark:text-gray-100">
+                Quiz Complete!
+              </CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <div>

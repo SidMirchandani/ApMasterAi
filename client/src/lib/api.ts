@@ -1,8 +1,7 @@
-
 import { auth } from "./firebase";
 import { getAuthToken } from "./auth-retry";
 
-const isFirebaseEnabled = typeof window !== 'undefined' && !!auth;
+const isFirebaseEnabled = typeof window !== "undefined" && !!auth;
 
 let tokenCache: { token: string; uid: string; expiry: number } | null = null;
 
@@ -16,16 +15,16 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     const uid = currentUser.uid;
     const now = Date.now();
 
-    if (tokenCache && tokenCache.uid === uid && tokenCache.expiry > now + 2 * 60 * 1000) {
-      console.log("Using cached token");
+    if (
+      tokenCache &&
+      tokenCache.uid === uid &&
+      tokenCache.expiry > now + 2 * 60 * 1000
+    ) {
       return {
-        "Authorization": `Bearer ${tokenCache.token}`,
+        Authorization: `Bearer ${tokenCache.token}`,
         "X-User-UID": uid,
       };
-    }
-
-    console.log("Getting auth headers for user:", uid);
-    // Force refresh if token is near expiry or missing
+    } // Force refresh if token is near expiry or missing
     const token = await getAuthToken(true);
 
     if (!token) {
@@ -39,7 +38,7 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
     };
 
     return {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       "X-User-UID": uid,
     };
   } catch (error) {
@@ -58,10 +57,8 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  body?: unknown
+  body?: unknown,
 ): Promise<Response> {
-  console.log("Making API request:", method, url);
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -80,9 +77,6 @@ export async function apiRequest(
   }
 
   const res = await fetch(url, options);
-
-  console.log(`API response status: ${res.status} for ${method} ${url}`);
-
   await throwIfResNotOk(res);
   return res;
 }

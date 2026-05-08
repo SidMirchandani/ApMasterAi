@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storage } from "../../../server/storage";
-import { getUserSubjectsForUser, hasUserSubjectForUser, addUserSubjectForUser } from "../../../server/services/user-subjects-service";
+import {
+  getUserSubjectsForUser,
+  hasUserSubjectForUser,
+  addUserSubjectForUser,
+} from "../../../server/services/user-subjects-service";
 import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { z } from "zod";
@@ -20,15 +24,19 @@ const insertUserSubjectSchema = z.object({
   masteryLevel: z.number().min(0).max(100).optional().default(0),
 });
 
-async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
+async function getOrCreateUser(
+  firebaseUid: string,
+  req: NextApiRequest,
+): Promise<string> {
   try {
     let user = await storage.getUserByFirebaseUid(firebaseUid);
 
     if (!user) {
-      user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid, getClientIp(req));
-      console.log(
-        "[subjects API] Created new user for Firebase UID:",
+      user = await storage.createUser(
         firebaseUid,
+        `${firebaseUid}@firebase.user`,
+        firebaseUid,
+        getClientIp(req),
       );
     }
 
@@ -93,7 +101,10 @@ export default async function handler(
 
       case "POST": {
         try {
-          const hasSubject = await hasUserSubjectForUser(userId, req.body.subjectId);
+          const hasSubject = await hasUserSubjectForUser(
+            userId,
+            req.body.subjectId,
+          );
           if (hasSubject) {
             return res.status(409).json({
               success: false,
@@ -141,16 +152,20 @@ export default async function handler(
 
     // Check if it's a database connection error
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('Database') || 
-        errorMessage.includes('connection') || 
-        errorMessage.includes('Firestore') ||
-        errorMessage.includes('ECONNREFUSED') ||
-        errorMessage.includes('access token')) {
+    if (
+      errorMessage.includes("Database") ||
+      errorMessage.includes("connection") ||
+      errorMessage.includes("Firestore") ||
+      errorMessage.includes("ECONNREFUSED") ||
+      errorMessage.includes("access token")
+    ) {
       return res.status(503).json({
         success: false,
-        message: "Database temporarily unavailable. This is likely due to Firebase configuration in development mode.",
-        error: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
-        retryAfter: 5000
+        message:
+          "Database temporarily unavailable. This is likely due to Firebase configuration in development mode.",
+        error:
+          process.env.NODE_ENV === "development" ? errorMessage : undefined,
+        retryAfter: 5000,
       });
     }
 

@@ -4,12 +4,19 @@ import { assertNotBanned } from "../../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../../server/firebase-admin";
 import { getClientIp } from "../../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
+async function getOrCreateUser(
+  firebaseUid: string,
+  req: NextApiRequest,
+): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
 
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, firebaseUid, getClientIp(req));
-    console.log("[subjectId API] Created new user for Firebase UID:", firebaseUid);
+    user = await storage.createUser(
+      firebaseUid,
+      `${firebaseUid}@firebase.user`,
+      firebaseUid,
+      getClientIp(req),
+    );
   }
 
   return user.id;
@@ -72,8 +79,8 @@ export default async function handler(
 
           const sanitizedUpdates = Object.fromEntries(
             Object.entries(updates).filter(
-              ([_, value]) => value !== undefined && value !== null
-            )
+              ([_, value]) => value !== undefined && value !== null,
+            ),
           );
           if (Object.keys(sanitizedUpdates).length === 0) {
             return res.status(400).json({

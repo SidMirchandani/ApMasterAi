@@ -3,12 +3,19 @@ import { assertNotBanned } from "../../../../../server/api-user-auth";
 import { storage } from "../../../../../server/storage";
 import { getClientIp } from "../../../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
+async function getOrCreateUser(
+  firebaseUid: string,
+  req: NextApiRequest,
+): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
 
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, undefined, getClientIp(req));
-    console.log("[unit-quiz-result API] Created new user for Firebase UID:", firebaseUid);
+    user = await storage.createUser(
+      firebaseUid,
+      `${firebaseUid}@firebase.user`,
+      undefined,
+      getClientIp(req),
+    );
   }
 
   return user.id;
@@ -35,7 +42,8 @@ export default async function handler(
     const token = authHeader.split(" ")[1];
     let decodedToken;
     try {
-      const { verifyFirebaseToken } = await import("../../../../../server/firebase-admin");
+      const { verifyFirebaseToken } =
+        await import("../../../../../server/firebase-admin");
       decodedToken = await verifyFirebaseToken(token);
     } catch (error) {
       console.error("[unit-quiz-result API] Token verification failed:", error);
@@ -55,11 +63,7 @@ export default async function handler(
       });
     }
 
-    const { unitId, sectionCode, score, percentage, totalQuestions, sectionName, unitNumber, userAnswers, questions } = req.body;
-
-    console.log("[unit-quiz-result API] POST payload", {
-      userId,
-      subjectId,
+    const {
       unitId,
       sectionCode,
       score,
@@ -67,10 +71,9 @@ export default async function handler(
       totalQuestions,
       sectionName,
       unitNumber,
-      hasUserAnswers: !!userAnswers && typeof userAnswers === "object",
-      questionsCount: Array.isArray(questions) ? questions.length : 0,
-    });
-
+      userAnswers,
+      questions,
+    } = req.body;
     if (!unitId || typeof unitId !== "string") {
       console.warn("[unit-quiz-result API] Invalid unitId", unitId);
       return res.status(400).json({
@@ -84,7 +87,11 @@ export default async function handler(
         message: "Valid sectionCode is required",
       });
     }
-    if (typeof score !== "number" || typeof percentage !== "number" || typeof totalQuestions !== "number") {
+    if (
+      typeof score !== "number" ||
+      typeof percentage !== "number" ||
+      typeof totalQuestions !== "number"
+    ) {
       console.warn("[unit-quiz-result API] Invalid numeric payload", {
         score,
         percentage,
@@ -104,18 +111,12 @@ export default async function handler(
       totalQuestions,
       sectionName: typeof sectionName === "string" ? sectionName : undefined,
       unitNumber: typeof unitNumber === "number" ? unitNumber : undefined,
-      userAnswers: userAnswers && typeof userAnswers === "object" ? userAnswers : undefined,
+      userAnswers:
+        userAnswers && typeof userAnswers === "object"
+          ? userAnswers
+          : undefined,
       questions: Array.isArray(questions) ? questions : undefined,
     });
-
-    console.log("[unit-quiz-result API] saveUnitQuizResult OK", {
-      userId,
-      subjectId,
-      unitId,
-      sectionCode,
-      resultId: result.id,
-    });
-
     return res.status(200).json({
       success: true,
       data: result,

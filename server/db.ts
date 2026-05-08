@@ -1,6 +1,6 @@
-import { getFirebaseAdmin } from './firebase-admin';
-import { hasServiceAccountFileOrKey } from './firebase-service-account';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirebaseAdmin } from "./firebase-admin";
+import { hasServiceAccountFileOrKey } from "./firebase-service-account";
+import { getFirestore } from "firebase-admin/firestore";
 
 export class DatabaseManager {
   private static instance: DatabaseManager;
@@ -23,7 +23,9 @@ export class DatabaseManager {
       const firebaseAdmin = getFirebaseAdmin();
 
       if (!firebaseAdmin) {
-        console.warn("Firebase Admin not available - database operations will be limited in development");
+        console.warn(
+          "Firebase Admin not available - database operations will be limited in development",
+        );
         this.db = null;
         return;
       }
@@ -48,7 +50,6 @@ export class DatabaseManager {
 
       const { app } = firebaseAdmin;
       this.db = getFirestore(app);
-      console.log("Firestore connection established.");
     } catch (error) {
       console.error("Failed to initialize Firestore connection:", error);
       throw error;
@@ -75,17 +76,11 @@ export class DatabaseManager {
   async healthCheck(): Promise<boolean> {
     try {
       if (!this.db) {
-        console.log("Database not initialized, attempting to initialize...");
         this.initializeConnection();
         if (!this.db) return false;
       }
-      
-      // Simple health check - try to access Firestore
-      console.log("Performing Firestore health check...");
-      
       // Perform health check
-      await this.db.collection('_health').limit(1).get();
-      console.log("Firestore health check passed");
+      await this.db.collection("_health").limit(1).get();
       return true;
     } catch (error) {
       console.error("Firestore health check failed:", error);

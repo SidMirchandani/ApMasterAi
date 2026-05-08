@@ -6,7 +6,9 @@ import {
 } from "../varsity-subjects";
 import { getSubjectConfig } from "../subjects-helper";
 
-export type Block = { type: "text"; value: string } | { type: "image"; url: string };
+export type Block =
+  | { type: "text"; value: string }
+  | { type: "image"; url: string };
 
 export interface VarsityQuestion {
   subject_code: string;
@@ -41,7 +43,11 @@ function normalizeText(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-function shouldCrawlUrl(href: string, pathSlug: string, underscoreSlug: string): boolean {
+function shouldCrawlUrl(
+  href: string,
+  pathSlug: string,
+  underscoreSlug: string,
+): boolean {
   let p: string;
   try {
     p = new URL(href).pathname.toLowerCase();
@@ -95,7 +101,7 @@ function extractConceptPath($: cheerio.CheerioAPI): string[] {
 
   if (out.length) return out;
 
-  $("script[type=\"application/ld+json\"]").each((_, el) => {
+  $('script[type="application/ld+json"]').each((_, el) => {
     const raw = $(el).html();
     if (!raw) return;
     try {
@@ -111,7 +117,8 @@ function extractConceptPath($: cheerio.CheerioAPI): string[] {
           if (!Array.isArray(list)) continue;
           for (const it of list) {
             const item = it as Record<string, unknown>;
-            const name = item.name ?? (item.item as Record<string, unknown>)?.name;
+            const name =
+              item.name ?? (item.item as Record<string, unknown>)?.name;
             if (typeof name === "string") push(name);
           }
         }
@@ -236,10 +243,13 @@ function assignSectionFromConceptContext(
     const fallbackCode = unitIds[hash % unitIds.length] || unitIds[0];
     if (process.env.NODE_ENV !== "production") {
       // eslint-disable-next-line no-console
-      console.warn("[VarsityScraper] Low-confidence section assignment fallback", {
-        subjectCode,
-        fallbackCode,
-      });
+      console.warn(
+        "[VarsityScraper] Low-confidence section assignment fallback",
+        {
+          subjectCode,
+          fallbackCode,
+        },
+      );
     }
     return fallbackCode;
   }
@@ -280,7 +290,10 @@ function extractNextFlightStringTable(html: string): Map<string, string> {
   return map;
 }
 
-function resolveFlightExplanationRef(raw: string | undefined, table: Map<string, string>): string {
+function resolveFlightExplanationRef(
+  raw: string | undefined,
+  table: Map<string, string>,
+): string {
   if (!raw || raw === "$undefined") return "";
   const t = raw.trim();
   if (!/^\$[0-9a-fA-F]+$/i.test(t)) return raw;
@@ -378,7 +391,10 @@ function jsonParseQuestionsSlice(slice: string): RawVarsityQuestion[] {
   return parsed as RawVarsityQuestion[];
 }
 
-function extractQuestionsFromNextPayload(html: string, pageUrl?: string): RawVarsityQuestion[] {
+function extractQuestionsFromNextPayload(
+  html: string,
+  pageUrl?: string,
+): RawVarsityQuestion[] {
   const flightTable = extractNextFlightStringTable(html);
   let slice: string | null = null;
 
@@ -463,8 +479,13 @@ function extractHelpQuestionsFromHtml(html: string): RawVarsityQuestion[] {
         // - trim leading/trailing blank lines
         // - remove standalone blank lines entirely (no internal empty lines)
         const withoutTrailingSpaces = t.replace(/[ \t]+$/gm, "");
-        const collapsedBlankLines = withoutTrailingSpaces.replace(/\n{3,}/g, "\n\n");
-        const trimmedEdges = collapsedBlankLines.replace(/^\s*\n/, "").replace(/\n\s*$/, "");
+        const collapsedBlankLines = withoutTrailingSpaces.replace(
+          /\n{3,}/g,
+          "\n\n",
+        );
+        const trimmedEdges = collapsedBlankLines
+          .replace(/^\s*\n/, "")
+          .replace(/\n\s*$/, "");
         const lines = trimmedEdges.split(/\r?\n/);
         const compactLines = lines.filter((line) => line.trim().length > 0);
         const finalText = compactLines.join("\n").trimEnd();
@@ -490,7 +511,8 @@ function extractHelpQuestionsFromHtml(html: string): RawVarsityQuestion[] {
       const text = optEl.find("p").first().text().trim();
       if (!text) return;
       const isCorrect =
-        optEl.hasClass("border-green-500") || optEl.attr("class")?.includes("border-green-500");
+        optEl.hasClass("border-green-500") ||
+        optEl.attr("class")?.includes("border-green-500");
       answers.push({ text, isCorrect });
     });
     if (!answers.length) return;
@@ -520,7 +542,9 @@ function extractHelpQuestionsFromHtml(html: string): RawVarsityQuestion[] {
   return out;
 }
 
-async function fetchHtml(url: string): Promise<{ ok: boolean; html: string; status: number }> {
+async function fetchHtml(
+  url: string,
+): Promise<{ ok: boolean; html: string; status: number }> {
   const c = new AbortController();
   const t = setTimeout(() => c.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -542,7 +566,10 @@ async function fetchHtml(url: string): Promise<{ ok: boolean; html: string; stat
  * Varsity "Learn by Concept" lives under /practice/subjects/{slug}/help/{topic}.
  * Topic URLs often appear only inside Next.js RSC/JSON blobs, not as <a> in the first paint.
  */
-function extractLearnByConceptHelpPaths(html: string, pathSlug: string): string[] {
+function extractLearnByConceptHelpPaths(
+  html: string,
+  pathSlug: string,
+): string[] {
   const safe = pathSlug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const re = new RegExp(
     `(?:https://www\\.varsitytutors\\.com)?(/practice/subjects/${safe}/help/[a-z0-9]+(?:-[a-z0-9]+)*)`,
@@ -558,7 +585,12 @@ function extractLearnByConceptHelpPaths(html: string, pathSlug: string): string[
   return out;
 }
 
-function discoverLinksFromHtml(html: string, pageUrl: string, pathSlug: string, underscoreSlug: string): string[] {
+function discoverLinksFromHtml(
+  html: string,
+  pageUrl: string,
+  pathSlug: string,
+  underscoreSlug: string,
+): string[] {
   const found = new Set<string>();
   const $ = cheerio.load(html);
   $("a[href]").each((_, el) => {
@@ -574,7 +606,11 @@ function discoverLinksFromHtml(html: string, pageUrl: string, pathSlug: string, 
   return [...found];
 }
 
-function discoverHelpLinksFromHtml(html: string, pageUrl: string, pathSlug: string): string[] {
+function discoverHelpLinksFromHtml(
+  html: string,
+  pageUrl: string,
+  pathSlug: string,
+): string[] {
   const found = new Set<string>();
   const $ = cheerio.load(html);
 
@@ -676,9 +712,6 @@ export async function scrapeVarsityForSubject(
 
     // Short paced delay so we don't hammer Varsity but also don't feel frozen.
     await sleep(delayMs);
-
-    console.log("[VarsityScraper] Fetching page", { subjectCode, pageUrl, linksCrawled });
-
     // Fast timeout + one quick retry per page so a single slow response
     // doesn't stall the whole crawl for a long time.
     let ok = false;
@@ -695,9 +728,6 @@ export async function scrapeVarsityForSubject(
     linksCrawled++;
 
     if (!ok) {
-      if (status === 404 && /diagnostic-test-\d+$/i.test(pageUrl)) {
-        /* expected miss */
-      }
       continue;
     }
 
@@ -738,25 +768,14 @@ export async function scrapeVarsityForSubject(
 
     const $$ = cheerio.load(html);
     const conceptPath = extractConceptPath($$);
-    const headingText = normalizeText($$("h1").first().text() || $$("h2").first().text() || "");
+    const headingText = normalizeText(
+      $$("h1").first().text() || $$("h2").first().text() || "",
+    );
     const linkTitle = "";
 
     for (const rq of rawQuestions) {
       nextQuestionIdBase++;
       const qid = nextQuestionIdBase;
-
-      // Temporary verbose logging so we can see progress and exactly which
-      // questions are being scraped. This can be removed later once we are
-      // confident in the pipeline.
-      if (rq.question && rq.question.trim()) {
-        console.log("[VarsityScraper] Question scraped", {
-          subjectCode,
-          pageUrl,
-          id: qid,
-          question: rq.question.slice(0, 200),
-        });
-      }
-
       const promptBlocks: Block[] = [];
       if (
         rq.passage &&
@@ -774,7 +793,13 @@ export async function scrapeVarsityForSubject(
         promptBlocks.push({ type: "image", url: imgUrl });
       }
 
-      const letters: ("A" | "B" | "C" | "D" | "E")[] = ["A", "B", "C", "D", "E"];
+      const letters: ("A" | "B" | "C" | "D" | "E")[] = [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+      ];
       const choices: Record<"A" | "B" | "C" | "D" | "E", Block[]> = {
         A: [],
         B: [],
@@ -809,7 +834,9 @@ export async function scrapeVarsityForSubject(
       });
 
       const hasPrompt = promptBlocks.length > 0;
-      const hasChoice = Object.values(choices).some((arr) => arr && arr.length > 0);
+      const hasChoice = Object.values(choices).some(
+        (arr) => arr && arr.length > 0,
+      );
 
       if (!hasPrompt || !hasChoice) continue;
 
@@ -825,7 +852,10 @@ export async function scrapeVarsityForSubject(
         prompt_blocks: promptBlocks,
         choices,
         correct_answer: correctAnswer,
-        explanation: rq.explanation && rq.explanation !== "$undefined" ? rq.explanation : "",
+        explanation:
+          rq.explanation && rq.explanation !== "$undefined"
+            ? rq.explanation
+            : "",
         concept_hint: conceptHint,
       });
     }

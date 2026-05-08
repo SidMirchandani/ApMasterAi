@@ -26,20 +26,11 @@ export default async function handler(
 
   const { questionIds, model = "2.5lite" } = req.body || {};
 
-  if (
-    !questionIds ||
-    !Array.isArray(questionIds) ||
-    questionIds.length === 0
-  ) {
+  if (!questionIds || !Array.isArray(questionIds) || questionIds.length === 0) {
     return res.status(400).json({ error: "questionIds array is required" });
   }
 
   const selectedModel = getModelName(model);
-  if (process.env.NODE_ENV !== "production") {
-    // eslint-disable-next-line no-console
-    console.log(`Using model: ${selectedModel} (from selection: ${model})`);
-  }
-
   const opts = getGeminiClientOptions();
   const ai = new GoogleGenAI({
     apiKey: opts.apiKey,
@@ -54,14 +45,6 @@ export default async function handler(
   const { firestore } = firebaseAdmin;
   const questionsRef = firestore.collection("questions");
   const total = questionIds.length;
-
-  if (process.env.NODE_ENV !== "production") {
-    // eslint-disable-next-line no-console
-    console.log(
-      `Generating explanations for ${total} selected questions (overwriting any existing explanations)...`,
-    );
-  }
-
   let aborted = false;
   req.on("close", () => {
     aborted = true;
@@ -108,14 +91,6 @@ export default async function handler(
     onAborted: () => aborted,
     markVerificationFailOnError: true,
   });
-
-  if (process.env.NODE_ENV !== "production") {
-    // eslint-disable-next-line no-console
-    console.log(
-      `✅ Completed: Generated ${updated}/${total} explanations (${skipped} not found, ${failed} failed)`,
-    );
-  }
-
   sendEvent({
     type: "complete",
     total,

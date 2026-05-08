@@ -5,7 +5,16 @@ import { QuizHeader } from "./QuizHeader";
 import { QuestionCard } from "./QuestionCard";
 import { TestFloatingNav } from "./TestFloatingNav";
 import { SubmitConfirmDialog } from "./SubmitConfirmDialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { QuizReviewPage } from "./QuizReviewPage";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
 import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
@@ -13,12 +22,23 @@ import { useRouter } from "next/router";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
-import { getSubjectByLegacyId, getSubjectByCode, getApiCodeForSubject, getUnitIdForSectionCode } from '@/subjects';
-import { getDisplayCorrectLabel, getStoredAnswerForSubmit } from '@/lib/mcqDisplay';
-import { getSubjectDisplayName } from '../../../../lib/subject-display-names';
+import {
+  getSubjectByLegacyId,
+  getSubjectByCode,
+  getApiCodeForSubject,
+  getUnitIdForSectionCode,
+} from "@/subjects";
+import {
+  getDisplayCorrectLabel,
+  getStoredAnswerForSubmit,
+} from "@/lib/mcqDisplay";
+import { getSubjectDisplayName } from "../../../../lib/subject-display-names";
 import { useQuizEngine } from "@/hooks/useQuizEngine";
 import type { Question } from "@/lib/types/question";
-import { getAnalyticsPageParams, trackVersionedAnalyticsEvent } from "@/lib/firebase";
+import {
+  getAnalyticsPageParams,
+  trackVersionedAnalyticsEvent,
+} from "@/lib/firebase";
 interface FullLengthQuizProps {
   questions: Question[];
   subjectId: string;
@@ -30,10 +50,20 @@ interface FullLengthQuizProps {
   hasAppNav?: boolean;
 }
 
-export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSubmit, savedState, examConfig, hasAppNav }: FullLengthQuizProps) {
+export function FullLengthQuiz({
+  questions,
+  subjectId,
+  timeElapsed,
+  onExit,
+  onSubmit,
+  savedState,
+  examConfig,
+  hasAppNav,
+}: FullLengthQuizProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const subject = getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
+  const subject =
+    getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
   const {
     currentQuestionIndex,
@@ -62,11 +92,10 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     }
     // Otherwise, calculate total time from exam config
     if (!examConfig) {
-      console.error('No exam config found for subject:', subjectId);
+      console.error("No exam config found for subject:", subjectId);
       return 90 * 60; // Fallback to 90 minutes only if config is missing
     }
     const totalSeconds = examConfig.timeMinutes * 60;
-    console.log('Timer initialized:', { subject: subjectId, minutes: examConfig.timeMinutes, seconds: totalSeconds });
     return totalSeconds;
   });
   const [showTimeWarning, setShowTimeWarning] = useState(false);
@@ -91,7 +120,10 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     window.addEventListener("admin-cheat-mode-changed", onCheatModeChanged);
     return () => {
       window.removeEventListener("storage", onStorage);
-      window.removeEventListener("admin-cheat-mode-changed", onCheatModeChanged);
+      window.removeEventListener(
+        "admin-cheat-mode-changed",
+        onCheatModeChanged,
+      );
     };
   }, []);
 
@@ -153,7 +185,7 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       await apiRequest(
         "POST",
         `/api/user/subjects/${subjectId}/save-exam-state`,
-        { examState }
+        { examState },
       );
     } catch (error) {
       console.error("Failed to save exam state:", error);
@@ -167,7 +199,9 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
   };
 
   // Updated handleSubmitTest to format question data correctly. Optional overrideAnswers for admin auto-answer.
-  const handleSubmitTest = async (overrideAnswers?: { [key: number]: string }) => {
+  const handleSubmitTest = async (overrideAnswers?: {
+    [key: number]: string;
+  }) => {
     setShowSubmitConfirm(false);
     setIsSubmitting(true);
     const answersToUse = overrideAnswers ?? userAnswers;
@@ -175,7 +209,10 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     try {
       const correctCount = questions.reduce((count, question, index) => {
         const userAnswer = answersToUse[index];
-        const displayCorrectLabel = getDisplayCorrectLabel(question, mcqOptionCount);
+        const displayCorrectLabel = getDisplayCorrectLabel(
+          question,
+          mcqOptionCount,
+        );
         return userAnswer === displayCorrectLabel ? count + 1 : count;
       }, 0);
 
@@ -188,7 +225,11 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
         const displaySel = answersToUse[i];
-        storedUserAnswers[i] = getStoredAnswerForSubmit(displaySel ?? "", q, mcqOptionCount);
+        storedUserAnswers[i] = getStoredAnswerForSubmit(
+          displaySel ?? "",
+          q,
+          mcqOptionCount,
+        );
       }
 
       const response = await apiRequest(
@@ -199,13 +240,15 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
           percentage: percentage,
           totalQuestions: questions.length,
           questions: formattedQuestions,
-          userAnswers: storedUserAnswers
-        }
+          userAnswers: storedUserAnswers,
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`Failed to submit test: ${errorData.message || response.statusText}`);
+        throw new Error(
+          `Failed to submit test: ${errorData.message || response.statusText}`,
+        );
       }
 
       const result = await response.json();
@@ -219,25 +262,34 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
       // Invalidate and refetch so study/dashboard show updated data when user navigates back
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
       queryClient.invalidateQueries({ queryKey: ["unitProgress", subjectId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/analytics", subjectId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/score-history", subjectId] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/user/analytics", subjectId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/user/score-history", subjectId],
+      });
       await queryClient.refetchQueries({ queryKey: ["subjects"] });
-      await queryClient.refetchQueries({ queryKey: ["unitProgress", subjectId] });
+      await queryClient.refetchQueries({
+        queryKey: ["unitProgress", subjectId],
+      });
 
       await apiRequest(
         "DELETE",
-        `/api/user/subjects/${subjectId}/delete-exam-state`
+        `/api/user/subjects/${subjectId}/delete-exam-state`,
       );
 
       // Save wrong answers per unit with unit info so they appear in Review for that unit (await before redirect)
       const trackPromises: Promise<unknown>[] = [];
-        questions.forEach((q, idx) => {
+      questions.forEach((q, idx) => {
         const displayCorrect = getDisplayCorrectLabel(q, mcqOptionCount);
         const userAns = answersToUse[idx];
         const isCorrect = userAns === displayCorrect;
         if (!isCorrect && q.id) {
           const sectionCode = (q as any).section_code || "";
-          const unitId = getUnitIdForSectionCode(subjectId, sectionCode) || sectionCode || "unknown";
+          const unitId =
+            getUnitIdForSectionCode(subjectId, sectionCode) ||
+            sectionCode ||
+            "unknown";
           trackPromises.push(
             apiRequest("POST", "/api/user/questions/track", {
               questionId: q.id,
@@ -246,13 +298,15 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
               correct: false,
               timeSpentSec: 0,
               sectionCode,
-            })
+            }),
           );
         }
       });
       await Promise.all(trackPromises);
 
-      queryClient.invalidateQueries({ queryKey: ["dueReviews", subjectId, "all"] });
+      queryClient.invalidateQueries({
+        queryKey: ["dueReviews", subjectId, "all"],
+      });
       router.push(`/full-length-results?subject=${subjectId}&testId=${testId}`);
     } catch (error) {
       console.error("Error submitting test:", error);
@@ -261,7 +315,10 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     }
   };
 
-  const handleReviewSubmit = (updatedAnswers: { [key: number]: string }, _updatedFlagged: Set<number>) => {
+  const handleReviewSubmit = (
+    updatedAnswers: { [key: number]: string },
+    _updatedFlagged: Set<number>,
+  ) => {
     // Pass review edits directly — engine state has no bulk setters, and setState would not
     // apply before submit anyway.
     handleSubmitTest(updatedAnswers);
@@ -290,7 +347,14 @@ export function FullLengthQuiz({ questions, subjectId, timeElapsed, onExit, onSu
     if (!urls || urls.length === 0) {
       return null;
     }
-    return urls.map((url, index) => <img key={index} src={url} alt={`Image ${index + 1}`} className="mb-4 h-auto max-w-full rounded-lg" />);
+    return urls.map((url, index) => (
+      <img
+        key={index}
+        src={url}
+        alt={`Image ${index + 1}`}
+        className="mb-4 h-auto max-w-full rounded-lg"
+      />
+    ));
   };
 
   return (

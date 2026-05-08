@@ -31,7 +31,11 @@ export function flattenChoiceText(blocks: any[]): string {
 }
 
 function buildConceptHalfInstruction(question: any): string {
-  const subjectCode = (question?.subject_code || question?.subject || "").toString();
+  const subjectCode = (
+    question?.subject_code ||
+    question?.subject ||
+    ""
+  ).toString();
   const normalizedCode = subjectCode.toLowerCase();
   const subjectDescription =
     SUBJECT_CONCEPT_REGISTRY[normalizedCode] ||
@@ -55,7 +59,10 @@ function buildCoachingInstruction(): string {
   return `**Coaching for students:**\n*Provide a 1–2 sentence meta-cognitive test-taking tip in italics. Tell the student how to spot the "trick" in similar questions, how to read this type of diagram, or what specific keywords to watch for next time. Do not introduce new content beyond what is needed for the test-taking tip.*`;
 }
 
-function buildExplanationInstruction(question: any, correctLabel: string): string {
+function buildExplanationInstruction(
+  question: any,
+  correctLabel: string,
+): string {
   const concept = buildConceptHalfInstruction(question);
   const questionHalf = buildQuestionHalfInstruction(correctLabel);
   const misconception = buildMisconceptionInstruction();
@@ -118,12 +125,16 @@ export async function buildExplanationPromptParts(question: any): Promise<{
   }
 
   let choicesText = `\nAnswer Choices:\n`;
-  Object.entries(question.choices ?? {}).forEach(([letter, blocks]: [string, any]) => {
-    const choiceText = flattenChoiceText(blocks);
-    choicesText += `${letter}. ${choiceText}\n`;
-  });
+  Object.entries(question.choices ?? {}).forEach(
+    ([letter, blocks]: [string, any]) => {
+      const choiceText = flattenChoiceText(blocks);
+      choicesText += `${letter}. ${choiceText}\n`;
+    },
+  );
   const correctAnswerBlocks = question.choices?.[correctLabel];
-  const correctAnswer = correctAnswerBlocks ? flattenChoiceText(correctAnswerBlocks) : "";
+  const correctAnswer = correctAnswerBlocks
+    ? flattenChoiceText(correctAnswerBlocks)
+    : "";
   choicesText += `\nCorrect Answer: ${correctLabel}. ${correctAnswer}\n\n`;
   promptParts.push({ text: choicesText });
 
@@ -145,7 +156,10 @@ export async function buildExplanationPromptParts(question: any): Promise<{
     }
   }
 
-  const explanationInstruction = buildExplanationInstruction(question, correctLabel);
+  const explanationInstruction = buildExplanationInstruction(
+    question,
+    correctLabel,
+  );
   promptParts.push({
     text: explanationInstruction,
   });
@@ -153,7 +167,9 @@ export async function buildExplanationPromptParts(question: any): Promise<{
   return { promptParts, correctLabel };
 }
 
-export async function buildReformatExplanationPromptParts(question: any): Promise<{
+export async function buildReformatExplanationPromptParts(
+  question: any,
+): Promise<{
   promptParts: any[];
 }> {
   const correctLabel = String.fromCharCode(65 + (question.answerIndex ?? 0));
@@ -173,7 +189,9 @@ export async function buildReformatExplanationPromptParts(question: any): Promis
     choicesText += `${letter}. ${choiceText}\n`;
   });
   const correctAnswerBlocks = question.choices?.[correctLabel];
-  const correctAnswer = correctAnswerBlocks ? flattenChoiceText(correctAnswerBlocks) : "";
+  const correctAnswer = correctAnswerBlocks
+    ? flattenChoiceText(correctAnswerBlocks)
+    : "";
   choicesText += `\nCorrect Answer: ${correctLabel}. ${correctAnswer}\n\n`;
 
   const existingExplanation = String(question.explanation ?? "").trim();
@@ -188,7 +206,9 @@ export async function buildReformatExplanationPromptParts(question: any): Promis
 export type RunExplanationGenerationParams = {
   questionIds: string[];
   model: string;
-  ai: { models: { generateContent: (opts: any) => Promise<{ text?: string }> } };
+  ai: {
+    models: { generateContent: (opts: any) => Promise<{ text?: string }> };
+  };
   questionsRef: any;
   sendEvent: (data: any) => void;
   skipIfExplanationExists: boolean;
@@ -207,7 +227,11 @@ export async function runExplanationGeneration({
   isRegenerate,
   onAborted,
   markVerificationFailOnError = false,
-}: RunExplanationGenerationParams): Promise<{ updated: number; skipped: number; failed: number }> {
+}: RunExplanationGenerationParams): Promise<{
+  updated: number;
+  skipped: number;
+  failed: number;
+}> {
   const total = questionIds.length;
   let updated = 0;
   let skipped = 0;
@@ -219,9 +243,6 @@ export async function runExplanationGeneration({
     const questionId = questionIds[i];
 
     if (onAborted()) {
-      console.log(
-        `Client disconnected, stopping explanation ${isRegenerate ? "reformatting" : "generation"}.`,
-      );
       break;
     }
 
@@ -229,7 +250,6 @@ export async function runExplanationGeneration({
       const doc = await questionsRef.doc(questionId).get();
 
       if (!doc.exists) {
-        console.log(`Question ${questionId} not found, skipping...`);
         skipped++;
         sendEvent({
           type: "progress",
@@ -246,7 +266,11 @@ export async function runExplanationGeneration({
       const question = doc.data();
       if (!question) continue;
 
-      if (skipIfExplanationExists && question?.explanation && String(question.explanation).trim() !== "") {
+      if (
+        skipIfExplanationExists &&
+        question?.explanation &&
+        String(question.explanation).trim() !== ""
+      ) {
         skipped++;
         sendEvent({
           type: "progress",
@@ -299,7 +323,6 @@ export async function runExplanationGeneration({
         5,
         5000,
         (attempt, waitSec) => {
-          console.log(`⏳ Quota limit hit, retry ${attempt}/5 — waiting ${waitSec}s...`);
           sendEvent({
             type: "rate_limit",
             current: i + 1,
@@ -309,7 +332,7 @@ export async function runExplanationGeneration({
             failed,
             message: `Rate limit hit — waiting ${waitSec}s before retry ${attempt}/5...`,
           });
-        }
+        },
       );
 
       let explanation = (result.text ?? "").trim();
@@ -321,8 +344,6 @@ export async function runExplanationGeneration({
       });
 
       updated++;
-      console.log(`✓ ${verbPast} explanation for question ${doc.id}`);
-
       sendEvent({
         type: "progress",
         current: i + 1,
@@ -337,7 +358,7 @@ export async function runExplanationGeneration({
       const isQuota = isQuotaError(error);
       console.error(
         `✗ Failed to ${isRegenerate ? "reformat" : "generate"} explanation for ${questionId}:`,
-        isQuota ? "Quota exhausted after retries" : error.message
+        isQuota ? "Quota exhausted after retries" : error.message,
       );
 
       if (markVerificationFailOnError) {
@@ -355,7 +376,10 @@ export async function runExplanationGeneration({
                 issues: [
                   isQuota
                     ? "Explanation generation quota exhausted after retries"
-                    : (error?.message || "Explanation generation failed").slice(0, 500),
+                    : (error?.message || "Explanation generation failed").slice(
+                        0,
+                        500,
+                      ),
                 ],
                 checks: null,
                 confidence: null,

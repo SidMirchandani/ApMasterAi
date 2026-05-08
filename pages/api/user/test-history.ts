@@ -4,20 +4,30 @@ import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { storage } from "../../../server/storage";
 import { getClientIp } from "../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
+async function getOrCreateUser(
+  firebaseUid: string,
+  req: NextApiRequest,
+): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, undefined, getClientIp(req));
+    user = await storage.createUser(
+      firebaseUid,
+      `${firebaseUid}@firebase.user`,
+      undefined,
+      getClientIp(req),
+    );
   }
   return user.id;
 }
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   if (req.method !== "GET") {
-    return res.status(405).json({ success: false, message: "Method not allowed" });
+    return res
+      .status(405)
+      .json({ success: false, message: "Method not allowed" });
   }
 
   try {
@@ -34,27 +44,23 @@ export default async function handler(
     const subjectId = req.query.subjectId as string | undefined;
 
     // Fetch full-length, diagnostic, and unit quiz results in parallel
-    const [fullLengthTests, diagnosticTests, unitQuizResults] = await Promise.all([
-      storage.getAllFullLengthTests(userId, subjectId),
-      storage.getAllDiagnosticTests(userId, subjectId),
-      storage.getAllUnitQuizResults(userId, subjectId),
-    ]);
-
-    console.log("[test-history API] fetched tests", {
-      userId,
-      subjectId,
-      fullLengthCount: fullLengthTests.length,
-      diagnosticCount: diagnosticTests.length,
-      unitQuizCount: unitQuizResults.length,
-    });
-
+    const [fullLengthTests, diagnosticTests, unitQuizResults] =
+      await Promise.all([
+        storage.getAllFullLengthTests(userId, subjectId),
+        storage.getAllDiagnosticTests(userId, subjectId),
+        storage.getAllUnitQuizResults(userId, subjectId),
+      ]);
     const combined = [
       ...fullLengthTests.map((t) => ({ ...t, type: t.type || "full-length" })),
       ...diagnosticTests.map((t) => ({ ...t, type: "diagnostic" })),
       ...unitQuizResults.map((t) => ({ ...t, type: "unit" })),
     ].sort((a, b) => {
-      const aMs = a.date?.toMillis ? a.date.toMillis() : new Date(a.date).getTime();
-      const bMs = b.date?.toMillis ? b.date.toMillis() : new Date(b.date).getTime();
+      const aMs = a.date?.toMillis
+        ? a.date.toMillis()
+        : new Date(a.date).getTime();
+      const bMs = b.date?.toMillis
+        ? b.date.toMillis()
+        : new Date(b.date).getTime();
       return aMs - bMs;
     });
 
@@ -78,6 +84,8 @@ export default async function handler(
     return res.status(200).json({ success: true, data: testHistory });
   } catch (error) {
     console.error("Error getting test history:", error);
-    return res.status(500).json({ success: false, message: "Failed to get test history" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to get test history" });
   }
 }

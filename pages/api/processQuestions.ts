@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../server/firebase-admin";
@@ -15,33 +14,37 @@ export const config = {
 
 function flattenChoiceText(blocks: any[]) {
   return blocks
-    .filter(b => b.type === "text")
-    .map(b => b.value)
+    .filter((b) => b.type === "text")
+    .map((b) => b.value)
     .join(" ");
 }
 
 async function fetchImageAsBase64(url: string): Promise<string> {
   const response = await fetch(url);
   const buffer = await response.arrayBuffer();
-  return Buffer.from(buffer).toString('base64');
+  return Buffer.from(buffer).toString("base64");
 }
 
 function formatTextContent(text: string): string {
-  if (!text || typeof text !== 'string') return text;
+  if (!text || typeof text !== "string") return text;
   let formatted = text;
-  formatted = formatted.replace(/\s+/g, ' ');
-  formatted = formatted.replace(/\s([.,!?;:])/g, '$1');
-  formatted = formatted.replace(/([.,!?;:])([^\s])/g, '$1 $2');
-  if (formatted.length > 0 && !formatted.match(/[.!?]$/) && formatted.length > 20) {
-    formatted += '.';
+  formatted = formatted.replace(/\s+/g, " ");
+  formatted = formatted.replace(/\s([.,!?;:])/g, "$1");
+  formatted = formatted.replace(/([.,!?;:])([^\s])/g, "$1 $2");
+  if (
+    formatted.length > 0 &&
+    !formatted.match(/[.!?]$/) &&
+    formatted.length > 20
+  ) {
+    formatted += ".";
   }
-  formatted = formatted.replace(/(\d+)\s*([+\-*/^=])\s*(\d+)/g, '$1 $2 $3');
+  formatted = formatted.replace(/(\d+)\s*([+\-*/^=])\s*(\d+)/g, "$1 $2 $3");
   return formatted.trim();
 }
 
 function deduplicateTextContent(text: string): string {
-  if (!text || typeof text !== 'string') return text;
-  const sentences = text.split(/([.!?]+\s+)/).filter(s => s.trim());
+  if (!text || typeof text !== "string") return text;
+  const sentences = text.split(/([.!?]+\s+)/).filter((s) => s.trim());
   const seen = new Set<string>();
   const uniqueSentences: string[] = [];
   for (const sentence of sentences) {
@@ -51,7 +54,7 @@ function deduplicateTextContent(text: string): string {
       uniqueSentences.push(sentence);
     }
   }
-  return uniqueSentences.join('');
+  return uniqueSentences.join("");
 }
 
 function removeDuplicateBlocks(blocks: any[]): any[] {
@@ -89,14 +92,21 @@ function isQuotaError(error: any): boolean {
   const msg = (error?.message || error?.toString() || "").toLowerCase();
   const status = error?.status || error?.code || error?.httpCode || 0;
   if (status === 429 || status === "429") return true;
-  return msg.includes("quota") || msg.includes("rate") || msg.includes("429") || msg.includes("resource_exhausted") || msg.includes("too many requests") || msg.includes("limit");
+  return (
+    msg.includes("quota") ||
+    msg.includes("rate") ||
+    msg.includes("429") ||
+    msg.includes("resource_exhausted") ||
+    msg.includes("too many requests") ||
+    msg.includes("limit")
+  );
 }
 
 async function callWithRetry(
   fn: () => Promise<any>,
   maxRetries: number = 5,
   baseDelayMs: number = 5000,
-  onRetry?: (attempt: number, waitSec: number) => void
+  onRetry?: (attempt: number, waitSec: number) => void,
 ): Promise<any> {
   let lastError: any;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -105,10 +115,11 @@ async function callWithRetry(
     } catch (error: any) {
       lastError = error;
       if (isQuotaError(error) && attempt < maxRetries) {
-        const waitMs = baseDelayMs * Math.pow(2, attempt) + Math.random() * 2000;
+        const waitMs =
+          baseDelayMs * Math.pow(2, attempt) + Math.random() * 2000;
         const waitSec = Math.round(waitMs / 1000);
         onRetry?.(attempt + 1, waitSec);
-        await new Promise(resolve => setTimeout(resolve, waitMs));
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
       } else {
         throw error;
       }
@@ -135,8 +146,6 @@ export default async function handler(
   if (!admin) return;
 
   const selectedModel = getModelName(model);
-  console.log(`[ProcessQuestions] Using model: ${selectedModel}, processing ${questionIds.length} questions`);
-
   const opts = getGeminiClientOptions();
   const ai = new GoogleGenAI({
     apiKey: opts.apiKey,
@@ -153,7 +162,9 @@ export default async function handler(
   const total = questionIds.length;
 
   let aborted = false;
-  req.on("close", () => { aborted = true; });
+  req.on("close", () => {
+    aborted = true;
+  });
 
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -185,13 +196,20 @@ export default async function handler(
 
   sendEvent({
     type: "progress",
-    current: 0, total, updated: 0, skipped: 0, failed: 0,
+    current: 0,
+    total,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
     message: `Starting processing for ${total} questions (fix formatting + generate explanations)...`,
   });
 
   const BATCH_SIZE = 5;
 
-  async function processOneQuestion(questionId: string, idx: number): Promise<"updated" | "skipped"> {
+  async function processOneQuestion(
+    questionId: string,
+    idx: number,
+  ): Promise<"updated" | "skipped"> {
     const doc = await questionsRef.doc(questionId).get();
 
     if (!doc.exists) {
@@ -212,15 +230,19 @@ export default async function handler(
 
     let choicesText = "";
     const choiceLetters: string[] = [];
-    Object.entries(question.choices ?? {}).forEach(([letter, blocks]: [string, any]) => {
-      const ct = flattenChoiceText(blocks);
-      choicesText += `${letter}. ${ct}\n`;
-      choiceLetters.push(letter);
-    });
+    Object.entries(question.choices ?? {}).forEach(
+      ([letter, blocks]: [string, any]) => {
+        const ct = flattenChoiceText(blocks);
+        choicesText += `${letter}. ${ct}\n`;
+        choiceLetters.push(letter);
+      },
+    );
 
     const correctLabel = String.fromCharCode(65 + question.answerIndex);
     const correctAnswerBlocks = question.choices?.[correctLabel];
-    const correctAnswer = correctAnswerBlocks ? flattenChoiceText(correctAnswerBlocks) : "";
+    const correctAnswer = correctAnswerBlocks
+      ? flattenChoiceText(correctAnswerBlocks)
+      : "";
 
     const tasks: string[] = [];
     const jsonFields: string[] = [];
@@ -231,7 +253,9 @@ Fix ONLY formatting issues in the question text and answer choices. Do NOT chang
 Only fix: math notation, chemical formulas, symbols, spacing, punctuation spacing, missing periods.
 Do NOT change words, rephrase, fix grammar, or add content.`);
       jsonFields.push(`"fixed_question": "the formatting-fixed question text"`);
-      jsonFields.push(`"fixed_choices": {${choiceLetters.map(l => `"${l}": "formatting-fixed choice ${l}"`).join(", ")}}`);
+      jsonFields.push(
+        `"fixed_choices": {${choiceLetters.map((l) => `"${l}": "formatting-fixed choice ${l}"`).join(", ")}}`,
+      );
     }
 
     if (needsExplanation) {
@@ -255,7 +279,9 @@ ONLY include this section if there is ONE highly tempting wrong answer that repr
 
 Keep the ENTIRE explanation to about 100-150 words. Be clear, concise, and student-friendly. Use \\n for newlines.
 For math and equations use LaTeX inside single dollar signs, e.g. $P(t) = 1200 - 1000e^{-0.16t}$ or $\\frac{dP}{dt}$. Do not use backticks for math.`);
-      jsonFields.push(`"explanation": "your concise explanation with \\n for newlines"`);
+      jsonFields.push(
+        `"explanation": "your concise explanation with \\n for newlines"`,
+      );
     }
 
     let combinedPrompt = `You are an expert AP tutor. Process this AP exam question.
@@ -288,8 +314,8 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no code fences, no extra tex
             promptParts.push({
               inlineData: {
                 mimeType: "image/png",
-                data: base64Data
-              }
+                data: base64Data,
+              },
             });
           } catch (err) {
             console.error(`Failed to fetch image ${block.url}:`, err);
@@ -306,8 +332,8 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no code fences, no extra tex
             promptParts.push({
               inlineData: {
                 mimeType: "image/png",
-                data: base64Data
-              }
+                data: base64Data,
+              },
             });
           } catch (err) {
             console.error(`Failed to fetch choice image ${block.url}:`, err);
@@ -317,21 +343,24 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no code fences, no extra tex
     }
 
     const result = await callWithRetry(
-      () => ai.models.generateContent({
-        model: selectedModel,
-        contents: [{ role: "user", parts: promptParts }],
-      }),
-      5, 5000,
-      (attempt, waitSec) => {
-        console.log(`Rate limit hit Q${idx + 1}, retry ${attempt}/5 — waiting ${waitSec}s...`);
-      }
+      () =>
+        ai.models.generateContent({
+          model: selectedModel,
+          contents: [{ role: "user", parts: promptParts }],
+        }),
+      5,
+      5000,
+      (attempt, waitSec) => {},
     );
 
     let responseText = result.text?.trim() || "";
-    responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    responseText = responseText
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
+      .trim();
 
-    const firstBrace = responseText.indexOf('{');
-    const lastBrace = responseText.lastIndexOf('}');
+    const firstBrace = responseText.indexOf("{");
+    const lastBrace = responseText.lastIndexOf("}");
     if (firstBrace !== -1 && lastBrace > firstBrace) {
       responseText = responseText.substring(firstBrace, lastBrace + 1);
     }
@@ -341,13 +370,17 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no code fences, no extra tex
       parsed = JSON.parse(responseText);
     } catch (parseErr) {
       const sanitized = responseText
-        .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\t' ? ch : '')
-        .replace(/\n/g, '\\n')
-        .replace(/\t/g, '\\t');
+        .replace(/[\x00-\x1F\x7F]/g, (ch) =>
+          ch === "\n" || ch === "\t" ? ch : "",
+        )
+        .replace(/\n/g, "\\n")
+        .replace(/\t/g, "\\t");
       try {
         parsed = JSON.parse(sanitized);
       } catch {
-        throw new Error(`JSON parse failed: ${(responseText).substring(0, 120)}...`);
+        throw new Error(
+          `JSON parse failed: ${responseText.substring(0, 120)}...`,
+        );
       }
     }
 
@@ -368,7 +401,10 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no code fences, no extra tex
         for (const [letter, blocks] of Object.entries(question.choices ?? {})) {
           const correctedBlocks = (blocks as any[]).map((block: any) => {
             if (block.type === "text") {
-              return { ...block, value: parsed.fixed_choices[letter] || block.value };
+              return {
+                ...block,
+                value: parsed.fixed_choices[letter] || block.value,
+              };
             }
             return block;
           });
@@ -390,25 +426,35 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no code fences, no extra tex
     }
 
     await doc.ref.update(updateData);
-    console.log(`Processed question ${doc.id} (${idx + 1}/${total})`);
     return "updated";
   }
 
-  for (let batchStart = 0; batchStart < questionIds.length; batchStart += BATCH_SIZE) {
+  for (
+    let batchStart = 0;
+    batchStart < questionIds.length;
+    batchStart += BATCH_SIZE
+  ) {
     if (aborted) {
-      console.log("Client disconnected, stopping processing.");
       break;
     }
 
     const batchEnd = Math.min(batchStart + BATCH_SIZE, questionIds.length);
     const batch = questionIds.slice(batchStart, batchEnd);
 
-    sendEvent({ type: "progress", current: batchStart, total, updated, skipped, failed, message: `Processing batch ${Math.floor(batchStart / BATCH_SIZE) + 1} (Q${batchStart + 1}-${batchEnd})...` });
+    sendEvent({
+      type: "progress",
+      current: batchStart,
+      total,
+      updated,
+      skipped,
+      failed,
+      message: `Processing batch ${Math.floor(batchStart / BATCH_SIZE) + 1} (Q${batchStart + 1}-${batchEnd})...`,
+    });
 
     const results = await Promise.allSettled(
       batch.map((questionId: string, batchIdx: number) =>
-        processOneQuestion(questionId, batchStart + batchIdx)
-      )
+        processOneQuestion(questionId, batchStart + batchIdx),
+      ),
     );
 
     for (const result of results) {
@@ -420,18 +466,29 @@ IMPORTANT: Return ONLY valid JSON with no markdown, no code fences, no extra tex
         failed++;
         const error = result.reason;
         const isQuota = isQuotaError(error);
-        console.error(`Failed to process question:`, isQuota ? "Quota exhausted" : error?.message);
+        console.error(
+          `Failed to process question:`,
+          isQuota ? "Quota exhausted" : error?.message,
+        );
       }
     }
 
-    sendEvent({ type: "progress", current: processed, total, updated, skipped, failed, message: `Batch done — ${updated} updated, ${skipped} skipped, ${failed} failed (${processed}/${total})` });
+    sendEvent({
+      type: "progress",
+      current: processed,
+      total,
+      updated,
+      skipped,
+      failed,
+      message: `Batch done — ${updated} updated, ${skipped} skipped, ${failed} failed (${processed}/${total})`,
+    });
   }
-
-  console.log(`Completed: Processed ${updated}/${total} questions (${skipped} skipped, ${failed} failed)`);
-
   sendEvent({
     type: "complete",
-    total, updated, skipped, failed,
+    total,
+    updated,
+    skipped,
+    failed,
     message: `Done! Processed ${updated} questions (fixed formatting + generated explanations). ${skipped} skipped, ${failed} failed.`,
   });
 

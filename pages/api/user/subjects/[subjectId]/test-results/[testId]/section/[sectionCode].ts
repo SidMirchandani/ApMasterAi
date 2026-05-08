@@ -3,11 +3,19 @@ import { assertNotBanned } from "../../../../../../../../server/api-user-auth";
 import { storage } from "../../../../../../../../server/storage";
 import { getClientIp } from "../../../../../../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
+async function getOrCreateUser(
+  firebaseUid: string,
+  req: NextApiRequest,
+): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
 
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, undefined, getClientIp(req));
+    user = await storage.createUser(
+      firebaseUid,
+      `${firebaseUid}@firebase.user`,
+      undefined,
+      getClientIp(req),
+    );
   }
 
   return user.id;
@@ -34,7 +42,8 @@ export default async function handler(
     const token = authHeader.split(" ")[1];
     let decodedToken;
     try {
-      const { verifyFirebaseToken } = await import("../../../../../../../../server/firebase-admin");
+      const { verifyFirebaseToken } =
+        await import("../../../../../../../../server/firebase-admin");
       decodedToken = await verifyFirebaseToken(token);
     } catch (error) {
       return res.status(401).json({ success: false, message: "Invalid token" });
@@ -46,7 +55,14 @@ export default async function handler(
     const userId = await getOrCreateUser(firebaseUid, req);
 
     const { subjectId, testId, sectionCode } = req.query;
-    if (!subjectId || typeof subjectId !== "string" || !testId || typeof testId !== "string" || !sectionCode || typeof sectionCode !== "string") {
+    if (
+      !subjectId ||
+      typeof subjectId !== "string" ||
+      !testId ||
+      typeof testId !== "string" ||
+      !sectionCode ||
+      typeof sectionCode !== "string"
+    ) {
       return res.status(400).json({
         success: false,
         message: "Valid subject ID, test ID, and section code are required",
@@ -72,7 +88,11 @@ export default async function handler(
         subjectId as string,
         testId as string,
       );
-      if (unitResult && unitResult.sectionCode === sectionCode && Array.isArray(unitResult.questions)) {
+      if (
+        unitResult &&
+        unitResult.sectionCode === sectionCode &&
+        Array.isArray(unitResult.questions)
+      ) {
         testData = unitResult;
       }
     }
@@ -80,7 +100,8 @@ export default async function handler(
     if (!testData) {
       return res.status(404).json({
         success: false,
-        message: "Test data not found. You may be logged in with a different account than the one that took this test.",
+        message:
+          "Test data not found. You may be logged in with a different account than the one that took this test.",
       });
     }
 
@@ -106,63 +127,35 @@ export default async function handler(
     });
 
     // Use centralized section lookup
-    const { getSectionByCode, getApiCodeForSubject } = await import('../../../../../../../../server/subjects-helper');
-
-    console.log('🔍 [Section API] Section lookup START:', {
-      subjectId,
-      sectionCode,
-      testId
-    });
-
+    const { getSectionByCode, getApiCodeForSubject } =
+      await import("../../../../../../../../server/subjects-helper");
     const apiCode = getApiCodeForSubject(subjectId as string);
-    console.log('🔍 [Section API] API code lookup:', {
-      input: subjectId,
-      apiCode,
-      found: !!apiCode
-    });
-
-    const sectionInfo = getSectionByCode(apiCode || subjectId as string, sectionCode as string);
-    console.log('🔍 [Section API] Section info lookup:', {
-      lookupKey: apiCode || subjectId,
-      sectionCode,
-      sectionInfo,
-      found: !!sectionInfo
-    });
-
+    const sectionInfo = getSectionByCode(
+      apiCode || (subjectId as string),
+      sectionCode as string,
+    );
     const info = sectionInfo || {
       title: sectionCode as string,
-      description: 'Unknown section'
+      description: "Unknown section",
     };
-
-    console.log('🔍 [Section API] Final info object:', info);
-
     // For "all" section, return entire test
-      if (sectionCode === "all") {
-        console.log("📤 Returning full test data for 'all' section");
-        return res.status(200).json({
-          success: true,
-          data: {
-            questions: testData.questions,
-            userAnswers: testData.userAnswers,
-            sectionBreakdown: testData.sectionBreakdown,
-          },
-        });
-      }
+    if (sectionCode === "all") {
+      return res.status(200).json({
+        success: true,
+        data: {
+          questions: testData.questions,
+          userAnswers: testData.userAnswers,
+          sectionBreakdown: testData.sectionBreakdown,
+        },
+      });
+    }
 
     const responseData = {
       questions: questionsWithOriginalIndex, // Use questionsWithOriginalIndex here
       userAnswers: sectionUserAnswers,
       sectionName: info.title,
-      sectionDescription: info.description
+      sectionDescription: info.description,
     };
-
-    console.log('📤 [Section API] Sending response:', {
-      questionCount: responseData.questions.length,
-      userAnswerCount: Object.keys(responseData.userAnswers).length,
-      sectionName: responseData.sectionName,
-      sectionDescription: responseData.sectionDescription
-    });
-
     return res.status(200).json({
       success: true,
       data: responseData,

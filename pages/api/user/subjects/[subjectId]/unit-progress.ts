@@ -3,14 +3,18 @@ import { assertNotBanned } from "../../../../../server/api-user-auth";
 import { storage } from "../../../../../server/storage";
 import { getClientIp } from "../../../../../server/client-ip";
 
-async function getOrCreateUser(firebaseUid: string, req: NextApiRequest): Promise<string> {
+async function getOrCreateUser(
+  firebaseUid: string,
+  req: NextApiRequest,
+): Promise<string> {
   let user = await storage.getUserByFirebaseUid(firebaseUid);
 
   if (!user) {
-    user = await storage.createUser(firebaseUid, `${firebaseUid}@firebase.user`, undefined, getClientIp(req));
-    console.log(
-      "[unit-progress API] Created new user for Firebase UID:",
+    user = await storage.createUser(
       firebaseUid,
+      `${firebaseUid}@firebase.user`,
+      undefined,
+      getClientIp(req),
     );
   }
 
@@ -30,9 +34,8 @@ export default async function handler(
     const token = authHeader.split(" ")[1];
     let decodedToken;
     try {
-      const { verifyFirebaseToken } = await import(
-        "../../../../../server/firebase-admin"
-      );
+      const { verifyFirebaseToken } =
+        await import("../../../../../server/firebase-admin");
       decodedToken = await verifyFirebaseToken(token);
     } catch (error) {
       console.error("[unit-progress API] Token verification failed:", error);
@@ -56,15 +59,6 @@ export default async function handler(
       case "PUT": {
         const { unitId: rawUnitId, mcqScore } = req.body;
         const unitId = rawUnitId != null ? String(rawUnitId) : "";
-
-        console.log("[unit-progress API] PUT payload", {
-          userId,
-          subjectId,
-          rawUnitId,
-          unitId,
-          mcqScore,
-        });
-
         if (!unitId) {
           console.warn("[unit-progress API] Missing unitId");
           return res.status(400).json({
@@ -87,14 +81,6 @@ export default async function handler(
           unitId,
           mcqScore,
         );
-
-        console.log("[unit-progress API] updateUnitProgress OK", {
-          userId,
-          subjectId,
-          unitId,
-          mcqScore,
-        });
-
         return res.status(200).json({
           success: true,
           message: "Unit progress updated successfully",

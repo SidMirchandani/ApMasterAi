@@ -3,12 +3,32 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Loader2, Mail, Lock, ArrowLeft, Brain, Zap, Target } from "lucide-react";
-import { loginWithEmail, signInWithGoogle, getGoogleRedirectResult } from "@/lib/auth";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  Mail,
+  Lock,
+  ArrowLeft,
+  Brain,
+  Zap,
+  Target,
+} from "lucide-react";
+import {
+  loginWithEmail,
+  signInWithGoogle,
+  getGoogleRedirectResult,
+} from "@/lib/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { ApMasterLogoMark } from "@/components/ui/ap-master-logo-mark";
@@ -60,7 +80,6 @@ export default function Login() {
           sessionStorage.removeItem("googleRedirectPending");
         }
         setRedirectPending(false);
-        console.log("Session detected, redirecting...");
         router.replace("/dashboard");
         return;
       }
@@ -119,13 +138,19 @@ export default function Login() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (error) setError("");
   };
 
   const validateForm = () => {
-    if (!formData.email || !formData.password) { setError("Please fill in all fields"); return false; }
-    if (formData.password.length < 6) { setError("Password must be at least 6 characters long"); return false; }
+    if (!formData.email || !formData.password) {
+      setError("Please fill in all fields");
+      return false;
+    }
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return false;
+    }
     return true;
   };
 
@@ -135,8 +160,14 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      await loginWithEmail({ email: formData.email, password: formData.password });
-      toast({ title: "Welcome back!", description: "You have successfully logged in." });
+      await loginWithEmail({
+        email: formData.email,
+        password: formData.password,
+      });
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully logged in.",
+      });
       router.replace("/dashboard");
     } catch (error: any) {
       setError(error.message);
@@ -164,16 +195,28 @@ export default function Login() {
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-950">
         {/* Animated mesh */}
         <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-[100px] animate-blob" style={{ animationDuration: "8s" }} />
-          <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] bg-violet-500/15 rounded-full blur-[100px] animate-blob" style={{ animationDuration: "10s", animationDelay: "3s" }} />
-          <div className="absolute top-1/2 right-1/3 w-[250px] h-[250px] bg-cyan-500/10 rounded-full blur-[80px] animate-blob" style={{ animationDuration: "12s", animationDelay: "5s" }} />
+          <div
+            className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-[100px] animate-blob"
+            style={{ animationDuration: "8s" }}
+          />
+          <div
+            className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] bg-violet-500/15 rounded-full blur-[100px] animate-blob"
+            style={{ animationDuration: "10s", animationDelay: "3s" }}
+          />
+          <div
+            className="absolute top-1/2 right-1/3 w-[250px] h-[250px] bg-cyan-500/10 rounded-full blur-[80px] animate-blob"
+            style={{ animationDuration: "12s", animationDelay: "5s" }}
+          />
         </div>
 
         {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
-          backgroundSize: "40px 40px",
-        }} />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+            backgroundSize: "40px 40px",
+          }}
+        />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
@@ -192,7 +235,8 @@ export default function Login() {
             <span className="text-gradient">smarter learning</span>
           </h2>
           <p className="text-lg text-slate-400 max-w-md mb-12 leading-relaxed">
-            Pick up right where you left off. Your personalized study plan is waiting.
+            Pick up right where you left off. Your personalized study plan is
+            waiting.
           </p>
 
           {/* Feature pills */}
@@ -236,7 +280,10 @@ export default function Login() {
           {/* Logo on mobile */}
           <div className="lg:hidden mb-8">
             <Link href="/" className="inline-flex items-center gap-2.5">
-              <ApMasterLogoMark size={40} className="rounded-xl shadow-glow-sm" />
+              <ApMasterLogoMark
+                size={40}
+                className="rounded-xl shadow-glow-sm"
+              />
               <span className="text-xl font-display font-bold text-slate-900 dark:text-white">
                 APMaster
               </span>
@@ -254,7 +301,10 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 dark:text-slate-300 font-medium text-sm">
+              <Label
+                htmlFor="email"
+                className="text-slate-700 dark:text-slate-300 font-medium text-sm"
+              >
                 Email address
               </Label>
               <div className="relative">
@@ -273,7 +323,10 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700 dark:text-slate-300 font-medium text-sm">
+              <Label
+                htmlFor="password"
+                className="text-slate-700 dark:text-slate-300 font-medium text-sm"
+              >
                 Password
               </Label>
               <div className="relative">
@@ -293,7 +346,11 @@ export default function Login() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4.5 h-4.5" />
+                  ) : (
+                    <Eye className="w-4.5 h-4.5" />
+                  )}
                 </button>
               </div>
               <div className="flex justify-center pt-1">
@@ -338,7 +395,9 @@ export default function Login() {
                 <span className="w-full border-t border-slate-200 dark:border-slate-700" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white dark:bg-slate-950 px-3 text-slate-400 font-medium">Or</span>
+                <span className="bg-white dark:bg-slate-950 px-3 text-slate-400 font-medium">
+                  Or
+                </span>
               </div>
             </div>
 
@@ -350,17 +409,32 @@ export default function Login() {
               className="w-full h-12 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all duration-300 font-semibold"
             >
               <svg className="mr-2.5 w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                />
               </svg>
               Continue with Google
             </Button>
 
             <p className="text-center pt-4 text-sm text-slate-500 dark:text-slate-400">
               Don&apos;t have an account?{" "}
-              <Link href="/signup" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold transition-colors">
+              <Link
+                href="/signup"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold transition-colors"
+              >
                 Sign up free
               </Link>
             </p>

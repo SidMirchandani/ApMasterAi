@@ -30,18 +30,10 @@ export class DatabaseHealthMonitor {
         );
 
         if (this.consecutiveFailures >= this.MAX_CONSECUTIVE_FAILURES) {
-          console.log("[DB Health] Too many failures, forcing recovery...");
           await databaseManager.forceReconnect();
           this.consecutiveFailures = 0;
         }
       } else {
-        if (this.consecutiveFailures > 0) {
-          console.log(
-            "[DB Health] Restored after",
-            this.consecutiveFailures,
-            "failures",
-          );
-        }
         this.consecutiveFailures = 0;
       }
     } catch (error) {

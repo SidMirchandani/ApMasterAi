@@ -1,9 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import { getFirebaseAdmin } from "../../../server/firebase-admin";
-import { getModelName, getGeminiClientOptions } from "../../../lib/gemini-models";
+import {
+  getModelName,
+  getGeminiClientOptions,
+} from "../../../lib/gemini-models";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
-import { flattenPromptText, callWithRetry, STUDY_NOTE_PROMPT } from "../../../server/study-notes-helpers";
+import {
+  flattenPromptText,
+  callWithRetry,
+  STUDY_NOTE_PROMPT,
+} from "../../../server/study-notes-helpers";
 import { getDb } from "../../../server/db";
 import { isPlatformAdmin } from "../../../server/platform-admin";
 import { requireAdmin } from "../../../server/next-api-auth";
@@ -55,7 +62,9 @@ export default async function handler(
   const total = questionIds.length;
 
   let aborted = false;
-  req.on("close", () => { aborted = true; });
+  req.on("close", () => {
+    aborted = true;
+  });
 
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -95,7 +104,6 @@ export default async function handler(
     const questionId = questionIds[i];
 
     if (aborted) {
-      console.log("Client disconnected, stopping study notes generation.");
       break;
     }
 
@@ -134,8 +142,12 @@ export default async function handler(
 
       const questionText = question.prompt_blocks
         ? flattenPromptText(question.prompt_blocks)
-        : (question.prompt || "");
-      const answer = question.correct_answer || (question.answerIndex != null ? String.fromCharCode(65 + Number(question.answerIndex)) : "");
+        : question.prompt || "";
+      const answer =
+        question.correct_answer ||
+        (question.answerIndex != null
+          ? String.fromCharCode(65 + Number(question.answerIndex))
+          : "");
       const explanation = question.explanation || "";
 
       sendEvent({
@@ -148,7 +160,8 @@ export default async function handler(
         message: `Generating study note for Q${i + 1}/${total}...`,
       });
 
-      const subjectName = getSubjectDisplayName(question.subject_code || "") || "AP";
+      const subjectName =
+        getSubjectDisplayName(question.subject_code || "") || "AP";
       const promptText = STUDY_NOTE_PROMPT.replace("{{SUBJECT}}", subjectName)
         .replace("{{QUESTION}}", questionText)
         .replace("{{ANSWER}}", answer)
@@ -172,7 +185,7 @@ export default async function handler(
             failed,
             message: `Rate limit hit — waiting ${waitSec}s before retry ${attempt}/5...`,
           });
-        }
+        },
       );
 
       const paragraph = (result.text || "").trim();
@@ -192,7 +205,7 @@ export default async function handler(
 
       const existingTags: string[] = question.tags || [];
       const otherTags = existingTags.filter(
-        (t: string) => typeof t !== "string" || !t.startsWith("study_note:")
+        (t: string) => typeof t !== "string" || !t.startsWith("study_note:"),
       );
 
       await doc.ref.update({
@@ -224,7 +237,12 @@ export default async function handler(
               lintErrors: [],
               lintWarnings: [],
               imageErrors: [],
-              issues: [(error?.message || "Study notes generation failed").slice(0, 500)],
+              issues: [
+                (error?.message || "Study notes generation failed").slice(
+                  0,
+                  500,
+                ),
+              ],
               checks: null,
               confidence: null,
             },

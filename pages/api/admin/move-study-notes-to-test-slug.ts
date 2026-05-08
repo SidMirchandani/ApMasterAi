@@ -1,5 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getFirebaseAdmin, verifyFirebaseToken } from "../../../server/firebase-admin";
+import {
+  getFirebaseAdmin,
+  verifyFirebaseToken,
+} from "../../../server/firebase-admin";
 import { getDb } from "../../../server/db";
 import { isPlatformAdmin } from "../../../server/platform-admin";
 
@@ -13,13 +16,19 @@ export const config = {
 
 function getStudyNoteFromTags(tags: string[] | undefined): string {
   if (!Array.isArray(tags)) return "";
-  const tag = tags.find((t) => typeof t === "string" && t.startsWith("study_note:"));
-  return tag ? String(tag).replace(/^study_note:\s*/, "").trim() : "";
+  const tag = tags.find(
+    (t) => typeof t === "string" && t.startsWith("study_note:"),
+  );
+  return tag
+    ? String(tag)
+        .replace(/^study_note:\s*/, "")
+        .trim()
+    : "";
 }
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -97,7 +106,6 @@ export default async function handler(
     const questionId = questionIds[i];
 
     if (aborted) {
-      console.log("Client disconnected, stopping move-study-notes.");
       break;
     }
 
@@ -135,7 +143,7 @@ export default async function handler(
       }
 
       const otherTags = (data.tags || []).filter(
-        (t: string) => typeof t !== "string" || !t.startsWith("study_note:")
+        (t: string) => typeof t !== "string" || !t.startsWith("study_note:"),
       );
 
       await doc.ref.update({
