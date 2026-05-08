@@ -1,0 +1,9 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0f172a"/>
+  <rect x="72" y="72" width="1056" height="486" rx="24" fill="#ffffff"/>
+  <text x="120" y="220" fill="#0f172a" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="700">APMaster</text>
+  <text x="120" y="305" fill="#2563eb" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700">AI-Powered AP Exam Practice</text>
+  <text x="120" y="385" fill="#334155" font-family="Arial, Helvetica, sans-serif" font-size="34">Practice questions, instant scoring, and targeted review.</text>
+  <rect x="120" y="445" width="278" height="56" rx="28" fill="#16a34a"/>
+  <text x="154" y="483" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">apmaster.ai</text>
+</svg>
