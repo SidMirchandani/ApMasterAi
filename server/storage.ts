@@ -8,6 +8,7 @@ import {
   incrementQuestionAnswered,
   incrementQuizTaken,
 } from './user-stats';
+import { attachAdminUserListForInitialSet } from './admin-user-list';
 import { buildUserSearchFields } from './user-search-fields';
 
 export interface UserSubject {
@@ -256,17 +257,23 @@ export class Storage {
         } as User;
       }
 
+      const displayForSearch = username ?? firebaseUid;
       const user: Omit<User, 'id'> & { firebaseUid: string; [k: string]: unknown } = {
         firebaseUid,
         email,
         username,
         createdAt: new Date(),
         ...buildUserSearchFields({
-          displayName: username ?? firebaseUid,
-          username: username ?? firebaseUid,
+          displayName: displayForSearch,
+          username: displayForSearch,
           email,
         }),
       };
+      attachAdminUserListForInitialSet(user, {
+        email,
+        username: displayForSearch,
+        displayName: displayForSearch,
+      });
 
       await docRef.set(user);
 

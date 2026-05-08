@@ -4,6 +4,7 @@ import type { NextApiRequest } from "next";
 import type { IncomingHttpHeaders } from "node:http";
 import { getClientIp } from "./client-ip";
 import { lookupUsStateFromIpWithReason } from "./us-state-from-ip";
+import { mergeAdminUserListIntoFirestorePatch } from "./admin-user-list";
 import { buildUserSearchFields } from "./user-search-fields";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -119,6 +120,17 @@ export async function maybeUpdateUserGeoStateFromIp(
         inferredState: inferredStateForSearch,
       }),
     );
+
+    mergeAdminUserListIntoFirestorePatch(update, {
+      email,
+      username:
+        typeof data.username === "string"
+          ? data.username
+          : typeof data.displayName === "string"
+            ? data.displayName
+            : null,
+      displayName,
+    });
 
     await ref.update(update);
 

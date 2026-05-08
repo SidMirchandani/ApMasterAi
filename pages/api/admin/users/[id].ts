@@ -3,6 +3,7 @@ import { getFirebaseAdmin } from "../../../../server/firebase-admin";
 import { getDb } from "../../../../server/db";
 import { isAdminEmailFromEnv, isPlatformAdmin } from "../../../../server/platform-admin";
 import { requireAdmin } from "../../../../server/next-api-auth";
+import { mergeAdminUserListIntoFirestorePatch } from "../../../../server/admin-user-list";
 import { buildUserSearchFields } from "../../../../server/user-search-fields";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -111,6 +112,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       inferredState: resolvedState,
     }),
   );
+
+  mergeAdminUserListIntoFirestorePatch(patch, {
+    email: typeof targetData.email === "string" ? targetData.email : targetEmail,
+    username:
+      typeof targetData.username === "string"
+        ? targetData.username
+        : typeof targetData.displayName === "string"
+          ? targetData.displayName
+          : null,
+    displayName:
+      typeof targetData.displayName === "string"
+        ? targetData.displayName
+        : typeof targetData.username === "string"
+          ? targetData.username
+          : null,
+  });
 
   if (typeof wantBanned === "boolean") {
     if (!firebaseAdmin) {

@@ -4,7 +4,15 @@ import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { isPlatformAdmin } from "../../../server/platform-admin";
 import { maybeUpdateUserGeoState } from "../../../server/user-geo-state";
+import {
+  attachAdminUserListForInitialSet,
+  mergeAdminUserListIntoFirestorePatch,
+} from "../../../server/admin-user-list";
 import { buildUserSearchFields } from "../../../server/user-search-fields";
+import {
+  isFirstTouchPayloadEmpty,
+  normalizeFirstTouchAttributionFromRequestBody,
+} from "../../../lib/attribution";
 
 export default async function handler(
   req: NextApiRequest,
@@ -26,7 +34,8 @@ export default async function handler(
     if (!(await assertNotBanned(res, decodedToken.uid))) return;
     const userId = decodedToken.uid;
 
-    const { displayName, email, photoURL, experimentalFeatures } = req.body;
+    const { displayName, email, photoURL, experimentalFeatures, firstTouchAttribution } =
+      req.body ?? {};
 
     // If only updating experimental features (no email), allow and skip profile validation
     const isExperimentalOnly =
@@ -85,6 +94,10 @@ export default async function handler(
       });
     }
 
+    const clientAttribution = normalizeFirstTouchAttributionFromRequestBody(
+      firstTouchAttribution
+    );
+
     // Use displayName or fall back to email prefix for Google users
     const displayNameValue = displayName?.trim() || (email as string).split("@")[0] || "User";
 
@@ -106,18 +119,43 @@ export default async function handler(
         email: String(email),
       }),
     };
+    const identitySrc = {
+      email: String(email),
+      username: displayNameValue,
+      displayName: displayNameValue,
+    };
+
     if (experimentalFeatures !== undefined && (await isPlatformAdmin(db, decodedToken.email, decodedToken.uid))) {
       userData.experimentalFeaturesEnabled = experimentalFeatures === true;
     }
 
     const userDoc = await userRef.get();
 
+    let attributionSettled = false;
+    const existingData = userDoc.exists ? userDoc.data() : null;
+    const alreadyHasFirstTouch = Boolean(
+      existingData && (existingData as { firstTouchCapturedAt?: string }).firstTouchCapturedAt
+    );
+
+    if (
+      clientAttribution &&
+      !isFirstTouchPayloadEmpty(clientAttribution)
+    ) {
+      attributionSettled = true;
+      if (!alreadyHasFirstTouch) {
+        userData.firstTouchAttribution = clientAttribution;
+        userData.firstTouchCapturedAt = new Date().toISOString();
+      }
+    }
+
     if (!userDoc.exists) {
+      attachAdminUserListForInitialSet(userData, identitySrc);
       await userRef.set({
         ...userData,
         createdAt: new Date().toISOString(),
       });
     } else {
+      mergeAdminUserListIntoFirestorePatch(userData, identitySrc);
       await userRef.update(userData);
     }
 
@@ -131,6 +169,7 @@ export default async function handler(
         lastName,
         displayName: displayNameValue,
         email,
+        ...(attributionSettled ? { attributionSettled: true as const } : {}),
       },
     });
   } catch (error) {

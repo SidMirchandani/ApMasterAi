@@ -1,7 +1,9 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { attributionFromRouterQuery } from '../lib/attribution';
+import { tryMergeAttributionFromPayload } from '../client/src/lib/attribution-storage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../client/src/contexts/auth-context';
 import { ThemeProvider } from '../client/src/contexts/theme-context';
@@ -108,6 +110,18 @@ function routeBaseTitle(pathname: string, query: Record<string, string | string[
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function FirstTouchAttributionCapture() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!router.isReady) return;
+    const payload = attributionFromRouterQuery(
+      router.query as Record<string, string | string[] | undefined>
+    );
+    tryMergeAttributionFromPayload(payload);
+  }, [router.isReady, router.query]);
+  return null;
+}
+
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const pageTitle = useMemo(() => {
@@ -126,6 +140,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <ThemeProvider>
         <TooltipProvider>
           <AuthProvider>
+            <FirstTouchAttributionCapture />
             <Component {...pageProps} />
             <Toaster />
           </AuthProvider>

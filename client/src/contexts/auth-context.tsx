@@ -4,6 +4,10 @@ import { auth, isFirebaseEnabled, waitForAuth } from "@/lib/firebase";
 import { AuthUser, convertFirebaseUser } from "@/lib/auth";
 import { initializeAuthPersistence, monitorAuthStability } from "@/lib/auth-persistence";
 import { AuthDomainHandler, initializeCrossDomainAuth } from "@/lib/auth-domain-handler";
+import {
+  clearPendingAttribution,
+  takePendingAttributionForRequest,
+} from "@/lib/attribution-storage";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -43,21 +47,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const saveUserProfile = async (firebaseUser: User) => {
     try {
       const token = await firebaseUser.getIdToken();
+      const pendingAttribution = takePendingAttributionForRequest();
+      const body: Record<string, unknown> = {
+        displayName: firebaseUser.displayName,
+        email: firebaseUser.email,
+        photoURL: firebaseUser.photoURL,
+      };
+      if (
+        pendingAttribution &&
+        Object.keys(pendingAttribution).length > 0
+      ) {
+        body.firstTouchAttribution = pendingAttribution;
+      }
+
       const response = await fetch('/api/user/profile', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          displayName: firebaseUser.displayName,
-          email: firebaseUser.email,
-          photoURL: firebaseUser.photoURL,
-        }),
+        body: JSON.stringify(body),
       });
+
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error('Failed to save user profile');
+      }
+
+      if (pendingAttribution && result?.data?.attributionSettled) {
+        clearPendingAttribution();
       }
 
       console.log('User profile saved successfully');

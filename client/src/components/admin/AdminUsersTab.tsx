@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Search,
   MoreVertical,
   User,
   Ban,
@@ -34,6 +33,13 @@ import {
   ArrowDown,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface AdminUser {
@@ -43,10 +49,136 @@ interface AdminUser {
   state: string | null;
   joinDate: string;
   totalCoursesEnrolled: number | null;
+  /** First-touch `referral` tag from signup attribution (see `lib/attribution`). */
+  referralAttribution: string | null;
   status: "active" | "banned";
   isAdmin: boolean;
   hasEnvAdmin: boolean;
   hasDbAdmin: boolean;
+}
+
+const US_STATE_CODES = [
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
+  "DC",
+] as const;
+
+type ColumnFilters = {
+  name: string;
+  email: string;
+  state: string;
+  joinFrom: string;
+  joinTo: string;
+  status: "" | "active" | "banned";
+  dbAdmin: "" | "yes" | "no";
+};
+
+const INITIAL_COLUMN_FILTERS: ColumnFilters = {
+  name: "",
+  email: "",
+  state: "",
+  joinFrom: "",
+  joinTo: "",
+  status: "",
+  dbAdmin: "",
+};
+
+function buildFilterQueryParams(filters: ColumnFilters): URLSearchParams {
+  const qs = new URLSearchParams({ limit: "100" });
+  const email = filters.email.trim().toLowerCase();
+  const name = filters.name.trim().toLowerCase();
+  if (email) {
+    qs.set("filterEmailPrefix", email);
+    return qs;
+  }
+  if (name) {
+    qs.set("filterNamePrefix", name);
+    return qs;
+  }
+  if (filters.state.trim()) {
+    qs.set("filterState", filters.state.trim().toUpperCase());
+    return qs;
+  }
+  if (filters.status === "active" || filters.status === "banned") {
+    qs.set("filterStatus", filters.status);
+    return qs;
+  }
+  if (filters.dbAdmin === "yes") {
+    qs.set("filterDbAdmin", "true");
+    return qs;
+  }
+  if (filters.dbAdmin === "no") {
+    qs.set("filterDbAdmin", "false");
+    return qs;
+  }
+  const jf = filters.joinFrom.trim();
+  const jt = filters.joinTo.trim();
+  if (jf || jt) {
+    if (jf) qs.set("filterJoinFrom", `${jf}T00:00:00.000Z`);
+    if (jt) qs.set("filterJoinTo", `${jt}T23:59:59.999Z`);
+    return qs;
+  }
+  return qs;
+}
+
+function columnFiltersAreBrowse(f: ColumnFilters): boolean {
+  return (
+    !f.name.trim() &&
+    !f.email.trim() &&
+    !f.state.trim() &&
+    !f.joinFrom.trim() &&
+    !f.joinTo.trim() &&
+    f.status === "" &&
+    f.dbAdmin === ""
+  );
 }
 
 type UserSortKey =
@@ -54,6 +186,7 @@ type UserSortKey =
   | "email"
   | "state"
   | "joinDate"
+  | "referralAttribution"
   | "totalCoursesEnrolled"
   | "status"
   | "isAdmin";
@@ -90,9 +223,23 @@ function compareUsers(a: AdminUser, b: AdminUser, key: UserSortKey, dir: "asc" |
     }
     case "joinDate":
       return compareNullableTime(parseTime(a.joinDate), parseTime(b.joinDate), dir);
-    case "totalCoursesEnrolled":
-      cmp = a.totalCoursesEnrolled - b.totalCoursesEnrolled;
+    case "referralAttribution": {
+      const ra = (a.referralAttribution ?? "").toLowerCase();
+      const rb = (b.referralAttribution ?? "").toLowerCase();
+      const ea = a.referralAttribution == null || a.referralAttribution === "";
+      const eb = b.referralAttribution == null || b.referralAttribution === "";
+      if (ea && eb) cmp = 0;
+      else if (ea) cmp = 1;
+      else if (eb) cmp = -1;
+      else cmp = ra.localeCompare(rb, undefined, { sensitivity: "base" });
       break;
+    }
+    case "totalCoursesEnrolled": {
+      const na = typeof a.totalCoursesEnrolled === "number" ? a.totalCoursesEnrolled : -Infinity;
+      const nb = typeof b.totalCoursesEnrolled === "number" ? b.totalCoursesEnrolled : -Infinity;
+      cmp = na - nb;
+      break;
+    }
     case "status":
       cmp = a.status.localeCompare(b.status);
       break;
@@ -159,8 +306,6 @@ export function AdminUsersTab({
 }) {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchText, setSearchText] = useState("");
-  const [debouncedSearchText, setDebouncedSearchText] = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
   const [currentCursor, setCurrentCursor] = useState("");
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -168,6 +313,9 @@ export function AdminUsersTab({
   const [hasMore, setHasMore] = useState(false);
   const [sortKey, setSortKey] = useState<UserSortKey>("email");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const [filters, setFilters] = useState<ColumnFilters>(INITIAL_COLUMN_FILTERS);
+  const [debouncedFilters, setDebouncedFilters] = useState<ColumnFilters>(INITIAL_COLUMN_FILTERS);
 
   const sortedUsers = useMemo(() => {
     const arr = [...users];
@@ -184,56 +332,95 @@ export function AdminUsersTab({
     }
   }
 
+  /** Mutex: switching column clears others; join range keeps both dates together. */
+  const setColumnFilter = useCallback((patch: Partial<ColumnFilters>) => {
+    setFilters((prev) => {
+      const isJoinPatch = Object.prototype.hasOwnProperty.call(patch, "joinFrom") ||
+        Object.prototype.hasOwnProperty.call(patch, "joinTo");
+      if (isJoinPatch) {
+        return {
+          ...INITIAL_COLUMN_FILTERS,
+          joinFrom: patch.joinFrom !== undefined ? patch.joinFrom : prev.joinFrom,
+          joinTo: patch.joinTo !== undefined ? patch.joinTo : prev.joinTo,
+        };
+      }
+      return { ...INITIAL_COLUMN_FILTERS, ...patch };
+    });
+  }, []);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setDebouncedSearchText(searchText.trim());
+      setDebouncedFilters(filters);
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [searchText]);
+  }, [filters]);
+
+  const fetchUsersPage = useCallback(
+    async (cursor: string) => {
+      const isInitial = !cursor;
+      if (isInitial) setLoading(true);
+      else setLoadingMore(true);
+      try {
+        const qs = buildFilterQueryParams(debouncedFilters);
+        if (cursor) qs.set("cursor", cursor);
+        const res = await fetch(`/api/admin/users?${qs.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const errText = typeof json?.error === "string" ? json.error : "Failed to load users";
+          toast.error(errText, { id: "admin-users-load" });
+          if (isInitial) setUsers([]);
+          setNextCursor(null);
+          setHasMore(false);
+          if (isInitial) {
+            setCursorStack([]);
+            setCurrentCursor("");
+          }
+          return;
+        }
+        const rawUsers = json.data?.users || [];
+        setUsers(
+          rawUsers.map((u: AdminUser) => ({
+            ...u,
+            referralAttribution:
+              typeof u.referralAttribution === "string" && u.referralAttribution.trim()
+                ? u.referralAttribution.trim()
+                : null,
+          })),
+        );
+        const newNextCursor =
+          typeof json.data?.nextCursor === "string" && json.data.nextCursor.trim()
+            ? json.data.nextCursor.trim()
+            : null;
+        setNextCursor(newNextCursor);
+        setHasMore(Boolean(newNextCursor));
+        if (isInitial) {
+          setCursorStack([]);
+          setCurrentCursor("");
+        }
+        setCurrentCursor(cursor);
+      } catch {
+        toast.error("Failed to load users", { id: "admin-users-load" });
+        setUsers([]);
+        setNextCursor(null);
+        setHasMore(false);
+        if (isInitial) {
+          setCursorStack([]);
+          setCurrentCursor("");
+        }
+      } finally {
+        if (isInitial) setLoading(false);
+        else setLoadingMore(false);
+      }
+    },
+    [token, debouncedFilters],
+  );
 
   useEffect(() => {
     if (!token) return;
     void fetchUsersPage("");
-  }, [token, debouncedSearchText]);
-
-  async function fetchUsersPage(cursor: string) {
-    const isInitial = !cursor;
-    if (isInitial) setLoading(true);
-    else setLoadingMore(true);
-    try {
-      const qs = new URLSearchParams({ limit: "100" });
-      if (cursor) qs.set("cursor", cursor);
-      if (debouncedSearchText) qs.set("q", debouncedSearchText);
-      const res = await fetch(`/api/admin/users?${qs.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to load users");
-      const json = await res.json();
-      setUsers(json.data?.users || []);
-      const newNextCursor =
-        typeof json.data?.nextCursor === "string" && json.data.nextCursor.trim()
-          ? json.data.nextCursor
-          : null;
-      setNextCursor(newNextCursor);
-      setHasMore(Boolean(json.data?.hasMore && newNextCursor));
-      if (isInitial) {
-        setCursorStack([]);
-        setCurrentCursor("");
-      }
-      setCurrentCursor(cursor);
-    } catch {
-      setUsers([]);
-      setNextCursor(null);
-      setHasMore(false);
-      if (isInitial) {
-        setCursorStack([]);
-        setCurrentCursor("");
-      }
-    } finally {
-      if (isInitial) setLoading(false);
-      else setLoadingMore(false);
-    }
-  }
+  }, [token, debouncedFilters, fetchUsersPage]);
 
   async function handleNextPage() {
     if (!nextCursor || loading || loadingMore) return;
@@ -383,25 +570,29 @@ export function AdminUsersTab({
         <CardHeader>
           <CardTitle className="dark:text-white">User Management</CardTitle>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Search and manage platform users.
+            One column filter at a time. Name and Email use starts-with (prefix). DB Admin filter checks Firestore
+            only (env-listed admins still appear unless they carry the DB flag).
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search name, email, or state..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              disabled={loading || loadingMore}
-              className="pl-9 bg-white dark:bg-slate-900/70 dark:border-slate-800 dark:text-white"
-            />
-          </div>
-          <div className="flex items-center justify-between gap-3 text-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm">
             <span className="text-slate-500 dark:text-slate-400">
-              Showing up to 100 users per page
+              Showing up to 100 users per page • optional{" "}
+              <code className="rounded bg-slate-100 px-1 text-xs dark:bg-slate-800">
+                npm run backfill:admin-user-list
+              </code>{" "}
+              to denormalize search fields on existing docs
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void fetchUsersPage("")}
+                disabled={loading || loadingMore}
+              >
+                Reset paging
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -423,7 +614,7 @@ export function AdminUsersTab({
             </div>
           </div>
 
-          <div className="rounded-md border dark:border-slate-700 overflow-hidden">
+          <div className="rounded-md border dark:border-slate-700 overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50">
@@ -456,6 +647,13 @@ export function AdminUsersTab({
                     onSort={handleSort}
                   />
                   <SortableTableHead
+                    label="Referral"
+                    columnKey="referralAttribution"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
                     label="Courses Enrolled"
                     columnKey="totalCoursesEnrolled"
                     sortKey={sortKey}
@@ -476,7 +674,116 @@ export function AdminUsersTab({
                     sortDir={sortDir}
                     onSort={handleSort}
                   />
-                  <TableHead className="w-[70px] font-semibold text-right align-middle">Actions</TableHead>
+                  <TableHead rowSpan={2} className="w-[70px] font-semibold text-right align-bottom pb-2">
+                    Actions
+                  </TableHead>
+                </TableRow>
+                <TableRow className="bg-slate-50/80 dark:bg-slate-800/40 border-t dark:border-slate-700">
+                  <TableHead className="align-top py-2 min-w-[140px]">
+                    <Input
+                      placeholder="Prefix…"
+                      value={filters.name}
+                      onChange={(e) => setColumnFilter({ name: e.target.value })}
+                      disabled={loading && users.length === 0}
+                      className="h-8 text-xs bg-white dark:bg-slate-900/70 dark:border-slate-800"
+                      aria-label="Filter by display name prefix"
+                    />
+                  </TableHead>
+                  <TableHead className="align-top py-2 min-w-[160px]">
+                    <Input
+                      placeholder="Prefix…"
+                      value={filters.email}
+                      onChange={(e) => setColumnFilter({ email: e.target.value })}
+                      disabled={loading && users.length === 0}
+                      className="h-8 text-xs bg-white dark:bg-slate-900/70 dark:border-slate-800"
+                      aria-label="Filter by email prefix"
+                    />
+                  </TableHead>
+                  <TableHead className="align-top py-2 min-w-[108px]">
+                    <Select
+                      value={filters.state || "__all__"}
+                      onValueChange={(v) => setColumnFilter({ state: v === "__all__" ? "" : v })}
+                      disabled={loading && users.length === 0}
+                    >
+                      <SelectTrigger className="h-8 text-xs" aria-label="Filter by state">
+                        <SelectValue placeholder="State" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Any state</SelectItem>
+                        {US_STATE_CODES.map((code) => (
+                          <SelectItem key={code} value={code}>
+                            {code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableHead>
+                  <TableHead className="align-top py-2 min-w-[220px]">
+                    <div className="flex flex-col gap-1">
+                      <Input
+                        type="date"
+                        value={filters.joinFrom}
+                        onChange={(e) => setColumnFilter({ joinFrom: e.target.value })}
+                        disabled={loading && users.length === 0}
+                        className="h-8 text-xs bg-white dark:bg-slate-900/70 dark:border-slate-800"
+                        aria-label="Joined on or after"
+                      />
+                      <Input
+                        type="date"
+                        value={filters.joinTo}
+                        onChange={(e) => setColumnFilter({ joinTo: e.target.value })}
+                        disabled={loading && users.length === 0}
+                        className="h-8 text-xs bg-white dark:bg-slate-900/70 dark:border-slate-800"
+                        aria-label="Joined on or before"
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead className="align-middle py-2 text-xs text-muted-foreground">
+                    —
+                  </TableHead>
+                  <TableHead className="align-middle py-2 text-xs text-muted-foreground">
+                    —
+                  </TableHead>
+                  <TableHead className="align-top py-2 min-w-[120px]">
+                    <Select
+                      value={filters.status || "__all__"}
+                      onValueChange={(v) =>
+                        setColumnFilter({
+                          status: v === "__all__" ? "" : (v as "active" | "banned"),
+                        })
+                      }
+                      disabled={loading && users.length === 0}
+                    >
+                      <SelectTrigger className="h-8 text-xs" aria-label="Filter by ban status">
+                        <SelectValue placeholder="Any" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Any</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="banned">Banned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableHead>
+                  <TableHead className="align-top py-2 min-w-[140px]">
+                    <Select
+                      value={filters.dbAdmin || "__all__"}
+                      onValueChange={(v) =>
+                        setColumnFilter({
+                          dbAdmin: v === "__all__" ? "" : v === "yes" ? "yes" : "no",
+                        })
+                      }
+                      disabled={loading && users.length === 0}
+                    >
+                      <SelectTrigger className="h-8 text-xs" aria-label="Filter by Firestore admin flag">
+                        <SelectValue placeholder="Any" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Any</SelectItem>
+                        <SelectItem value="yes">DB admin</SelectItem>
+                        <SelectItem value="no">Not DB admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -494,6 +801,9 @@ export function AdminUsersTab({
                       </TableCell>
                       <TableCell>
                         <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-20 max-w-[140px]" />
                       </TableCell>
                       <TableCell>
                         <Skeleton className="h-4 w-8" />
@@ -519,6 +829,11 @@ export function AdminUsersTab({
                     <TableCell className="dark:text-slate-300">{user.state || "International"}</TableCell>
                     <TableCell className="dark:text-slate-300">
                       {formatDate(user.joinDate)}
+                    </TableCell>
+                    <TableCell className="dark:text-slate-300 max-w-[180px]">
+                      <span className="break-words" title={user.referralAttribution ?? undefined}>
+                        {user.referralAttribution ?? "—"}
+                      </span>
                     </TableCell>
                     <TableCell className="dark:text-slate-300">
                       {user.totalCoursesEnrolled == null ? "—" : user.totalCoursesEnrolled}
@@ -617,14 +932,12 @@ export function AdminUsersTab({
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Users className="h-12 w-12 text-slate-500 dark:text-slate-500 mb-4" />
               <p className="text-lg font-medium text-slate-900 dark:text-slate-300">
-                {debouncedSearchText
-                  ? "No users match your search"
-                  : "No users yet"}
+                {!columnFiltersAreBrowse(debouncedFilters) ? "No users match this filter" : "No users yet"}
               </p>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {debouncedSearchText
-                  ? "Try a different name, email, or state."
-                  : "Users will appear here once they sign up."}
+                {!columnFiltersAreBrowse(debouncedFilters)
+                  ? "Try clearing filters or a different column. Runs backfill script if admins see an empty browse list."
+                  : "Users appear after sign-up once Firestore indexes and backfill are applied."}
               </p>
             </div>
           )}
