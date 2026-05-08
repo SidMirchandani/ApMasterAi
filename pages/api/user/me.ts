@@ -31,6 +31,7 @@ export default async function handler(
           firstName: undefined,
           lastName: undefined,
           photoURL: picture,
+          state: null,
           experimentalFeaturesEnabled: false,
           isAdmin: isAdminEmailFromEnv(user.email ?? undefined),
         },
@@ -46,10 +47,14 @@ export default async function handler(
       });
     }
 
-    const userData = userDoc.data();
-    const experimentalFeaturesEnabled = userData?.experimentalFeaturesEnabled === true;
-
     await maybeUpdateUserGeoState(db, userId, req);
+    const refreshedUserDoc = await db.collection("users").doc(userId).get();
+    const userData = refreshedUserDoc.data() ?? userDoc.data();
+    const experimentalFeaturesEnabled = userData?.experimentalFeaturesEnabled === true;
+    const inferredState =
+      typeof userData?.inferredState === "string" && /^[A-Z]{2}$/i.test(userData.inferredState.trim())
+        ? userData.inferredState.trim().toUpperCase()
+        : null;
 
     return res.status(200).json({
       success: true,
@@ -60,6 +65,7 @@ export default async function handler(
         firstName: userData?.firstName,
         lastName: userData?.lastName,
         photoURL: userData?.photoURL,
+        state: inferredState,
         experimentalFeaturesEnabled,
         isAdmin:
           isAdminEmailFromEnv(user.email ?? userData?.email) || userData?.isAdmin === true,

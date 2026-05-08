@@ -40,6 +40,8 @@ const allSubjects: APSubject[] = [
   apstats,
   apphys1,
   apphys2,
+  apes,
+  aphug,
 ];
 
 export const subjectRegistry: Record<string, APSubject> = allSubjects.reduce((acc, subject) => {
@@ -69,6 +71,8 @@ const legacyIdMap: Record<string, string> = {
   'statistics': 'APSTATS',
   'physics-1': 'APPHYS1',
   'physics-2': 'APPHYS2',
+  'environmental-science': 'APES',
+  'human-geography': 'APHUG',
 };
 
 const legacyIdRegistry: Record<string, APSubject> = Object.entries(legacyIdMap).reduce((acc, [legacyId, subjectCode]) => {

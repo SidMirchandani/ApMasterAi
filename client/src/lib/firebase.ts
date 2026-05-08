@@ -2,6 +2,7 @@ import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 import type { Analytics } from "firebase/analytics";
+import { getApiCodeForSubject } from "@/subjects";
 
 // Check if all required Firebase config is available
 const hasFirebaseConfig = !!(
@@ -160,13 +161,14 @@ export function getAnalyticsPageParams(params: {
   unit?: string | null;
   pagePath?: string;
   pageTitle?: string;
-  pageReferrer?: string;
+  pageReferrer?: string | null;
+  state?: string | null;
+  method?: string;
+  userCount?: number;
 }): AnalyticsEventParams {
-  const pagePath =
-    params.pagePath ??
-    (typeof window !== "undefined"
-      ? `${window.location.pathname}${window.location.search}`
-      : "");
+  const pagePath = params.pagePath ?? (typeof window !== "undefined" ? window.location.pathname : "");
+  const subject = normalizeAnalyticsSubject(params.subject);
+  const state = normalizeAnalyticsState(params.state);
 
   return {
     surface: params.surface,
@@ -181,9 +183,25 @@ export function getAnalyticsPageParams(params: {
     page_referrer:
       params.pageReferrer ??
       (typeof document !== "undefined" ? document.referrer || null : undefined),
-    subject: params.subject ?? undefined,
+    subject: subject ?? undefined,
     unit: params.unit ?? undefined,
+    state,
+    method: params.method,
+    user_count: params.userCount,
   };
+}
+
+export function normalizeAnalyticsSubject(subject?: string | null): string | null {
+  const raw = typeof subject === "string" ? subject.trim() : "";
+  if (!raw) return null;
+  const apiCode = getApiCodeForSubject(raw);
+  if (apiCode) return apiCode;
+  return /^AP[A-Z0-9]+$/.test(raw.toUpperCase()) ? raw.toUpperCase() : raw;
+}
+
+export function normalizeAnalyticsState(state?: string | null): string | null {
+  const raw = typeof state === "string" ? state.trim().toUpperCase() : "";
+  return /^[A-Z]{2}$/.test(raw) ? raw : null;
 }
 
 export async function trackPageView(

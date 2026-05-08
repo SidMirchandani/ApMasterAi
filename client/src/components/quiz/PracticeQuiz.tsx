@@ -17,6 +17,7 @@ import {
   QUIZ_QUESTION_EXPL_GRID_CLASS,
 } from "@/components/ui/PrettyExplanation";
 import { useRouter } from "next/router";
+import { useQuery } from "@tanstack/react-query";
 import { PracticeQuizReview } from "./PracticeQuizReview";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
 import { ExplanationPanel } from "./ExplanationPanel";
@@ -141,6 +142,18 @@ export function PracticeQuiz({
 
   const router = useRouter();
   const { user } = useAuth();
+  const { data: userProfile } = useQuery<{
+    success: boolean;
+    data?: { state?: string | null };
+  }>({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/me");
+      return response.json();
+    },
+    enabled: Boolean(user),
+    staleTime: 5 * 60 * 1000,
+  });
   const subject =
     getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
@@ -149,14 +162,25 @@ export function PracticeQuiz({
 
   const showToolHeader = showPracticeExamToolHeader(subjectId);
 
-  const getQuizAnalyticsParams = () =>
+  const getQuizAnalyticsParams = (
+    surface: "quiz" | "result" = "quiz",
+    method: "practice" = "practice",
+  ) =>
     getAnalyticsPageParams({
-      surface: "quiz",
+      surface,
       subject: subjectId,
       unit: unitParam,
+      pagePath: surface === "result" ? "/review" : "/quiz",
+      pageReferrer:
+        typeof window !== "undefined"
+          ? `${window.location.origin}${surface === "result" ? "/quiz" : "/study"}`
+          : null,
+      state: userProfile?.data?.state ?? null,
+      method,
     });
 
   useEffect(() => {
+    if (user && userProfile === undefined) return;
     if (!router.isReady || questions.length === 0) return;
     const trackingKey = `${subjectId}:${unitParam ?? ""}:${questions.length}`;
     if (trackedPracticeStartRef.current === trackingKey) return;
@@ -166,7 +190,7 @@ export function PracticeQuiz({
       action: "practice_start",
       params: getQuizAnalyticsParams(),
     });
-  }, [router.isReady, subjectId, unitParam, questions.length]);
+  }, [router.isReady, subjectId, unitParam, questions.length, user, userProfile]);
 
   useEffect(() => {
     const syncCheatMode = () => {
@@ -283,6 +307,10 @@ export function PracticeQuiz({
         void trackVersionedAnalyticsEvent({
           action: "practice_complete",
           params: getQuizAnalyticsParams(),
+        });
+        void trackVersionedAnalyticsEvent({
+          action: "result_viewed",
+          params: getQuizAnalyticsParams("result"),
         });
         onComplete(score, answersWithLast);
       }

@@ -123,9 +123,13 @@ function FirstTouchAttributionCapture() {
   return null;
 }
 
+function AnalyticsTracking() {
+  useFirebasePageViews();
+  return null;
+}
+
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  useFirebasePageViews();
   const pageTitle = useMemo(() => {
     const base = routeBaseTitle(router.asPath, router.query as Record<string, string | string[] | undefined>);
     return base === HOMEPAGE_SEO_TITLE ? base : `${base} - ${BRAND_NAME}`;
@@ -143,6 +147,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <TooltipProvider>
           <AuthProvider>
             <FirstTouchAttributionCapture />
+            <AnalyticsTracking />
             <Component {...pageProps} />
             <Toaster />
           </AuthProvider>

@@ -1,5 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/router";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/auth-context";
+import { apiRequest } from "@/lib/api";
 import {
   getAnalyticsPageParams,
   trackPageView,
@@ -41,35 +44,80 @@ function routeTrackingFor(pathname: string, query: { review?: string | string[] 
   return { surface: "other" };
 }
 
+function canonicalReferrerFor(surface: AnalyticsSurface): string | null {
+  if (typeof window === "undefined") return null;
+  const origin = window.location.origin;
+  if (surface === "study") return `${origin}/dashboard`;
+  if (surface === "quiz") return `${origin}/study`;
+  if (surface === "result") return `${origin}/quiz`;
+  return null;
+}
+
 export function useFirebasePageViews() {
   const router = useRouter();
+  const { loading: authLoading, isAuthenticated } = useAuth();
   const lastTrackedPathRef = useRef<string | null>(null);
-  const previousLocationRef = useRef<string | null>(null);
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    isError: profileError,
+  } = useQuery<{
+    success: boolean;
+    data?: { state?: string | null };
+  }>({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/me");
+      return response.json();
+    },
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
+    if (authLoading) return;
+    if (isAuthenticated && profileLoading && !profileError) return;
     if (!router.isReady || !router.asPath) return;
     if (lastTrackedPathRef.current === router.asPath) return;
 
     const { surface, action } = routeTrackingFor(router.pathname, router.query);
-    const pagePath = router.asPath;
-    const pageReferrer = previousLocationRef.current ?? document.referrer ?? null;
+    const pagePath = router.pathname;
     const eventParams = getAnalyticsPageParams({
       surface,
       subject: firstQueryValue(router.query.subject),
       unit: firstQueryValue(router.query.unit),
       pagePath,
-      pageReferrer,
+      pageReferrer: canonicalReferrerFor(surface),
+      state: userProfile?.data?.state ?? null,
     });
 
-    lastTrackedPathRef.current = pagePath;
-    previousLocationRef.current = `${window.location.origin}${pagePath}`;
+    lastTrackedPathRef.current = router.asPath;
 
     void trackPageView(eventParams);
     if (action) {
       void trackVersionedAnalyticsEvent({
         action,
-        params: eventParams,
+        params: {
+          ...eventParams,
+          method: "route",
+          user_count:
+            action === "dashboard" || action === "study" || action === "quiz"
+              ? 1
+              : undefined,
+        },
       });
     }
-  }, [router.asPath, router.isReady, router.pathname, router.query.review, router.query.subject, router.query.unit]);
+  }, [
+    authLoading,
+    isAuthenticated,
+    profileError,
+    profileLoading,
+    router.asPath,
+    router.isReady,
+    router.pathname,
+    router.query.review,
+    router.query.subject,
+    router.query.unit,
+    userProfile?.data?.state,
+  ]);
 }

@@ -19,7 +19,8 @@ import { QuizReviewPage } from "./QuizReviewPage";
 import { ReportQuestionDialog } from "./ReportQuestionDialog";
 import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
 import { useRouter } from "next/router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/api";
 import { normalizeQuestions } from "@/lib/normalizeQuestion";
 import {
@@ -62,6 +63,19 @@ export function FullLengthQuiz({
 }: FullLengthQuizProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: userProfile } = useQuery<{
+    success: boolean;
+    data?: { state?: string | null };
+  }>({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/me");
+      return response.json();
+    },
+    enabled: Boolean(user),
+    staleTime: 5 * 60 * 1000,
+  });
   const subject =
     getSubjectByLegacyId(subjectId) || getSubjectByCode(subjectId);
   const mcqOptionCount = subject?.metadata?.mcqOptionCount;
@@ -160,11 +174,19 @@ export function FullLengthQuiz({
   }, [isReviewMode, isSubmitting]);
 
   const currentQuestion = questions[currentQuestionIndex];
-  const getQuizAnalyticsParams = () =>
+  const getQuizAnalyticsParams = (surface: "quiz" | "result" = "quiz") =>
     getAnalyticsPageParams({
-      surface: "quiz",
+      surface,
       subject: subjectId,
       unit: "full-length",
+      pagePath: surface === "result" ? "/full-length-results" : "/quiz",
+      pageReferrer:
+        typeof window !== "undefined"
+          ? `${window.location.origin}${surface === "result" ? "/quiz" : "/study"}`
+          : null,
+      state: userProfile?.data?.state ?? null,
+      method: "full_length",
+      userCount: surface === "quiz" ? 1 : undefined,
     });
 
   const handleExitExam = () => {
@@ -257,6 +279,10 @@ export function FullLengthQuiz({
       void trackVersionedAnalyticsEvent({
         action: "quiz_taken",
         params: getQuizAnalyticsParams(),
+      });
+      void trackVersionedAnalyticsEvent({
+        action: "result_viewed",
+        params: getQuizAnalyticsParams("result"),
       });
 
       // Invalidate and refetch so study/dashboard show updated data when user navigates back
