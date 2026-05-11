@@ -4,6 +4,7 @@ import { getFirebaseAdmin } from "./firebase-admin";
 import { aggregateGlobalStatsFromUserStats } from "./user-stats";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const AGG_GEO_DOC_PATH = "insights_user_geo/current";
 
 let memoryCache: { data: PlatformPublicStats; expiresAt: number } | null = null;
 
@@ -29,6 +30,14 @@ async function aggregateStudentQuestionAttempts(firestore: Firestore): Promise<n
     console.error("[platform-public-stats] user_question_state sum(attemptCount) failed", err);
     return 0;
   }
+}
+
+function asNumberOrZero(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+}
+
+function asRecord(v: unknown): Record<string, unknown> {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 }
 
 export type PlatformPublicStats = {
@@ -57,6 +66,45 @@ function countStatesFromUsersSnapshot(
   ).length;
 }
 
+function countStatesFromGeoAggregate(data: Record<string, unknown>): number | null {
+  const explicitCount = asNumberOrZero(data.statesWithUsersCount);
+  if (explicitCount > 0) return explicitCount;
+
+  const stateCounts =
+    asRecord(data.usersByState).stateCounts ??
+    asRecord(data.usersByState).byState ??
+    data.usersByState ??
+    data.stateCounts;
+  const byState = asRecord(stateCounts);
+  const derivedCount = Object.entries(byState).filter(
+    ([code, count]) =>
+      code !== "International" &&
+      /^[A-Z]{2}$/.test(code) &&
+      asNumberOrZero(count) > 0,
+  ).length;
+
+  return derivedCount > 0 ? derivedCount : null;
+}
+
+async function readStatesWithUsersFromGeoAggregate(firestore: Firestore): Promise<number | null> {
+  try {
+    const snap = await firestore.doc(AGG_GEO_DOC_PATH).get();
+    if (!snap.exists) return null;
+    return countStatesFromGeoAggregate(snap.data() || {});
+  } catch (err) {
+    console.error("[platform-public-stats] geo aggregate read failed", err);
+    return null;
+  }
+}
+
+async function getStatesWithUsers(firestore: Firestore): Promise<number> {
+  const aggregateCount = await readStatesWithUsersFromGeoAggregate(firestore);
+  if (aggregateCount != null) return aggregateCount;
+
+  const usersStateSnap = await firestore.collection("users").select("inferredState").get();
+  return countStatesFromUsersSnapshot(usersStateSnap.docs);
+}
+
 /**
  * Same KPI definitions as admin insights (KPI strip), for public landing display.
  * Uses count/aggregate queries and a short in-memory cache so responses stay fast under load.
@@ -77,7 +125,7 @@ export async function getPlatformPublicStats(): Promise<PlatformPublicStats> {
     totalStudentsLegacy,
     totalSubjectEnrollmentsLegacy,
     questionBank,
-    usersStateSnap,
+    statesWithUsers,
     fullLengthQuizCount,
     diagnosticQuizCount,
     unitQuizCount,
@@ -98,7 +146,7 @@ export async function getPlatformPublicStats(): Promise<PlatformPublicStats> {
       .count()
       .get()
       .then((s) => s.data().count),
-    firestore.collection("users").select("inferredState").get(),
+    getStatesWithUsers(firestore),
     aggregateCollectionGroupCount(firestore, "fullLengthTests"),
     aggregateCollectionGroupCount(firestore, "diagnosticTests"),
     aggregateCollectionGroupCount(firestore, "unitQuizResults"),
@@ -106,7 +154,6 @@ export async function getPlatformPublicStats(): Promise<PlatformPublicStats> {
   ]);
   const rollupTotals = await aggregateGlobalStatsFromUserStats(firestore);
 
-  const statesWithUsers = countStatesFromUsersSnapshot(usersStateSnap.docs);
   const totalQuizzesTakenLegacy = fullLengthQuizCount + diagnosticQuizCount + unitQuizCount;
   const totalStudents = rollupTotals?.totalStudents ?? totalStudentsLegacy;
   const totalSubjectEnrollments = rollupTotals?.totalSubjectEnrollments ?? totalSubjectEnrollmentsLegacy;
