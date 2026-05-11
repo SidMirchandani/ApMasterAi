@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,17 @@ interface AdminUser {
   subjectCount: number;
   questionCount: number;
   subjectNames: string[];
+}
+
+interface AdminUsersPageResponse {
+  success: boolean;
+  data?: {
+    users?: AdminUser[];
+    nextCursor?: string | null;
+    hasMore?: boolean;
+    loadedCount?: number;
+  };
+  error?: string;
 }
 
 type UserSortKey =
@@ -212,6 +223,16 @@ function compareUsers(a: AdminUser, b: AdminUser, key: UserSortKey, dir: "asc" |
   return dir === "asc" ? cmp : -cmp;
 }
 
+function mergeUsersById(existing: AdminUser[], incoming: AdminUser[], preferExisting: boolean): AdminUser[] {
+  const merged = new Map<string, AdminUser>();
+  for (const user of existing) merged.set(user.id, user);
+  for (const user of incoming) {
+    const current = merged.get(user.id);
+    merged.set(user.id, preferExisting && current ? { ...user, ...current } : { ...current, ...user });
+  }
+  return Array.from(merged.values());
+}
+
 function SortableHead({
   label,
   columnKey,
@@ -263,6 +284,8 @@ export function AdminUsersTab({
   const router = useRouter();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const nextCursorRef = useRef<string | null>(null);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const [datePreset, setDatePreset] = useState<DatePresetKey>("7d");
@@ -273,32 +296,120 @@ export function AdminUsersTab({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const loaderRunRef = useRef(0);
 
-  const fetchUsers = useCallback(async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      const res = await fetch("/api/admin/users", {
+  const fetchUsersPage = useCallback(
+    async (cursor: string | null, signal?: AbortSignal): Promise<AdminUsersPageResponse["data"]> => {
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        orderBy: "joinDate",
+        dir: "desc",
+      });
+      if (cursor) params.set("cursor", cursor);
+      const res = await fetch(`/api/admin/users?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal,
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(typeof json?.error === "string" ? json.error : "Failed to load users", { id: "admin-users-load" });
-        setUsers([]);
-        return;
+        throw new Error(typeof json?.error === "string" ? json.error : "Failed to load users");
       }
-      setUsers(Array.isArray(json.data?.users) ? json.data.users : []);
-    } catch {
-      toast.error("Failed to load users", { id: "admin-users-load" });
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+      return (json as AdminUsersPageResponse).data || {};
+    },
+    [token],
+  );
+
+  const hydrateRemainingUsers = useCallback(
+    async (initialCursor: string | null, runId: number, controller: AbortController) => {
+      let cursor = initialCursor;
+      let hasMore = Boolean(cursor);
+
+      while (hasMore && cursor && !controller.signal.aborted) {
+        nextCursorRef.current = cursor;
+        const pageData = await fetchUsersPage(cursor, controller.signal);
+        if (loaderRunRef.current !== runId || controller.signal.aborted) return;
+        const nextUsers = Array.isArray(pageData?.users) ? pageData.users : [];
+        setUsers((prev) => mergeUsersById(prev, nextUsers, true));
+        cursor = pageData?.nextCursor || null;
+        hasMore = Boolean(pageData?.hasMore && cursor);
+        nextCursorRef.current = cursor;
+      }
+
+      if (loaderRunRef.current === runId && !controller.signal.aborted) {
+        nextCursorRef.current = null;
+      }
+    },
+    [fetchUsersPage],
+  );
+
+  const hydrateUsers = useCallback(async () => {
+    if (!token) return;
+    const runId = loaderRunRef.current + 1;
+    loaderRunRef.current = runId;
+    const controller = new AbortController();
+
+    setLoading(true);
+    setLoadError(null);
+    nextCursorRef.current = null;
+    setUsers([]);
+
+    void (async () => {
+      try {
+        const firstPage = await fetchUsersPage(null, controller.signal);
+        if (loaderRunRef.current !== runId || controller.signal.aborted) return;
+        const firstUsers = Array.isArray(firstPage?.users) ? firstPage.users : [];
+        setUsers(firstUsers);
+        setLoading(false);
+        nextCursorRef.current = firstPage?.nextCursor || null;
+
+        await hydrateRemainingUsers(firstPage?.nextCursor || null, runId, controller);
+      } catch (err) {
+        if (controller.signal.aborted || loaderRunRef.current !== runId) return;
+        const message = err instanceof Error ? err.message : "Failed to load users";
+        setLoadError(message);
+        setLoading(false);
+        toast.error(message, { id: "admin-users-load" });
+      }
+    })();
+
+    return () => {
+      controller.abort();
+    };
+  }, [fetchUsersPage, hydrateRemainingUsers, token]);
+
+  const fetchUsers = useCallback(async () => {
+    const cleanup = await hydrateUsers();
+    return cleanup;
+  }, [hydrateUsers]);
 
   useEffect(() => {
-    void fetchUsers();
-  }, [fetchUsers]);
+    let cleanup: void | (() => void);
+    void (async () => {
+      cleanup = await hydrateUsers();
+    })();
+    return () => {
+      loaderRunRef.current += 1;
+      if (cleanup) cleanup();
+    };
+  }, [hydrateUsers]);
+
+  const retryBackgroundLoad = useCallback(() => {
+    const cursor = nextCursorRef.current;
+    if (!cursor || users.length === 0) {
+      void hydrateUsers();
+      return;
+    }
+    const runId = loaderRunRef.current + 1;
+    loaderRunRef.current = runId;
+    const controller = new AbortController();
+    setLoadError(null);
+    void hydrateRemainingUsers(cursor, runId, controller).catch((err) => {
+      if (controller.signal.aborted || loaderRunRef.current !== runId) return;
+      const message = err instanceof Error ? err.message : "Failed to load users";
+      setLoadError(message);
+      toast.error(message, { id: "admin-users-load" });
+    });
+  }, [hydrateRemainingUsers, hydrateUsers, users.length]);
 
   useEffect(() => {
     setPage(0);
@@ -605,6 +716,17 @@ export function AdminUsersTab({
               </DropdownMenu>
             )}
           </div>
+
+          {loadError && (
+            <div
+              className="flex flex-col gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <span>Could not load all users in the background.</span>
+              <Button type="button" size="sm" variant="outline" onClick={retryBackgroundLoad}>
+                Retry
+              </Button>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
             <span>

@@ -27,6 +27,12 @@ type RowOut = {
   totalCoursesEnrolled: number | null;
 };
 
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 100;
+const USER_SCAN_BATCH_MULTIPLIER = 3;
+const USER_SCAN_BATCH_MAX = 250;
+const IN_QUERY_CHUNK_SIZE = 30;
+
 function toIso(value: unknown): string {
   if (!value) return "";
   if (typeof (value as { toDate?: unknown }).toDate === "function") {
@@ -75,17 +81,37 @@ function subjectNameFromDoc(data: DocumentData): string | null {
   return cleanText(data.subjectId) || cleanText(data.name);
 }
 
-async function loadSubjectsByUser(firestore: Firestore): Promise<Map<string, string[]>> {
+function chunk<T>(values: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < values.length; i += size) out.push(values.slice(i, i + size));
+  return out;
+}
+
+async function loadSubjectsForUserIds(firestore: Firestore, userIds: string[]): Promise<Map<string, string[]>> {
   const out = new Map<string, string[]>();
-  const snap = await firestore.collection("user_subjects").select("userId", "subjectId", "name").get();
-  for (const doc of snap.docs) {
-    const data = doc.data();
-    const userId = cleanText(data.userId);
-    const subjectName = subjectNameFromDoc(data);
-    if (!userId || !subjectName) continue;
-    const list = out.get(userId) ?? [];
-    list.push(subjectName);
-    out.set(userId, list);
+  const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
+  if (!uniqueIds.length) return out;
+
+  const snaps = await Promise.all(
+    chunk(uniqueIds, IN_QUERY_CHUNK_SIZE).map((ids) =>
+      firestore
+        .collection("user_subjects")
+        .where("userId", "in", ids)
+        .select("userId", "subjectId", "name")
+        .get(),
+    ),
+  );
+
+  for (const snap of snaps) {
+    for (const doc of snap.docs) {
+      const data = doc.data();
+      const userId = cleanText(data.userId);
+      const subjectName = subjectNameFromDoc(data);
+      if (!userId || !subjectName) continue;
+      const list = out.get(userId) ?? [];
+      list.push(subjectName);
+      out.set(userId, list);
+    }
   }
   for (const [key, list] of out) {
     out.set(key, Array.from(new Set(list)).sort((a, b) => a.localeCompare(b)));
@@ -133,6 +159,25 @@ function mapDoc(doc: QueryDocumentSnapshot, subjects: string[], stats: Partial<{
   };
 }
 
+function parseLimit(value: unknown): number {
+  const raw = Number.parseInt(String(value || DEFAULT_LIMIT), 10);
+  if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_LIMIT;
+  return Math.min(MAX_LIMIT, Math.max(1, raw));
+}
+
+function routeParam(value: string | string[] | undefined): string {
+  return typeof value === "string" ? value : Array.isArray(value) ? value[0] || "" : "";
+}
+
+async function getCheapEligibleTotal(firestore: Firestore): Promise<number | null> {
+  try {
+    const snap = await firestore.collection("users").where("showInAdminUserList", "==", true).count().get();
+    return Number(snap.data().count || 0);
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -146,35 +191,81 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { firestore } = firebaseAdmin;
 
   try {
-    const [usersSnap, subjectsByUser] = await Promise.all([
-      firestore
-        .collection("users")
-        .orderBy("createdAt", "desc")
-        .select(
-          "firebaseUid",
-          "email",
-          "username",
-          "displayName",
-          "firstName",
-          "lastName",
-          "photoURL",
-          "createdAt",
-          "joinDate",
-          "lastLoginAt",
-          "lastLogin",
-          "inferredState",
-          "inferredCountry",
-          "isAdmin",
-          "banned",
-          "showInAdminUserList",
-        )
-        .get(),
-      loadSubjectsByUser(firestore),
-    ]);
+    const limit = parseLimit(req.query.limit);
+    const cursor = routeParam(req.query.cursor);
+    const scanBatchSize = Math.min(
+      USER_SCAN_BATCH_MAX,
+      Math.max(limit * USER_SCAN_BATCH_MULTIPLIER, limit),
+    );
+    const totalUsersPromise = getCheapEligibleTotal(firestore);
 
-    const eligibleDocs = usersSnap.docs.filter((doc) => isDocEligibleForAdminBrowse(doc.data()));
+    let query = firestore
+      .collection("users")
+      .orderBy("createdAt", "desc")
+      .select(
+        "firebaseUid",
+        "email",
+        "username",
+        "displayName",
+        "firstName",
+        "lastName",
+        "photoURL",
+        "createdAt",
+        "joinDate",
+        "lastLoginAt",
+        "lastLogin",
+        "inferredState",
+        "inferredCountry",
+        "isAdmin",
+        "banned",
+        "showInAdminUserList",
+      );
+
+    if (cursor) {
+      const cursorSnap = await firestore.collection("users").doc(cursor).get();
+      if (!cursorSnap.exists) {
+        return res.status(400).json({ error: "Invalid cursor" });
+      }
+      query = query.startAfter(cursorSnap);
+    }
+
+    const eligibleDocs: QueryDocumentSnapshot[] = [];
+    let lastScannedDoc: QueryDocumentSnapshot | null = null;
+    let nextCursorDoc: QueryDocumentSnapshot | null = null;
+    let exhausted = false;
+    let filledPage = false;
+
+    while (eligibleDocs.length < limit && !exhausted) {
+      const snap = await query.limit(scanBatchSize).get();
+      if (snap.empty) {
+        exhausted = true;
+        break;
+      }
+      lastScannedDoc = snap.docs[snap.docs.length - 1] ?? lastScannedDoc;
+      for (const doc of snap.docs) {
+        nextCursorDoc = doc;
+        if (isDocEligibleForAdminBrowse(doc.data())) {
+          eligibleDocs.push(doc);
+          if (eligibleDocs.length >= limit) {
+            filledPage = true;
+            break;
+          }
+        }
+      }
+      exhausted = snap.size < scanBatchSize;
+      if (!exhausted && lastScannedDoc) query = query.startAfter(lastScannedDoc);
+    }
+
     const userIds = eligibleDocs.map((doc) => doc.id);
-    const statsByUser = await getUserStatsBatch(firestore, userIds);
+    const firebaseUids = eligibleDocs
+      .map((doc) => cleanText(doc.data().firebaseUid) || doc.id)
+      .filter(Boolean) as string[];
+    const lookupIds = Array.from(new Set([...userIds, ...firebaseUids]));
+    const [statsByUser, subjectsByUser, totalUsers] = await Promise.all([
+      getUserStatsBatch(firestore, lookupIds),
+      loadSubjectsForUserIds(firestore, lookupIds),
+      totalUsersPromise,
+    ]);
 
     const users = eligibleDocs.map((doc) => {
       const data = doc.data();
@@ -186,7 +277,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({
       success: true,
-      data: { users },
+      data: {
+        users,
+        nextCursor: (filledPage || !exhausted) && nextCursorDoc ? nextCursorDoc.id : null,
+        hasMore: (filledPage || !exhausted) && Boolean(nextCursorDoc),
+        loadedCount: users.length,
+        totalUsers,
+      },
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
