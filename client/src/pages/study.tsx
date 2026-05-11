@@ -31,6 +31,7 @@ import { getProjectedAPScoreDisplay, getTargetPercentagesForSubject, getUnitTier
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 import { APScoreCircle } from "@/components/ui/APScoreCircle";
 import { cn } from "@/lib/utils";
+import { AdminReadOnlyReturnBar } from "@/components/admin/AdminReadOnlyReturnBar";
 
 interface StudySubject {
   id: number;
@@ -54,11 +55,21 @@ interface StudySubject {
   };
 }
 
-export default function Study() {
+export default function Study({
+  adminReadOnlyTargetUserId,
+}: {
+  adminReadOnlyTargetUserId?: string;
+} = {}) {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const [practiceMenuUnitId, setPracticeMenuUnitId] = useState<string | null>(null);
   const practiceMenuRef = useRef<HTMLDivElement>(null);
+  const isAdminReadOnly = Boolean(adminReadOnlyTargetUserId);
+  const encodedTargetUserId = adminReadOnlyTargetUserId
+    ? encodeURIComponent(adminReadOnlyTargetUserId)
+    : "";
+  const adminUserBasePath = encodedTargetUserId ? `/admin/users/${encodedTargetUserId}` : "";
+  const dashboardPath = isAdminReadOnly ? `${adminUserBasePath}/dashboard` : "/dashboard";
 
   useEffect(() => {
     if (!practiceMenuUnitId) return;
@@ -82,13 +93,16 @@ export default function Study() {
     isLoading: subjectsLoading,
     refetch,
   } = useQuery<{ success: boolean; data: StudySubject[] }>({
-    queryKey: ["subjects"],
+    queryKey: isAdminReadOnly ? ["adminUserSubjects", adminReadOnlyTargetUserId] : ["subjects"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/user/subjects");
+      const url = isAdminReadOnly
+        ? `/api/admin/users/${encodedTargetUserId}/subjects`
+        : "/api/user/subjects";
+      const response = await apiRequest("GET", url);
       if (!response.ok) throw new Error("Failed to fetch subjects");
       return response.json();
     },
-    enabled: isAuthenticated && !!user,
+    enabled: isAuthenticated && (isAdminReadOnly || !!user),
     refetchOnMount: "always",
   });
 
@@ -120,38 +134,53 @@ export default function Study() {
       sectionBreakdown?: Record<string, { correct: number; total: number }>;
     }[];
   }>({
-    queryKey: ["testHistory", subjectId],
+    queryKey: isAdminReadOnly
+      ? ["adminUserTestHistory", adminReadOnlyTargetUserId, subjectId]
+      : ["testHistory", subjectId],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/user/test-history?subjectId=${subjectId}`);
+      const url = isAdminReadOnly
+        ? `/api/admin/users/${encodedTargetUserId}/test-history?subjectId=${subjectId}`
+        : `/api/user/test-history?subjectId=${subjectId}`;
+      const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
-    enabled: !!subjectId && isAuthenticated && !!user,
+    enabled: !!subjectId && isAuthenticated && (isAdminReadOnly || !!user),
     staleTime: 60000,
   });
   const testHistory = testHistoryResponse?.data || [];
 
   const { data: unitProgressResponse } = useQuery<{ success: boolean; data: any }>({
-    queryKey: ["unitProgress", subjectId],
+    queryKey: isAdminReadOnly
+      ? ["adminUserUnitProgress", adminReadOnlyTargetUserId, subjectId]
+      : ["unitProgress", subjectId],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/user/subjects/${subjectId}/unit-progress`);
+      const url = isAdminReadOnly
+        ? `/api/admin/users/${encodedTargetUserId}/subjects/${subjectId}/unit-progress`
+        : `/api/user/subjects/${subjectId}/unit-progress`;
+      const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
-    enabled: !!subjectId && isAuthenticated && !!user,
+    enabled: !!subjectId && isAuthenticated && (isAdminReadOnly || !!user),
     staleTime: 60000,
   });
   const unitProgressMap: Record<string, { highestScore?: number; mcqScore?: number }> =
     unitProgressResponse?.data || {};
 
   const { data: dueForSubjectResponse } = useQuery<{ success: boolean; data: { unitId?: string }[] }>({
-    queryKey: ["dueReviews", subjectId, "all"],
+    queryKey: isAdminReadOnly
+      ? ["adminUserDueReviews", adminReadOnlyTargetUserId, subjectId, "all"]
+      : ["dueReviews", subjectId, "all"],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/user/questions/due?subjectId=${subjectId}&limit=500`);
+      const url = isAdminReadOnly
+        ? `/api/admin/users/${encodedTargetUserId}/questions/due?subjectId=${subjectId}&limit=500`
+        : `/api/user/questions/due?subjectId=${subjectId}&limit=500`;
+      const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
-    enabled: !!subjectId && isAuthenticated && !!user,
+    enabled: !!subjectId && isAuthenticated && (isAdminReadOnly || !!user),
     staleTime: 60000,
   });
   const dueForSubject = dueForSubjectResponse?.data || [];
@@ -173,8 +202,8 @@ export default function Study() {
   }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
-    if (!subjectId) router.push("/dashboard");
-  }, [subjectId, router]);
+    if (!subjectId) router.push(dashboardPath);
+  }, [subjectId, router, dashboardPath]);
 
   const getUnitData = (unitId: string) => {
     return (currentSubject?.unitProgress || {})[unitId];
@@ -214,7 +243,7 @@ export default function Study() {
             </p>
             <Button
               variant="ghost"
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push(dashboardPath)}
               className="h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -237,13 +266,14 @@ export default function Study() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
+      {isAdminReadOnly && <AdminReadOnlyReturnBar />}
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 py-5 md:px-8 md:py-6">
         <header className="mb-5 md:mb-6">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push(dashboardPath)}
             className="-ml-1 mb-3 h-9 rounded-full px-3 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] hover:text-blue-600 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-blue-400"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -313,8 +343,16 @@ export default function Study() {
           <div className="grid grid-cols-2 gap-2.5">
             <button
               type="button"
-              onClick={() => router.push(`/quiz?subject=${subjectId}&unit=full-length`)}
-              className="group flex items-center gap-2.5 rounded-2xl bg-blue-600 px-3 py-2.5 text-left text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+              onClick={() => {
+                if (!isAdminReadOnly) router.push(`/quiz?subject=${subjectId}&unit=full-length`);
+              }}
+              disabled={isAdminReadOnly}
+              className={cn(
+                "group flex items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left transition-colors",
+                isAdminReadOnly
+                  ? "cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-white/[0.06] dark:text-slate-500"
+                  : "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
+              )}
             >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20">
                 <Play className="h-4 w-4 fill-white text-white" />
@@ -332,7 +370,13 @@ export default function Study() {
 
             <button
               type="button"
-              onClick={() => router.push(`/analytics?subject=${subjectId}`)}
+              onClick={() =>
+                router.push(
+                  isAdminReadOnly
+                    ? `${adminUserBasePath}/analytics?subject=${subjectId}`
+                    : `/analytics?subject=${subjectId}`,
+                )
+              }
               className="group flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
             >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
@@ -348,8 +392,16 @@ export default function Study() {
             {showAdminFeatures ? (
               <button
                 type="button"
-                onClick={() => router.push(`/dualpath?subject=${subjectId}`)}
-                className="group flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
+                onClick={() => {
+                  if (!isAdminReadOnly) router.push(`/dualpath?subject=${subjectId}`);
+                }}
+                disabled={isAdminReadOnly}
+                className={cn(
+                  "group flex items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left transition-colors",
+                  isAdminReadOnly
+                    ? "cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-white/[0.06] dark:text-slate-500"
+                    : "bg-slate-100 hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]",
+                )}
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
                   <Target className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -365,7 +417,13 @@ export default function Study() {
             ) : (
               <button
                 type="button"
-                onClick={() => router.push(`/full-length-history?subject=${subjectId}&from=study`)}
+                onClick={() =>
+                  router.push(
+                    isAdminReadOnly
+                      ? `${adminUserBasePath}/full-length-history?subject=${subjectId}&from=study`
+                      : `/full-length-history?subject=${subjectId}&from=study`,
+                  )
+                }
                 className="group flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
@@ -381,8 +439,16 @@ export default function Study() {
 
             <button
               type="button"
-              onClick={() => router.push(`/review?subject=${subjectId}`)}
-              className="group flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
+              onClick={() => {
+                if (!isAdminReadOnly) router.push(`/review?subject=${subjectId}`);
+              }}
+              disabled={isAdminReadOnly}
+              className={cn(
+                "group flex items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left transition-colors",
+                isAdminReadOnly
+                  ? "cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-white/[0.06] dark:text-slate-500"
+                  : "bg-slate-100 hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]",
+              )}
             >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
                 <RotateCcw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -531,14 +597,19 @@ export default function Study() {
                         <Button
                           variant="ghost"
                           type="button"
-                          onClick={() =>
-                            setPracticeMenuUnitId((id) => (id === unit.id ? null : unit.id))
-                          }
+                          onClick={() => {
+                            if (!isAdminReadOnly) {
+                              setPracticeMenuUnitId((id) => (id === unit.id ? null : unit.id));
+                            }
+                          }}
+                          disabled={isAdminReadOnly}
                           size="sm"
                           title="Practice quiz for this unit"
                           className={cn(
                             "h-9 min-w-0 flex-1 rounded-full px-3.5 text-[13px] font-semibold",
-                            isMastered
+                            isAdminReadOnly
+                              ? "cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-white/[0.06] dark:text-slate-500"
+                              : isMastered
                               ? "bg-white/80 text-slate-600 hover:!bg-white hover:!text-slate-900 dark:bg-white/[0.08] dark:text-slate-300 dark:hover:!bg-white/[0.12] dark:hover:!text-slate-200"
                               : "bg-blue-600 !text-white hover:!bg-blue-700 hover:!text-white dark:bg-blue-500 dark:hover:!bg-blue-600 dark:hover:!text-white",
                           )}
@@ -562,18 +633,22 @@ export default function Study() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
+                              if (isAdminReadOnly) return;
                               setPracticeMenuUnitId(null);
                               router.push(
                                 `/quiz?subject=${subjectId}&unit=${unit.id}&limit=${n}`,
                               );
                             }}
+                            disabled={isAdminReadOnly}
                             style={{
                               transitionDelay:
                                 practiceMenuUnitId === unit.id ? `${i * 45}ms` : "0ms",
                             }}
                             className={cn(
                               "h-9 min-w-0 flex-1 rounded-full px-2 text-xs font-bold transition-all duration-200 ease-out sm:max-w-[4.1rem] sm:flex-1",
-                              isMastered
+                              isAdminReadOnly
+                                ? "cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-white/[0.06] dark:text-slate-500"
+                                : isMastered
                                 ? "bg-white !text-slate-700 ring-1 ring-slate-200 hover:!bg-slate-50 hover:!text-slate-800 dark:bg-white/[0.08] dark:!text-slate-200 dark:ring-white/10 dark:hover:!bg-white/[0.12] dark:hover:!text-slate-100"
                                 : "bg-blue-600 !text-white hover:!bg-blue-700 hover:!text-white dark:bg-blue-500 dark:hover:!bg-blue-600 dark:hover:!text-white",
                             )}

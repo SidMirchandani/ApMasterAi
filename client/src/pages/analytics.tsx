@@ -21,6 +21,7 @@ import { getProjectedAPScoreDisplay, getTargetPercentagesForSubject, getUnitTier
 import { safeDateParse } from "@/lib/date";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
+import { AdminReadOnlyReturnBar } from "@/components/admin/AdminReadOnlyReturnBar";
 
 interface TestHistoryEntry {
   testNumber: number;
@@ -45,10 +46,32 @@ interface TestHistoryEntry {
   };
 }
 
-export default function AnalyticsPage() {
+export default function AnalyticsPage({
+  adminReadOnlyTargetUserId,
+}: {
+  adminReadOnlyTargetUserId?: string;
+} = {}) {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const subjectId = router.query.subject as string | undefined;
+  const isAdminReadOnly = Boolean(adminReadOnlyTargetUserId);
+  const encodedTargetUserId = adminReadOnlyTargetUserId
+    ? encodeURIComponent(adminReadOnlyTargetUserId)
+    : "";
+  const adminUserBasePath = encodedTargetUserId ? `/admin/users/${encodedTargetUserId}` : "";
+  const studyPath = subjectId
+    ? isAdminReadOnly
+      ? `${adminUserBasePath}/study?subject=${subjectId}`
+      : `/study?subject=${subjectId}`
+    : isAdminReadOnly
+      ? `${adminUserBasePath}/dashboard`
+      : "/dashboard";
+  const historyPath =
+    subjectId && isAdminReadOnly
+      ? `${adminUserBasePath}/full-length-history?subject=${subjectId}&from=analytics`
+      : subjectId
+        ? `/full-length-history?subject=${subjectId}&from=analytics`
+        : "";
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -60,16 +83,22 @@ export default function AnalyticsPage() {
     success: boolean;
     data: TestHistoryEntry[];
   }>({
-    queryKey: ["testHistory", subjectId || "all"],
+    queryKey: isAdminReadOnly
+      ? ["adminUserTestHistory", adminReadOnlyTargetUserId, subjectId || "all"]
+      : ["testHistory", subjectId || "all"],
     queryFn: async () => {
-      const url = subjectId
-        ? `/api/user/test-history?subjectId=${subjectId}`
-        : "/api/user/test-history";
+      const url = isAdminReadOnly
+        ? subjectId
+          ? `/api/admin/users/${encodedTargetUserId}/test-history?subjectId=${subjectId}`
+          : `/api/admin/users/${encodedTargetUserId}/test-history`
+        : subjectId
+          ? `/api/user/test-history?subjectId=${subjectId}`
+          : "/api/user/test-history";
       const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed to fetch test history");
       return res.json();
     },
-    enabled: isAuthenticated && !!user,
+    enabled: isAuthenticated && (isAdminReadOnly || !!user),
   });
 
   const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean; experimentalFeaturesEnabled?: boolean } }>({
@@ -95,13 +124,18 @@ export default function AnalyticsPage() {
 
   // --- Fetch unitProgress (includes diagnostic per-unit scores) ---
   const { data: unitProgressResponse } = useQuery<{ success: boolean; data: any }>({
-    queryKey: ["unitProgress", subjectId],
+    queryKey: isAdminReadOnly
+      ? ["adminUserUnitProgress", adminReadOnlyTargetUserId, subjectId]
+      : ["unitProgress", subjectId],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/user/subjects/${subjectId}/unit-progress`);
+      const url = isAdminReadOnly
+        ? `/api/admin/users/${encodedTargetUserId}/subjects/${subjectId}/unit-progress`
+        : `/api/user/subjects/${subjectId}/unit-progress`;
+      const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed to fetch unit progress");
       return res.json();
     },
-    enabled: isAuthenticated && !!user && !!subjectId,
+    enabled: isAuthenticated && (isAdminReadOnly || !!user) && !!subjectId,
   });
   const unitProgressMap: Record<string, { highestScore: number; mcqScore?: number }> =
     unitProgressResponse?.data || {};
@@ -271,6 +305,7 @@ export default function AnalyticsPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
+      {isAdminReadOnly && <AdminReadOnlyReturnBar />}
 
       <div className="container mx-auto max-w-5xl px-4 py-4">
         <div className="mb-3">
@@ -290,8 +325,15 @@ export default function AnalyticsPage() {
               Start practice to see your projected score and performance.
             </p>
             <Button
-              onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 h-11 rounded-xl shadow-md"
+              onClick={() => {
+                if (!isAdminReadOnly) router.push(studyPath);
+              }}
+              disabled={isAdminReadOnly}
+              className={
+                isAdminReadOnly
+                  ? "h-11 cursor-not-allowed rounded-xl bg-slate-200 px-6 font-semibold text-slate-400 shadow-none dark:bg-white/[0.06] dark:text-slate-500"
+                  : "bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 h-11 rounded-xl shadow-md"
+              }
             >
               Start Practice
             </Button>
@@ -324,8 +366,16 @@ export default function AnalyticsPage() {
                 </CardContent>
               </Card>
               <Card
-                className={`border-slate-200 dark:border-slate-700 dark:bg-white/[0.04] ${showAdminFeatures ? "cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.08]" : ""}`}
-                onClick={showAdminFeatures ? () => subjectId && router.push(`/full-length-history?subject=${subjectId}&from=analytics`) : undefined}
+                className={`border-slate-200 dark:border-slate-700 dark:bg-white/[0.04] ${
+                  showAdminFeatures || isAdminReadOnly
+                    ? "cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.08]"
+                    : ""
+                }`}
+                onClick={
+                  showAdminFeatures || isAdminReadOnly
+                    ? () => historyPath && router.push(historyPath)
+                    : undefined
+                }
               >
                 <CardContent className="p-4 text-center">
                   <BarChart3 className="mx-auto mb-2 h-8 w-8 text-blue-500" />

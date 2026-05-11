@@ -13,12 +13,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const db = getDb();
   const canManageContentAndUsers = await isPlatformAdmin(db, admin.email, admin.uid);
+  const isEnvAdmin = isEnvAdminEmail(admin.email);
 
   return res.status(200).json({
     success: true,
     data: {
+      adminUid: admin.uid,
       /** Email listed in ADMIN_EMAILS (break-glass / env list). */
-      isEnvAdmin: isEnvAdminEmail(admin.email),
+      isEnvAdmin,
       /** Full admin UI and mutations: env list or Firestore `users/{uid}.isAdmin`. */
       canManageContentAndUsers,
     },

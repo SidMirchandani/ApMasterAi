@@ -322,6 +322,8 @@ export default function AdminPage() {
    * admins or Firestore `isAdmin` users. Mirrors `/api/admin/session` → `canManageContentAndUsers`.
    */
   const [canManageContentAndUsers, setCanManageContentAndUsers] = useState(false);
+  const [canMutateUsers, setCanMutateUsers] = useState(false);
+  const [adminUid, setAdminUid] = useState("");
 
   // Data
   const [items, setItems] = useState<Question[]>([]);
@@ -521,18 +523,25 @@ export default function AdminPage() {
       if (res.status === 403) {
         setAdminStatus("forbidden");
         setCanManageContentAndUsers(false);
+        setCanMutateUsers(false);
+        setAdminUid("");
         return;
       }
       if (!res.ok) {
         setAdminStatus("forbidden");
         setCanManageContentAndUsers(false);
+        setCanMutateUsers(false);
+        setAdminUid("");
         return;
       }
       const json = await res.json();
       setAdminStatus("allowed");
       const full =
         json.data?.canManageContentAndUsers === true || json.data?.isEnvAdmin === true;
+      const envAdmin = json.data?.isEnvAdmin === true;
       setCanManageContentAndUsers(full);
+      setCanMutateUsers(envAdmin);
+      setAdminUid(typeof json.data?.adminUid === "string" ? json.data.adminUid : "");
       if (full) {
         await loadSubjectStatus();
       } else {
@@ -543,6 +552,8 @@ export default function AdminPage() {
       console.error("Failed to verify admin session:", err);
       setAdminStatus("forbidden");
       setCanManageContentAndUsers(false);
+      setCanMutateUsers(false);
+      setAdminUid("");
     }
   }
 
@@ -916,6 +927,8 @@ export default function AdminPage() {
         setToken("");
         setAdminStatus("pending");
         setCanManageContentAndUsers(false);
+        setCanMutateUsers(false);
+        setAdminUid("");
       }
       setLoading(false);
     });
@@ -2290,7 +2303,7 @@ export default function AdminPage() {
       </div>
         )}
         {tab === "users" && (
-          <AdminUsersTab token={token} canMutateUsers={canManageContentAndUsers} />
+          <AdminUsersTab token={token} adminUid={adminUid} canMutateUsers={canMutateUsers} />
         )}
         {tab === "backfill" && <AdminBackfillTab token={token} />}
       </AdminDashboardLayout>

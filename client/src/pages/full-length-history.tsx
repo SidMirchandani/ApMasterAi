@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/api";
 import { formatDate, safeDateParse } from "@/lib/date";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { getApiCodeForSubject } from "@/subjects";
+import { AdminReadOnlyReturnBar } from "@/components/admin/AdminReadOnlyReturnBar";
 
 interface TestHistoryEntry {
   testNumber: number;
@@ -61,10 +62,26 @@ function getTestTypeIcon(type: string) {
   }
 }
 
-export default function FullLengthHistoryPage() {
+export default function FullLengthHistoryPage({
+  adminReadOnlyTargetUserId,
+}: {
+  adminReadOnlyTargetUserId?: string;
+} = {}) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const subjectId = (router.query.subject as string) || undefined;
+  const isAdminReadOnly = Boolean(adminReadOnlyTargetUserId);
+  const encodedTargetUserId = adminReadOnlyTargetUserId
+    ? encodeURIComponent(adminReadOnlyTargetUserId)
+    : "";
+  const adminUserBasePath = encodedTargetUserId ? `/admin/users/${encodedTargetUserId}` : "";
+  const studyPath = subjectId
+    ? isAdminReadOnly
+      ? `${adminUserBasePath}/study?subject=${subjectId}`
+      : `/study?subject=${subjectId}`
+    : isAdminReadOnly
+      ? `${adminUserBasePath}/dashboard`
+      : "/dashboard";
   const from = (router.query.from as string) || undefined; // "analytics" | "study" – where we came from
 
   useEffect(() => {
@@ -77,11 +94,17 @@ export default function FullLengthHistoryPage() {
     success: boolean;
     data: TestHistoryEntry[];
   }>({
-    queryKey: ["testHistory", subjectId || "all"],
+    queryKey: isAdminReadOnly
+      ? ["adminUserTestHistory", adminReadOnlyTargetUserId, subjectId || "all"]
+      : ["testHistory", subjectId || "all"],
     queryFn: async () => {
-      const url = subjectId
-        ? `/api/user/test-history?subjectId=${subjectId}`
-        : "/api/user/test-history";
+      const url = isAdminReadOnly
+        ? subjectId
+          ? `/api/admin/users/${encodedTargetUserId}/test-history?subjectId=${subjectId}`
+          : `/api/admin/users/${encodedTargetUserId}/test-history`
+        : subjectId
+          ? `/api/user/test-history?subjectId=${subjectId}`
+          : "/api/user/test-history";
       const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed to fetch test history");
       return res.json();
@@ -122,6 +145,7 @@ export default function FullLengthHistoryPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
+      {isAdminReadOnly && <AdminReadOnlyReturnBar />}
       <main className="relative z-10 mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-8">
         <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 space-y-1">
@@ -139,7 +163,7 @@ export default function FullLengthHistoryPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/dashboard")}
+            onClick={() => router.push(studyPath)}
             className="h-10 shrink-0 rounded-full px-4 text-sm font-medium text-slate-600 hover:bg-slate-900/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.06]"
             aria-label="Close history"
           >
@@ -168,7 +192,13 @@ export default function FullLengthHistoryPage() {
             <Button
               variant="ghost"
               className="mt-6 h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
-              onClick={() => router.push(subjectId ? `/study?subject=${subjectId}` : "/learn")}
+              onClick={() => {
+                if (isAdminReadOnly) {
+                  router.push(studyPath);
+                } else {
+                  router.push(subjectId ? `/study?subject=${subjectId}` : "/learn");
+                }
+              }}
             >
               Go to Study
             </Button>
@@ -183,12 +213,19 @@ export default function FullLengthHistoryPage() {
                   <li key={`${test.type}-${test.id}`}>
                     <button
                       type="button"
-                      onClick={() =>
-                        router.push(
-                          `/full-length-results?subject=${test.subjectId}&testId=${test.id}&from=history${from ? `&returnTo=${from}` : ""}`,
-                        )
-                      }
-                      className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-100 px-4 py-4 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
+                      onClick={() => {
+                        if (!isAdminReadOnly) {
+                          router.push(
+                            `/full-length-results?subject=${test.subjectId}&testId=${test.id}&from=history${from ? `&returnTo=${from}` : ""}`,
+                          );
+                        }
+                      }}
+                      disabled={isAdminReadOnly}
+                      className={`flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-100 px-4 py-4 text-left transition-colors dark:bg-white/[0.06] ${
+                        isAdminReadOnly
+                          ? "cursor-default"
+                          : "hover:bg-slate-200/80 dark:hover:bg-white/[0.09]"
+                      }`}
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <span className="w-6 shrink-0 text-sm font-semibold tabular-nums text-slate-400 dark:text-slate-500">

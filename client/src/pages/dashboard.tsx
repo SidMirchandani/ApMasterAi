@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSubjectByCode, getApiCodeForSubject, getUnitWeightsBySectionCode } from "@/subjects";
 import { getProjectedAPScoreDisplay, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
+import { AdminReadOnlyReturnBar } from "@/components/admin/AdminReadOnlyReturnBar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,11 +58,20 @@ interface DashboardSubject {
 // =====================
 // MAIN DASHBOARD COMPONENT
 // =====================
-export default function Dashboard() {
+export default function Dashboard({
+  adminReadOnlyTargetUserId,
+}: {
+  adminReadOnlyTargetUserId?: string;
+} = {}) {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isAdminReadOnly = Boolean(adminReadOnlyTargetUserId);
+  const encodedTargetUserId = adminReadOnlyTargetUserId
+    ? encodeURIComponent(adminReadOnlyTargetUserId)
+    : "";
+  const adminUserBasePath = encodedTargetUserId ? `/admin/users/${encodedTargetUserId}` : "";
 
   const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
@@ -70,11 +80,15 @@ export default function Dashboard() {
   const archiveSectionRef = useRef<HTMLDivElement>(null);
 
   const { data: userProfile } = useQuery({
-    queryKey: ["userProfile"],
+    queryKey: isAdminReadOnly ? ["adminUserProfile", adminReadOnlyTargetUserId] : ["userProfile"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/user/me");
+      const url = isAdminReadOnly
+        ? `/api/admin/users/${encodedTargetUserId}/dashboard`
+        : "/api/user/me";
+      const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed profile");
-      return res.json();
+      const json = await res.json();
+      return isAdminReadOnly ? { success: json.success, data: json.data?.user } : json;
     },
     enabled: isAuthenticated,
     staleTime: Infinity,
@@ -92,7 +106,8 @@ export default function Dashboard() {
     staleTime: 5 * 60 * 1000,
   });
   const isAdmin = adminCheck?.data?.isAdmin ?? false;
-  const showAdminFeatures = isAdmin && (adminCheck?.data?.experimentalFeaturesEnabled ?? false);
+  const showAdminFeatures =
+    isAdminReadOnly || (isAdmin && (adminCheck?.data?.experimentalFeaturesEnabled ?? false));
 
   const {
     data: subjectsResponse,
@@ -101,9 +116,12 @@ export default function Dashboard() {
     refetch: refetchSubjects,
     isFetching: subjectsFetching,
   } = useQuery({
-    queryKey: ["subjects"],
+    queryKey: isAdminReadOnly ? ["adminUserSubjects", adminReadOnlyTargetUserId] : ["subjects"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/user/subjects");
+      const url = isAdminReadOnly
+        ? `/api/admin/users/${encodedTargetUserId}/subjects`
+        : "/api/user/subjects";
+      const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed subjects");
       return res.json();
     },
@@ -212,6 +230,7 @@ export default function Dashboard() {
   return (
     <div className="relative min-h-screen bg-white dark:bg-[#0B0F1A]">
       <Navigation />
+      {isAdminReadOnly && <AdminReadOnlyReturnBar />}
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 py-5 md:px-6 md:py-7">
         {/* Header */}
@@ -241,10 +260,17 @@ export default function Dashboard() {
                   View archive
                 </Button>
                 <Button
-                  onClick={() => router.push("/learn")}
+                  onClick={() => {
+                    if (!isAdminReadOnly) router.push("/learn");
+                  }}
+                  disabled={isAdminReadOnly}
                   variant="ghost"
                   size="sm"
-                  className="h-9 rounded-full bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+                  className={`h-9 rounded-full px-4 text-sm font-semibold ${
+                    isAdminReadOnly
+                      ? "cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-white/[0.06] dark:text-slate-500"
+                      : "bg-blue-600 text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+                  }`}
                 >
                   <Plus className="mr-1.5 h-4 w-4" /> Add course
                 </Button>
@@ -256,7 +282,7 @@ export default function Dashboard() {
         {subjectsLoading || !subjectsResponse ? (
           <CenteredLoader />
         ) : subjects.length === 0 ? (
-          <EmptyState router={router} />
+          <EmptyState router={router} readOnly={isAdminReadOnly} />
         ) : (
           <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -299,8 +325,10 @@ export default function Dashboard() {
                   key={subject.id}
                   subject={subject}
                   isAdmin={showAdminFeatures}
+                  readOnly={isAdminReadOnly}
+                  adminReadOnlyTargetUserId={adminReadOnlyTargetUserId}
                   onConfirmArchive={() =>
-                    archiveMutation.mutate({ id: subject.id, archive: true })
+                    !isAdminReadOnly && archiveMutation.mutate({ id: subject.id, archive: true })
                   }
                   onDelete={
                     showAdminFeatures
@@ -310,7 +338,13 @@ export default function Dashboard() {
                         }
                       : undefined
                   }
-                  onStudy={() => router.push(`/study?subject=${subject.subjectId}`)}
+                  onStudy={() =>
+                    router.push(
+                      isAdminReadOnly
+                        ? `${adminUserBasePath}/study?subject=${subject.subjectId}`
+                        : `/study?subject=${subject.subjectId}`,
+                    )
+                  }
                   unitProgressOverride={(subject as any).unitProgress}
                 />
               ))}
@@ -322,7 +356,8 @@ export default function Dashboard() {
                 subjects={archivedSubjects}
                 isOpen={isArchiveExpanded}
                 toggle={() => setIsArchiveExpanded((v) => !v)}
-                onRestore={(s) => archiveMutation.mutate({ id: s.id, archive: false })}
+                readOnly={isAdminReadOnly}
+                onRestore={(s) => !isAdminReadOnly && archiveMutation.mutate({ id: s.id, archive: false })}
               />
               </div>
             )}
@@ -331,7 +366,7 @@ export default function Dashboard() {
       </main>
 
       {/* Delete dialog (only relevant when experimental features are on) */}
-      {showAdminFeatures && (
+      {showAdminFeatures && !isAdminReadOnly && (
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-w-md rounded-2xl shadow-none">
           <AlertDialogHeader>
@@ -374,7 +409,7 @@ const CenteredLoader = () => (
   </div>
 );
 
-const EmptyState = ({ router }: { router: any }) => (
+const EmptyState = ({ router, readOnly = false }: { router: any; readOnly?: boolean }) => (
   <div className="flex flex-col items-center px-4 py-12 text-center">
     <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/15 via-blue-400/10 to-violet-500/15 ring-1 ring-blue-500/10 dark:from-blue-500/20 dark:via-blue-400/10 dark:to-violet-500/15 dark:ring-white/10">
       <ApMasterLogoMark size={60} className="rounded-2xl" />
@@ -386,9 +421,16 @@ const EmptyState = ({ router }: { router: any }) => (
       Add an AP subject to unlock practice, analytics, and a projected score that updates as you improve.
     </p>
     <Button
-      onClick={() => router.push("/learn")}
+      onClick={() => {
+        if (!readOnly) router.push("/learn");
+      }}
+      disabled={readOnly}
       variant="ghost"
-      className="h-11 rounded-full bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600 sm:text-base"
+      className={`h-11 rounded-full px-6 text-sm font-semibold sm:text-base ${
+        readOnly
+          ? "cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-white/[0.06] dark:text-slate-500"
+          : "bg-blue-600 text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
+      }`}
     >
       <Plus className="mr-2 h-5 w-5" /> Browse courses
     </Button>
@@ -430,11 +472,13 @@ const ArchivedSection = ({
   isOpen,
   toggle,
   onRestore,
+  readOnly = false,
 }: {
   subjects: DashboardSubject[];
   isOpen: boolean;
   toggle: () => void;
   onRestore: (s: DashboardSubject) => void;
+  readOnly?: boolean;
 }) => (
   <section className="mt-6 border-t border-slate-200/70 pt-5 dark:border-slate-800/80">
     <button
@@ -471,7 +515,12 @@ const ArchivedSection = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => onRestore(s)}
-                className="h-9 shrink-0 rounded-full px-4 font-semibold text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/15 sm:self-center"
+                disabled={readOnly}
+                className={`h-9 shrink-0 rounded-full px-4 font-semibold sm:self-center ${
+                  readOnly
+                    ? "cursor-not-allowed text-slate-400 dark:text-slate-500"
+                    : "text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/15"
+                }`}
               >
                 Restore
               </Button>
@@ -495,6 +544,8 @@ const scoreColorMap: Record<number, { text: string; bg: string; border: string; 
 const SubjectCard = ({
   subject,
   isAdmin,
+  readOnly = false,
+  adminReadOnlyTargetUserId,
   onConfirmArchive,
   onDelete,
   onStudy,
@@ -502,6 +553,8 @@ const SubjectCard = ({
 }: {
   subject: DashboardSubject;
   isAdmin?: boolean;
+  readOnly?: boolean;
+  adminReadOnlyTargetUserId?: string;
   onConfirmArchive: () => void;
   onDelete?: () => void;
   onStudy: () => void;
@@ -516,9 +569,14 @@ const SubjectCard = ({
     success: boolean;
     data: { percentage: number; type?: "full-length" | "diagnostic"; sectionBreakdown?: Record<string, { correct: number; total: number }> }[];
   }>({
-    queryKey: ["testHistory", subject.subjectId],
+    queryKey: adminReadOnlyTargetUserId
+      ? ["adminUserTestHistory", adminReadOnlyTargetUserId, subject.subjectId]
+      : ["testHistory", subject.subjectId],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/user/test-history?subjectId=${subject.subjectId}`);
+      const url = adminReadOnlyTargetUserId
+        ? `/api/admin/users/${encodeURIComponent(adminReadOnlyTargetUserId)}/test-history?subjectId=${subject.subjectId}`
+        : `/api/user/test-history?subjectId=${subject.subjectId}`;
+      const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
@@ -589,9 +647,16 @@ const SubjectCard = ({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setArchiveConfirm(true)}
+                    onClick={() => {
+                      if (!readOnly) setArchiveConfirm(true);
+                    }}
+                    disabled={readOnly}
                     title="Archive"
-                    className="h-9 rounded-full px-3 text-xs font-medium text-slate-600 shadow-none hover:bg-slate-900/[0.05] hover:shadow-none dark:text-slate-400 dark:hover:bg-white/[0.06]"
+                    className={`h-9 rounded-full px-3 text-xs font-medium shadow-none hover:shadow-none ${
+                      readOnly
+                        ? "cursor-not-allowed text-slate-400 dark:text-slate-500"
+                        : "text-slate-600 hover:bg-slate-900/[0.05] dark:text-slate-400 dark:hover:bg-white/[0.06]"
+                    }`}
                   >
                     Archive
                   </Button>
@@ -625,7 +690,12 @@ const SubjectCard = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-9 w-9 rounded-full p-0 text-slate-400 shadow-none hover:bg-red-500/10 hover:text-red-600 hover:shadow-none dark:hover:text-red-400"
+                  disabled={readOnly}
+                  className={`h-9 w-9 rounded-full p-0 shadow-none hover:shadow-none ${
+                    readOnly
+                      ? "cursor-not-allowed text-slate-400 dark:text-slate-500"
+                      : "text-slate-400 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                  }`}
                   onClick={onDelete}
                   title="Delete"
                 >
