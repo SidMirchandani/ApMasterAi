@@ -25,7 +25,6 @@ import { Zap } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
 import { useQuizEngine } from "@/hooks/useQuizEngine";
-import { showPracticeExamToolHeader } from "@/lib/examTools";
 import {
   getAnalyticsPageParams,
   trackVersionedAnalyticsEvent,
@@ -160,7 +159,10 @@ export function PracticeQuiz({
   const unitParam =
     typeof router.query.unit === "string" ? router.query.unit : undefined;
 
-  const showToolHeader = showPracticeExamToolHeader(subjectId);
+  const showPracticeHeader = !isFullLength;
+  const practiceHeaderTitle = `${subject?.displayName ?? "Practice"} - Practice Quiz`;
+  const practiceHeaderOffsetClass =
+    "md:pt-[calc(5rem+1px)] max-md:pt-[calc(3.75rem+1px+4.25rem+1px-5.5rem)]";
 
   const getQuizAnalyticsParams = (
     surface: "quiz" | "result" = "quiz",
@@ -394,7 +396,20 @@ export function PracticeQuiz({
     const isFirstStep = primerStepIndex === 0;
     return (
       <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
-        <div className="flex flex-1 overflow-y-auto">
+        {showPracticeHeader && (
+          <div className="fixed left-0 right-0 top-[calc(3.75rem+1px)] z-40">
+            <PracticeQuizHeader
+              title={practiceHeaderTitle}
+              subjectId={subjectId}
+              onExitExam={handleHeaderExit}
+            />
+          </div>
+        )}
+        <div
+          className={`flex flex-1 overflow-y-auto ${
+            showPracticeHeader ? practiceHeaderOffsetClass : ""
+          }`}
+        >
           <div className="mx-auto flex max-w-3xl flex-1 flex-col items-center justify-center px-4 py-8">
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2 text-center">
               Concepts to know for the next 5 questions
@@ -455,10 +470,10 @@ export function PracticeQuiz({
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
-      {showToolHeader && (
+      {showPracticeHeader && (
         <div className="fixed left-0 right-0 top-[calc(3.75rem+1px)] z-40">
           <PracticeQuizHeader
-            title={`${subject?.displayName ?? "Practice"} — Practice Quiz`}
+            title={practiceHeaderTitle}
             subjectId={subjectId}
             onExitExam={handleHeaderExit}
           />
@@ -466,15 +481,12 @@ export function PracticeQuiz({
       )}
       <div
         className={`flex min-h-0 flex-1 flex-col overflow-hidden ${
-          showToolHeader
-            ? // Nav height is already offset by Navigation’s in-flow spacer; only reserve the fixed practice header (h-16 + border).
-              "md:pt-[calc(5rem+1px)] max-md:pt-[calc(3.75rem+1px+4.25rem+1px-5.5rem)]"
-            : ""
+          showPracticeHeader ? practiceHeaderOffsetClass : ""
         }`}
       >
         <div className="min-h-0 flex-1 overflow-y-auto pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-32">
           <div
-            className={`mx-auto max-w-6xl px-2 sm:px-3 ${showToolHeader ? "pb-1 pt-0" : "py-2"}`}
+            className={`mx-auto max-w-6xl px-2 sm:px-3 ${showPracticeHeader ? "pb-1 pt-0" : "py-2"}`}
           >
             <div className={QUIZ_QUESTION_EXPL_GRID_CLASS}>
               <div className="min-w-0">
