@@ -63,6 +63,8 @@ const SUBJECTS_WITH_LEGACY_SECTION_FIX: readonly string[] = ["APMACRO", "APWORLD
 const VALID_TABS = ["insights", "library", "users", "backfill"] as const;
 type AdminTab = (typeof VALID_TABS)[number];
 
+const QUESTIONS_PAGE_SIZE = 25;
+
 /** Mutually exclusive row filters in Content Library (radio group). */
 type AdminRowQualityFilter =
   | "all"
@@ -340,6 +342,7 @@ export default function AdminPage() {
    * so rows stay visible after Fix Image Choices until you search/toggle again.
    */
   const [mixedPromptsPinnedIds, setMixedPromptsPinnedIds] = useState<string[] | null>(null);
+  const [questionsPage, setQuestionsPage] = useState(1);
   // Bulk delete dialog/button removed from UI; keep flags for potential future reuse.
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -407,6 +410,28 @@ export default function AdminPage() {
     showOnlyMixedPrompts,
     mixedPromptsPinnedIds,
   ]);
+
+  const questionsTotalPages = Math.max(1, Math.ceil(displayedItems.length / QUESTIONS_PAGE_SIZE));
+
+  const paginatedItems = useMemo(() => {
+    const start = (questionsPage - 1) * QUESTIONS_PAGE_SIZE;
+    return displayedItems.slice(start, start + QUESTIONS_PAGE_SIZE);
+  }, [displayedItems, questionsPage]);
+
+  useEffect(() => {
+    setQuestionsPage(1);
+  }, [
+    rowQualityFilter,
+    showOnlyVerificationIncomplete,
+    showOnlyMixedPrompts,
+    mixedPromptsPinnedIds,
+  ]);
+
+  useEffect(() => {
+    if (questionsPage > questionsTotalPages) {
+      setQuestionsPage(questionsTotalPages);
+    }
+  }, [questionsPage, questionsTotalPages]);
 
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
@@ -1035,6 +1060,7 @@ export default function AdminPage() {
     const nextItems: Question[] = data.items || [];
     setItems(nextItems);
     setSelectedQuestions(new Set());
+    setQuestionsPage(1);
     return nextItems;
   }
 
@@ -1624,12 +1650,17 @@ export default function AdminPage() {
   }
 
   function toggleSelectAll() {
-    const allDisplayedSelected = displayedItems.length > 0 && displayedItems.every(q => selectedQuestions.has(q.id));
-    if (allDisplayedSelected) {
-      setSelectedQuestions(new Set());
-    } else {
-      setSelectedQuestions(new Set(displayedItems.map(q => q.id)));
-    }
+    const allPageSelected =
+      paginatedItems.length > 0 && paginatedItems.every((q) => selectedQuestions.has(q.id));
+    setSelectedQuestions((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) {
+        paginatedItems.forEach((q) => next.delete(q.id));
+      } else {
+        paginatedItems.forEach((q) => next.add(q.id));
+      }
+      return next;
+    });
   }
 
   const handleCheatModeToggle = (checked: boolean) => {
@@ -2258,7 +2289,7 @@ export default function AdminPage() {
 
         {/* Questions Table Card */}
         <Card className="dark:bg-slate-900/60 dark:border-slate-800">
-          <CardHeader>
+          <CardHeader className="pb-0">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -2310,22 +2341,58 @@ export default function AdminPage() {
                 )}
               </div>
             </div>
+            {displayedItems.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pt-1.5 border-t border-slate-200 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 m-0 leading-none">
+                  Showing{" "}
+                  {(questionsPage - 1) * QUESTIONS_PAGE_SIZE + 1}
+                  {"–"}
+                  {Math.min(questionsPage * QUESTIONS_PAGE_SIZE, displayedItems.length)} of{" "}
+                  {displayedItems.length}
+                </p>
+                {questionsTotalPages > 1 && (
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={questionsPage <= 1}
+                      onClick={() => setQuestionsPage((p) => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-xs text-slate-600 dark:text-slate-300 leading-none">
+                      Page {questionsPage} of {questionsTotalPages}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={questionsPage >= questionsTotalPages}
+                      onClick={() => setQuestionsPage((p) => Math.min(questionsTotalPages, p + 1))}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </CardHeader>
           {/* Bulk delete dialog removed from UI */}
           <CardContent>
-            {/* Sticky status row above the table. Always rendered with a fixed
-                height so the page layout does not jump when progress appears
-                or disappears. */}
             {(() => {
               const status = explanationProgress || lastExplanationSummary;
+              if (!status) return null;
+
               const doneCount =
-                status &&
-                (typeof status.passed === "number"
+                typeof status.passed === "number"
                   ? status.passed + status.failed + status.skipped
-                  : status.updated + status.skipped + status.failed);
+                  : status.updated + status.skipped + status.failed;
 
               const percent =
-                status && status.total > 0
+                status.total > 0
                   ? Math.round(
                       (status.current / Math.max(status.total, 1)) * 100,
                     )
@@ -2333,63 +2400,53 @@ export default function AdminPage() {
 
               return (
                 <div className="mb-3">
-                  <div
-                    className={`h-16 flex items-stretch justify-between rounded-md border px-3 py-1 text-xs transition-colors ${
-                      status
-                        ? "border-slate-200/60 bg-slate-50/40 text-slate-700 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-200"
-                        : "border-transparent bg-transparent text-slate-700 dark:text-slate-200"
-                    }`}
-                  >
-                    {status ? (
-                      <>
-                        <div className="flex-1 flex flex-col justify-center gap-1 pr-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="truncate">{status.message}</span>
-                            {status.total > 0 && (
-                              <span className="shrink-0">{percent}%</span>
-                            )}
-                          </div>
-                          <Progress
-                            value={
-                              (status.current / Math.max(status.total || 1, 1)) *
-                              100
-                            }
-                            className="h-1.5"
-                          />
-                          <div className="flex flex-wrap gap-3 text-[11px] text-slate-500 dark:text-slate-400">
-                            <span className="text-green-600 dark:text-green-400 font-medium">
-                              Done: {doneCount ?? 0}
-                            </span>
-                            <span className="text-amber-500 dark:text-amber-400">
-                              Skipped: {status.skipped}
-                            </span>
-                            <span className="text-red-600 dark:text-red-400">
-                              Failed: {status.failed}
-                            </span>
-                            {typeof status.passed === "number" && (
-                              <span className="text-green-700 dark:text-green-400 font-medium">
-                                Pass: {status.passed}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-start pt-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                            onClick={() => {
-                              setExplanationProgress(null);
-                              setLastExplanationSummary(null);
-                            }}
-                            aria-label="Dismiss status"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </>
-                    ) : null}
+                  <div className="h-16 flex items-stretch justify-between rounded-md border border-slate-200/60 bg-slate-50/40 px-3 py-1 text-xs text-slate-700 transition-colors dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-200">
+                    <div className="flex-1 flex flex-col justify-center gap-1 pr-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate">{status.message}</span>
+                        {status.total > 0 && (
+                          <span className="shrink-0">{percent}%</span>
+                        )}
+                      </div>
+                      <Progress
+                        value={
+                          (status.current / Math.max(status.total || 1, 1)) *
+                          100
+                        }
+                        className="h-1.5"
+                      />
+                      <div className="flex flex-wrap gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="text-green-600 dark:text-green-400 font-medium">
+                          Done: {doneCount ?? 0}
+                        </span>
+                        <span className="text-amber-500 dark:text-amber-400">
+                          Skipped: {status.skipped}
+                        </span>
+                        <span className="text-red-600 dark:text-red-400">
+                          Failed: {status.failed}
+                        </span>
+                        {typeof status.passed === "number" && (
+                          <span className="text-green-700 dark:text-green-400 font-medium">
+                            Pass: {status.passed}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-start pt-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                        onClick={() => {
+                          setExplanationProgress(null);
+                          setLastExplanationSummary(null);
+                        }}
+                        aria-label="Dismiss status"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );
@@ -2414,7 +2471,10 @@ export default function AdminPage() {
                   <tr>
                     <th className="p-2 text-center">
                       <Checkbox
-                        checked={displayedItems.length > 0 && displayedItems.every(q => selectedQuestions.has(q.id))}
+                        checked={
+                          paginatedItems.length > 0 &&
+                          paginatedItems.every((q) => selectedQuestions.has(q.id))
+                        }
                         onCheckedChange={toggleSelectAll}
                       />
                     </th>
@@ -2432,7 +2492,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayedItems.map((q) => (
+                  {paginatedItems.map((q) => (
                     <Row
                       key={q.id}
                       q={q}
