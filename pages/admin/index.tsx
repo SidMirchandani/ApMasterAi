@@ -2309,7 +2309,7 @@ export default function AdminPage() {
               </div>
               <div className="flex gap-2 items-center">
                 <Select value={selectedAction} onValueChange={setSelectedAction}>
-                  <SelectTrigger className="w-[250px] bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
+                  <SelectTrigger className="w-[280px] bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
                     <SelectValue placeholder="Select Action" />
                   </SelectTrigger>
                   <SelectContent>
@@ -2318,6 +2318,10 @@ export default function AdminPage() {
                       Re-Generate Explanations (overwrite)
                     </SelectItem>
                     <SelectItem value="re-generate-explanations">Reformat Existing Explanations</SelectItem>
+                    <SelectItem value="study-notes">Generate Study Notes</SelectItem>
+                    <SelectItem value="re-generate-study-notes">Re-Generate Study Notes</SelectItem>
+                    <SelectItem value="fix-prompts">Format Questions & Choices</SelectItem>
+                    <SelectItem value="fix-mixed-media-prompts">Fix Mixed Media Prompts</SelectItem>
                     <SelectItem value="grade-difficulty">Auto-Tag Question Difficulty</SelectItem>
                     <SelectItem value="verify-questions">Verify Questions</SelectItem>
                   </SelectContent>
