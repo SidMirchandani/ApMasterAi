@@ -50,6 +50,11 @@ import {
   getSubjectByCode,
 } from "@/subjects";
 import { getDisplayCorrectLabel } from "@/lib/mcqDisplay";
+import { getQuizExitPath } from "@/lib/quiz-return";
+import {
+  MICRO_DRILL_MAX_SESSION_QUESTIONS,
+  MICRO_DRILL_ROUND_SIZE,
+} from "@/lib/micro-drill-checkpoint";
 
 // Exam configurations: questions and time per test (2026 Digital/Hybrid standards)
 const EXAM_CONFIGS: {
@@ -93,8 +98,19 @@ export default function Quiz() {
     unit,
     limit: limitParam,
     primer: primerParam,
+    mode: modeParam,
+    goal: goalParam,
   } = router.query;
+  const isMicroDrill = modeParam === "micro-drill";
   const primerEnabled = primerParam === "1";
+  const microDrillGoal: 4 | 5 =
+    goalParam === "5" || goalParam === "4" ? (Number(goalParam) as 4 | 5) : 4;
+
+  const [microDrillRound, setMicroDrillRound] = useState(1);
+  const [seenQuestionIds, setSeenQuestionIds] = useState<string[]>([]);
+  const [sessionCorrect, setSessionCorrect] = useState(0);
+  const [sessionTotal, setSessionTotal] = useState(0);
+  const [loadingNextRound, setLoadingNextRound] = useState(false);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -228,28 +244,34 @@ export default function Quiz() {
             return;
           }
 
-          // Check for saved unit quiz state (save and exit)
-          try {
-            const stateResponse = await apiRequest(
-              "GET",
-              `/api/user/subjects/${subjectId}/unit-quiz-state?unitId=${encodeURIComponent(unit as string)}`,
-            );
-            if (stateResponse.ok) {
-              const stateData = await stateResponse.json();
-              if (stateData.success && stateData.data) {
-                setSavedUnitQuizState(stateData.data);
-                setShowResumeDialog(true);
-                setIsLoading(false);
-                return;
+          if (!isMicroDrill) {
+            try {
+              const stateResponse = await apiRequest(
+                "GET",
+                `/api/user/subjects/${subjectId}/unit-quiz-state?unitId=${encodeURIComponent(unit as string)}`,
+              );
+              if (stateResponse.ok) {
+                const stateData = await stateResponse.json();
+                if (stateData.success && stateData.data) {
+                  setSavedUnitQuizState(stateData.data);
+                  setShowResumeDialog(true);
+                  setIsLoading(false);
+                  return;
+                }
               }
-            }
-          } catch {}
+            } catch {}
+          }
 
-          const limit =
-            typeof limitParam === "string" && /^\d+$/.test(limitParam)
+          const limit = isMicroDrill
+            ? MICRO_DRILL_ROUND_SIZE
+            : typeof limitParam === "string" && /^\d+$/.test(limitParam)
               ? Math.min(100, Math.max(1, parseInt(limitParam, 10)))
               : 25;
-          const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=${limit}`;
+          const excludePart =
+            isMicroDrill && seenQuestionIds.length > 0
+              ? `&excludeIds=${encodeURIComponent(seenQuestionIds.join(","))}`
+              : "";
+          const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=${limit}${excludePart}`;
           const response = await apiRequest("GET", apiUrl);
           if (!response.ok) {
             console.error("❌ [Quiz] API request failed:", {
@@ -286,7 +308,131 @@ export default function Quiz() {
     };
 
     if (isAuthenticated && unit && subjectId) fetchQuestions();
-  }, [isAuthenticated, unit, subjectId, limitParam]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- micro-drill "continue" uses fetchMicroDrillRound
+  }, [isAuthenticated, unit, subjectId, limitParam, isMicroDrill]);
+
+  const fetchMicroDrillRound = async (excludeIds: string[]) => {
+    if (!subjectId || !unit) return;
+    const subjectApiCode = getApiCodeForSubject(subjectId as string);
+    if (!subjectApiCode) return;
+    const sectionCode = getSectionCodeForUnit(
+      subjectId as string,
+      unit as string,
+    );
+    if (!sectionCode) return;
+
+    setLoadingNextRound(true);
+    setIsLoading(true);
+    try {
+      const excludePart =
+        excludeIds.length > 0
+          ? `&excludeIds=${encodeURIComponent(excludeIds.join(","))}`
+          : "";
+      const apiUrl = `/api/questions?subject=${subjectApiCode}&section=${sectionCode}&limit=${MICRO_DRILL_ROUND_SIZE}${excludePart}`;
+      const response = await apiRequest("GET", apiUrl);
+      if (!response.ok) throw new Error("Failed to fetch");
+      const data = await response.json();
+      if (data.success && data.data?.length > 0) {
+        const shuffled = [...normalizeQuestions(data.data)].sort(
+          () => Math.random() - 0.5,
+        );
+        setQuestions(shuffled.slice(0, MICRO_DRILL_ROUND_SIZE));
+      } else {
+        setError("No more questions available for this unit");
+      }
+    } catch {
+      setError("Failed to load more questions");
+    } finally {
+      setLoadingNextRound(false);
+      setIsLoading(false);
+    }
+  };
+
+  const saveMicroDrillSession = async (
+    totalCorrect: number,
+    totalQuestions: number,
+  ) => {
+    const subj = subjectId as string;
+    const unitStr = unit as string;
+    if (!subj || !unitStr) return;
+
+    const pct =
+      totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    const sectionCode =
+      typeof unitStr === "string" && /^[A-Z]{2,}$/.test(unitStr)
+        ? unitStr
+        : getSectionCodeForUnit(subj, unitStr);
+    const sectionInfo =
+      sectionCode && subj ? getSectionByCode(subj, sectionCode) : undefined;
+
+    try {
+      await apiRequest("PUT", `/api/user/subjects/${subj}/unit-progress`, {
+        unitId: unitStr,
+        mcqScore: pct,
+      });
+      await apiRequest("POST", `/api/user/subjects/${subj}/unit-quiz-result`, {
+        unitId: unitStr,
+        sectionCode: sectionCode || unitStr,
+        score: totalCorrect,
+        percentage: pct,
+        totalQuestions,
+        sectionName: sectionInfo?.name,
+        unitNumber: sectionInfo?.unitNumber,
+        userAnswers: {},
+        questions: [],
+      });
+      await apiRequest(
+        "DELETE",
+        `/api/user/subjects/${subj}/unit-quiz-state?unitId=${encodeURIComponent(unitStr)}`,
+      );
+      queryClient.invalidateQueries({ queryKey: ["testHistory", subj] });
+      queryClient.invalidateQueries({ queryKey: ["unitProgress", subj] });
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+    } catch (e) {
+      console.error("[micro-drill] save failed", e);
+      toast({
+        variant: "destructive",
+        title: "Score not saved",
+        description: "Try again from Fast Path.",
+      });
+    }
+  };
+
+  const handleMicroDrillEndPractice = async () => {
+    const totalCorrect = sessionCorrect;
+    const totalQuestions = sessionTotal;
+    if (totalQuestions > 0) {
+      await saveMicroDrillSession(totalCorrect, totalQuestions);
+    }
+    completionPayloadRef.current = null;
+    router.replace(getQuizExitPath(subjectId, router.query.from));
+  };
+
+  const handleMicroDrillRoundContinue = async (
+    roundCorrect: number,
+    roundTotal: number,
+  ) => {
+    const newSessionCorrect = sessionCorrect + roundCorrect;
+    const newSessionTotal = sessionTotal + roundTotal;
+    const newSeen = [
+      ...seenQuestionIds,
+      ...questions.map((q) => q.id),
+    ];
+
+    if (newSessionTotal >= MICRO_DRILL_MAX_SESSION_QUESTIONS) {
+      setSessionCorrect(newSessionCorrect);
+      setSessionTotal(newSessionTotal);
+      await saveMicroDrillSession(newSessionCorrect, newSessionTotal);
+      router.replace(getQuizExitPath(subjectId, router.query.from));
+      return;
+    }
+
+    setSessionCorrect(newSessionCorrect);
+    setSessionTotal(newSessionTotal);
+    setSeenQuestionIds(newSeen);
+    setMicroDrillRound((r) => r + 1);
+    await fetchMicroDrillRound(newSeen);
+  };
 
   const handleExitQuiz = async () => {
     completionPayloadRef.current = null;
@@ -299,7 +445,7 @@ export default function Quiz() {
         queryKey: ["unitProgress", subjectId],
       });
     }
-    router.replace(`/study?subject=${subjectId}`);
+    router.replace(getQuizExitPath(subjectId, router.query.from));
   };
 
   const handleSubmitFullLength = async (finalAnswers?: {
@@ -604,7 +750,7 @@ export default function Quiz() {
     } catch (error) {
       console.error("Failed to save unit quiz state:", error);
     } finally {
-      router.replace(`/study?subject=${subjectId}`);
+      router.replace(getQuizExitPath(subjectId, router.query.from));
     }
   };
 
@@ -819,11 +965,13 @@ export default function Quiz() {
             </p>
             <Button
               variant="ghost"
-              onClick={() => router.push(`/study?subject=${subjectId}`)}
+              onClick={() =>
+                router.push(getQuizExitPath(subjectId, router.query.from))
+              }
               className="h-11 rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to study
+              Back
             </Button>
           </div>
         </main>
@@ -872,14 +1020,29 @@ export default function Quiz() {
           {/* Show navigation bar for practice quizzes */}
           <Navigation />
           <PracticeQuiz
+            key={
+              isMicroDrill
+                ? `micro-drill-${microDrillRound}-${questions.map((q) => q.id).join("-")}`
+                : "practice"
+            }
             questions={questions}
             subjectId={subjectId as string}
             timeElapsed={timeElapsed}
             onExit={handleExitQuiz}
             onComplete={handleCompletePractice}
-            onSaveAndExit={handleSaveAndExitUnit}
-            savedState={savedUnitQuizState}
+            onSaveAndExit={isMicroDrill ? undefined : handleSaveAndExitUnit}
+            savedState={isMicroDrill ? null : savedUnitQuizState}
             enableStudyNotesPrimer={!isFullLength && primerEnabled}
+            microDrillMode={isMicroDrill}
+            goalScore={microDrillGoal}
+            roundNumber={microDrillRound}
+            sessionCorrect={sessionCorrect}
+            sessionTotal={sessionTotal}
+            onRoundContinue={
+              isMicroDrill ? handleMicroDrillRoundContinue : undefined
+            }
+            onEndPractice={isMicroDrill ? handleMicroDrillEndPractice : undefined}
+            loadingNextRound={loadingNextRound}
           />
         </>
       )}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { PracticeQuizHeader } from "./PracticeQuizHeader";
 import { PracticeQuizQuestionCard } from "./PracticeQuizQuestionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,10 @@ import {
   getDisplayCorrectLabel,
   getDisplayExplanation,
 } from "@/lib/mcqDisplay";
-import { getStudyNoteFromQuestion } from "@/lib/studyNote";
+import {
+  getPrimerNoteItems,
+  shouldShowStudyNotesPrimer,
+} from "@/lib/studyNote";
 import {
   PrettyExplanation,
   QUIZ_EXPLANATION_CLASSNAME,
@@ -24,6 +27,11 @@ import { ExplanationPanel } from "./ExplanationPanel";
 import { Zap } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { AdminAutoAnswerDialog } from "./AdminAutoAnswerDialog";
+import { MicroDrillCheckpoint } from "./MicroDrillCheckpoint";
+import {
+  getMicroDrillCheckpoint,
+  MICRO_DRILL_ROUND_SIZE,
+} from "@/lib/micro-drill-checkpoint";
 import { useQuizEngine } from "@/hooks/useQuizEngine";
 import {
   getAnalyticsPageParams,
@@ -70,6 +78,14 @@ interface PracticeQuizProps {
   onSaveAndExit?: (state: UnitQuizState) => void;
   savedState?: UnitQuizState | null;
   enableStudyNotesPrimer?: boolean;
+  microDrillMode?: boolean;
+  goalScore?: 4 | 5;
+  roundNumber?: number;
+  sessionCorrect?: number;
+  sessionTotal?: number;
+  onRoundContinue?: (roundCorrect: number, roundTotal: number) => void;
+  onEndPractice?: () => void;
+  loadingNextRound?: boolean;
 }
 
 export function PracticeQuiz({
@@ -83,6 +99,14 @@ export function PracticeQuiz({
   onSaveAndExit,
   savedState,
   enableStudyNotesPrimer = false,
+  microDrillMode = false,
+  goalScore = 4,
+  roundNumber = 1,
+  sessionCorrect = 0,
+  sessionTotal = 0,
+  onRoundContinue,
+  onEndPractice,
+  loadingNextRound = false,
 }: PracticeQuizProps) {
   const { currentQuestionIndex, userAnswers, setAnswer, next } = useQuizEngine({
     initialIndex: 0,
@@ -101,43 +125,19 @@ export function PracticeQuiz({
   const [cheatMode, setCheatMode] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showConceptPrimer, setShowConceptPrimer] = useState(false);
-  const [primerStepIndex, setPrimerStepIndex] = useState(0);
+  const [showRoundCheckpoint, setShowRoundCheckpoint] = useState(false);
   const [showAutoAnswerDialog, setShowAutoAnswerDialog] = useState(false);
 
   const appliedSavedState = useRef(false);
-  const hasSetInitialPrimer = useRef(false);
+  const hasShownSessionPrimer = useRef(false);
   const trackedPracticeStartRef = useRef<string | null>(null);
   // Initialize from saved state when resuming a unit quiz (only once)
   useEffect(() => {
     if (savedState && questions.length > 0 && !appliedSavedState.current) {
       appliedSavedState.current = true;
-      const idx = Math.min(
-        savedState.currentQuestionIndex,
-        questions.length - 1,
-      );
       setFinalUserAnswers(savedState.userAnswers || {});
-      if (enableStudyNotesPrimer && idx % 5 === 0) {
-        setShowConceptPrimer(true);
-      }
     }
-  }, [savedState, questions.length, enableStudyNotesPrimer]);
-  // Show concept primer on fresh start (no saved state) when primer is enabled
-  useEffect(() => {
-    if (
-      enableStudyNotesPrimer &&
-      questions.length > 0 &&
-      !savedState &&
-      !hasSetInitialPrimer.current
-    ) {
-      hasSetInitialPrimer.current = true;
-      setShowConceptPrimer(true);
-    }
-  }, [enableStudyNotesPrimer, questions.length, savedState]);
-
-  // Reset primer step when opening the primer (e.g. new chunk of 5)
-  useEffect(() => {
-    if (showConceptPrimer) setPrimerStepIndex(0);
-  }, [showConceptPrimer]);
+  }, [savedState, questions.length]);
 
   const router = useRouter();
   const { user } = useAuth();
@@ -225,6 +225,41 @@ export function PracticeQuiz({
   }, [cheatMode]);
 
   const orderedQuestions = isFullLength ? [...questions].reverse() : questions;
+  const primerBatchQuestions = useMemo(
+    () =>
+      microDrillMode
+        ? orderedQuestions
+        : orderedQuestions.slice(0, MICRO_DRILL_ROUND_SIZE),
+    [orderedQuestions, microDrillMode],
+  );
+  const primerNoteItems = useMemo(
+    () => getPrimerNoteItems(primerBatchQuestions),
+    [primerBatchQuestions],
+  );
+
+  useEffect(() => {
+    if (!enableStudyNotesPrimer || questions.length === 0) return;
+    if (hasShownSessionPrimer.current) return;
+    if (microDrillMode && roundNumber !== 1) return;
+    if (savedState && savedState.currentQuestionIndex > 0) return;
+    if (!shouldShowStudyNotesPrimer(primerBatchQuestions)) return;
+
+    hasShownSessionPrimer.current = true;
+    setShowConceptPrimer(true);
+    setShowRoundCheckpoint(false);
+  }, [
+    enableStudyNotesPrimer,
+    questions.length,
+    savedState,
+    microDrillMode,
+    roundNumber,
+    primerBatchQuestions,
+  ]);
+
+  const dismissConceptPrimer = () => {
+    setShowConceptPrimer(false);
+  };
+
   const currentQuestion = orderedQuestions[currentQuestionIndex];
   const feedbackCorrectLabel = currentQuestion
     ? getDisplayCorrectLabel(currentQuestion, mcqOptionCount)
@@ -292,9 +327,13 @@ export function PracticeQuiz({
       next();
       setSelectedAnswer(null);
       setIsAnswerSubmitted(false);
-      if (enableStudyNotesPrimer && nextIndex % 5 === 0) {
-        setShowConceptPrimer(true);
-      }
+    } else if (microDrillMode && onRoundContinue && onEndPractice) {
+      const answersWithLast = {
+        ...finalUserAnswers,
+        [currentQuestionIndex]: selectedAnswer ?? "",
+      };
+      setFinalUserAnswers(answersWithLast);
+      setShowRoundCheckpoint(true);
     } else {
       if (isFullLength && lastSavedTestId) {
         router.push(
@@ -365,6 +404,42 @@ export function PracticeQuiz({
     }
   };
 
+  if (microDrillMode && showRoundCheckpoint && onRoundContinue && onEndPractice) {
+    const roundTotal = orderedQuestions.length;
+    const checkpoint = getMicroDrillCheckpoint({
+      roundCorrect: score,
+      roundTotal,
+      sessionCorrect: sessionCorrect + score,
+      sessionTotal: sessionTotal + roundTotal,
+      roundNumber,
+      goalScore,
+      subjectId,
+    });
+    return (
+      <div className="flex min-h-screen flex-col bg-white dark:bg-[#0B0F1A] dark:text-slate-100">
+        {showPracticeHeader && (
+          <div className="fixed left-0 right-0 top-[calc(3.75rem+1px)] z-40">
+            <PracticeQuizHeader
+              title={practiceHeaderTitle}
+              subjectId={subjectId}
+              onExitExam={handleHeaderExit}
+            />
+          </div>
+        )}
+        <div className={showPracticeHeader ? practiceHeaderOffsetClass : ""}>
+          <MicroDrillCheckpoint
+            result={checkpoint}
+            roundNumber={roundNumber}
+            sessionTotal={sessionTotal + roundTotal}
+            loading={loadingNextRound}
+            onEnd={onEndPractice}
+            onContinue={() => onRoundContinue(score, roundTotal)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (isReviewMode) {
     return (
       <PracticeQuizReview
@@ -376,24 +451,17 @@ export function PracticeQuiz({
     );
   }
 
-  const CHUNK_SIZE = 5;
-  const chunkIndex = Math.floor(currentQuestionIndex / CHUNK_SIZE);
+  const CHUNK_SIZE = microDrillMode ? orderedQuestions.length : MICRO_DRILL_ROUND_SIZE;
+  const chunkIndex = microDrillMode
+    ? 0
+    : Math.floor(currentQuestionIndex / MICRO_DRILL_ROUND_SIZE);
   const chunkQuestions = orderedQuestions.slice(
-    chunkIndex * CHUNK_SIZE,
-    chunkIndex * CHUNK_SIZE + CHUNK_SIZE,
+    chunkIndex * (microDrillMode ? orderedQuestions.length : MICRO_DRILL_ROUND_SIZE),
+    chunkIndex * (microDrillMode ? orderedQuestions.length : MICRO_DRILL_ROUND_SIZE) +
+      (microDrillMode ? orderedQuestions.length : MICRO_DRILL_ROUND_SIZE),
   );
 
-  if (
-    showConceptPrimer &&
-    enableStudyNotesPrimer &&
-    chunkQuestions.length > 0
-  ) {
-    const currentPrimerQuestion = chunkQuestions[primerStepIndex];
-    const note = currentPrimerQuestion
-      ? getStudyNoteFromQuestion(currentPrimerQuestion)
-      : "";
-    const isLastStep = primerStepIndex >= chunkQuestions.length - 1;
-    const isFirstStep = primerStepIndex === 0;
+  if (showConceptPrimer && enableStudyNotesPrimer && primerNoteItems.length > 0) {
     return (
       <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
         {showPracticeHeader && (
@@ -410,57 +478,38 @@ export function PracticeQuiz({
             showPracticeHeader ? practiceHeaderOffsetClass : ""
           }`}
         >
-          <div className="mx-auto flex max-w-3xl flex-1 flex-col items-center justify-center px-4 py-8">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2 text-center">
-              Concepts to know for the next 5 questions
+          <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8">
+            <h2 className="mb-2 text-center text-lg font-semibold text-slate-800 dark:text-slate-200">
+              Quick review before these {primerBatchQuestions.length} questions
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-              {primerStepIndex + 1} of {chunkQuestions.length}
+            <p className="mb-4 text-center text-sm text-slate-500 dark:text-slate-400">
+              Skim these points, then start practice.
             </p>
-            <div className="flex min-h-[200px] w-full flex-col rounded-2xl bg-slate-100 p-6 dark:bg-white/[0.06]">
-              <div className="text-sm text-gray-800 dark:text-gray-200 prose prose-sm dark:prose-invert max-w-none flex-1">
-                {note ? (
-                  <PrettyExplanation className="text-sm">
-                    {note}
-                  </PrettyExplanation>
-                ) : (
-                  <span className="text-gray-500 dark:text-gray-400 italic">
-                    No study note for this question.
-                  </span>
-                )}
-              </div>
+            <div className="max-h-[min(50vh,420px)] w-full overflow-y-auto rounded-2xl bg-slate-100 p-5 dark:bg-white/[0.06]">
+              <ol className="list-decimal space-y-4 pl-5 text-sm text-gray-800 dark:text-gray-200">
+                {primerNoteItems.map((item) => (
+                  <li key={item.index} className="pl-1">
+                    <PrettyExplanation className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                      {item.note}
+                    </PrettyExplanation>
+                  </li>
+                ))}
+              </ol>
             </div>
-            <div className="mt-8 flex items-center gap-3 w-full max-w-sm justify-between">
+            <div className="mt-8 flex flex-col items-center gap-3">
               <Button
-                variant="outline"
-                onClick={() => setPrimerStepIndex((i) => Math.max(0, i - 1))}
-                disabled={isFirstStep}
-                className="px-5 py-2.5 border-slate-300 dark:border-slate-600"
+                onClick={dismissConceptPrimer}
+                className="rounded-full bg-blue-600 px-8 py-2.5 font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
-                Previous
+                Start practice
               </Button>
-              {isLastStep ? (
-                <Button
-                  onClick={() => {
-                    setShowConceptPrimer(false);
-                    setPrimerStepIndex(0);
-                  }}
-                  className="rounded-full bg-blue-600 px-6 py-2.5 font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                >
-                  I&apos;m ready
-                </Button>
-              ) : (
-                <Button
-                  onClick={() =>
-                    setPrimerStepIndex((i) =>
-                      Math.min(chunkQuestions.length - 1, i + 1),
-                    )
-                  }
-                  className="rounded-full bg-blue-600 px-5 py-2.5 font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                >
-                  Next
-                </Button>
-              )}
+              <button
+                type="button"
+                onClick={dismissConceptPrimer}
+                className="text-sm text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                Skip
+              </button>
             </div>
           </div>
         </div>

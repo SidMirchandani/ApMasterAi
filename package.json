@@ -13,6 +13,7 @@
     "seed:demo-user-regions": "tsx scripts/seed-demo-user-regions.ts",
     "backfill:admin-user-list": "tsx scripts/backfill-admin-user-list.ts",
     "test:geo": "tsx --test server/ip-utils.test.ts server/us-state-from-ip.test.ts",
+    "test:fast-path": "tsx --test server/micro-lessons.test.ts client/src/lib/micro-lesson-flow.test.ts client/src/lib/micro-drill-checkpoint.test.ts client/src/lib/fast-path-copy.test.ts client/src/lib/fast-path-plan.test.ts",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"

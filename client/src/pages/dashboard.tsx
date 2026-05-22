@@ -25,6 +25,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getSubjectByCode, getApiCodeForSubject, getUnitWeightsBySectionCode } from "@/subjects";
 import { getProjectedAPScoreDisplay, getTargetPercentagesForSubject, getUnitTierFromScore } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
+import { PathInviteCard } from "@/components/dashboard/PathInviteCard";
+import { computeFastPathPlan, getFastPathSummary } from "@/lib/fast-path-plan";
 import { AdminReadOnlyReturnBar } from "@/components/admin/AdminReadOnlyReturnBar";
 import {
   AlertDialog,
@@ -590,6 +592,30 @@ const SubjectCard = ({
     unitProgressOverride || (subject as any).unitProgress || {};
 
   const subjectCode = getApiCodeForSubject(subject.subjectId);
+
+  const { data: unitDifficultiesResponse } = useQuery<{ success: boolean; data: Record<string, number> }>({
+    queryKey: ["unitDifficulties", subjectCode],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/subject-config/${subjectCode}/unit-difficulties`);
+      if (!res.ok) throw new Error("Failed to fetch unit difficulties");
+      return res.json();
+    },
+    enabled: !!isAdmin && !!subjectCode,
+    staleTime: 5 * 60 * 1000,
+  });
+  const unitDifficultiesMap = unitDifficultiesResponse?.data ?? {};
+
+  const fastPathSummary = useMemo(() => {
+    if (!isAdmin) return null;
+    const plan = computeFastPathPlan({
+      subjectId: subject.subjectId,
+      subjectCode,
+      unitProgressMap,
+      testHistory,
+      unitDifficultiesMap,
+    });
+    return getFastPathSummary(plan, subject.subjectId);
+  }, [isAdmin, subject.subjectId, subjectCode, unitProgressMap, testHistory, unitDifficultiesMap]);
   const targets = getTargetPercentagesForSubject(subjectCode);
   const projectionState = getProjectedAPScoreDisplay({
     unitProgressMap,
@@ -627,20 +653,24 @@ const SubjectCard = ({
         </div>
 
         <div className="min-w-0 flex-1 space-y-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0 space-y-0.5">
-              <h3 className="font-display text-base font-bold leading-snug tracking-tight text-slate-900 dark:text-white sm:text-lg">
-                {subject.name}
-              </h3>
-              {description ? (
-                <p className="line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{description}</p>
-              ) : null}
-            </div>
-            <div className="flex min-w-0 w-full shrink-0 flex-wrap items-center justify-center gap-2 self-stretch sm:w-auto sm:justify-end sm:gap-1 sm:self-auto">
-              {/* Fixed max width + stacked layers so switching states doesn’t shift the title or delete control */}
-              <div className="grid h-9 min-w-0 w-full max-w-[min(100%,220px)] grid-cols-1 grid-rows-1 place-items-center sm:w-[220px] sm:max-w-none sm:place-items-end">
+          <div className="relative w-full">
+            <h3
+              className={`truncate font-display text-base font-bold leading-snug tracking-tight text-slate-900 dark:text-white sm:text-lg ${
+                archiveConfirm
+                  ? isAdmin && onDelete
+                    ? "pr-[11rem]"
+                    : "pr-[10rem]"
+                  : isAdmin && onDelete
+                    ? "pr-[5.25rem]"
+                    : "pr-[4.5rem]"
+              }`}
+            >
+              {subject.name}
+            </h3>
+            <div className="absolute right-0 top-0 flex shrink-0 items-center gap-1">
+              <div className="relative h-9">
                 <div
-                  className={`col-start-1 row-start-1 flex h-full w-full items-center justify-center transition-opacity duration-300 ease-out sm:justify-end ${
+                  className={`absolute right-0 top-0 flex h-9 items-center transition-opacity duration-300 ease-out ${
                     archiveConfirm ? "pointer-events-none opacity-0" : "opacity-100"
                   }`}
                 >
@@ -652,7 +682,7 @@ const SubjectCard = ({
                     }}
                     disabled={readOnly}
                     title="Archive"
-                    className={`h-9 rounded-full px-3 text-xs font-medium shadow-none hover:shadow-none ${
+                    className={`h-9 shrink-0 rounded-full px-3 text-xs font-medium shadow-none hover:shadow-none ${
                       readOnly
                         ? "cursor-not-allowed text-slate-400 dark:text-slate-500"
                         : "text-slate-600 hover:bg-slate-900/[0.05] dark:text-slate-400 dark:hover:bg-white/[0.06]"
@@ -662,11 +692,11 @@ const SubjectCard = ({
                   </Button>
                 </div>
                 <div
-                  className={`col-start-1 row-start-1 flex h-full w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-medium text-blue-600 transition-opacity duration-300 ease-out dark:text-blue-400 sm:flex-nowrap sm:justify-end ${
+                  className={`absolute right-0 top-0 flex h-9 items-center gap-x-2 whitespace-nowrap text-xs font-medium text-blue-600 transition-opacity duration-300 ease-out dark:text-blue-400 ${
                     archiveConfirm ? "opacity-100" : "pointer-events-none opacity-0"
                   }`}
                 >
-                  <span className="whitespace-nowrap">Are you sure?</span>
+                  <span>Are you sure?</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -691,7 +721,7 @@ const SubjectCard = ({
                   variant="ghost"
                   size="sm"
                   disabled={readOnly}
-                  className={`h-9 w-9 rounded-full p-0 shadow-none hover:shadow-none ${
+                  className={`h-9 w-9 shrink-0 rounded-full p-0 shadow-none hover:shadow-none ${
                     readOnly
                       ? "cursor-not-allowed text-slate-400 dark:text-slate-500"
                       : "text-slate-400 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
@@ -705,59 +735,117 @@ const SubjectCard = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-center text-xs text-slate-500 dark:text-slate-400 sm:justify-start sm:text-left sm:text-sm">
-            <span className="inline-flex items-center gap-1.5">
-              <Target className="h-4 w-4 shrink-0 opacity-70" />
-              {unitCount} units
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Calendar className="h-4 w-4 shrink-0 opacity-70" />
-              Exam {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0 w-full space-y-1.5 sm:flex-1">
-              <p className="text-xs font-medium text-slate-400 dark:text-slate-500 sm:text-left text-center">
-                Unit progress
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
-                {units.slice(0, 10).map((u: { id: string }, i: number) => {
-                  const unitData = unitProgressMap[u.id];
-                  const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
-                  const stat = getUnitTierFromScore(score, targets);
-                  const isMastered = stat.tier === "5";
-                  return (
-                    <div
-                      key={u.id}
-                      className={`flex h-6 w-6 cursor-help items-center justify-center rounded-full ${stat.bg} ring-1 ring-black/[0.04] transition-transform hover:scale-110 dark:ring-white/[0.08]`}
-                      title={`Unit ${i + 1}: ${stat.label}${score > 0 ? ` (${score}%)` : ""}`}
-                    >
-                      {isMastered && (
-                        <Crown className="h-3 w-3 fill-[#FFD700] stroke-[#FFD700]" strokeWidth={2} aria-hidden />
-                      )}
-                    </div>
-                  );
-                })}
-                {units.length > 10 && (
-                  <span className="self-center pl-1 text-xs font-medium text-slate-400">+{units.length - 10}</span>
-                )}
-              </div>
-            </div>
-            <Button
-              onClick={onStudy}
-              title={testHistory.length === 0 ? "Start practice" : "Continue practice"}
-              variant="ghost"
-              className="group/btn h-10 shrink-0 self-center rounded-full bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600 sm:self-end sm:px-5"
+          {units.length > 0 ? (
+            <div
+              className="flex w-full flex-wrap items-center gap-1"
+              aria-label="Unit progress"
             >
-              <span className="md:hidden">{testHistory.length === 0 ? "Start" : "Practice"}</span>
-              <span className="hidden md:inline">{testHistory.length === 0 ? "Start practice" : "Continue practice"}</span>
-              <ArrowRight
-                className="ml-2 h-4 w-4 shrink-0 transition-transform group-hover/btn:translate-x-0.5"
-                aria-hidden
-              />
-            </Button>
-          </div>
+              {units.slice(0, 10).map((u: { id: string }, i: number) => {
+                const unitData = unitProgressMap[u.id];
+                const score = unitData?.highestScore ?? unitData?.mcqScore ?? 0;
+                const stat = getUnitTierFromScore(score, targets);
+                const isMastered = stat.tier === "5";
+                return (
+                  <div
+                    key={u.id}
+                    className={`flex h-6 w-6 cursor-help items-center justify-center rounded-full ${stat.bg} ring-1 ring-black/[0.04] transition-transform hover:scale-110 dark:ring-white/[0.08]`}
+                    title={`Unit ${i + 1}: ${stat.label}${score > 0 ? ` (${score}%)` : ""}`}
+                  >
+                    {isMastered && (
+                      <Crown
+                        className="h-3 w-3 fill-[#FFD700] stroke-[#FFD700]"
+                        strokeWidth={2}
+                        aria-hidden
+                      />
+                    )}
+                  </div>
+                );
+              })}
+              {units.length > 10 && (
+                <span className="pl-0.5 text-xs font-medium text-slate-400">
+                  +{units.length - 10}
+                </span>
+              )}
+            </div>
+          ) : null}
+
+          {description ? (
+            <p className="w-full line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              {description}
+            </p>
+          ) : null}
+
+          {fastPathSummary ? (
+            <>
+              <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
+                <span className="inline-flex items-center gap-1.5">
+                  <Target className="h-4 w-4 shrink-0 opacity-70" />
+                  {unitCount} units
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 shrink-0 opacity-70" />
+                  Exam {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
+                </span>
+              </div>
+              <div className="flex w-full flex-row gap-2 items-stretch">
+                <PathInviteCard
+                  summary={fastPathSummary}
+                  disabled={readOnly}
+                  size="dashboard"
+                  className="min-w-0 flex-1"
+                />
+                <Button
+                  onClick={onStudy}
+                  title="Full-length practice tests or work through units one at a time."
+                  variant="ghost"
+                  className="group/btn flex h-auto min-h-10 min-w-0 flex-1 items-center justify-between gap-2 rounded-xl bg-blue-600 py-2.5 pl-3 pr-2.5 text-left font-semibold text-white shadow-[0_3px_0_0_rgba(29,78,216,0.35)] hover:bg-blue-700 hover:text-white active:translate-y-[2px] active:shadow-[0_1px_0_0_rgba(29,78,216,0.35)] dark:bg-blue-500 dark:shadow-[0_3px_0_0_rgba(30,64,175,0.4)] dark:hover:bg-blue-600 sm:pl-4 sm:pr-3"
+                >
+                  <span className="min-w-0 flex-1 text-left">
+                    <span className="block truncate text-sm font-extrabold leading-tight tracking-tight">
+                      Exam & Unit Practice
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs font-medium leading-snug text-white/90">
+                      Full-Length Tests · Practice By Unit
+                    </span>
+                  </span>
+                  <ArrowRight
+                    className="h-4 w-4 shrink-0 text-white/90 transition-transform group-hover/btn:translate-x-0.5"
+                    aria-hidden
+                  />
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400 sm:justify-start sm:text-sm">
+                <span className="inline-flex items-center gap-1.5">
+                  <Target className="h-4 w-4 shrink-0 opacity-70" />
+                  {unitCount} units
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 shrink-0 opacity-70" />
+                  Exam {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
+                </span>
+              </div>
+              <Button
+                onClick={onStudy}
+                title={testHistory.length === 0 ? "Start practice" : "Continue practice"}
+                variant="ghost"
+                className="group/btn h-10 w-full shrink-0 rounded-full bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 hover:text-white dark:bg-blue-500 dark:hover:bg-blue-600 sm:w-auto sm:px-5"
+              >
+                <span className="sm:hidden">
+                  {testHistory.length === 0 ? "Start" : "Practice"}
+                </span>
+                <span className="hidden sm:inline">
+                  {testHistory.length === 0 ? "Start practice" : "Continue practice"}
+                </span>
+                <ArrowRight
+                  className="ml-2 h-4 w-4 shrink-0 transition-transform group-hover/btn:translate-x-0.5"
+                  aria-hidden
+                />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </article>

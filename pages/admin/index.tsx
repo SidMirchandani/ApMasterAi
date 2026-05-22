@@ -360,6 +360,16 @@ export default function AdminPage() {
     target?: number;
   } | null>(null);
   const genaiTopupAbortRef = useRef<AbortController | null>(null);
+  const [microLessonGenRunning, setMicroLessonGenRunning] = useState(false);
+  const [microLessonGenProgress, setMicroLessonGenProgress] = useState<{
+    message: string;
+    current?: number;
+    total?: number;
+    updated?: number;
+    skipped?: number;
+    failed?: number;
+  } | null>(null);
+  const microLessonGenAbortRef = useRef<AbortController | null>(null);
 
   const displayedItems = useMemo(() => {
     let list = items;
@@ -1042,6 +1052,107 @@ export default function AdminPage() {
     setGenaiTopupRunning(false);
     toast("GenAI section top-up cancelled");
     setGenaiTopupProgress(null);
+  }
+
+  function stopMicroLessonGen() {
+    microLessonGenAbortRef.current?.abort();
+    setMicroLessonGenRunning(false);
+    toast("Micro-lesson generation cancelled");
+    setMicroLessonGenProgress(null);
+  }
+
+  async function startMicroLessonGen(forceRegenerate = false) {
+    if (!token || !subject) return;
+    setMicroLessonGenRunning(true);
+    setMicroLessonGenProgress({ message: "Connecting…" });
+    const controller = new AbortController();
+    microLessonGenAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/generate-micro-lessons", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectCode: subject,
+          sectionCodes: section === "all" ? undefined : [section],
+          forceRegenerate,
+          model: "2.5lite",
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error((err as { error?: string }).error || "Failed to start micro-lesson generation");
+        setMicroLessonGenRunning(false);
+        setMicroLessonGenProgress(null);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        toast.error("No response stream");
+        setMicroLessonGenRunning(false);
+        setMicroLessonGenProgress(null);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6)) as {
+              type?: string;
+              message?: string;
+              current?: number;
+              total?: number;
+              updated?: number;
+              skipped?: number;
+              failed?: number;
+            };
+            if (event.type === "progress" || event.type === "rate_limit") {
+              setMicroLessonGenProgress({
+                message: event.message || "",
+                current: event.current,
+                total: event.total,
+                updated: event.updated,
+                skipped: event.skipped,
+                failed: event.failed,
+              });
+            } else if (event.type === "done") {
+              toast.success(event.message || "Micro-lessons done");
+              setMicroLessonGenProgress({
+                message: event.message || "Done",
+                current: event.current,
+                total: event.total,
+                updated: event.updated,
+                skipped: event.skipped,
+                failed: event.failed,
+              });
+            }
+          } catch {
+            /* ignore parse errors */
+          }
+        }
+      }
+    } catch (e: unknown) {
+      if ((e as { name?: string })?.name !== "AbortError") {
+        toast.error("Micro-lesson generation failed");
+      }
+    } finally {
+      setMicroLessonGenRunning(false);
+      microLessonGenAbortRef.current = null;
+    }
   }
 
   async function startGenaiTopup() {
@@ -2095,6 +2206,52 @@ export default function AdminPage() {
                   />
                 ) : null}
               </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card className="dark:bg-slate-900/60 dark:border-slate-800 border-emerald-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 dark:text-white text-lg">
+              <BookOpen className="w-5 h-5 text-emerald-400" />
+              Fast Path micro-lessons
+            </CardTitle>
+            <CardDescription className="dark:text-slate-400">
+              Generate unit-level read-before-drill content (Firestore <code className="text-xs">micro_lessons</code>).
+              Uses Subject above; pick one Section or All sections.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {microLessonGenRunning ? (
+                <Button type="button" variant="destructive" onClick={stopMicroLessonGen}>
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    disabled={!subject || !token}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => void startMicroLessonGen(false)}
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    {section === "all" ? "Generate all units" : "Generate this unit"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!subject || !token}
+                    onClick={() => void startMicroLessonGen(true)}
+                  >
+                    Force regenerate
+                  </Button>
+                </>
+              )}
+            </div>
+            {microLessonGenProgress ? (
+              <p className="text-sm text-slate-600 dark:text-slate-400">{microLessonGenProgress.message}</p>
             ) : null}
           </CardContent>
         </Card>

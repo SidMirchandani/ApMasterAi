@@ -106,19 +106,6 @@ export default function Study({
     refetchOnMount: "always",
   });
 
-  const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean; experimentalFeaturesEnabled?: boolean } }>({
-    queryKey: ["adminCheck"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/user/admin-check");
-      if (!res.ok) return { success: false, data: { isAdmin: false, experimentalFeaturesEnabled: false } };
-      return res.json();
-    },
-    enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000,
-  });
-  const isAdmin = adminCheck?.data?.isAdmin ?? false;
-  const showAdminFeatures = isAdmin && (adminCheck?.data?.experimentalFeaturesEnabled ?? false);
-
   const subjects: StudySubject[] = subjectsResponse?.data || [];
   const currentSubject: StudySubject | undefined = subjects.find(
     (s) => s.subjectId === subjectId
@@ -333,6 +320,15 @@ export default function Study({
 
         <div className="space-y-5">
 
+        <section className="space-y-1">
+          <h2 className="text-xl font-display font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+            Choose How to Practice
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Take a full-length practice test or open a unit below.
+          </p>
+        </section>
+
         {/* Quick actions */}
         <section>
           <div className="mb-2">
@@ -359,9 +355,7 @@ export default function Study({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold leading-tight">
-                  {subjectId
-                    ? `${getSubjectDisplayName(getApiCodeForSubject(subjectId) ?? subjectId)} Full-Length MCQ`
-                    : "Full-Length MCQ"}
+                  Full-Length Practice Test
                 </p>
                 <p className="mt-0.5 text-xs text-white/80">Exam-style timing</p>
               </div>
@@ -389,53 +383,26 @@ export default function Study({
               <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
             </button>
 
-            {showAdminFeatures ? (
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isAdminReadOnly) router.push(`/dualpath?subject=${subjectId}`);
-                }}
-                disabled={isAdminReadOnly}
-                className={cn(
-                  "group flex items-center gap-2.5 rounded-2xl px-3 py-2.5 text-left transition-colors",
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
                   isAdminReadOnly
-                    ? "cursor-not-allowed bg-slate-200 text-slate-400 dark:bg-white/[0.06] dark:text-slate-500"
-                    : "bg-slate-100 hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]",
-                )}
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
-                  <Target className="h-4 w-4 text-green-600 dark:text-green-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">
-                    DualPath <span className="text-red-500 dark:text-red-400">(beta)</span>
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Study plan</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() =>
-                  router.push(
-                    isAdminReadOnly
-                      ? `${adminUserBasePath}/full-length-history?subject=${subjectId}&from=study`
-                      : `/full-length-history?subject=${subjectId}&from=study`,
-                  )
-                }
-                className="group flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
-                  <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">Quiz & Test History</p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Past results</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
-              </button>
-            )}
+                    ? `${adminUserBasePath}/full-length-history?subject=${subjectId}&from=study`
+                    : `/full-length-history?subject=${subjectId}&from=study`,
+                )
+              }
+              className="group flex items-center gap-2.5 rounded-2xl bg-slate-100 px-3 py-2.5 text-left transition-colors hover:bg-slate-200/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.09]"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/90 dark:bg-white/[0.08]">
+                <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white">Quiz & Test History</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Past results</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+            </button>
 
             <button
               type="button"

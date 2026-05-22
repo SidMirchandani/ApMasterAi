@@ -283,7 +283,7 @@ export default function Profile() {
                   Experimental features
                 </CardTitle>
                 <CardDescription className="text-slate-500 dark:text-slate-400">
-                  Enable admin-only features such as DualPath, Auto-answer, and subject deletion. Off by default.
+                  Enable admin-only features such as Fast Path, Auto-answer, and subject deletion. Off by default.
                 </CardDescription>
               </CardHeader>
               <CardContent>

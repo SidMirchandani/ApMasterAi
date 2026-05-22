@@ -96,7 +96,9 @@ function routeBaseTitle(pathname: string, query: Record<string, string | string[
     'full-length-history': 'Full-Length Test History',
     'full-length-results': 'Full-Length Test Results',
     diagnostic: 'Diagnostic',
-    dualpath: 'Dual Path',
+    dualpath: 'Fast Path',
+    'fast-path': 'Fast Path',
+    'micro-lesson': 'Micro-lesson',
     team: 'Team',
     admin: 'Admin',
   };

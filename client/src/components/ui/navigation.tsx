@@ -123,9 +123,14 @@ export default function Navigation() {
       if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
       bc.push({ label: "Diagnostic", href: "#" });
     }
-    if (location.startsWith("/dualpath")) {
+    if (location.startsWith("/dualpath") || location.startsWith("/fast-path")) {
       if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
-      bc.push({ label: "DualPath", href: "#" });
+      bc.push({ label: "Fast Path", href: "#" });
+    }
+    if (location.startsWith("/micro-lesson")) {
+      if (subject) bc.push({ label: courseLabel, href: `/study?subject=${subject}` });
+      bc.push({ label: "Fast Path", href: `/fast-path?subject=${subject}` });
+      bc.push({ label: "Micro-lesson", href: "#" });
     }
     if (location === "/about") {
       bc.push({ label: "About", href: "#" });

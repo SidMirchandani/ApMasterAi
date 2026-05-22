@@ -6,8 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Target,
-  ChevronDown,
-  ChevronUp,
   BarChart3,
   Sparkles,
   Crown,
@@ -19,43 +17,32 @@ import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
-import {
-  getUnitsForSubject,
-  getApiCodeForSubject,
-  getSectionCodeForUnit,
-  getSectionByCode,
-  getUnitWeightsBySectionCode,
-} from "@/subjects";
-import {
-  getPredictedAPScoreFromTests,
-  getTargetPercentagesForSubject,
-  getAPScoreColor,
-} from "@/lib/ap-score-utils";
+import { getApiCodeForSubject } from "@/subjects";
+import { withQuizFromParam } from "@/lib/quiz-return";
+import { buildMicroLessonPath } from "@/lib/micro-lesson-flow";
+import { getMicroDrillGoalScore } from "@/lib/micro-drill-checkpoint";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
+import {
+  computeFastPathPlan,
+  PHASE1_SIZE,
+  type UnitWithYield,
+} from "@/lib/fast-path-plan";
+import {
+  FAST_PATH_COPY,
+  getFastPathPageTitle,
+  getGapStatusMessage,
+  getPrimarySectionTitle,
+  getPrimarySectionBody,
+  getSecondarySectionTitle,
+  getSecondarySectionBody,
+  getFastPathScoreTier,
+} from "@/lib/fast-path-copy";
 
-interface UnitWithYield {
-  unitId: string;
-  sectionCode: string;
-  name: string;
-  unitNumber: number;
-  weight: number;
-  bestPct: number;
-  pointsAvailable: number;
-  masteryScore: number;
-  mastered: boolean;
-  yieldScore: number;
-  unitDifficulty: number;
-}
-
-const PHASE1_SIZE = 3;
-const PHASE2_SIZE = 5;
-
-export default function DualPathPage() {
+export default function FastPathPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const subjectId = router.query.subject as string | undefined;
-  const [securedOpen, setSecuredOpen] = useState(false);
   const [studyNotesPrimerEnabled, setStudyNotesPrimerEnabled] = useState(false);
 
   const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean } }>({
@@ -127,113 +114,54 @@ export default function DualPathPage() {
   });
   const unitDifficultiesMap = unitDifficultiesResponse?.data ?? {};
 
-  const { target4, target5 } = getTargetPercentagesForSubject(subjectCode);
-
-  const unitBestMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    Object.entries(unitProgressMap).forEach(([code, prog]) => {
-      map[code] = Math.max(map[code] ?? 0, prog.highestScore ?? prog.mcqScore ?? 0);
+  const plan = useMemo(() => {
+    if (!subjectId) return null;
+    return computeFastPathPlan({
+      subjectId,
+      subjectCode,
+      unitProgressMap,
+      testHistory,
+      unitDifficultiesMap,
     });
-    testHistory.forEach((test) => {
-      if (test.sectionBreakdown) {
-        Object.entries(test.sectionBreakdown).forEach(([code, section]) => {
-          const pct = section.total > 0 ? Math.round((section.correct / section.total) * 100) : 0;
-          map[code] = Math.max(map[code] ?? 0, pct);
-        });
-      }
-    });
-    return map;
-  }, [unitProgressMap, testHistory]);
+  }, [subjectId, subjectCode, unitProgressMap, testHistory, unitDifficultiesMap]);
 
-  const unitWeights = subjectId ? getUnitWeightsBySectionCode(subjectId) : {};
-  const units = subjectId ? getUnitsForSubject(subjectId) : [];
-
-  const unitsWithYield: UnitWithYield[] = useMemo(() => {
-    return units
-      .map((unit) => {
-        const sectionCode = getSectionCodeForUnit(subjectId!, unit.id) ?? "";
-        const weight = unitWeights[sectionCode] ?? 0;
-        const bestPct = unitBestMap[sectionCode] ?? 0;
-        const masteryScore = bestPct / 100;
-        const pointsAvailable = weight * (1 - masteryScore);
-        const unitDifficulty = unitDifficultiesMap[sectionCode] ?? 1;
-        const yieldScore = (weight * (1 - masteryScore)) / (unitDifficulty || 1);
-        const sectionInfo = getSectionByCode(subjectId!, sectionCode);
-        const name = sectionInfo?.name ?? unit.title;
-        const unitNumber = sectionInfo?.unitNumber ?? 0;
-        const mastered = masteryScore > 0.85;
-        return {
-          unitId: unit.id,
-          sectionCode,
-          name,
-          unitNumber,
-          weight,
-          bestPct,
-          pointsAvailable,
-          masteryScore,
-          mastered,
-          yieldScore,
-          unitDifficulty,
-        };
-      })
-      .filter((u) => u.sectionCode);
-  }, [subjectId, units, unitWeights, unitBestMap, unitDifficultiesMap]);
-
-  const currentPercentage = useMemo(() => {
-    if (Object.keys(unitWeights).length === 0) {
-      if (testHistory.length > 0) return Math.round(testHistory[testHistory.length - 1].percentage);
-      return 0;
-    }
-    const weighted = unitsWithYield.reduce(
-      (sum, u) => sum + (u.bestPct / 100) * u.weight,
-      0
-    );
-    return Math.round(weighted);
-  }, [unitWeights, unitsWithYield, testHistory]);
-
-  const hasEnoughForPrediction = testHistory.length > 0 || unitsWithYield.some((u) => u.bestPct > 0);
-  const predicted = getPredictedAPScoreFromTests(currentPercentage, subjectCode);
-  const gapTo4 = Math.max(0, Math.round((target4 - currentPercentage) * 10) / 10);
-  const gapTo5 = Math.max(0, Math.round((target5 - currentPercentage) * 10) / 10);
-
-  const masteredUnits = useMemo(() => unitsWithYield.filter((u) => u.mastered), [unitsWithYield]);
-  const unmasteredByYield = useMemo(
-    () =>
-      [...unitsWithYield.filter((u) => !u.mastered)].sort(
-        (a, b) => b.yieldScore - a.yieldScore
-      ),
-    [unitsWithYield]
-  );
-  const phase1 = useMemo(() => {
-    if (predicted != null && predicted.score >= 4) {
-      // When already at 4: Phase 1 = single top-yield unit to lock in / build toward 5
-      return unmasteredByYield.slice(0, 1);
-    }
-    let sum = 0;
-    const result: UnitWithYield[] = [];
-    for (const u of unmasteredByYield) {
-      if (result.length >= PHASE1_SIZE) break;
-      result.push(u);
-      sum += u.pointsAvailable;
-      if (sum >= gapTo4) break;
-    }
-    return result;
-  }, [unmasteredByYield, gapTo4, predicted]);
-  const phase2 = useMemo(() => {
-    if (predicted != null && predicted.score >= 4) {
-      // When at 4: Phase 2 = all remaining units (DualPath)
-      return unmasteredByYield.slice(phase1.length);
-    }
-    return unmasteredByYield.slice(phase1.length, phase1.length + PHASE2_SIZE);
-  }, [unmasteredByYield, phase1.length, predicted]);
-  const phase3 = useMemo(() => {
-    if (predicted != null && predicted.score >= 4) return [];
-    return unmasteredByYield.slice(phase1.length + PHASE2_SIZE);
-  }, [unmasteredByYield, phase1.length, predicted]);
+  const {
+    unitsWithYield,
+    currentPercentage,
+    predicted,
+    gapTo4,
+    gapTo5,
+    target4,
+    target5,
+    hasDiagnostic,
+    phase1,
+    phase2,
+    phase3,
+    masteredUnits,
+  } = plan ?? {
+    unitsWithYield: [] as UnitWithYield[],
+    currentPercentage: 0,
+    predicted: null,
+    gapTo4: 0,
+    gapTo5: 0,
+    target4: 0,
+    target5: 0,
+    hasDiagnostic: false,
+    phase1: [] as UnitWithYield[],
+    phase2: [] as UnitWithYield[],
+    phase3: [] as UnitWithYield[],
+    masteredUnits: [] as UnitWithYield[],
+  };
 
   const subjectDisplayName = subjectId
     ? getSubjectDisplayName(subjectCode ?? subjectId ?? "")
     : undefined;
+
+  const pageTitle = subjectDisplayName
+    ? getFastPathPageTitle(subjectDisplayName, predicted)
+    : "Fast Path";
+  const scoreTier = getFastPathScoreTier(predicted);
+  const drillGoalScore = getMicroDrillGoalScore(predicted?.score ?? null);
 
   if (loading) {
     return (
@@ -260,7 +188,7 @@ export default function DualPathPage() {
         <div className="mb-3">
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Target className="w-6 h-6 text-khan-green" />
-            {subjectDisplayName ? `${subjectDisplayName}: DualPath` : "DualPath"}
+            {subjectId ? pageTitle : "Fast Path"}
           </h1>
           {isAdmin && subjectId && (
             <label className="mt-2 flex items-center gap-2 cursor-pointer w-fit">
@@ -270,7 +198,9 @@ export default function DualPathPage() {
                 onChange={(e) => setStudyNotesPrimerEnabled(e.target.checked)}
                 className="rounded border-gray-300 dark:border-gray-600 text-khan-green focus:ring-khan-green"
               />
-              <span className="text-sm text-gray-700 dark:text-gray-300">Study Notes Primer (Micro-Drills)</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                Optional quick review before first 5 questions (off by default; lesson is the teach step)
+              </span>
             </label>
           )}
         </div>
@@ -282,14 +212,14 @@ export default function DualPathPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Select a subject to see your DualPath plan.
+                Select a subject to see your Fast Path plan.
               </p>
               <div className="flex flex-wrap gap-2">
                 {subjects.map((s) => (
                   <Button
                     key={s.subjectId}
                     variant="outline"
-                    onClick={() => router.push(`/dualpath?subject=${s.subjectId}`)}
+                    onClick={() => router.push(`/fast-path?subject=${s.subjectId}`)}
                     className="rounded-xl"
                   >
                     {s.name}
@@ -305,22 +235,25 @@ export default function DualPathPage() {
               </Button>
             </CardContent>
           </Card>
-        ) : !hasEnoughForPrediction && testHistory.length === 0 ? (
+        ) : !hasDiagnostic ? (
           <div className="text-center py-14 px-4">
-            <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center border border-red-200 dark:border-red-800/50">
-              <Target className="h-8 w-8 text-red-500" />
+            <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center border border-amber-200 dark:border-amber-800/50">
+              <Target className="h-8 w-8 text-amber-600 dark:text-amber-400" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              Unlock Your DualPath
+              {FAST_PATH_COPY.checkMyScore}
             </h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto text-sm leading-relaxed">
-              Take our adaptive diagnostic to see your projected score and which units will get you to a 4 or 5.
+            <p className="text-gray-500 dark:text-gray-400 mb-2 max-w-md mx-auto text-sm leading-relaxed">
+              {FAST_PATH_COPY.diagnosticSubline(35)}
+            </p>
+            <p className="text-gray-400 dark:text-gray-500 mb-6 max-w-md mx-auto text-xs">
+              {FAST_PATH_COPY.diagnosticPauseLine(35)}
             </p>
             <Button
               onClick={() => router.push(`/diagnostic?subject=${subjectId}`)}
-              className="bg-rose-500 hover:bg-rose-600 text-white font-semibold px-6 h-11 rounded-xl shadow-md"
+              className="bg-amber-500 hover:bg-amber-600 text-white font-semibold px-6 h-11 rounded-xl shadow-md"
             >
-              Take Quick Diagnostic Test
+              {FAST_PATH_COPY.checkMyScore}
             </Button>
           </div>
         ) : (
@@ -342,7 +275,7 @@ export default function DualPathPage() {
                   />
                   <div>
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      You are +{gapTo4}% away from a 4, and +{gapTo5}% away from a 5.
+                      {getGapStatusMessage(predicted, gapTo4, gapTo5, currentPercentage)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       Weighted score: ~{currentPercentage}%
@@ -383,23 +316,16 @@ export default function DualPathPage() {
               </CardContent>
             </Card>
 
-            {/* Phase 1: Path to a 4 / Lock in your 4 */}
             {phase1.length > 0 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700 border-2 border-green-200 dark:border-green-800/50">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
                     <Sparkles className="w-5 h-5 text-green-600 dark:text-green-400" />
-                    {predicted && predicted.score >= 4
-                      ? "Phase 1: Lock In Your 4"
-                      : "Phase 1: Your Path to a 4"}
+                    {getPrimarySectionTitle(predicted)}
                   </CardTitle>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {predicted && predicted.score >= 4
-                      ? phase1.length === 1
-                        ? "Your single highest-yield unit. Master this to solidify your 4 and build toward a 5."
-                        : "Highest-yield units. Master these to solidify your 4 and build toward a 5."
-                      : "Highest-yield units. Master these first to maximize your chance at a 4."}
-                    {predicted && predicted.score < 4 && phase1.length > 0 && phase1.length < PHASE1_SIZE && (
+                    {getPrimarySectionBody(predicted, phase1.length)}
+                    {scoreTier === "toward4" && phase1.length > 0 && phase1.length < PHASE1_SIZE && (
                       <span className="block mt-1">
                         Mastering {phase1.length === 1 ? "this unit" : "these units"} can close your gap to a 4.
                       </span>
@@ -407,7 +333,7 @@ export default function DualPathPage() {
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
                     {phase1.map((unit) => (
                       <UnitPhaseCard
                         key={unit.unitId}
@@ -415,6 +341,7 @@ export default function DualPathPage() {
                         subjectId={subjectId!}
                         variant="primary"
                         studyNotesPrimerEnabled={studyNotesPrimerEnabled}
+                        goalScore={drillGoalScore}
                       />
                     ))}
                   </div>
@@ -422,21 +349,18 @@ export default function DualPathPage() {
               </Card>
             )}
 
-            {/* Phase 2: Path to a 5 */}
             {phase2.length > 0 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700 opacity-95">
                 <CardHeader>
                   <CardTitle className="text-lg dark:text-gray-100">
-                    Phase 2: Your Path to a 5
+                    {getSecondarySectionTitle(predicted)}
                   </CardTitle>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {predicted && predicted.score >= 4
-                      ? "These units will take you the rest of the way to a 5."
-                      : "Clear Phase 1 to unlock your highest probability of a 4. These units will take you the rest of the way to a 5."}
+                    {getSecondarySectionBody(predicted)}
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
                     {phase2.map((unit) => (
                       <UnitPhaseCard
                         key={unit.unitId}
@@ -444,6 +368,7 @@ export default function DualPathPage() {
                         subjectId={subjectId!}
                         variant="secondary"
                         studyNotesPrimerEnabled={studyNotesPrimerEnabled}
+                        goalScore={drillGoalScore}
                       />
                     ))}
                   </div>
@@ -451,19 +376,18 @@ export default function DualPathPage() {
               </Card>
             )}
 
-            {/* Phase 3: Final Polish */}
             {phase3.length > 0 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700 opacity-90 border border-gray-200 dark:border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-lg dark:text-gray-100">
-                    Phase 3: The Final Polish
+                    {FAST_PATH_COPY.finalPolish}
                   </CardTitle>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    These units are highly complex and carry less exam weight. Tackle these last once you&apos;ve secured the easier points above.
+                    {FAST_PATH_COPY.finalPolishBody}
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
                     {phase3.map((unit) => (
                       <UnitPhaseCard
                         key={unit.unitId}
@@ -471,6 +395,7 @@ export default function DualPathPage() {
                         subjectId={subjectId!}
                         variant="tertiary"
                         studyNotesPrimerEnabled={studyNotesPrimerEnabled}
+                        goalScore={drillGoalScore}
                       />
                     ))}
                   </div>
@@ -478,32 +403,19 @@ export default function DualPathPage() {
               </Card>
             )}
 
-            {/* Secured Points (mastered) */}
             {masteredUnits.length > 0 && (
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader className="pb-2">
-                  <button
-                    type="button"
-                    onClick={() => setSecuredOpen(!securedOpen)}
-                    className="flex w-full items-center justify-between text-left"
-                  >
-                    <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
-                      <Crown className="w-5 h-5 text-amber-500" />
-                      Secured Points ({masteredUnits.length})
-                    </CardTitle>
-                    {securedOpen ? (
-                      <ChevronUp className="w-5 h-5 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-500" />
-                    )}
-                  </button>
+                  <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
+                    <Crown className="w-5 h-5 text-amber-500" />
+                    {FAST_PATH_COPY.securedUnits} ({masteredUnits.length})
+                  </CardTitle>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    You&apos;ve mastered these. We&apos;ll give you a quick refresher before exam day.
+                    {FAST_PATH_COPY.securedBody}
                   </p>
                 </CardHeader>
-                {securedOpen && (
-                  <CardContent>
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <CardContent>
+                    <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
                       {masteredUnits.map((unit) => (
                         <div
                           key={unit.unitId}
@@ -516,7 +428,14 @@ export default function DualPathPage() {
                             size="sm"
                             variant="outline"
                             className="rounded-lg text-xs"
-                            onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.unitId}`)}
+                            onClick={() =>
+                              router.push(
+                                withQuizFromParam(
+                                  `/quiz?subject=${subjectId}&unit=${unit.unitId}`,
+                                  "fast-path",
+                                ),
+                              )
+                            }
                           >
                             <Play className="w-3 h-3 mr-1" />
                             Refresher
@@ -524,8 +443,7 @@ export default function DualPathPage() {
                         </div>
                       ))}
                     </div>
-                  </CardContent>
-                )}
+                </CardContent>
               </Card>
             )}
           </div>
@@ -541,11 +459,13 @@ function UnitPhaseCard({
   subjectId,
   variant,
   studyNotesPrimerEnabled,
+  goalScore,
 }: {
   unit: UnitWithYield;
   subjectId: string;
   variant: "primary" | "secondary" | "tertiary";
   studyNotesPrimerEnabled?: boolean;
+  goalScore: 4 | 5;
 }) {
   const router = useRouter();
   const pointsLabel = unit.pointsAvailable > 0
@@ -580,10 +500,21 @@ function UnitPhaseCard({
       <Button
         className="w-full rounded-xl font-semibold"
         variant={variant === "primary" ? "default" : "outline"}
-        onClick={() => router.push(`/quiz?subject=${subjectId}&unit=${unit.unitId}&limit=10${studyNotesPrimerEnabled ? "&primer=1" : ""}`)}
+        onClick={() =>
+          router.push(
+            buildMicroLessonPath({
+              subjectId,
+              sectionCode: unit.sectionCode,
+              unitId: unit.unitId,
+              from: "fast-path",
+              goal: goalScore,
+              primer: studyNotesPrimerEnabled,
+            }),
+          )
+        }
       >
         <Play className="w-4 h-4 mr-2" />
-        Start Micro-Drill
+        Read &amp; drill
       </Button>
     </div>
   );

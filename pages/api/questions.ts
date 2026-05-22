@@ -237,7 +237,7 @@ export default async function handler(
       .json({ success: false, message: "Method not allowed" });
   }
 
-  const { subject, section, limit, ids } = req.query;
+  const { subject, section, limit, ids, excludeIds } = req.query;
 
   if (!subject) {
     return res.status(400).json({
@@ -425,7 +425,18 @@ export default async function handler(
     }
 
     // Regular query logic for unit quizzes or subjects without weight config
-    const fetchLimit = questionLimit * 4;
+    const excludeSet = new Set(
+      typeof excludeIds === "string"
+        ? excludeIds
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
+    );
+    const fetchLimit = Math.min(
+      500,
+      questionLimit * 4 + excludeSet.size * 2,
+    );
     const questionsRef = db.collection("questions");
     let query = questionsRef.where("subject_code", "==", subject as string);
 
@@ -471,7 +482,11 @@ export default async function handler(
       return { id: doc.id, ...data, tags: normalizeTags(data) };
     });
 
-    const shuffled = allQuestions.sort(() => Math.random() - 0.5);
+    const filtered =
+      excludeSet.size > 0
+        ? allQuestions.filter((q) => !excludeSet.has(q.id))
+        : allQuestions;
+    const shuffled = filtered.sort(() => Math.random() - 0.5);
     const questions = shuffled.slice(0, questionLimit);
     return res.status(200).json({
       success: true,
