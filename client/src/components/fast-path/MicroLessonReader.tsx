@@ -11,18 +11,14 @@ export function MicroLessonReader({
   estimatedReadMinutes,
   blocks,
   onStartDrill,
-  onBack,
   drillLabel = "Start micro-drill",
-  skipLabel,
 }: {
   title: string;
   unitLabel?: string;
   estimatedReadMinutes: number;
   blocks: MicroLessonBlock[];
   onStartDrill: () => void;
-  onBack?: () => void;
   drillLabel?: string;
-  skipLabel?: string;
 }) {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8">
@@ -62,19 +58,12 @@ export function MicroLessonReader({
         ))}
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Button
-          className="h-11 flex-1 rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700 dark:bg-blue-500"
-          onClick={onStartDrill}
-        >
-          {drillLabel}
-        </Button>
-        {onBack && skipLabel ? (
-          <Button variant="outline" className="h-11 rounded-xl" onClick={onBack}>
-            {skipLabel}
-          </Button>
-        ) : null}
-      </div>
+      <Button
+        className="h-11 w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700 dark:bg-blue-500"
+        onClick={onStartDrill}
+      >
+        {drillLabel}
+      </Button>
     </div>
   );
 }

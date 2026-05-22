@@ -149,8 +149,6 @@ export default function MicroLessonPage() {
             estimatedReadMinutes={lesson.estimatedReadMinutes}
             blocks={lesson.blocks}
             onStartDrill={startDrill}
-            onBack={() => router.push(backHref)}
-            skipLabel="Skip to Fast Path"
           />
         )}
       </main>

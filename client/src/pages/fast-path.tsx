@@ -43,7 +43,7 @@ export default function FastPathPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const subjectId = router.query.subject as string | undefined;
-  const [studyNotesPrimerEnabled, setStudyNotesPrimerEnabled] = useState(false);
+  const [studyNotesPrimerEnabled, setStudyNotesPrimerEnabled] = useState(true);
 
   const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean } }>({
     queryKey: ["adminCheck"],
@@ -199,7 +199,7 @@ export default function FastPathPage() {
                 className="rounded border-gray-300 dark:border-gray-600 text-khan-green focus:ring-khan-green"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
-                Optional quick review before first 5 questions (off by default; lesson is the teach step)
+                Optional quick review before first 5 questions (on by default; lesson is the teach step)
               </span>
             </label>
           )}

@@ -1,5 +1,5 @@
 
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
@@ -27,18 +27,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase (ensure single instance)
-let app;
-try {
-  app = initializeApp(firebaseConfig);
-} catch (error: any) {
-  // If app already exists, get the existing instance
-  if (error?.code === 'app/duplicate-app') {
-    const { getApp } = await import('firebase/app');
-    app = getApp();
-  } else {
-    throw error;
-  }
-}
+const existingApps = getApps();
+const app =
+  existingApps.length > 0 ? existingApps[0] : initializeApp(firebaseConfig);
 
 // Initialize Firebase services
 export const db = getFirestore(app);

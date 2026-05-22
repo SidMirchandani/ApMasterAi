@@ -343,6 +343,9 @@ export default function AdminPage() {
    */
   const [mixedPromptsPinnedIds, setMixedPromptsPinnedIds] = useState<string[] | null>(null);
   const [questionsPage, setQuestionsPage] = useState(1);
+  const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
+  /** When true, every question matching current filters is selected (including off-page rows). */
+  const [allFilteredSelected, setAllFilteredSelected] = useState(false);
   // Bulk delete dialog/button removed from UI; keep flags for potential future reuse.
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -418,8 +421,27 @@ export default function AdminPage() {
     return displayedItems.slice(start, start + QUESTIONS_PAGE_SIZE);
   }, [displayedItems, questionsPage]);
 
+  const effectiveSelectedCount = allFilteredSelected
+    ? displayedItems.length
+    : selectedQuestions.size;
+
+  const allPageQuestionsSelected =
+    paginatedItems.length > 0 &&
+    (allFilteredSelected || paginatedItems.every((q) => selectedQuestions.has(q.id)));
+
+  const somePageQuestionsSelected =
+    !allFilteredSelected &&
+    paginatedItems.some((q) => selectedQuestions.has(q.id)) &&
+    !paginatedItems.every((q) => selectedQuestions.has(q.id));
+
+  const showSelectAllFilteredBanner =
+    allPageQuestionsSelected &&
+    !allFilteredSelected &&
+    displayedItems.length > paginatedItems.length;
+
   useEffect(() => {
     setQuestionsPage(1);
+    setAllFilteredSelected(false);
   }, [
     rowQualityFilter,
     showOnlyVerificationIncomplete,
@@ -435,9 +457,6 @@ export default function AdminPage() {
 
   // AI explanation generation state
   const [generatingExplanations, setGeneratingExplanations] = useState(false);
-  const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(
-    new Set(),
-  );
   const [selectedAction, setSelectedAction] = useState<string>("verify-questions");
   const [cheatMode, setCheatMode] = useState(false);
   const aiActionAbortRef = useRef<AbortController | null>(null);
@@ -1060,6 +1079,7 @@ export default function AdminPage() {
     const nextItems: Question[] = data.items || [];
     setItems(nextItems);
     setSelectedQuestions(new Set());
+    setAllFilteredSelected(false);
     setQuestionsPage(1);
     return nextItems;
   }
@@ -1411,6 +1431,7 @@ export default function AdminPage() {
     }).then((res) => {
       if (!res.ok) throw new Error("Delete failed");
       setItems((prev) => prev.filter((q) => q.id !== id));
+      setAllFilteredSelected(false);
       setSelectedQuestions((prev) => {
         const newSet = new Set(prev);
         newSet.delete(id);
@@ -1427,7 +1448,7 @@ export default function AdminPage() {
   }
 
   async function executeAIAction() {
-    if (!token || selectedQuestions.size === 0) {
+    if (!token || effectiveSelectedCount === 0) {
       toast.error("Please select at least one question");
       return;
     }
@@ -1437,7 +1458,9 @@ export default function AdminPage() {
     setLastExplanationSummary(null);
 
     setGeneratingExplanations(true);
-    let questionIds = Array.from(selectedQuestions);
+    let questionIds = allFilteredSelected
+      ? displayedItems.map((q) => q.id)
+      : Array.from(selectedQuestions);
 
     // For "Generate Explanations", only send questions that are actually missing explanations.
     // The dedicated "Re-Generate Explanations (overwrite)" action intentionally skips this
@@ -1637,7 +1660,25 @@ export default function AdminPage() {
     setExplanationProgress(null);
   }
 
+  function clearQuestionSelection() {
+    setSelectedQuestions(new Set());
+    setAllFilteredSelected(false);
+  }
+
+  function selectAllFilteredQuestions() {
+    setAllFilteredSelected(true);
+    setSelectedQuestions(new Set(displayedItems.map((q) => q.id)));
+  }
+
   function toggleQuestion(id: string) {
+    if (allFilteredSelected) {
+      setAllFilteredSelected(false);
+      setSelectedQuestions(
+        new Set(displayedItems.map((q) => q.id).filter((qid) => qid !== id)),
+      );
+      return;
+    }
+
     setSelectedQuestions((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
@@ -1650,15 +1691,26 @@ export default function AdminPage() {
   }
 
   function toggleSelectAll() {
+    if (allFilteredSelected) {
+      clearQuestionSelection();
+      return;
+    }
+
     const allPageSelected =
       paginatedItems.length > 0 && paginatedItems.every((q) => selectedQuestions.has(q.id));
+
+    if (allPageSelected) {
+      setSelectedQuestions((prev) => {
+        const next = new Set(prev);
+        paginatedItems.forEach((q) => next.delete(q.id));
+        return next;
+      });
+      return;
+    }
+
     setSelectedQuestions((prev) => {
       const next = new Set(prev);
-      if (allPageSelected) {
-        paginatedItems.forEach((q) => next.delete(q.id));
-      } else {
-        paginatedItems.forEach((q) => next.add(q.id));
-      }
+      paginatedItems.forEach((q) => next.add(q.id));
       return next;
     });
   }
@@ -2304,7 +2356,7 @@ export default function AdminPage() {
                   {rowQualityFilter === "verification_failed" && items.length > 0 && "Filter: Verification Failed. "}
                   {showOnlyVerificationIncomplete && items.length > 0 && "Filter: Incomplete Prompt. "}
                   {showOnlyMixedPrompts && items.length > 0 && "Filter: Mixed Prompts (text + image choices). "}
-                  {selectedQuestions.size > 0 && `${selectedQuestions.size} selected`}
+                  {effectiveSelectedCount > 0 && `${effectiveSelectedCount} selected`}
                 </CardDescription>
               </div>
               <div className="flex gap-2 items-center">
@@ -2337,10 +2389,10 @@ export default function AdminPage() {
                 ) : (
                   <Button
                     onClick={executeAIAction}
-                    disabled={selectedQuestions.size === 0}
+                    disabled={effectiveSelectedCount === 0}
                     className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
                   >
-                    {`Execute (${selectedQuestions.size})`}
+                    {`Execute (${effectiveSelectedCount})`}
                   </Button>
                 )}
               </div>
@@ -2455,6 +2507,33 @@ export default function AdminPage() {
                 </div>
               );
             })()}
+            {(showSelectAllFilteredBanner || allFilteredSelected) && (
+              <div className="mb-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-slate-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-slate-200">
+                {allFilteredSelected ? (
+                  <>
+                    All {displayedItems.length} questions are selected.{" "}
+                    <button
+                      type="button"
+                      className="font-medium text-blue-700 hover:underline dark:text-blue-400"
+                      onClick={clearQuestionSelection}
+                    >
+                      Clear selection
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    All {paginatedItems.length} questions on this page are selected.{" "}
+                    <button
+                      type="button"
+                      className="font-medium text-blue-700 hover:underline dark:text-blue-400"
+                      onClick={selectAllFilteredQuestions}
+                    >
+                      Select all {displayedItems.length} questions
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
             <div className="overflow-x-auto overflow-y-hidden max-w-full">
               <table className="w-full text-sm table-fixed">
                 <colgroup>
@@ -2476,8 +2555,11 @@ export default function AdminPage() {
                     <th className="p-2 text-center">
                       <Checkbox
                         checked={
-                          paginatedItems.length > 0 &&
-                          paginatedItems.every((q) => selectedQuestions.has(q.id))
+                          allPageQuestionsSelected
+                            ? true
+                            : somePageQuestionsSelected
+                              ? "indeterminate"
+                              : false
                         }
                         onCheckedChange={toggleSelectAll}
                       />
@@ -2500,7 +2582,7 @@ export default function AdminPage() {
                     <Row
                       key={q.id}
                       q={q}
-                      selected={selectedQuestions.has(q.id)}
+                      selected={allFilteredSelected || selectedQuestions.has(q.id)}
                       onToggleSelect={() => toggleQuestion(q.id)}
                       onSave={updateQuestion}
                       onDelete={deleteQuestion}

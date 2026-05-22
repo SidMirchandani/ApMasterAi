@@ -496,20 +496,13 @@ export function PracticeQuiz({
                 ))}
               </ol>
             </div>
-            <div className="mt-8 flex flex-col items-center gap-3">
+            <div className="mt-8 flex justify-center">
               <Button
                 onClick={dismissConceptPrimer}
                 className="rounded-full bg-blue-600 px-8 py-2.5 font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
                 Start practice
               </Button>
-              <button
-                type="button"
-                onClick={dismissConceptPrimer}
-                className="text-sm text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
-              >
-                Skip
-              </button>
             </div>
           </div>
         </div>
