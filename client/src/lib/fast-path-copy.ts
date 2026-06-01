@@ -43,7 +43,7 @@ export const FAST_PATH_COPY = {
   checkMyScore: "Fast Path: Check My Score",
   fastPathTo4: "Fast Path: Sprint to 4",
   fastPathTo5: "Fast Path: Sprint to 5",
-  keepYour5: "Fast Path: Keep Your 5",
+  keepYour5: "Fast Path: Lock In Your 5",
   beta: "beta",
   diagnosticSubline: (qCount: number) =>
     `~30 min · predicted AP score + weak units`,

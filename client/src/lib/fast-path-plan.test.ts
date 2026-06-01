@@ -15,7 +15,7 @@ test("getFastPathSummary diagnostic when no diagnostic test", () => {
   assert.equal(summary.headline, "Fast Path: Check My Score");
 });
 
-test("getFastPathSummary at score 5 uses Fast Path: Keep Your 5", () => {
+test("getFastPathSummary at score 5 uses Fast Path: Lock In Your 5", () => {
   const plan = computeFastPathPlan({
     subjectId: "ap-chem",
     subjectCode: "APCHEM",
@@ -28,7 +28,7 @@ test("getFastPathSummary at score 5 uses Fast Path: Keep Your 5", () => {
   });
   if (plan.predicted && plan.predicted.score >= 5) {
     const summary = getFastPathSummary(plan, "ap-chem");
-    assert.equal(summary.headline, "Fast Path: Keep Your 5");
+    assert.equal(summary.headline, "Fast Path: Lock In Your 5");
     assert.equal(summary.variant, "ready");
   }
 });

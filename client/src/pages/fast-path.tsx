@@ -3,10 +3,8 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Target,
-  BarChart3,
   Sparkles,
   Crown,
   Play,
@@ -22,6 +20,7 @@ import { withQuizFromParam } from "@/lib/quiz-return";
 import { buildMicroLessonPath } from "@/lib/micro-lesson-flow";
 import { getMicroDrillGoalScore } from "@/lib/micro-drill-checkpoint";
 import { getSubjectDisplayName } from "../../../lib/subject-display-names";
+import { getAPScoreColor } from "@/lib/ap-score-utils";
 import { APScoreExplainDialog } from "@/components/ui/APScoreExplainDialog";
 import {
   computeFastPathPlan,
@@ -31,7 +30,6 @@ import {
 import {
   FAST_PATH_COPY,
   getFastPathPageTitle,
-  getGapStatusMessage,
   getPrimarySectionTitle,
   getPrimarySectionBody,
   getSecondarySectionTitle,
@@ -44,18 +42,6 @@ export default function FastPathPage() {
   const router = useRouter();
   const subjectId = router.query.subject as string | undefined;
   const [studyNotesPrimerEnabled, setStudyNotesPrimerEnabled] = useState(true);
-
-  const { data: adminCheck } = useQuery<{ success: boolean; data: { isAdmin: boolean } }>({
-    queryKey: ["adminCheck"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/user/admin-check");
-      if (!res.ok) return { success: false, data: { isAdmin: false } };
-      return res.json();
-    },
-    enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000,
-  });
-  const isAdmin = adminCheck?.data?.isAdmin ?? false;
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -129,8 +115,6 @@ export default function FastPathPage() {
     unitsWithYield,
     currentPercentage,
     predicted,
-    gapTo4,
-    gapTo5,
     target4,
     target5,
     hasDiagnostic,
@@ -142,8 +126,6 @@ export default function FastPathPage() {
     unitsWithYield: [] as UnitWithYield[],
     currentPercentage: 0,
     predicted: null,
-    gapTo4: 0,
-    gapTo5: 0,
     target4: 0,
     target5: 0,
     hasDiagnostic: false,
@@ -162,6 +144,27 @@ export default function FastPathPage() {
     : "Fast Path";
   const scoreTier = getFastPathScoreTier(predicted);
   const drillGoalScore = getMicroDrillGoalScore(predicted?.score ?? null);
+  const boundedCurrentPercentage = Math.min(100, Math.max(0, currentPercentage));
+  const weightedScoreLabelPosition = Math.min(88, Math.max(12, boundedCurrentPercentage));
+  const target4Position = Math.min(100, Math.max(0, target4));
+  const target5Position = Math.min(100, Math.max(0, target5));
+  const targetLabelGroupPosition = Math.min(82, Math.max(58, (target4Position + target5Position) / 2));
+  const scoreBadgeColor = predicted?.color ?? "#6b7280";
+  const scoreFillColor = scoreTier === "at5" ? "#16a34a" : predicted?.color ?? "#2563eb";
+  const target4Color = getAPScoreColor(4);
+  const target5Color = getAPScoreColor(5);
+  const primarySectionTitle =
+    scoreTier === "at5" ? FAST_PATH_COPY.priorityPractice : getPrimarySectionTitle(predicted);
+  const primarySectionBody =
+    scoreTier === "at5"
+      ? "Your highest-yield unit that still has room to improve. Quick drills keep your 5 sharp."
+      : getPrimarySectionBody(predicted, phase1.length);
+  const secondarySectionTitle =
+    scoreTier === "toward4" ? getSecondarySectionTitle(predicted) : FAST_PATH_COPY.morePractice;
+  const secondarySectionBody =
+    scoreTier === "at5"
+      ? "Optional polish on remaining units-you've already closed the gap to a 5."
+      : getSecondarySectionBody(predicted);
 
   if (loading) {
     return (
@@ -190,13 +193,13 @@ export default function FastPathPage() {
             <Target className="w-6 h-6 text-khan-green" />
             {subjectId ? pageTitle : "Fast Path"}
           </h1>
-          {isAdmin && subjectId && (
-            <label className="mt-2 flex items-center gap-2 cursor-pointer w-fit">
+          {subjectId && (
+            <label className="mt-2 flex w-fit cursor-pointer items-start gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <input
                 type="checkbox"
                 checked={studyNotesPrimerEnabled}
                 onChange={(e) => setStudyNotesPrimerEnabled(e.target.checked)}
-                className="rounded border-gray-300 dark:border-gray-600 text-khan-green focus:ring-khan-green"
+                className="mt-0.5 rounded border-gray-300 text-khan-green focus:ring-khan-green dark:border-gray-600"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
                 Optional quick review before first 5 questions (on by default; lesson is the teach step)
@@ -259,58 +262,95 @@ export default function FastPathPage() {
         ) : (
           <div className="space-y-6">
             {/* Global Progress Tracker */}
-            <Card className="dark:bg-gray-900 dark:border-gray-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2 dark:text-gray-100">
-                  <span>Predicted AP Score: {predicted?.score ?? "—"}</span>
-                  <APScoreExplainDialog inline triggerClassName="ml-0.5" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3 flex-shrink-0 flex-wrap">
-                  <APScoreCircle
-                    score={predicted?.score ?? null}
-                    color={predicted?.color ?? "#9ca3af"}
-                    variant="dashboard"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {getGapStatusMessage(predicted, gapTo4, gapTo5, currentPercentage)}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Weighted score: ~{currentPercentage}%
-                    </p>
+            <Card className="border-green-200 bg-white shadow-sm dark:border-green-900/60 dark:bg-gray-900">
+              <CardContent className="grid gap-4 px-4 py-3 sm:grid-cols-[minmax(10rem,1fr)_minmax(0,3fr)] sm:items-start">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <div className="text-center text-base font-bold uppercase tracking-wide text-green-700 dark:text-green-300">
+                    <span className="inline-block">Predicted</span>{" "}
+                    <span className="inline-block">AP Score</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <APScoreCircle
+                      score={predicted?.score ?? null}
+                      color={predicted?.color ?? "#9ca3af"}
+                      size="lg"
+                      responsive
+                    />
+                    <APScoreExplainDialog inline triggerClassName="ml-0.5" />
                   </div>
                 </div>
-                <div className="w-full">
-                  <div className="relative h-4 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+
+                <div className="min-w-0 pt-5 sm:pt-8">
+                  <div className="w-full pb-6 pt-7">
+                  <div className="relative h-0 text-xs">
+                    <span
+                      className="absolute bottom-3 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-bold text-white shadow-sm sm:px-3 sm:text-sm"
+                      style={{
+                        left: `${weightedScoreLabelPosition}%`,
+                        backgroundColor: scoreBadgeColor,
+                      }}
+                    >
+                      <span>YOU: {predicted?.score ?? "—"}: ~{currentPercentage}%</span>
+                    </span>
+                  </div>
+                  <div className="relative h-5 rounded-full bg-gray-200 shadow-inner dark:bg-gray-700">
                       <div
-                        className="h-full rounded-full transition-all duration-500"
+                        className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
                         style={{
-                          width: `${Math.min(100, currentPercentage)}%`,
-                          backgroundColor: predicted?.color ?? "#6b7280",
+                          width: `${boundedCurrentPercentage}%`,
+                          backgroundColor: scoreFillColor,
                         }}
                       />
-                      {currentPercentage < target4 && (
-                        <div
-                          className="absolute top-0 bottom-0 w-0.5 bg-gray-900 dark:bg-gray-100 z-10"
-                          style={{ left: `${target4}%` }}
-                          title={`Score needed for 4: ~${target4}%`}
-                        />
-                      )}
-                      {currentPercentage < target5 && (
-                        <div
-                          className="absolute top-0 bottom-0 w-0.5 bg-amber-500 z-10"
-                          style={{ left: `${target5}%` }}
-                          title={`Score needed for 5: ~${target5}%`}
-                        />
-                      )}
+                      <div
+                        className="absolute -top-1 -bottom-1 z-20 w-1 -translate-x-1/2 rounded-full shadow-sm"
+                        style={{
+                          left: `${boundedCurrentPercentage}%`,
+                          backgroundColor: scoreBadgeColor,
+                        }}
+                        title={`Weighted score: ~${currentPercentage}%`}
+                      />
+                      <div
+                        className="absolute -top-1 -bottom-1 z-10 w-0.5 -translate-x-1/2 rounded-full"
+                        style={{
+                          left: `${target4Position}%`,
+                          backgroundColor: target4Color,
+                        }}
+                        title={`Score needed for 4: ~${Math.round(target4)}%`}
+                      />
+                      <div
+                        className="absolute -top-1 -bottom-1 z-10 w-0.5 -translate-x-1/2 rounded-full"
+                        style={{
+                          left: `${target5Position}%`,
+                          backgroundColor: target5Color,
+                        }}
+                        title={`Score needed for 5: ~${Math.round(target5)}%`}
+                      />
                     </div>
-                  <div className="flex justify-between text-[10px] text-gray-500 dark:text-gray-400 mt-1">
-                    <span>0%</span>
-                    <span>4: ~{Math.round(target4)}%</span>
-                    <span>5: ~{Math.round(target5)}%</span>
-                    <span>100%</span>
+                  <div className="relative mt-2 h-14 text-[9px] font-bold sm:h-7 sm:text-xs">
+                    <span className="absolute left-0 top-0 rounded-full bg-gray-100 px-1.5 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-200 sm:px-2.5">
+                      0%
+                    </span>
+                    <div
+                      className="absolute top-7 flex -translate-x-1/2 items-center gap-1 sm:top-0"
+                      style={{ left: `${targetLabelGroupPosition}%` }}
+                    >
+                      <span
+                        className="whitespace-nowrap rounded-full px-1.5 py-1 text-white shadow-sm sm:px-2.5"
+                        style={{ backgroundColor: target4Color }}
+                      >
+                        4: ~{Math.round(target4)}%
+                      </span>
+                      <span
+                        className="whitespace-nowrap rounded-full px-1.5 py-1 text-white shadow-sm sm:px-2.5"
+                        style={{ backgroundColor: target5Color }}
+                      >
+                        5: ~{Math.round(target5)}%
+                      </span>
+                    </div>
+                    <span className="absolute right-0 top-0 rounded-full bg-gray-100 px-1.5 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-200 sm:px-2.5">
+                      100%
+                    </span>
+                  </div>
                   </div>
                 </div>
               </CardContent>
@@ -469,7 +509,7 @@ function UnitPhaseCard({
 }) {
   const router = useRouter();
   const pointsLabel = unit.pointsAvailable > 0
-    ? `+${unit.pointsAvailable.toFixed(1)}% to AP Score`
+    ? `+${unit.pointsAvailable.toFixed(1)}%`
     : "—";
   const masteryLabel = unit.bestPct > 0
     ? `Your best: ${unit.bestPct}%`
@@ -484,7 +524,7 @@ function UnitPhaseCard({
 
   return (
     <div
-      className={`rounded-xl border p-4 flex flex-col gap-3 ${cardClass}`}
+      className={`flex h-full flex-col gap-3 rounded-xl border p-4 ${cardClass}`}
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight">
@@ -498,7 +538,7 @@ function UnitPhaseCard({
         {masteryLabel}
       </p>
       <Button
-        className="w-full rounded-xl font-semibold"
+        className="mt-auto w-full rounded-xl font-semibold"
         variant={variant === "primary" ? "default" : "outline"}
         onClick={() =>
           router.push(

@@ -13,8 +13,8 @@ test("diagnostic CTA uses Fast Path prefix", () => {
   assert.equal(FAST_PATH_COPY.checkMyScore, "Fast Path: Check My Score");
 });
 
-test("headline at 5 is Fast Path: Keep Your 5", () => {
-  assert.equal(getFastPathHeadline(score(5)), "Fast Path: Keep Your 5");
+test("headline at 5 is Fast Path: Lock In Your 5", () => {
+  assert.equal(getFastPathHeadline(score(5)), "Fast Path: Lock In Your 5");
 });
 
 test("headline below 4 is Fast Path: Sprint to 4", () => {
