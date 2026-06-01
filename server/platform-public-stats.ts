@@ -121,52 +121,69 @@ export async function getPlatformPublicStats(): Promise<PlatformPublicStats> {
   }
   const { firestore } = firebaseAdmin;
 
-  const [
-    totalStudentsLegacy,
-    totalSubjectEnrollmentsLegacy,
-    questionBank,
-    statesWithUsers,
-    fullLengthQuizCount,
-    diagnosticQuizCount,
-    unitQuizCount,
-    totalQuestionsAnswered,
-  ] = await Promise.all([
-    firestore
-      .collection("users")
-      .count()
-      .get()
-      .then((s) => s.data().count),
-    firestore
-      .collection("user_subjects")
-      .count()
-      .get()
-      .then((s) => s.data().count),
+  const [rollupTotals, questionBank, statesWithUsers] = await Promise.all([
+    aggregateGlobalStatsFromUserStats(firestore),
     firestore
       .collection("questions")
       .count()
       .get()
       .then((s) => s.data().count),
     getStatesWithUsers(firestore),
-    aggregateCollectionGroupCount(firestore, "fullLengthTests"),
-    aggregateCollectionGroupCount(firestore, "diagnosticTests"),
-    aggregateCollectionGroupCount(firestore, "unitQuizResults"),
-    aggregateStudentQuestionAttempts(firestore),
   ]);
-  const rollupTotals = await aggregateGlobalStatsFromUserStats(firestore);
 
-  const totalQuizzesTakenLegacy = fullLengthQuizCount + diagnosticQuizCount + unitQuizCount;
-  const totalStudents = rollupTotals?.totalStudents ?? totalStudentsLegacy;
-  const totalSubjectEnrollments = rollupTotals?.totalSubjectEnrollments ?? totalSubjectEnrollmentsLegacy;
-  const totalQuizzesTaken = rollupTotals?.totalQuizzesTaken ?? totalQuizzesTakenLegacy;
-  const totalQuestionsAnsweredFinal = rollupTotals?.totalQuestionsAnswered ?? totalQuestionsAnswered;
+  let legacyTotals: {
+    totalStudents: number;
+    totalSubjectEnrollments: number;
+    totalQuizzesTaken: number;
+    totalQuestionsAnswered: number;
+  } | null = null;
+
+  if (!rollupTotals) {
+    const [
+      totalStudentsLegacy,
+      totalSubjectEnrollmentsLegacy,
+      fullLengthQuizCount,
+      diagnosticQuizCount,
+      unitQuizCount,
+      totalQuestionsAnswered,
+    ] = await Promise.all([
+      firestore
+        .collection("users")
+        .count()
+        .get()
+        .then((s) => s.data().count),
+      firestore
+        .collection("user_subjects")
+        .count()
+        .get()
+        .then((s) => s.data().count),
+      aggregateCollectionGroupCount(firestore, "fullLengthTests"),
+      aggregateCollectionGroupCount(firestore, "diagnosticTests"),
+      aggregateCollectionGroupCount(firestore, "unitQuizResults"),
+      aggregateStudentQuestionAttempts(firestore),
+    ]);
+    legacyTotals = {
+      totalStudents: totalStudentsLegacy,
+      totalSubjectEnrollments: totalSubjectEnrollmentsLegacy,
+      totalQuizzesTaken: fullLengthQuizCount + diagnosticQuizCount + unitQuizCount,
+      totalQuestionsAnswered,
+    };
+  }
+
+  const totals = rollupTotals ?? legacyTotals ?? {
+    totalStudents: 0,
+    totalSubjectEnrollments: 0,
+    totalQuizzesTaken: 0,
+    totalQuestionsAnswered: 0,
+  };
 
   const data: PlatformPublicStats = {
-    totalStudents,
-    totalSubjectEnrollments,
+    totalStudents: totals.totalStudents,
+    totalSubjectEnrollments: totals.totalSubjectEnrollments,
     questionBank,
     statesWithUsers,
-    totalQuizzesTaken,
-    totalQuestionsAnswered: totalQuestionsAnsweredFinal,
+    totalQuizzesTaken: totals.totalQuizzesTaken,
+    totalQuestionsAnswered: totals.totalQuestionsAnswered,
     computedAt: new Date().toISOString(),
   };
 

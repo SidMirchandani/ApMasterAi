@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { HeroPlatformStatsStrip } from "@/components/sections/hero-platform-stats";
+import {
+  HeroPlatformStatsStrip,
+  type PlatformPublicStats,
+} from "@/components/sections/hero-platform-stats";
 
 const ROTATING_SUBJECTS = [
   "AP Physics",
@@ -25,7 +28,11 @@ const ROTATING_SUBJECTS = [
   "AP Macro",
 ];
 
-export function Hero() {
+export function Hero({
+  initialPlatformStats,
+}: {
+  initialPlatformStats?: PlatformPublicStats | null;
+}) {
   const [isVisible, setIsVisible] = useState(false);
   const [wordIndex, setWordIndex] = useState(0);
   const [wordVisible, setWordVisible] = useState(true);
@@ -69,7 +76,7 @@ export function Hero() {
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8 md:pb-24 md:pt-10 lg:px-8">
-        <HeroPlatformStatsStrip />
+        <HeroPlatformStatsStrip initialStats={initialPlatformStats} />
 
         <div className="mt-6 grid grid-cols-1 items-center gap-12 lg:mt-10 lg:grid-cols-2 lg:gap-20">
           {/* LEFT: Content */}

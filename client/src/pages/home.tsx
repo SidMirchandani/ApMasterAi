@@ -12,8 +12,13 @@ import SimpleFooter from "@/components/sections/simple-footer";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/auth-context";
 import { useEffect } from "react";
+import type { PlatformPublicStats } from "@/components/sections/hero-platform-stats";
 
-export default function Home() {
+export default function Home({
+  initialPlatformStats = null,
+}: {
+  initialPlatformStats?: PlatformPublicStats | null;
+}) {
   const router = useRouter();
   const { isAuthenticated, loading } = useAuth();
 
@@ -44,7 +49,7 @@ export default function Home() {
   return (
     <div className="landing-page min-h-screen bg-white text-slate-900 dark:bg-[#0B0F1A] dark:text-slate-100">
       <Navigation />
-      <Hero />
+      <Hero initialPlatformStats={initialPlatformStats} />
       <LandingHowItWorks />
       <LandingCoursesGallery />
       <LandingStudyPreview />

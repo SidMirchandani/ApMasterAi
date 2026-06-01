@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCountUp } from "@/hooks/use-count-up";
 
-type PlatformPublicStats = {
+export type PlatformPublicStats = {
   totalStudents: number;
   totalSubjectEnrollments: number;
   questionBank: number;
@@ -50,10 +50,15 @@ function StatValue({ end, ready, isError }: { end: number; ready: boolean; isErr
 /**
  * Full-width hero stats: 2 per row on narrow phones, 3 per row sm–md, one row from lg.
  */
-export function HeroPlatformStatsStrip() {
+export function HeroPlatformStatsStrip({
+  initialStats,
+}: {
+  initialStats?: PlatformPublicStats | null;
+}) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["public-platform-stats"],
     queryFn: fetchPlatformStats,
+    initialData: initialStats ?? undefined,
     staleTime: 5 * 60_000,
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
