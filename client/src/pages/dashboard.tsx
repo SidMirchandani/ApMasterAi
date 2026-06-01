@@ -57,6 +57,12 @@ interface DashboardSubject {
   unitProgress?: any;
 }
 
+type DashboardTestHistoryEntry = {
+  percentage: number;
+  type?: "full-length" | "diagnostic" | "unit";
+  sectionBreakdown?: Record<string, { correct: number; total: number }>;
+};
+
 // =====================
 // MAIN DASHBOARD COMPONENT
 // =====================
@@ -74,6 +80,9 @@ export default function Dashboard({
     ? encodeURIComponent(adminReadOnlyTargetUserId)
     : "";
   const adminUserBasePath = encodedTargetUserId ? `/admin/users/${encodedTargetUserId}` : "";
+  const subjectsQueryKey = isAdminReadOnly
+    ? ["adminUserDashboardSubjects", adminReadOnlyTargetUserId]
+    : ["subjects", "withTestHistory"];
 
   const [subjectToRemove, setSubjectToRemove] = useState<DashboardSubject | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
@@ -118,14 +127,21 @@ export default function Dashboard({
     refetch: refetchSubjects,
     isFetching: subjectsFetching,
   } = useQuery({
-    queryKey: isAdminReadOnly ? ["adminUserSubjects", adminReadOnlyTargetUserId] : ["subjects"],
+    queryKey: subjectsQueryKey,
     queryFn: async () => {
       const url = isAdminReadOnly
-        ? `/api/admin/users/${encodedTargetUserId}/subjects`
-        : "/api/user/subjects";
+        ? `/api/admin/users/${encodedTargetUserId}/dashboard`
+        : "/api/user/subjects?includeTestHistory=1";
       const res = await apiRequest("GET", url);
       if (!res.ok) throw new Error("Failed subjects");
-      return res.json();
+      const json = await res.json();
+      return isAdminReadOnly
+        ? {
+            success: json.success,
+            data: json.data?.subjects || [],
+            testHistoryBySubject: json.data?.testHistoryBySubject || {},
+          }
+        : json;
     },
     enabled: isAuthenticated,
     staleTime: 0,
@@ -137,6 +153,8 @@ export default function Dashboard({
     () => subjectsResponse?.data || [],
     [subjectsResponse?.data]
   );
+  const testHistoryBySubject: Record<string, DashboardTestHistoryEntry[]> =
+    subjectsResponse?.testHistoryBySubject || {};
 
   const activeList = useMemo(() => subjects.filter((s) => !s.archived), [subjects]);
 
@@ -172,9 +190,9 @@ export default function Dashboard({
       return res.json();
     },
     onMutate: async ({ id, archive }) => {
-      await queryClient.cancelQueries({ queryKey: ["subjects"] });
-      const prev = queryClient.getQueryData(["subjects"]);
-      queryClient.setQueryData(["subjects"], (old: any) => ({
+      await queryClient.cancelQueries({ queryKey: subjectsQueryKey });
+      const prev = queryClient.getQueryData(subjectsQueryKey);
+      queryClient.setQueryData(subjectsQueryKey, (old: any) => ({
         ...old,
         data: old.data.map((s: any) =>
           String(s.id) === String(id) ? { ...s, archived: archive } : s
@@ -183,7 +201,7 @@ export default function Dashboard({
       return { prev };
     },
     onError: (_, __, ctx) => {
-      if (ctx?.prev) queryClient.setQueryData(["subjects"], ctx.prev);
+      if (ctx?.prev) queryClient.setQueryData(subjectsQueryKey, ctx.prev);
       toast({ title: "Error archiving", variant: "destructive" });
     },
     onSuccess: (_, { archive }) => {
@@ -198,20 +216,20 @@ export default function Dashboard({
       return res.json();
     },
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["subjects"] });
-      const prev = queryClient.getQueryData(["subjects"]);
-      queryClient.setQueryData(["subjects"], (old: any) => ({
+      await queryClient.cancelQueries({ queryKey: subjectsQueryKey });
+      const prev = queryClient.getQueryData(subjectsQueryKey);
+      queryClient.setQueryData(subjectsQueryKey, (old: any) => ({
         ...old,
         data: old.data.filter((s: any) => String(s.id) !== String(id)),
       }));
       return { prev };
     },
     onError: (_, __, ctx) => {
-      if (ctx?.prev) queryClient.setQueryData(["subjects"], ctx.prev);
+      if (ctx?.prev) queryClient.setQueryData(subjectsQueryKey, ctx.prev);
       toast({ title: "Delete failed", variant: "destructive" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      queryClient.invalidateQueries({ queryKey: subjectsQueryKey });
       toast({ title: "Subject removed" });
       setShowRemoveDialog(false);
       setSubjectToRemove(null);
@@ -348,6 +366,11 @@ export default function Dashboard({
                     )
                   }
                   unitProgressOverride={(subject as any).unitProgress}
+                  batchedTestHistory={testHistoryBySubject[subject.subjectId]}
+                  hasBatchedTestHistory={Object.prototype.hasOwnProperty.call(
+                    testHistoryBySubject,
+                    subject.subjectId,
+                  )}
                 />
               ))}
             </div>
@@ -552,6 +575,8 @@ const SubjectCard = ({
   onDelete,
   onStudy,
   unitProgressOverride,
+  batchedTestHistory,
+  hasBatchedTestHistory = false,
 }: {
   subject: DashboardSubject;
   isAdmin?: boolean;
@@ -562,6 +587,8 @@ const SubjectCard = ({
   onStudy: () => void;
   /** Optional unit progress map passed from parent to avoid extra network calls. */
   unitProgressOverride?: Record<string, { highestScore?: number; mcqScore?: number }>;
+  batchedTestHistory?: DashboardTestHistoryEntry[];
+  hasBatchedTestHistory?: boolean;
 }) => {
   const subjectMeta = getSubjectByCode(subject.subjectId);
   const units = subjectMeta?.units || [];
@@ -569,7 +596,7 @@ const SubjectCard = ({
 
   const { data: testHistoryResponse } = useQuery<{
     success: boolean;
-    data: { percentage: number; type?: "full-length" | "diagnostic"; sectionBreakdown?: Record<string, { correct: number; total: number }> }[];
+    data: DashboardTestHistoryEntry[];
   }>({
     queryKey: adminReadOnlyTargetUserId
       ? ["adminUserTestHistory", adminReadOnlyTargetUserId, subject.subjectId]
@@ -582,9 +609,14 @@ const SubjectCard = ({
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
+    enabled: !hasBatchedTestHistory,
     staleTime: 60000,
   });
-  const testHistory = testHistoryResponse?.data || [];
+  const testHistory = hasBatchedTestHistory
+    ? batchedTestHistory || []
+    : testHistoryResponse?.data || [];
+  const hasResolvedTestHistory = hasBatchedTestHistory || Boolean(testHistoryResponse);
+  const fastPathPending = Boolean(isAdmin && !hasResolvedTestHistory);
 
   // Prefer unit progress that is already embedded on the subject (from /api/user/subjects)
   // to avoid an extra request per subject. Fall back to an empty map.
@@ -606,7 +638,7 @@ const SubjectCard = ({
   const unitDifficultiesMap = unitDifficultiesResponse?.data ?? {};
 
   const fastPathSummary = useMemo(() => {
-    if (!isAdmin) return null;
+    if (!isAdmin || !hasResolvedTestHistory) return null;
     const plan = computeFastPathPlan({
       subjectId: subject.subjectId,
       subjectCode,
@@ -615,7 +647,7 @@ const SubjectCard = ({
       unitDifficultiesMap,
     });
     return getFastPathSummary(plan, subject.subjectId);
-  }, [isAdmin, subject.subjectId, subjectCode, unitProgressMap, testHistory, unitDifficultiesMap]);
+  }, [isAdmin, hasResolvedTestHistory, subject.subjectId, subjectCode, unitProgressMap, testHistory, unitDifficultiesMap]);
   const targets = getTargetPercentagesForSubject(subjectCode);
   const projectionState = getProjectedAPScoreDisplay({
     unitProgressMap,
@@ -775,7 +807,45 @@ const SubjectCard = ({
             </p>
           ) : null}
 
-          {fastPathSummary ? (
+          {fastPathPending ? (
+            <>
+              <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
+                <span className="inline-flex items-center gap-1.5">
+                  <Target className="h-4 w-4 shrink-0 opacity-70" />
+                  {unitCount} units
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 shrink-0 opacity-70" />
+                  Exam {formatDate(subjectMeta?.metadata?.examDate || subject.examDate)}
+                </span>
+              </div>
+              <div className="flex w-full flex-row gap-2 items-stretch">
+                <div className="min-w-0 flex-1 rounded-xl bg-slate-100 px-4 py-3 ring-1 ring-slate-200 dark:bg-white/[0.06] dark:ring-white/[0.08]">
+                  <div className="h-4 w-36 animate-pulse rounded-full bg-slate-200 dark:bg-white/[0.1]" />
+                  <div className="mt-2 h-3 w-52 max-w-full animate-pulse rounded-full bg-slate-200 dark:bg-white/[0.1]" />
+                </div>
+                <Button
+                  onClick={onStudy}
+                  title="Full-length practice tests or work through units one at a time."
+                  variant="ghost"
+                  className="group/btn flex h-auto min-h-10 min-w-0 flex-1 items-center justify-between gap-2 rounded-xl bg-blue-600 py-2.5 pl-3 pr-2.5 text-left font-semibold text-white shadow-[0_3px_0_0_rgba(29,78,216,0.35)] hover:bg-blue-700 hover:text-white active:translate-y-[2px] active:shadow-[0_1px_0_0_rgba(29,78,216,0.35)] dark:bg-blue-500 dark:shadow-[0_3px_0_0_rgba(30,64,175,0.4)] dark:hover:bg-blue-600 sm:pl-4 sm:pr-3"
+                >
+                  <span className="min-w-0 flex-1 text-left">
+                    <span className="block truncate text-sm font-extrabold leading-tight tracking-tight">
+                      Exam & Unit Practice
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs font-medium leading-snug text-white/90">
+                      Full-Length Tests Â· Practice By Unit
+                    </span>
+                  </span>
+                  <ArrowRight
+                    className="h-4 w-4 shrink-0 text-white/90 transition-transform group-hover/btn:translate-x-0.5"
+                    aria-hidden
+                  />
+                </Button>
+              </div>
+            </>
+          ) : fastPathSummary ? (
             <>
               <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
                 <span className="inline-flex items-center gap-1.5">

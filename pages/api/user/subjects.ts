@@ -8,8 +8,9 @@ import {
 import { assertNotBanned } from "../../../server/api-user-auth";
 import { verifyFirebaseToken } from "../../../server/firebase-admin";
 import { z } from "zod";
-import { UserSubject } from "../../../shared/schema";
+import type { UserSubject } from "../../../server/storage";
 import { getClientIp } from "../../../server/client-ip";
+import { tryGetDb } from "../../../server/db";
 
 // Define the schema inline since the shared schema import is not working
 const insertUserSubjectSchema = z.object({
@@ -23,6 +24,122 @@ const insertUserSubjectSchema = z.object({
   progress: z.number().min(0).max(100).optional().default(0),
   masteryLevel: z.number().min(0).max(100).optional().default(0),
 });
+
+function shouldIncludeTestHistory(req: NextApiRequest): boolean {
+  const value = req.query.includeTestHistory;
+  return value === "1" || value === "true";
+}
+
+function dateToMillis(value: any): number {
+  if (value?.toMillis) return value.toMillis();
+  const ms = new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+const DASHBOARD_HISTORY_FIELDS = [
+  "id",
+  "date",
+  "score",
+  "percentage",
+  "totalQuestions",
+  "type",
+  "sectionBreakdown",
+  "unitId",
+  "sectionCode",
+] as const;
+
+function normalizeDashboardHistoryTest(
+  testDoc: FirebaseFirestore.QueryDocumentSnapshot,
+  subjectId: string,
+  type: "full-length" | "diagnostic" | "unit",
+) {
+  const test = testDoc.data();
+  const sectionCode = typeof test.sectionCode === "string" ? test.sectionCode : undefined;
+  const sectionBreakdown =
+    test.sectionBreakdown && typeof test.sectionBreakdown === "object"
+      ? test.sectionBreakdown
+      : {};
+
+  return {
+    id: typeof test.id === "string" ? test.id : testDoc.id,
+    date: test.date,
+    score: typeof test.score === "number" ? test.score : 0,
+    percentage: typeof test.percentage === "number" ? test.percentage : 0,
+    totalQuestions: typeof test.totalQuestions === "number" ? test.totalQuestions : 0,
+    subjectId,
+    type,
+    sectionBreakdown,
+    ...(type === "unit" && {
+      unitId: typeof test.unitId === "string" ? test.unitId : undefined,
+      sectionCode,
+      unitNumber: sectionCode ? sectionBreakdown?.[sectionCode]?.unitNumber : undefined,
+    }),
+  };
+}
+
+async function getFastPathTestHistory(subject: UserSubject) {
+  const db = tryGetDb();
+  if (!db) return [];
+
+  const subjectId = subject.subjectId;
+  const subjectRef = db.collection("user_subjects").doc(String(subject.id));
+  const [fullLengthTests, diagnosticTests, unitQuizResults] =
+    await Promise.all([
+      subjectRef
+        .collection("fullLengthTests")
+        .orderBy("date", "asc")
+        .select(...DASHBOARD_HISTORY_FIELDS)
+        .get(),
+      subjectRef
+        .collection("diagnosticTests")
+        .orderBy("date", "asc")
+        .select(...DASHBOARD_HISTORY_FIELDS)
+        .get(),
+      subjectRef
+        .collection("unitQuizResults")
+        .orderBy("date", "asc")
+        .select(...DASHBOARD_HISTORY_FIELDS)
+        .get(),
+    ]);
+
+  const combined = [
+    ...fullLengthTests.docs.map((doc) =>
+      normalizeDashboardHistoryTest(doc, subjectId, "full-length"),
+    ),
+    ...diagnosticTests.docs.map((doc) =>
+      normalizeDashboardHistoryTest(doc, subjectId, "diagnostic"),
+    ),
+    ...unitQuizResults.docs.map((doc) =>
+      normalizeDashboardHistoryTest(doc, subjectId, "unit"),
+    ),
+  ].sort((a, b) => dateToMillis(a.date) - dateToMillis(b.date));
+
+  return combined.map((test, index) => ({ ...test, testNumber: index + 1 }));
+}
+
+async function getTestHistoryBySubject(
+  subjects: UserSubject[],
+) {
+  const entries = await Promise.all(
+    subjects.map(async (subject) => [
+      subject.subjectId,
+      await getFastPathTestHistory(subject),
+    ] as const),
+  );
+
+  return Object.fromEntries(entries);
+}
+
+function logDashboardSubjectsTiming(
+  label: string,
+  data: Record<string, number | string>,
+) {
+  if (process.env.NODE_ENV !== "development") return;
+  const details = Object.entries(data)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(" ");
+  console.info(`[subjects API][dashboard] ${label} ${details}`);
+}
 
 async function getOrCreateUser(
   firebaseUid: string,
@@ -84,7 +201,27 @@ export default async function handler(
     switch (method) {
       case "GET": {
         try {
+          const startedAt = Date.now();
           const subjects = await getUserSubjectsForUser(userId);
+          if (shouldIncludeTestHistory(req)) {
+            const subjectsLoadedAt = Date.now();
+            const testHistoryBySubject = await getTestHistoryBySubject(subjects);
+            const finishedAt = Date.now();
+            const totalHistoryRows = Object.values(testHistoryBySubject).reduce(
+              (sum, history) => sum + history.length,
+              0,
+            );
+            logDashboardSubjectsTiming("includeTestHistory", {
+              subjects: subjects.length,
+              historyRows: totalHistoryRows,
+              subjectsMs: subjectsLoadedAt - startedAt,
+              historyMs: finishedAt - subjectsLoadedAt,
+              totalMs: finishedAt - startedAt,
+            });
+            res.setHeader("Cache-Control", "no-store");
+            return res.json({ success: true, data: subjects, testHistoryBySubject });
+          }
+
           res.setHeader(
             "Cache-Control",
             "public, s-maxage=60, stale-while-revalidate=300",
@@ -115,7 +252,7 @@ export default async function handler(
           const validatedData = insertUserSubjectSchema.parse({
             ...req.body,
             userId,
-          });
+          }) as Omit<UserSubject, "id" | "dateAdded" | "unitProgress">;
 
           const subject = await addUserSubjectForUser(validatedData);
 
