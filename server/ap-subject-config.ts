@@ -199,7 +199,7 @@ export const AP_SUBJECT_CONFIGS: APSubjectConfig[] = [
 ];
 
 const configByCode = new Map<string, APSubjectConfig>(
-  AP_SUBJECT_CONFIGS.map((c) => [c.subject_code, c])
+  AP_SUBJECT_CONFIGS.map((c) => [c.subject_code, c]),
 );
 
 // Client/DB may use APWH for World History; grading config is APWORLD
@@ -214,7 +214,10 @@ export function getAPSubjectConfig(subjectCode: string): APSubjectConfig | null 
  * Convert a raw percentage (0–100) to an AP score (1–5) using the subject's
  * max_composite_points and curve_thresholds. Returns null if subject is not in config.
  */
-export function percentageToAPScore(percentage: number, subjectCode: string | undefined): number | null {
+export function percentageToAPScore(
+  percentage: number,
+  subjectCode: string | undefined,
+): number | null {
   if (subjectCode == null) return null;
   const config = configByCode.get(subjectCode) ?? null;
   if (!config) return null;
@@ -390,8 +393,49 @@ export const DIAGNOSTIC_UNIT_WEIGHTS: Record<string, Record<string, number>> = {
     ICC: 3.5,
     IQS: 3.5,
   },
+  APES: {
+    LWE: 7,
+    LWB: 7,
+    POP: 12.5,
+    ESR: 12.5,
+    LWU: 12.5,
+    ERC: 12.5,
+    APL: 8.5,
+    ATP: 8.5,
+    GCH: 17.5,
+  },
+  APEURO: {
+    RE: 12.5,
+    AR: 12.5,
+    AC: 12.5,
+    SPP: 12.5,
+    CRR: 12.5,
+    IND: 12.5,
+    NPP: 12.5,
+    GCF: 12.5,
+    CCE: 12.5,
+  },
+  APLIT: {
+    SF1: 11.5,
+    PO1: 11.5,
+    LF1: 11.5,
+    SF2: 11.5,
+    PO2: 11.5,
+    LF2: 11.5,
+    SF3: 7,
+    PO3: 7,
+    LF3: 7,
+  },
+  APHUG: {
+    TG: 9,
+    PMP: 14.5,
+    CPP: 14.5,
+    PPP: 14.5,
+    ARL: 14.5,
+    CUL: 14.5,
+    IED: 14.5,
+  },
 };
-
 
 /**
  * Unit/section difficulties for diagnostic test question distribution (20 questions).
@@ -410,8 +454,8 @@ export const DIAGNOSTIC_UNIT_DIFFICULTIES: Record<string, Record<string, number>
     CAD: 4.0, // Contextual Apps
     AAD: 4.5, // Analytical Apps
     IAC: 4.0, // Integration Accumulation
-    DE: 4.5,  // Differential Equations
-    AI: 5.0,  // Apps of Integration (Volume, etc. - Spatial reasoning wall)
+    DE: 4.5, // Differential Equations
+    AI: 5.0, // Apps of Integration (Volume, etc. - Spatial reasoning wall)
   },
   APCALCBC: {
     LIM: 2.0,
@@ -423,7 +467,7 @@ export const DIAGNOSTIC_UNIT_DIFFICULTIES: Record<string, Record<string, number>
     DE: 4.5,
     AI: 5.0,
     PPV: 4.8, // Parametric/Polar/Vector
-    ISS: 5.0, // Infinite Sequences/Series (The hardest unit in high school math) 
+    ISS: 5.0, // Infinite Sequences/Series (The hardest unit in high school math)
   },
   APUSH: {
     P1: 2.0, // 1491-1607 (Short, easy)
@@ -461,7 +505,7 @@ export const DIAGNOSTIC_UNIT_DIFFICULTIES: Record<string, Record<string, number>
     KIN: 4.0,
     THERMO: 4.5,
     EQM: 4.5, // Equilibrium
-    ACB: 5.0, // Acids & Bases (Massive math load, overlapping systems) 
+    ACB: 5.0, // Acids & Bases (Massive math load, overlapping systems)
     ATD: 4.8,
   },
   APWORLD: {
@@ -475,7 +519,8 @@ export const DIAGNOSTIC_UNIT_DIFFICULTIES: Record<string, Record<string, number>
     CWD: 4.5, // Cold War / Decolonization
     GLO: 3.5,
   },
-  APWH: { // Duplicated keys from your object
+  APWH: {
+    // Duplicated keys from your object
     GT: 2.0,
     NE: 2.5,
     LBE: 3.0,
@@ -488,10 +533,10 @@ export const DIAGNOSTIC_UNIT_DIFFICULTIES: Record<string, Record<string, number>
   },
   APPHYS1: {
     KIN: 2.5,
-    FTD: 3.5, 
+    FTD: 3.5,
     WEP: 4.0,
     LMO: 3.5,
-    TRD: 5.0, // Torque/Rotational (Notoriously the lowest-scoring physics unit) 
+    TRD: 5.0, // Torque/Rotational (Notoriously the lowest-scoring physics unit)
     EMR: 4.5,
     OSC: 4.0,
     FLU: 3.5,
@@ -506,7 +551,7 @@ export const DIAGNOSTIC_UNIT_DIFFICULTIES: Record<string, Record<string, number>
     MOD: 3.5,
   },
   APPSYCH: {
-    BIO: 4.0, // Bio Bases (Brain anatomy memorization) 
+    BIO: 4.0, // Bio Bases (Brain anatomy memorization)
     COG: 3.5,
     DEV: 2.5,
     SOC: 2.0, // Social Psych (Highly intuitive)
@@ -525,7 +570,7 @@ export const DIAGNOSTIC_UNIT_DIFFICULTIES: Record<string, Record<string, number>
     SD: 3.0,
     PC: 4.0, // Production/Cost
     IMP: 4.5, // Imperfect Competition (Monopolies, Oligopolies)
-    FM: 4.5,  // Factor Markets
+    FM: 4.5, // Factor Markets
     MF: 3.5,
   },
   APCSP: {
@@ -546,12 +591,54 @@ export const DIAGNOSTIC_UNIT_DIFFICULTIES: Record<string, Record<string, number>
     EOV: 2.0,
     ETV: 2.5,
     CD: 3.0,
-    PRD: 4.5, // Probability (Combinatorics wall) 
+    PRD: 4.5, // Probability (Combinatorics wall)
     SD: 3.5,
     ICP: 4.0,
     IQM: 4.0,
     ICC: 4.5, // Inference for Categorical
     IQS: 4.5, // Inference for Slopes
+  },
+  APES: {
+    LWE: 2.0, // The Living World: Ecosystems (foundational ecology)
+    LWB: 2.0, // The Living World: Biodiversity
+    POP: 3.0, // Populations (growth-rate math)
+    ESR: 3.0, // Earth Systems and Resources
+    LWU: 2.5, // Land and Water Use
+    ERC: 3.0, // Energy Resources and Consumption
+    APL: 3.5, // Atmospheric Pollution
+    ATP: 3.5, // Aquatic and Terrestrial Pollution (toxicology, biomagnification)
+    GCH: 3.0, // Global Change
+  },
+  APEURO: {
+    RE: 2.5, // Renaissance and Exploration
+    AR: 3.0, // Age of Reformation
+    AC: 3.0, // Absolutism and Constitutionalism
+    SPP: 3.5, // Scientific, Philosophical, Political Developments
+    CRR: 3.5, // Conflict, Revolution, and Reaction
+    IND: 3.5, // Industrialization and Its Effects
+    NPP: 3.5, // 19th Century Perspectives
+    GCF: 4.0, // 20th Century Global Conflicts (dense)
+    CCE: 3.0, // Cold War and Contemporary Europe
+  },
+  APLIT: {
+    SF1: 2.5, // Short Fiction I
+    PO1: 3.0, // Poetry I
+    LF1: 3.0, // Longer Fiction or Drama I
+    SF2: 3.0, // Short Fiction II
+    PO2: 3.5, // Poetry II
+    LF2: 3.5, // Longer Fiction or Drama II
+    SF3: 3.5, // Short Fiction III
+    PO3: 4.0, // Poetry III (advanced poetic analysis)
+    LF3: 4.0, // Longer Fiction or Drama III
+  },
+  APHUG: {
+    TG: 2.0, // Thinking Geographically
+    PMP: 2.5, // Population and Migration
+    CPP: 2.5, // Cultural Patterns and Processes
+    PPP: 3.0, // Political Patterns and Processes
+    ARL: 3.0, // Agriculture and Rural Land-Use
+    CUL: 3.0, // Cities and Urban Land-Use
+    IED: 3.5, // Industrial and Economic Development
   },
 };
 
@@ -571,8 +658,7 @@ if (process.env.NODE_ENV !== "production") {
       const mapKeys = Object.keys(entries).sort();
       const canonicalKeys = [...canonical].sort();
       const mismatched =
-        mapKeys.length !== canonicalKeys.length ||
-        mapKeys.some((k, i) => k !== canonicalKeys[i]);
+        mapKeys.length !== canonicalKeys.length || mapKeys.some((k, i) => k !== canonicalKeys[i]);
       if (mismatched) {
         // eslint-disable-next-line no-console
         console.warn(
@@ -592,33 +678,39 @@ export function getDiagnosticWeightsForSubject(subjectCode: string): Record<stri
  * Exact question counts per unit/section for the 25-question adaptive diagnostic.
  * Derived from DIAGNOSTIC_UNIT_WEIGHTS using proportional rounding to sum = 25.
  * Per-subject spec from product: APCSA [5,8,4,8], APCALCAB [3,3,3,3,3,3,4,3],
- * APCALCBC [2,2,2,2,2,2,3,3,4,3], APUSH [3,3,3,3,3,3,3,3,3], APPSYCH [5,5,5,5,5].
+ * APCALCBC [2,2,2,2,2,2,3,3,4,3], APUSH [2,3,3,3,3,3,3,3,2], APPSYCH [5,5,5,5,5].
  */
 export const DIAGNOSTIC_UNIT_DISTRIBUTIONS: Record<string, Record<string, number>> = {
-  APCSA:     { U1: 5,  U2: 8,  U3: 4,  U4: 8 },
-  APCALCAB:  { LIM: 3, DDF: 3, DCI: 3, CAD: 3, AAD: 3, IAC: 3, DE: 4, AI: 3 },
-  APCALCBC:  { LIM: 2, DDF: 2, DCI: 2, CAD: 2, AAD: 2, IAC: 2, DE: 3, AI: 3, PPV: 4, ISS: 3 },
-  APUSH:     { P1: 3,  P2: 3,  P3: 3,  P4: 3,  P5: 3,  P6: 3,  P7: 3,  P8: 3,  P9: 3 },
-  APPSYCH:   { BIO: 5, COG: 5, DEV: 5, SOC: 5, MPH: 5 },
-  APLANG:    { CRE: 6, SS: 6, RS: 6, OC: 4, ARG: 3 },
-  APBIO:     { CL: 3, CSF: 3, CE: 4, CCC: 3, HER: 3, GER: 3, NS: 4, ECO: 2 },
-  APCHEM:    { ASP: 2, MIS: 2, IMF: 5, RXN: 2, KIN: 2, THERMO: 2, EQM: 2, ACB: 4, ATD: 4 },
-  APCSP:     { CRD: 3, DAT: 5, AAP: 8, CSN: 4, IOC: 5 },
-  APMACRO:   { BEC: 2, EIBC: 4, NIPD: 5, FS: 5, LRCSP: 6, OEITF: 3 },
-  APMICRO:   { BEC: 3, SD: 5, PC: 6, IMP: 5, FM: 3, MF: 3 },
-  APGOV:     { FAD: 5, IAB: 7, CLCR: 4, APIB: 3, PP: 6 },
-  APWH:      { GT: 3, NE: 3, LBE: 3, TI: 3, REV: 4, COI: 3, GC: 2, CWD: 2, GLO: 2 },
-  APWORLD:   { GT: 3, NE: 3, LBE: 3, TI: 3, REV: 4, COI: 3, GC: 2, CWD: 2, GLO: 2 },
-  APPHYS1:   { KIN: 3, FTD: 5, WEP: 5, LMO: 3, TRD: 3, EMR: 2, OSC: 2, FLU: 2 },
-  APPHYS2:   { THD: 4, EFP: 4, EC: 4, MEI: 3, GPO: 4, WPO: 3, MOD: 3 },
-  APSTATS:   { EOV: 5, ETV: 2, CD: 3, PRD: 4, SD: 2, ICP: 3, IQM: 4, ICC: 1, IQS: 1 },
+  APCSA: { U1: 5, U2: 8, U3: 4, U4: 8 },
+  APCALCAB: { LIM: 3, DDF: 3, DCI: 3, CAD: 3, AAD: 3, IAC: 3, DE: 4, AI: 3 },
+  APCALCBC: { LIM: 2, DDF: 2, DCI: 2, CAD: 2, AAD: 2, IAC: 2, DE: 3, AI: 3, PPV: 4, ISS: 3 },
+  APUSH: { P1: 2, P2: 3, P3: 3, P4: 3, P5: 3, P6: 3, P7: 3, P8: 3, P9: 2 },
+  APPSYCH: { BIO: 5, COG: 5, DEV: 5, SOC: 5, MPH: 5 },
+  APLANG: { CRE: 6, SS: 6, RS: 6, OC: 4, ARG: 3 },
+  APBIO: { CL: 3, CSF: 3, CE: 4, CCC: 3, HER: 3, GER: 3, NS: 4, ECO: 2 },
+  APCHEM: { ASP: 2, MIS: 2, IMF: 5, RXN: 2, KIN: 2, THERMO: 2, EQM: 2, ACB: 4, ATD: 4 },
+  APCSP: { CRD: 3, DAT: 5, AAP: 8, CSN: 4, IOC: 5 },
+  APMACRO: { BEC: 2, EIBC: 4, NIPD: 5, FS: 5, LRCSP: 6, OEITF: 3 },
+  APMICRO: { BEC: 3, SD: 5, PC: 6, IMP: 5, FM: 3, MF: 3 },
+  APGOV: { FAD: 5, IAB: 7, CLCR: 4, APIB: 3, PP: 6 },
+  APWH: { GT: 3, NE: 3, LBE: 3, TI: 3, REV: 4, COI: 3, GC: 2, CWD: 2, GLO: 2 },
+  APWORLD: { GT: 3, NE: 3, LBE: 3, TI: 3, REV: 4, COI: 3, GC: 2, CWD: 2, GLO: 2 },
+  APPHYS1: { KIN: 3, FTD: 5, WEP: 5, LMO: 3, TRD: 3, EMR: 2, OSC: 2, FLU: 2 },
+  APPHYS2: { THD: 4, EFP: 4, EC: 4, MEI: 3, GPO: 4, WPO: 3, MOD: 3 },
+  APSTATS: { EOV: 5, ETV: 2, CD: 3, PRD: 4, SD: 2, ICP: 3, IQM: 4, ICC: 1, IQS: 1 },
+  APES: { LWE: 2, LWB: 2, POP: 3, ESR: 3, LWU: 3, ERC: 3, APL: 2, ATP: 2, GCH: 5 },
+  APEURO: { RE: 2, AR: 3, AC: 3, SPP: 3, CRR: 3, IND: 3, NPP: 3, GCF: 3, CCE: 2 },
+  APLIT: { SF1: 3, PO1: 3, LF1: 3, SF2: 3, PO2: 3, LF2: 3, SF3: 3, PO3: 2, LF3: 2 },
+  APHUG: { TG: 2, PMP: 4, CPP: 4, PPP: 4, ARL: 4, CUL: 4, IED: 3 },
 };
 
 /**
  * Returns exact per-section question counts for a 25-question adaptive diagnostic.
  * Falls back to proportionally scaling DIAGNOSTIC_UNIT_WEIGHTS if subject not in distribution map.
  */
-export function getDiagnosticDistributionForSubject(subjectCode: string): Record<string, number> | null {
+export function getDiagnosticDistributionForSubject(
+  subjectCode: string,
+): Record<string, number> | null {
   if (DIAGNOSTIC_UNIT_DISTRIBUTIONS[subjectCode]) {
     return DIAGNOSTIC_UNIT_DISTRIBUTIONS[subjectCode];
   }
@@ -630,9 +722,8 @@ export function getDiagnosticDistributionForSubject(subjectCode: string): Record
   const counts: Record<string, number> = {};
   let remaining = 25;
   entries.forEach(([code, weight], i) => {
-    const n = i === entries.length - 1
-      ? remaining
-      : Math.max(1, Math.round((weight / totalWeight) * 25));
+    const n =
+      i === entries.length - 1 ? remaining : Math.max(1, Math.round((weight / totalWeight) * 25));
     counts[code] = n;
     remaining -= n;
   });
@@ -650,7 +741,7 @@ const BASELINE_PER_UNIT = 3;
 function allocateByLargestRemainder(
   unitCodes: string[],
   priorities: Record<string, number>,
-  totalSlots: number
+  totalSlots: number,
 ): Record<string, number> {
   const totalPriority = unitCodes.reduce((s, code) => s + (priorities[code] ?? 0), 0);
   if (totalPriority <= 0) {
