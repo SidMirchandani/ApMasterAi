@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { Firestore } from "firebase-admin/firestore";
-import { AggregateField } from "firebase-admin/firestore";
+import { AggregateField, FieldValue } from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "../../../server/firebase-admin";
 import { getSubjectDisplayName, SUBJECT_DISPLAY_NAMES } from "../../../lib/subject-display-names";
 import { getAllSubjectCodes, getApiCodeForSubject } from "../../../server/subjects-helper";
@@ -20,10 +20,41 @@ const EASTERN_DATE_FMT = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 const RESPONSE_CACHE_TTL_MS = 60_000;
+const GEO_AGGREGATE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+const AGG_WRITE_BATCH_SIZE = 400;
+const NJ_BACKFILL_ON_INSIGHTS = process.env.ADMIN_INSIGHTS_NJ_BACKFILL === "1";
 const responseCache = new Map<string, { expiresAt: number; value: unknown }>();
 const AGG_USER_DAILY_COL = "insights_user_daily";
 const AGG_SUBJECT_DAILY_COL = "insights_subject_daily";
 const AGG_GEO_DOC_PATH = "insights_user_geo/current";
+
+function maybeRunNjBackfill(firestore: Firestore): void {
+  if (!NJ_BACKFILL_ON_INSIGHTS) return;
+  void runNjBackfillChunkIfNeeded(firestore).catch((err) =>
+    console.error("[admin/insights] NJ backfill chunk failed", err),
+  );
+}
+
+function aggregateUpdatedAtMs(data: Record<string, unknown>): number | null {
+  const raw = data.updatedAt;
+  if (raw == null) return null;
+  if (typeof (raw as { toMillis?: () => number }).toMillis === "function") {
+    return (raw as { toMillis: () => number }).toMillis();
+  }
+  if (typeof (raw as { toDate?: () => Date }).toDate === "function") {
+    const t = (raw as { toDate: () => Date }).toDate().getTime();
+    return Number.isFinite(t) ? t : null;
+  }
+  if (raw instanceof Date) {
+    const t = raw.getTime();
+    return Number.isFinite(t) ? t : null;
+  }
+  if (typeof raw === "string" || typeof raw === "number") {
+    const t = new Date(raw).getTime();
+    return Number.isFinite(t) ? t : null;
+  }
+  return null;
+}
 
 function toEasternDateKey(d: Date): string {
   return EASTERN_DATE_FMT.format(d);
@@ -92,7 +123,15 @@ function getDateRangeEastern(
     case "180d":
     case "365d": {
       const days =
-        range === "7d" ? 7 : range === "30d" ? 30 : range === "90d" ? 90 : range === "180d" ? 180 : 365;
+        range === "7d"
+          ? 7
+          : range === "30d"
+            ? 30
+            : range === "90d"
+              ? 90
+              : range === "180d"
+                ? 180
+                : 365;
       let startKey = todayKey;
       for (let i = 0; i < days; i++) {
         startKey = prevEasternDateKey(startKey);
@@ -180,6 +219,8 @@ async function readGeoFromAggregates(firestore: Firestore): Promise<{
     const geoSnap = await firestore.doc(AGG_GEO_DOC_PATH).get();
     if (!geoSnap.exists) return null;
     const data = geoSnap.data() || {};
+    const updatedMs = aggregateUpdatedAtMs(data);
+    if (!updatedMs || Date.now() - updatedMs > GEO_AGGREGATE_MAX_AGE_MS) return null;
     const stateCounts =
       asRecord(data.usersByState).stateCounts ??
       asRecord(data.usersByState).byState ??
@@ -192,14 +233,91 @@ async function readGeoFromAggregates(firestore: Firestore): Promise<{
       .sort((a, b) => b.count - a.count);
     if (!usersByState.length) return null;
     const internationalRegionCount =
-      asNumberOrZero(data.internationalRegionCount) ||
-      asNumberOrZero(byState.International);
+      asNumberOrZero(data.internationalRegionCount) || asNumberOrZero(byState.International);
     const statesWithUsersCount =
       asNumberOrZero(data.statesWithUsersCount) ||
-      usersByState.filter((row) => row.stateCode !== "International" && /^[A-Z]{2}$/.test(row.stateCode)).length;
+      usersByState.filter(
+        (row) => row.stateCode !== "International" && /^[A-Z]{2}$/.test(row.stateCode),
+      ).length;
     return { usersByState, internationalRegionCount, statesWithUsersCount };
   } catch {
     return null;
+  }
+}
+
+async function persistGeoAggregate(
+  firestore: Firestore,
+  geo: {
+    usersByState: { stateCode: string; count: number }[];
+    internationalRegionCount: number;
+    statesWithUsersCount: number;
+  },
+): Promise<void> {
+  try {
+    const stateCounts = Object.fromEntries(
+      geo.usersByState.map((row) => [row.stateCode, row.count]),
+    );
+    await firestore.doc(AGG_GEO_DOC_PATH).set(
+      {
+        usersByState: { stateCounts },
+        internationalRegionCount: geo.internationalRegionCount,
+        statesWithUsersCount: geo.statesWithUsersCount,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (err) {
+    console.error("[admin/insights] persist geo aggregate failed", err);
+  }
+}
+
+async function persistDailySignupAggregates(
+  firestore: Firestore,
+  byDate: Record<string, number>,
+): Promise<void> {
+  const entries = Object.entries(byDate).filter(
+    ([k, n]) => /^\d{4}-\d{2}-\d{2}$/.test(k) && n > 0,
+  );
+  if (!entries.length) return;
+  try {
+    for (let i = 0; i < entries.length; i += AGG_WRITE_BATCH_SIZE) {
+      const batch = firestore.batch();
+      for (const [dateKey, count] of entries.slice(i, i + AGG_WRITE_BATCH_SIZE)) {
+        batch.set(
+          firestore.collection(AGG_USER_DAILY_COL).doc(dateKey),
+          { dateKey, count, signups: count, updatedAt: FieldValue.serverTimestamp() },
+          { merge: true },
+        );
+      }
+      await batch.commit();
+    }
+  } catch (err) {
+    console.error("[admin/insights] persist user daily aggregates failed", err);
+  }
+}
+
+async function persistSubjectDailyAggregates(
+  firestore: Firestore,
+  byDate: Record<string, number>,
+): Promise<void> {
+  const entries = Object.entries(byDate).filter(
+    ([k, n]) => /^\d{4}-\d{2}-\d{2}$/.test(k) && n > 0,
+  );
+  if (!entries.length) return;
+  try {
+    for (let i = 0; i < entries.length; i += AGG_WRITE_BATCH_SIZE) {
+      const batch = firestore.batch();
+      for (const [dateKey, count] of entries.slice(i, i + AGG_WRITE_BATCH_SIZE)) {
+        batch.set(
+          firestore.collection(AGG_SUBJECT_DAILY_COL).doc(dateKey),
+          { dateKey, count, enrollments: count, updatedAt: FieldValue.serverTimestamp() },
+          { merge: true },
+        );
+      }
+      await batch.commit();
+    }
+  } catch (err) {
+    console.error("[admin/insights] persist subject daily aggregates failed", err);
   }
 }
 
@@ -253,14 +371,19 @@ async function readSubjectAggregates(
       const data = doc.data();
       const dateKey = String(data.dateKey || doc.id || "");
       if (/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
-        byDate[dateKey] = (byDate[dateKey] || 0) + asNumberOrZero(data.count || data.total || data.enrollments);
+        byDate[dateKey] =
+          (byDate[dateKey] || 0) + asNumberOrZero(data.count || data.total || data.enrollments);
       }
       const subjectId = String(data.subjectId || data.subject || "").trim();
       if (subjectId) {
         const canonical = getApiCodeForSubject(subjectId) ?? subjectId.toUpperCase();
-        bySubject[canonical] = (bySubject[canonical] || 0) + asNumberOrZero(data.count || data.total || data.enrollments);
+        bySubject[canonical] =
+          (bySubject[canonical] || 0) +
+          asNumberOrZero(data.count || data.total || data.enrollments);
       }
-      const subjectCounts = asRecord(data.subjectCounts || data.bySubject || data.enrollmentsBySubject);
+      const subjectCounts = asRecord(
+        data.subjectCounts || data.bySubject || data.enrollmentsBySubject,
+      );
       for (const [k, v] of Object.entries(subjectCounts)) {
         const canonical = getApiCodeForSubject(k) ?? k.toUpperCase();
         bySubject[canonical] = (bySubject[canonical] || 0) + asNumberOrZero(v);
@@ -273,9 +396,15 @@ async function readSubjectAggregates(
 }
 
 /** Collection-group document count (quiz results under user_subjects). */
-async function aggregateCollectionGroupCount(firestore: Firestore, collectionId: string): Promise<number> {
+async function aggregateCollectionGroupCount(
+  firestore: Firestore,
+  collectionId: string,
+): Promise<number> {
   try {
-    const snap = await firestore.collectionGroup(collectionId).aggregate({ n: AggregateField.count() }).get();
+    const snap = await firestore
+      .collectionGroup(collectionId)
+      .aggregate({ n: AggregateField.count() })
+      .get();
     return Number(snap.data().n ?? 0);
   } catch (err) {
     console.error(`[admin/insights] collectionGroup "${collectionId}" count failed`, err);
@@ -300,35 +429,31 @@ async function aggregateStudentQuestionAttempts(firestore: Firestore): Promise<n
 
 /** Fast aggregates only — no full collection scans for users / user_subjects. */
 async function buildSummaryData(firestore: Firestore) {
-  const allCodes = getAllSubjectCodes();
-  const [usersCountSnap, userSubjectsCountSnap, questionCountSnaps, quizBundle, rollupTotals] = await Promise.all([
-    firestore.collection("users").count().get(),
-    firestore.collection("user_subjects").count().get(),
-    Promise.all(
-      allCodes.map((code) =>
-        firestore.collection("questions").where("subject_code", "==", code).count().get(),
-      ),
-    ),
-    Promise.all([
-      aggregateCollectionGroupCount(firestore, "fullLengthTests"),
-      aggregateCollectionGroupCount(firestore, "diagnosticTests"),
-      aggregateCollectionGroupCount(firestore, "unitQuizResults"),
-      aggregateStudentQuestionAttempts(firestore),
-    ]),
-    aggregateGlobalStatsFromUserStats(firestore),
-  ]);
+  const [usersCountSnap, userSubjectsCountSnap, questionCountSnap, quizBundle, rollupTotals] =
+    await Promise.all([
+      firestore.collection("users").count().get(),
+      firestore.collection("user_subjects").count().get(),
+      firestore.collection("questions").count().get(),
+      Promise.all([
+        aggregateCollectionGroupCount(firestore, "fullLengthTests"),
+        aggregateCollectionGroupCount(firestore, "diagnosticTests"),
+        aggregateCollectionGroupCount(firestore, "unitQuizResults"),
+        aggregateStudentQuestionAttempts(firestore),
+      ]),
+      aggregateGlobalStatsFromUserStats(firestore),
+    ]);
 
-  let totalQuestionsAnswered = 0;
-  for (const snap of questionCountSnaps) {
-    totalQuestionsAnswered += snap.data().count || 0;
-  }
+  const totalQuestionsAnswered = questionCountSnap.data().count || 0;
 
   const totalStudents = rollupTotals?.totalStudents ?? (usersCountSnap.data().count || 0);
-  const totalSubjectsEnrolled = rollupTotals?.totalSubjectEnrollments ?? (userSubjectsCountSnap.data().count || 0);
-  const [fullLengthQuizCount, diagnosticQuizCount, unitQuizCount, totalStudentQuestionAttempts] = quizBundle;
+  const totalSubjectsEnrolled =
+    rollupTotals?.totalSubjectEnrollments ?? (userSubjectsCountSnap.data().count || 0);
+  const [fullLengthQuizCount, diagnosticQuizCount, unitQuizCount, totalStudentQuestionAttempts] =
+    quizBundle;
   const totalQuizzesTaken =
     rollupTotals?.totalQuizzesTaken ?? fullLengthQuizCount + diagnosticQuizCount + unitQuizCount;
-  const resolvedStudentAttempts = rollupTotals?.totalQuestionsAnswered ?? totalStudentQuestionAttempts;
+  const resolvedStudentAttempts =
+    rollupTotals?.totalQuestionsAnswered ?? totalStudentQuestionAttempts;
 
   const activeUsersDAU = 0;
   const activeUsersMAU = totalStudents;
@@ -354,7 +479,9 @@ async function buildGeoData(firestore: Firestore) {
   usersSnap.docs.forEach((doc) => {
     const st = doc.data().inferredState;
     const key =
-      typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim()) ? st.trim().toUpperCase() : "International";
+      typeof st === "string" && /^[A-Z]{2}$/i.test(st.trim())
+        ? st.trim().toUpperCase()
+        : "International";
     usersByStateMap[key] = (usersByStateMap[key] || 0) + 1;
   });
   const usersByState = Object.entries(usersByStateMap)
@@ -364,7 +491,9 @@ async function buildGeoData(firestore: Firestore) {
   const statesWithUsersCount = Object.entries(usersByStateMap).filter(
     ([code, n]) => code !== "International" && /^[A-Z]{2}$/.test(code) && n > 0,
   ).length;
-  return { usersByState, internationalRegionCount, statesWithUsersCount };
+  const result = { usersByState, internationalRegionCount, statesWithUsersCount };
+  void persistGeoAggregate(firestore, result);
+  return result;
 }
 
 /** Charts, geo, and optional score lift — reads users + user_subjects (projected when possible). */
@@ -383,14 +512,9 @@ async function buildAnalyticsData(
 
   const userSubjectsQuery = includeLift
     ? firestore.collection("user_subjects")
-    : firestore.collection("user_subjects").select(
-        "subjectId",
-        "subject_id",
-        "createdAt",
-        "enrolledAt",
-        "created_at",
-        "dateAdded",
-      );
+    : firestore
+        .collection("user_subjects")
+        .select("subjectId", "subject_id", "createdAt", "enrolledAt", "created_at", "dateAdded");
 
   const [userSubjectsSnap, backfillSnap, signupsByDateAgg, subjectAgg] = await Promise.all([
     userSubjectsQuery.get(),
@@ -426,7 +550,8 @@ async function buildAnalyticsData(
     }
   });
 
-  const enrollmentSubjectCodes = allCodes.length > 0 ? allCodes : Object.keys(SUBJECT_DISPLAY_NAMES);
+  const enrollmentSubjectCodes =
+    allCodes.length > 0 ? allCodes : Object.keys(SUBJECT_DISPLAY_NAMES);
   const courseEnrollmentsDistribution = enrollmentSubjectCodes
     .map((subjectId) => ({
       subjectId,
@@ -445,14 +570,17 @@ async function buildAnalyticsData(
       const dateStr = created ? toEasternDateKey(new Date(created)) : "unknown";
       if (dateStr !== "unknown") byDate[dateStr] = (byDate[dateStr] || 0) + 1;
     });
+    void persistDailySignupAggregates(firestore, byDate);
   }
   const sortedDates = Object.keys(byDate).sort();
   let running = sortedDates.reduce((sum, d) => (d < start ? sum + (byDate[d] ?? 0) : sum), 0);
-  const signUpsOverTime: { date: string; count: number; cumulative: number }[] = allDates.map((date) => {
-    const count = byDate[date] ?? 0;
-    running += count;
-    return { date, count, cumulative: running };
-  });
+  const signUpsOverTime: { date: string; count: number; cumulative: number }[] = allDates.map(
+    (date) => {
+      const count = byDate[date] ?? 0;
+      running += count;
+      return { date, count, cumulative: running };
+    },
+  );
 
   const backfillByDate = (backfillSnap.data()?.byDate as Record<string, number>) || {};
   Object.entries(backfillByDate).forEach(([d, n]) => {
@@ -460,6 +588,10 @@ async function buildAnalyticsData(
       byDateEnrollments[d] = (byDateEnrollments[d] || 0) + n;
     }
   });
+
+  if (!subjectAgg) {
+    void persistSubjectDailyAggregates(firestore, byDateEnrollments);
+  }
 
   const sortedEnrollmentDatesForShortfall = Object.keys(byDateEnrollments).sort();
   let runningEnrollmentsForShortfall = 0;
@@ -497,7 +629,9 @@ async function buildAnalyticsData(
         remaining -= add;
       }
     }
-    if (remaining > 0) byDateEnrollments[allDates[allDates.length - 1]] = (byDateEnrollments[allDates[allDates.length - 1]] || 0) + remaining;
+    if (remaining > 0)
+      byDateEnrollments[allDates[allDates.length - 1]] =
+        (byDateEnrollments[allDates[allDates.length - 1]] || 0) + remaining;
   }
 
   const sortedEnrollmentDates = Object.keys(byDateEnrollments).sort();
@@ -505,14 +639,18 @@ async function buildAnalyticsData(
   sortedEnrollmentDates.forEach((d) => {
     if (d < start) runningEnrollments += byDateEnrollments[d] ?? 0;
   });
-  const enrollmentsOverTime: { date: string; count: number; cumulative: number }[] = allDates.map((date) => {
-    const count = byDateEnrollments[date] ?? 0;
-    runningEnrollments += count;
-    return { date, count, cumulative: runningEnrollments };
-  });
+  const enrollmentsOverTime: { date: string; count: number; cumulative: number }[] = allDates.map(
+    (date) => {
+      const count = byDateEnrollments[date] ?? 0;
+      runningEnrollments += count;
+      return { date, count, cumulative: runningEnrollments };
+    },
+  );
 
   let averageApScoreLift: number | null = null;
-  let averageApScoreLiftBySubject: Awaited<ReturnType<typeof computeApScoreLiftBreakdown>>["bySubject"] = [];
+  let averageApScoreLiftBySubject: Awaited<
+    ReturnType<typeof computeApScoreLiftBreakdown>
+  >["bySubject"] = [];
   if (includeLift) {
     const lift = await computeApScoreLiftBreakdown(firestore, userSubjectsSnap.docs);
     averageApScoreLift = lift.average;
@@ -553,7 +691,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const rangeParam = String((req.query.range as string) || "all").trim();
   const startDate = String((req.query.startDate as string) || "").trim();
   const endDate = String((req.query.endDate as string) || "").trim();
-  const part = String((req.query.part as string) || "").trim().toLowerCase();
+  const part = String((req.query.part as string) || "")
+    .trim()
+    .toLowerCase();
   const includeLift = String((req.query.includeLift as string) || "").trim() === "1";
   const omitGeo = String((req.query.omitGeo as string) || "").trim() === "1";
   const cacheKeyPrefix = [
@@ -588,10 +728,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (part === "analytics") {
       const cached = cacheGet<{ success: true; data: unknown }>(cacheKeyPrefix);
       if (cached) return res.status(200).json(cached);
-      void runNjBackfillChunkIfNeeded(firestore).catch((err) =>
-        console.error("[admin/insights] NJ backfill chunk failed", err),
-      );
-      const data = await buildAnalyticsData(firestore, rangeParam, { includeLift, omitGeo, startDate, endDate });
+      maybeRunNjBackfill(firestore);
+      const data = await buildAnalyticsData(firestore, rangeParam, {
+        includeLift,
+        omitGeo,
+        startDate,
+        endDate,
+      });
       const payload = { success: true as const, data };
       cacheSet(cacheKeyPrefix, payload, RESPONSE_CACHE_TTL_MS);
       return res.status(200).json(payload);
@@ -599,9 +742,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const cached = cacheGet<{ success: true; data: unknown }>(cacheKeyPrefix);
     if (cached) return res.status(200).json(cached);
-    void runNjBackfillChunkIfNeeded(firestore).catch((err) =>
-      console.error("[admin/insights] NJ backfill chunk failed", err),
-    );
+    maybeRunNjBackfill(firestore);
     const [summary, analytics, geo] = await Promise.all([
       buildSummaryData(firestore),
       buildAnalyticsData(firestore, rangeParam, { includeLift, omitGeo, startDate, endDate }),

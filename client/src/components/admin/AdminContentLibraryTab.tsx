@@ -1,0 +1,2865 @@
+"use client";
+
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import toast from "react-hot-toast";
+import {
+  BookOpen,
+  Search,
+  Loader2,
+  Zap,
+  Play,
+  Square,
+  Pencil,
+  Trash2,
+  Eye,
+  X,
+  Sparkles,
+} from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { getSubjectDisplayName } from "../../../../lib/subject-display-names";
+import { AdminQuestionQuizPreviewDialog } from "@/components/admin/AdminQuestionQuizPreviewDialog";
+import { SUBJECT_SECTION_CODES, SUBJECT_SECTIONS } from "../../../../lib/subject-sections-client";
+import { hasMixedTextAndImageChoices } from "../../../../lib/mixed-choice-helpers";
+
+const AP_SUBJECT_CODES: string[] = [
+  "APMACRO",
+  "APMICRO",
+  "APCSP",
+  "APCHEM",
+  "APGOV",
+  "APPSYCH",
+  "APBIO",
+  "APCALCAB",
+  "APCALCBC",
+  "APCSA",
+  "APUSH",
+  "APWORLD",
+  "APEURO",
+  "APLANG",
+  "APLIT",
+  "APSTATS",
+  "APPHYS1",
+  "APPHYS2",
+];
+
+/** Subjects with legacy→canonical section migration (`/api/admin/fix-legacy-section-codes`). */
+const SUBJECTS_WITH_LEGACY_SECTION_FIX: readonly string[] = ["APMACRO", "APWORLD"];
+
+const QUESTIONS_PAGE_SIZE = 25;
+
+/** Mutually exclusive row filters in Content Library (radio group). */
+type AdminRowQualityFilter =
+  | "all"
+  | "missing_explanation"
+  | "error_reports"
+  | "unverified"
+  | "verification_failed";
+
+type Block = { type: "text"; value: string } | { type: "image"; url: string };
+
+type Question = {
+  id: string;
+  question_id?: number;
+  subject_code?: string;
+  section_code?: string;
+  prompt_blocks?: Block[];
+  choices?: Record<"A" | "B" | "C" | "D" | "E", Block[]>;
+  answerIndex: number;
+  correct_answer?: string;
+  explanation?: string;
+  tags?: string[];
+  test_slug?: string | null;
+  course?: string | null;
+  chapter?: string | null;
+  difficulty?: string | null;
+  /** Content origin; GenAI library pipeline stores `"VT"`. */
+  source?: string | null;
+  // Legacy fields for backward compatibility
+  prompt?: string;
+  image_urls?: {
+    question?: string[];
+    A?: string[];
+    B?: string[];
+    C?: string[];
+    D?: string[];
+    E?: string[];
+  };
+  lastVerification?: {
+    verifiedAt?: { seconds?: number; nanoseconds?: number } | Date | string;
+    source?: string;
+    model?: string | null;
+    status?: string;
+    lintErrors?: string[];
+    lintWarnings?: string[];
+    imageErrors?: string[];
+    issues?: string[];
+    checks?: Record<string, boolean>;
+    confidence?: string | null;
+  };
+};
+
+function getDifficultyFromQuestion(q: Question): string {
+  if (q.difficulty) return q.difficulty;
+  const tag = (q.tags || []).find((t) => typeof t === "string" && t.startsWith("difficulty:"));
+  return tag
+    ? String(tag)
+        .replace(/^difficulty:/, "")
+        .trim()
+    : "";
+}
+
+function getReasoningFromQuestion(q: Question): string {
+  const tag = (q.tags || []).find((t) => typeof t === "string" && t.startsWith("reasoning:"));
+  return tag
+    ? String(tag)
+        .replace(/^reasoning:/, "")
+        .trim()
+    : "";
+}
+
+function getErrorReasonFromQuestion(q: Question): string {
+  const tag = (q.tags || []).find((t) => typeof t === "string" && t.startsWith("error_reason:"));
+  return tag
+    ? String(tag)
+        .replace(/^error_reason:/, "")
+        .trim()
+    : "";
+}
+
+type AdminVerifyStatus = "pass" | "fail";
+
+/** Merge with existing question verification and apply admin-selected status for PUT. */
+function buildLastVerificationForStatus(
+  q: Question,
+  status: AdminVerifyStatus,
+): NonNullable<Question["lastVerification"]> {
+  const base = q.lastVerification || {};
+  return {
+    verifiedAt: new Date().toISOString(),
+    source: "admin",
+    model: base.model ?? null,
+    status,
+    lintErrors: Array.isArray(base.lintErrors) ? base.lintErrors : [],
+    lintWarnings: Array.isArray(base.lintWarnings) ? base.lintWarnings : [],
+    imageErrors: Array.isArray(base.imageErrors) ? base.imageErrors : [],
+    issues: Array.isArray(base.issues) ? base.issues : [],
+    checks: base.checks !== undefined ? base.checks : null,
+    confidence: base.confidence !== undefined ? base.confidence : null,
+  };
+}
+
+function verificationStatusSelectValue(q: Question): AdminVerifyStatus | undefined {
+  const raw = q.lastVerification?.status;
+  if (raw === "pass" || raw === "fail") return raw;
+  if (raw === "error" || raw === "needs_review") return "fail";
+  return undefined;
+}
+
+function VerificationStatusSelect({
+  q,
+  onSave,
+}: {
+  q: Question;
+  onSave: (id: string, patch: Partial<Question>) => Promise<void>;
+}) {
+  const v = q.lastVerification;
+  const selectValue = verificationStatusSelectValue(q);
+  const title =
+    v?.issues && v.issues.length > 0 ? v.issues.join("\n") : v?.status ? String(v.status) : "";
+
+  return (
+    <div className="flex justify-center" title={title || undefined}>
+      <Select
+        value={selectValue}
+        onValueChange={(val) => {
+          if (val !== "pass" && val !== "fail") return;
+          void onSave(q.id, {
+            lastVerification: buildLastVerificationForStatus(q, val),
+          });
+        }}
+      >
+        <SelectTrigger className="h-7 w-[5.75rem] text-xs px-2 py-0 dark:border-slate-600 dark:bg-slate-800">
+          <SelectValue placeholder="—" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="pass" className="text-xs">
+            OK
+          </SelectItem>
+          <SelectItem value="fail" className="text-xs">
+            Fail
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function getStudyNoteFromQuestion(q: Question): string {
+  const fromSlug = (q.test_slug ?? "").trim();
+  if (fromSlug) return fromSlug;
+  const tag = (q.tags || []).find((t) => typeof t === "string" && t.startsWith("study_note:"));
+  return tag
+    ? String(tag)
+        .replace(/^study_note:\s*/, "")
+        .trim()
+    : "";
+}
+
+function extractPromptText(q: Question): string {
+  if (q.prompt_blocks && q.prompt_blocks.length > 0) {
+    return q.prompt_blocks
+      .filter((block): block is { type: "text"; value: string } => block.type === "text")
+      .map((block) => block.value)
+      .join(" ");
+  }
+  return q.prompt || "";
+}
+
+function extractChoicesText(q: Question): string {
+  if (q.choices && typeof q.choices === "object" && !Array.isArray(q.choices)) {
+    const keys: Array<"A" | "B" | "C" | "D" | "E"> = ["A", "B", "C", "D", "E"];
+    return keys
+      .map((key) => {
+        const blocks = q.choices![key];
+        if (!blocks) return "";
+        const text = blocks
+          .filter((block): block is { type: "text"; value: string } => block.type === "text")
+          .map((block) => block.value)
+          .join(" ");
+        return text.trim();
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
+  if (Array.isArray(q.choices)) {
+    return q.choices.join("\n");
+  }
+  return "";
+}
+
+function extractChoicesData(q: Question): Record<"A" | "B" | "C" | "D" | "E", string> {
+  const result: Record<"A" | "B" | "C" | "D" | "E", string> = {
+    A: "",
+    B: "",
+    C: "",
+    D: "",
+    E: "",
+  };
+
+  if (q.choices && typeof q.choices === "object" && !Array.isArray(q.choices)) {
+    const keys: Array<"A" | "B" | "C" | "D" | "E"> = ["A", "B", "C", "D", "E"];
+    keys.forEach((key) => {
+      const blocks = q.choices![key];
+      if (!blocks) {
+        result[key] = "";
+        return;
+      }
+      const text = blocks
+        .filter((block): block is { type: "text"; value: string } => block.type === "text")
+        .map((block) => block.value)
+        .join(" ");
+      result[key] = text.trim();
+    });
+  } else if (Array.isArray(q.choices)) {
+    const keys: Array<"A" | "B" | "C" | "D" | "E"> = ["A", "B", "C", "D", "E"];
+    q.choices.forEach((choice, idx) => {
+      if (idx < keys.length) {
+        result[keys[idx]] = choice || "";
+      }
+    });
+  }
+
+  return result;
+}
+
+function formatAdminSectionOptionLabel(
+  subjectKey: string,
+  sectionCode: string,
+  counts: Record<string, number>,
+  loading: boolean,
+): string {
+  const name =
+    SUBJECT_SECTIONS[subjectKey]?.find((s) => s.code === sectionCode)?.name ?? sectionCode;
+  const n = loading ? "…" : String(counts[sectionCode] ?? 0);
+  return `${sectionCode} — ${name} (${n})`;
+}
+
+function truncateText(text: string, maxWords: number = 10): string {
+  if (!text || text.trim() === "") return "";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text;
+  return words.slice(0, maxWords).join(" ") + "...";
+}
+
+/** Escapes HTML and converts **text** to <strong> for Explanation column. */
+function renderSimpleMarkdownHtml(text: string): string {
+  if (!text) return "";
+  const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
+/** Pretty-prints study notes: escape HTML, **bold**, newlines → <br />, trim long runs of spaces. */
+function renderStudyNotesHtml(text: string): string {
+  if (!text) return "";
+  const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const withBold = escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const withBreaks = withBold.replace(/\n/g, "<br />");
+  return withBreaks.replace(/[ \t]+/g, " ").trim();
+}
+
+export interface AdminContentLibraryTabProps {
+  token: string;
+}
+
+export function AdminContentLibraryTab({ token }: AdminContentLibraryTabProps) {
+  // Data
+  const [items, setItems] = useState<Question[]>([]);
+
+  // Filters
+  const [subject, setSubject] = useState("");
+  const [section, setSection] = useState("");
+  const [rowQualityFilter, setRowQualityFilter] = useState<AdminRowQualityFilter>("all");
+  const [showOnlyVerificationIncomplete, setShowOnlyVerificationIncomplete] = useState(false);
+  /** Answer choices mix plain text and image (formula) choices — for Fix image choices workflow. */
+  const [showOnlyMixedPrompts, setShowOnlyMixedPrompts] = useState(false);
+  /**
+   * When Mixed Prompts is on, we filter by this ID list — refreshed only on Search or when toggling Mixed Prompts,
+   * so rows stay visible after Fix Image Choices until you search/toggle again.
+   */
+  const [mixedPromptsPinnedIds, setMixedPromptsPinnedIds] = useState<string[] | null>(null);
+  const [questionsPage, setQuestionsPage] = useState(1);
+  const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
+  /** When true, every question matching current filters is selected (including off-page rows). */
+  const [allFilteredSelected, setAllFilteredSelected] = useState(false);
+  // Bulk delete dialog/button removed from UI; keep flags for potential future reuse.
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const allApSubjectsRef = AP_SUBJECT_CODES.map((code) => ({
+    code,
+    label: getSubjectDisplayName(code),
+  })).sort((a, b) => a.label.localeCompare(b.label));
+  const availableSubjects = allApSubjectsRef.map((s) => s.code);
+  const [availableSections, setAvailableSections] = useState<string[]>([]);
+  const [sectionCounts, setSectionCounts] = useState<Record<string, number>>({});
+  const [sectionCountsLoading, setSectionCountsLoading] = useState(false);
+  const [genaiTopupTargetCount, setGenaiTopupTargetCount] = useState(10);
+  const [genaiTopupRunning, setGenaiTopupRunning] = useState(false);
+  const [genaiTopupProgress, setGenaiTopupProgress] = useState<{
+    message: string;
+    saved?: number;
+    target?: number;
+  } | null>(null);
+  const genaiTopupAbortRef = useRef<AbortController | null>(null);
+  const [microLessonGenRunning, setMicroLessonGenRunning] = useState(false);
+  const [microLessonGenProgress, setMicroLessonGenProgress] = useState<{
+    message: string;
+    current?: number;
+    total?: number;
+    updated?: number;
+    skipped?: number;
+    failed?: number;
+  } | null>(null);
+  const microLessonGenAbortRef = useRef<AbortController | null>(null);
+
+  const displayedItems = useMemo(() => {
+    let list = items;
+    if (rowQualityFilter === "missing_explanation") {
+      list = list.filter((q) => !q.explanation || q.explanation.trim() === "");
+    } else if (rowQualityFilter === "error_reports") {
+      list = list.filter((q) => (q.tags || []).includes("error_reported"));
+    } else if (rowQualityFilter === "unverified") {
+      list = list.filter((q) => !q.lastVerification?.status);
+    } else if (rowQualityFilter === "verification_failed") {
+      list = list.filter((q) => {
+        const s = q.lastVerification?.status;
+        return s === "fail" || s === "error" || s === "needs_review";
+      });
+    }
+    if (showOnlyVerificationIncomplete) {
+      list = list.filter((q) => {
+        const v = q.lastVerification;
+        if (!v || v.status !== "fail") return false;
+        const issues = Array.isArray(v.issues) ? v.issues.join(" ").toLowerCase() : "";
+        return (
+          issues.includes("stem has no text and no images") ||
+          issues.includes("stem appears incomplete") ||
+          issues.includes("incomplete question")
+        );
+      });
+    }
+    if (showOnlyMixedPrompts && mixedPromptsPinnedIds !== null) {
+      const pin = new Set(mixedPromptsPinnedIds);
+      list = list.filter((q) => pin.has(q.id));
+    }
+    return list;
+  }, [
+    items,
+    rowQualityFilter,
+    showOnlyVerificationIncomplete,
+    showOnlyMixedPrompts,
+    mixedPromptsPinnedIds,
+  ]);
+
+  const questionsTotalPages = Math.max(1, Math.ceil(displayedItems.length / QUESTIONS_PAGE_SIZE));
+
+  const paginatedItems = useMemo(() => {
+    const start = (questionsPage - 1) * QUESTIONS_PAGE_SIZE;
+    return displayedItems.slice(start, start + QUESTIONS_PAGE_SIZE);
+  }, [displayedItems, questionsPage]);
+
+  const effectiveSelectedCount = allFilteredSelected
+    ? displayedItems.length
+    : selectedQuestions.size;
+
+  const allPageQuestionsSelected =
+    paginatedItems.length > 0 &&
+    (allFilteredSelected || paginatedItems.every((q) => selectedQuestions.has(q.id)));
+
+  const somePageQuestionsSelected =
+    !allFilteredSelected &&
+    paginatedItems.some((q) => selectedQuestions.has(q.id)) &&
+    !paginatedItems.every((q) => selectedQuestions.has(q.id));
+
+  const showSelectAllFilteredBanner =
+    allPageQuestionsSelected &&
+    !allFilteredSelected &&
+    displayedItems.length > paginatedItems.length;
+
+  useEffect(() => {
+    setQuestionsPage(1);
+    setAllFilteredSelected(false);
+  }, [
+    rowQualityFilter,
+    showOnlyVerificationIncomplete,
+    showOnlyMixedPrompts,
+    mixedPromptsPinnedIds,
+  ]);
+
+  useEffect(() => {
+    if (questionsPage > questionsTotalPages) {
+      setQuestionsPage(questionsTotalPages);
+    }
+  }, [questionsPage, questionsTotalPages]);
+
+  // AI explanation generation state
+  const [generatingExplanations, setGeneratingExplanations] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<string>("verify-questions");
+  const aiActionAbortRef = useRef<AbortController | null>(null);
+  const [explanationProgress, setExplanationProgress] = useState<{
+    current: number;
+    total: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+    message: string;
+    passed?: number;
+  } | null>(null);
+
+  const [lastExplanationSummary, setLastExplanationSummary] = useState<{
+    current: number;
+    total: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+    message: string;
+    passed?: number;
+  } | null>(null);
+
+  const [subjectStatus, setSubjectStatus] = useState<
+    Record<
+      string,
+      {
+        hasQuestions: boolean;
+        questionCount: number;
+        crackApCount?: number;
+        varsityCount?: number;
+      }
+    >
+  >({});
+  const [loadingStatus, setLoadingStatus] = useState(false);
+
+  // GenAI question generation / content library import (admin Content Library)
+  const [varsitySubjectCode, setVarsitySubjectCode] = useState("");
+  const [addingVarsitySubject, setAddingVarsitySubject] = useState(false);
+  const [varsitySubjectProgress, setVarsitySubjectProgress] = useState<{
+    current: number;
+    total: number;
+    imported: number;
+    skipped: number;
+    errors: number;
+    duplicatesSkipped: number;
+    linksCrawled: number;
+    rawQuestionsFound: number;
+    message: string;
+    phase: string;
+  } | null>(null);
+  const varsitySubjectAbortRef = useRef<AbortController | null>(null);
+
+  const [migratingImages, setMigratingImages] = useState(false);
+  const [migrateSubjectCode, setMigrateSubjectCode] = useState("");
+  const migrateAbortRef = useRef<AbortController | null>(null);
+  const [migrateProgress, setMigrateProgress] = useState<{
+    current: number;
+    total: number;
+    made_public: number;
+    failed: number;
+    skipped: number;
+    message: string;
+  } | null>(null);
+
+  const [migratingExternalImages, setMigratingExternalImages] = useState(false);
+  const migrateExternalAbortRef = useRef<AbortController | null>(null);
+  const [migrateExternalProgress, setMigrateExternalProgress] = useState<{
+    current: number;
+    total: number;
+    questions_processed: number;
+    images_migrated: number;
+    failed: number;
+    message: string;
+  } | null>(null);
+
+  const [fixingLegacySections, setFixingLegacySections] = useState(false);
+
+  const availableToAddVarsity = allApSubjectsRef.filter(
+    (s) => (subjectStatus[s.code]?.varsityCount ?? 0) === 0,
+  );
+  const alreadyAdded = allApSubjectsRef.filter((s) => subjectStatus[s.code]?.hasQuestions);
+
+  const subjectAggregateCounts = Object.values(subjectStatus).reduce(
+    (acc, s) => ({
+      total: acc.total + (s.questionCount || 0),
+      v1: acc.v1 + (s.crackApCount ?? 0),
+      v2: acc.v2 + (s.varsityCount ?? 0),
+    }),
+    { total: 0, v1: 0, v2: 0 },
+  );
+
+  async function loadSubjectStatus() {
+    if (!token) return;
+    setLoadingStatus(true);
+    try {
+      const res = await fetch("/api/admin/subject-status", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSubjectStatus(data.data || {});
+      }
+    } catch (err) {
+      console.error("Failed to fetch subject status:", err);
+    } finally {
+      setLoadingStatus(false);
+    }
+  }
+
+  async function startVarsityAddSubject() {
+    if (!token || !varsitySubjectCode) return;
+    if ((subjectStatus[varsitySubjectCode]?.varsityCount ?? 0) > 0) {
+      toast.error(
+        "This subject already has GenAI Questions. Remove those questions first to generate again.",
+      );
+      return;
+    }
+    setAddingVarsitySubject(true);
+    const subjectLabel =
+      allApSubjectsRef.find((s) => s.code === varsitySubjectCode)?.label || varsitySubjectCode;
+    setVarsitySubjectProgress({
+      current: 0,
+      total: 0,
+      imported: 0,
+      skipped: 0,
+      errors: 0,
+      duplicatesSkipped: 0,
+      linksCrawled: 0,
+      rawQuestionsFound: 0,
+      message: `Starting question generation for ${subjectLabel}...`,
+      phase: "scraping",
+    });
+
+    const controller = new AbortController();
+    varsitySubjectAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/varsity-add-subject", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subjectCode: varsitySubjectCode }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Failed to generate questions for this subject");
+        setAddingVarsitySubject(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        toast.error("No response stream");
+        setAddingVarsitySubject(false);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "progress" || event.type === "batch" || event.type === "status") {
+              setVarsitySubjectProgress({
+                current: event.current || 0,
+                total: event.total || 0,
+                imported: event.imported || 0,
+                skipped: event.skipped || 0,
+                errors: event.errors || 0,
+                duplicatesSkipped: event.duplicatesSkipped ?? 0,
+                linksCrawled: event.linksCrawled ?? 0,
+                rawQuestionsFound: event.rawQuestionsFound ?? 0,
+                message: event.message || "",
+                phase: event.phase || "scraping",
+              });
+            }
+            if (event.type === "complete") {
+              toast.success(event.message);
+              loadSubjectStatus();
+              setVarsitySubjectCode("");
+              return;
+            }
+            if (event.type === "error") {
+              const msg = event.message || "Generation failed";
+              setVarsitySubjectProgress((prev) => ({
+                current: prev?.current || 0,
+                total: prev?.total || 0,
+                imported: prev?.imported || 0,
+                skipped: prev?.skipped || 0,
+                errors: (prev?.errors || 0) + 1,
+                duplicatesSkipped: prev?.duplicatesSkipped ?? 0,
+                linksCrawled: prev?.linksCrawled ?? 0,
+                rawQuestionsFound: prev?.rawQuestionsFound ?? 0,
+                message: msg,
+                phase: prev?.phase || "scraping",
+              }));
+              toast.error(msg);
+              return;
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Generation failed: " + err.message);
+      }
+    } finally {
+      setAddingVarsitySubject(false);
+      varsitySubjectAbortRef.current = null;
+    }
+  }
+
+  function stopVarsityAddSubject() {
+    varsitySubjectAbortRef.current?.abort();
+    setAddingVarsitySubject(false);
+    toast("Question generation cancelled");
+  }
+
+  const [removingSubject, setRemovingSubject] = useState<string | null>(null);
+  const [subjectRemoveOpen, setSubjectRemoveOpen] = useState(false);
+  const [subjectRemoveCode, setSubjectRemoveCode] = useState<string | null>(null);
+  const [subjectRemoveScope, setSubjectRemoveScope] = useState<"all" | "vt" | "non_vt" | null>(
+    null,
+  );
+
+  function openSubjectRemoveDialog(code: string) {
+    setSubjectRemoveCode(code);
+    setSubjectRemoveScope(null);
+    setSubjectRemoveOpen(true);
+  }
+
+  async function confirmSubjectRemove() {
+    if (!token || !subjectRemoveCode || !subjectRemoveScope) return;
+    const code = subjectRemoveCode;
+    setRemovingSubject(code);
+    try {
+      const res = await fetch("/api/admin/questions/delete-subject", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subjectCode: code, scope: subjectRemoveScope }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const scopeLabel =
+          subjectRemoveScope === "all"
+            ? "ALL"
+            : subjectRemoveScope === "vt"
+              ? "GenAI Questions"
+              : "non–GenAI Questions";
+        toast.success(`Removed ${data.deleted} question(s) for ${code} (${scopeLabel})`);
+        loadSubjectStatus();
+        setSubjectRemoveOpen(false);
+        setSubjectRemoveCode(null);
+        setSubjectRemoveScope(null);
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Failed to remove questions");
+      }
+    } catch (err: any) {
+      toast.error("Remove failed: " + err.message);
+    } finally {
+      setRemovingSubject(null);
+    }
+  }
+
+  async function startImageMigration() {
+    if (!token) return;
+    setMigratingImages(true);
+    setMigrateExternalProgress(null);
+    setMigrateProgress({
+      current: 0,
+      total: 0,
+      made_public: 0,
+      failed: 0,
+      skipped: 0,
+      message: "Starting migration...",
+    });
+
+    const controller = new AbortController();
+    migrateAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/migrate-images", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectCode:
+            migrateSubjectCode && migrateSubjectCode !== "all" ? migrateSubjectCode : undefined,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Failed to start migration");
+        setMigratingImages(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        toast.error("No response stream");
+        setMigratingImages(false);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "progress") {
+              setMigrateProgress({
+                current: event.current || 0,
+                total: event.total || 0,
+                made_public: event.made_public || 0,
+                failed: event.failed || 0,
+                skipped: event.skipped || 0,
+                message: event.message || "",
+              });
+            }
+            if (event.type === "complete") {
+              toast.success(event.message);
+              setMigrateProgress({
+                current: event.total || 0,
+                total: event.total || 0,
+                made_public: event.made_public || 0,
+                failed: event.failed || 0,
+                skipped: event.skipped || 0,
+                message: event.message || "",
+              });
+            }
+            if (event.type === "error") {
+              toast.error(event.message);
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Migration failed: " + err.message);
+      }
+    } finally {
+      setMigratingImages(false);
+      migrateAbortRef.current = null;
+    }
+  }
+
+  function stopImageMigration() {
+    migrateAbortRef.current?.abort();
+    setMigratingImages(false);
+    toast("Migration cancelled");
+  }
+
+  async function startExternalImageMigration() {
+    if (!token) return;
+    setMigratingExternalImages(true);
+    setMigrateProgress(null);
+    setMigrateExternalProgress({
+      current: 0,
+      total: 0,
+      questions_processed: 0,
+      images_migrated: 0,
+      failed: 0,
+      message: "Starting...",
+    });
+
+    const controller = new AbortController();
+    migrateExternalAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/migrate-external-images", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectCode:
+            migrateSubjectCode && migrateSubjectCode !== "all" ? migrateSubjectCode : undefined,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error((err as any).error || "Failed to start migration");
+        setMigratingExternalImages(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        toast.error("No response stream");
+        setMigratingExternalImages(false);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "progress") {
+              setMigrateExternalProgress({
+                current: event.current ?? 0,
+                total: event.total ?? 0,
+                questions_processed: event.questions_processed ?? 0,
+                images_migrated: event.images_migrated ?? 0,
+                failed: event.failed ?? 0,
+                message: event.message ?? "",
+              });
+            }
+            if (event.type === "complete") {
+              toast.success(event.message);
+              setMigrateExternalProgress({
+                current: event.current ?? event.total ?? 0,
+                total: event.total ?? 0,
+                questions_processed: event.questions_processed ?? 0,
+                images_migrated: event.images_migrated ?? 0,
+                failed: event.failed ?? 0,
+                message: event.message ?? "",
+              });
+            }
+            if (event.type === "error") {
+              toast.error(event.message);
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Migration failed: " + err.message);
+      }
+    } finally {
+      setMigratingExternalImages(false);
+      migrateExternalAbortRef.current = null;
+    }
+  }
+
+  function stopExternalImageMigration() {
+    migrateExternalAbortRef.current?.abort();
+    setMigratingExternalImages(false);
+    toast("Migration cancelled");
+  }
+
+  useEffect(() => {
+    if (token) void loadSubjectStatus();
+  }, [token]);
+
+  // Update sections when subject changes
+  useEffect(() => {
+    if (!subject) {
+      setAvailableSections([]);
+      setSection("");
+      return;
+    }
+
+    setAvailableSections(SUBJECT_SECTION_CODES[subject] || []);
+    setSection("all"); // Reset section when subject changes
+  }, [subject]);
+
+  const reloadSectionCounts = useCallback(async () => {
+    if (!token || !subject) {
+      setSectionCounts({});
+      setSectionCountsLoading(false);
+      return;
+    }
+    setSectionCountsLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/questions/section-counts?subject=${encodeURIComponent(subject)}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (res.ok) {
+        const json = (await res.json()) as { data?: Record<string, number> };
+        setSectionCounts(json.data && typeof json.data === "object" ? json.data : {});
+      } else {
+        setSectionCounts({});
+      }
+    } catch {
+      setSectionCounts({});
+    } finally {
+      setSectionCountsLoading(false);
+    }
+  }, [token, subject]);
+
+  useEffect(() => {
+    void reloadSectionCounts();
+  }, [reloadSectionCounts]);
+
+  async function fetchFiltered(): Promise<Question[] | undefined> {
+    if (!token) return undefined;
+    const sectionParam = section === "all" ? "" : section;
+    const res = await fetch(
+      `/api/admin/questions/query?subject=${subject}&section=${sectionParam}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    const data = await res.json();
+    const nextItems: Question[] = data.items || [];
+    setItems(nextItems);
+    setSelectedQuestions(new Set());
+    setAllFilteredSelected(false);
+    setQuestionsPage(1);
+    return nextItems;
+  }
+
+  async function handleSearchClick() {
+    const nextItems = await fetchFiltered();
+    if (showOnlyMixedPrompts && nextItems) {
+      setMixedPromptsPinnedIds(
+        nextItems.filter((q) => hasMixedTextAndImageChoices(q.choices)).map((q) => q.id),
+      );
+    }
+  }
+
+  function stopGenaiTopup() {
+    genaiTopupAbortRef.current?.abort();
+    setGenaiTopupRunning(false);
+    toast("GenAI section top-up cancelled");
+    setGenaiTopupProgress(null);
+  }
+
+  function stopMicroLessonGen() {
+    microLessonGenAbortRef.current?.abort();
+    setMicroLessonGenRunning(false);
+    toast("Micro-lesson generation cancelled");
+    setMicroLessonGenProgress(null);
+  }
+
+  async function startMicroLessonGen(forceRegenerate = false) {
+    if (!token || !subject) return;
+    setMicroLessonGenRunning(true);
+    setMicroLessonGenProgress({ message: "Connecting…" });
+    const controller = new AbortController();
+    microLessonGenAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/generate-micro-lessons", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectCode: subject,
+          sectionCodes: section === "all" ? undefined : [section],
+          forceRegenerate,
+          model: "2.5lite",
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error((err as { error?: string }).error || "Failed to start micro-lesson generation");
+        setMicroLessonGenRunning(false);
+        setMicroLessonGenProgress(null);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        toast.error("No response stream");
+        setMicroLessonGenRunning(false);
+        setMicroLessonGenProgress(null);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6)) as {
+              type?: string;
+              message?: string;
+              current?: number;
+              total?: number;
+              updated?: number;
+              skipped?: number;
+              failed?: number;
+            };
+            if (event.type === "progress" || event.type === "rate_limit") {
+              setMicroLessonGenProgress({
+                message: event.message || "",
+                current: event.current,
+                total: event.total,
+                updated: event.updated,
+                skipped: event.skipped,
+                failed: event.failed,
+              });
+            } else if (event.type === "done") {
+              toast.success(event.message || "Micro-lessons done");
+              setMicroLessonGenProgress({
+                message: event.message || "Done",
+                current: event.current,
+                total: event.total,
+                updated: event.updated,
+                skipped: event.skipped,
+                failed: event.failed,
+              });
+            }
+          } catch {
+            /* ignore parse errors */
+          }
+        }
+      }
+    } catch (e: unknown) {
+      if ((e as { name?: string })?.name !== "AbortError") {
+        toast.error("Micro-lesson generation failed");
+      }
+    } finally {
+      setMicroLessonGenRunning(false);
+      microLessonGenAbortRef.current = null;
+    }
+  }
+
+  async function startGenaiTopup() {
+    if (!token || !subject || section === "all") return;
+    const n = Math.min(40, Math.max(1, Math.floor(Number(genaiTopupTargetCount)) || 1));
+    setGenaiTopupTargetCount(n);
+
+    setGenaiTopupRunning(true);
+    setGenaiTopupProgress({
+      message: "Connecting…",
+      saved: 0,
+      target: n,
+    });
+
+    const controller = new AbortController();
+    genaiTopupAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/admin/genai-topup-section", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subjectCode: subject,
+          sectionCode: section,
+          targetCount: n,
+          model: "2.5lite",
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error((err as { error?: string }).error || "Failed to start GenAI top-up");
+        setGenaiTopupRunning(false);
+        setGenaiTopupProgress(null);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        toast.error("No response stream");
+        setGenaiTopupRunning(false);
+        setGenaiTopupProgress(null);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6)) as {
+              type?: string;
+              message?: string;
+              saved?: number;
+              target?: number;
+            };
+            if (
+              event.type === "status" ||
+              event.type === "progress" ||
+              event.type === "rate_limit"
+            ) {
+              setGenaiTopupProgress({
+                message: event.message || "",
+                saved: typeof event.saved === "number" ? event.saved : undefined,
+                target: typeof event.target === "number" ? event.target : n,
+              });
+            }
+            if (event.type === "complete") {
+              toast.success(event.message || "GenAI top-up finished");
+              setGenaiTopupProgress({
+                message: event.message || "Done",
+                saved: event.saved,
+                target: event.target ?? n,
+              });
+              void loadSubjectStatus();
+              void reloadSectionCounts();
+              void fetchFiltered();
+              setGenaiTopupRunning(false);
+              genaiTopupAbortRef.current = null;
+              return;
+            }
+            if (event.type === "error") {
+              toast.error(event.message || "GenAI top-up failed");
+              setGenaiTopupProgress({
+                message: event.message || "Error",
+                saved: event.saved,
+                target: event.target ?? n,
+              });
+              void loadSubjectStatus();
+              void reloadSectionCounts();
+              void fetchFiltered();
+              setGenaiTopupRunning(false);
+              genaiTopupAbortRef.current = null;
+              return;
+            }
+          } catch {
+            // ignore malformed SSE
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if ((err as { name?: string }).name !== "AbortError") {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error("GenAI top-up failed: " + msg);
+      }
+    } finally {
+      setGenaiTopupRunning(false);
+      genaiTopupAbortRef.current = null;
+    }
+  }
+
+  async function startFixLegacySectionCodes() {
+    if (!token || !subject) return;
+    if (!SUBJECTS_WITH_LEGACY_SECTION_FIX.includes(subject)) {
+      toast.error("No legacy section fix for this subject.");
+      return;
+    }
+    setFixingLegacySections(true);
+    try {
+      const res = await fetch("/api/admin/fix-legacy-section-codes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subjectCode: subject }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error((err as { error?: string }).error || "Fix failed to start");
+        return;
+      }
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        toast.error("No response stream");
+        return;
+      }
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "complete") {
+              toast.success(event.message);
+              await fetchFiltered();
+            }
+            if (event.type === "error") {
+              toast.error(event.message);
+            }
+          } catch {
+            // ignore malformed SSE lines
+          }
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Fix failed: " + msg);
+    } finally {
+      setFixingLegacySections(false);
+    }
+  }
+
+  async function updateQuestion(id: string, patch: Partial<Question>) {
+    if (!token) return;
+    const updatePromise = fetch(`/api/admin/questions/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(patch),
+    }).then((res) => {
+      if (!res.ok) throw new Error("Update failed");
+      return res;
+    });
+
+    toast.promise(updatePromise, {
+      loading: "Updating question...",
+      success: "Question updated successfully!",
+      error: "Failed to update question",
+    });
+
+    await updatePromise.then(() => fetchFiltered()).catch(() => {});
+  }
+
+  // Bulk delete helper retained, but UI entrypoints removed so this is not currently reachable.
+  async function bulkDeleteDisplayedQuestions() {
+    if (!token) return;
+    const ids = displayedItems.map((q) => q.id);
+    if (ids.length === 0) return;
+    try {
+      await fetch("/api/admin/questions/bulk-delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ids }),
+      }).catch(() => {});
+    } catch {
+      // no-op
+    }
+  }
+
+  async function deleteQuestion(id: string) {
+    if (!token) return;
+
+    const deletePromise = fetch(`/api/admin/questions/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((res) => {
+      if (!res.ok) throw new Error("Delete failed");
+      setItems((prev) => prev.filter((q) => q.id !== id));
+      setAllFilteredSelected(false);
+      setSelectedQuestions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+      return res;
+    });
+
+    toast.promise(deletePromise, {
+      loading: "Deleting question...",
+      success: "Question deleted successfully!",
+      error: "Failed to delete question",
+    });
+  }
+
+  async function executeAIAction() {
+    if (!token || effectiveSelectedCount === 0) {
+      toast.error("Please select at least one question");
+      return;
+    }
+
+    // Clear any previous summary when starting a new run so the next
+    // execution owns the sticky row contents.
+    setLastExplanationSummary(null);
+
+    setGeneratingExplanations(true);
+    let questionIds = allFilteredSelected
+      ? displayedItems.map((q) => q.id)
+      : Array.from(selectedQuestions);
+
+    // For "Generate Explanations", only send questions that are actually missing explanations.
+    // The dedicated "Re-Generate Explanations (overwrite)" action intentionally skips this
+    // filter so it will overwrite any existing explanations.
+    if (selectedAction === "explanations") {
+      const byId = new Map(items.map((q) => [q.id, q]));
+      const missingExplanationIds = questionIds.filter((id) => {
+        const q = byId.get(id);
+        return !q?.explanation || q.explanation.trim() === "";
+      });
+
+      if (missingExplanationIds.length === 0) {
+        toast.error("All selected questions already have explanations");
+        setGeneratingExplanations(false);
+        setExplanationProgress(null);
+        return;
+      }
+
+      questionIds = missingExplanationIds;
+    }
+
+    let endpoint = "/api/generateExplanations";
+
+    switch (selectedAction) {
+      case "explanations":
+        endpoint = "/api/generateExplanations";
+        break;
+      case "re-generate-explanations-fresh":
+        // Overwrite any existing explanations using the same endpoint.
+        endpoint = "/api/generateExplanations";
+        break;
+      case "re-generate-explanations":
+        endpoint = "/api/reGenerateExplanations";
+        break;
+      case "fix-prompts":
+        endpoint = "/api/prettyPrintPromptsChoices";
+        break;
+      case "fix-mixed-media-prompts":
+        endpoint = "/api/fixPromptsChoices";
+        break;
+      case "grade-difficulty":
+        endpoint = "/api/admin/auto-tag-difficulty";
+        break;
+      case "study-notes":
+        endpoint = "/api/admin/generate-study-notes";
+        break;
+      case "re-generate-study-notes":
+        endpoint = "/api/admin/re-generate-study-notes";
+        break;
+      case "verify-questions":
+        endpoint = "/api/admin/verify-questions";
+        break;
+    }
+
+    const actionLabel =
+      selectedAction === "explanations"
+        ? "Explanation Generation"
+        : selectedAction === "re-generate-explanations-fresh"
+          ? "Explanation Re-Generation (overwrite)"
+          : selectedAction === "re-generate-explanations"
+            ? "Explanation Reformatting"
+            : selectedAction === "fix-prompts"
+              ? "Prompt & Choices Pretty Print"
+              : selectedAction === "fix-mixed-media-prompts"
+                ? "Mixed Media Prompt Fixing"
+                : selectedAction === "study-notes"
+                  ? "Study Notes Generation"
+                  : selectedAction === "re-generate-study-notes"
+                    ? "Study Notes Re-Generation"
+                    : selectedAction === "verify-questions"
+                      ? "Question Verification"
+                      : "Difficulty Tagging";
+
+    setExplanationProgress({
+      current: 0,
+      total: questionIds.length,
+      updated: 0,
+      skipped: 0,
+      failed: 0,
+      passed: selectedAction === "verify-questions" ? 0 : undefined,
+      message: `Starting ${actionLabel} for ${questionIds.length} questions...`,
+    });
+
+    const controller = new AbortController();
+    aiActionAbortRef.current = controller;
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(
+          selectedAction === "re-generate-study-notes"
+            ? { questionIds }
+            : { questionIds, model: "2.5lite" },
+        ),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || `Failed to start ${actionLabel}`);
+        setGeneratingExplanations(false);
+        setExplanationProgress(null);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        toast.error("No response stream");
+        setGeneratingExplanations(false);
+        setExplanationProgress(null);
+        return;
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (
+              event.type === "progress" ||
+              event.type === "rate_limit" ||
+              event.type === "error"
+            ) {
+              setExplanationProgress({
+                current: event.current || 0,
+                total: event.total || questionIds.length,
+                updated: event.updated || 0,
+                skipped: event.skipped || 0,
+                failed: event.failed || 0,
+                message: event.message || "",
+                passed: typeof event.passed === "number" ? event.passed : undefined,
+              });
+            }
+            if (event.type === "complete") {
+              setExplanationProgress((prev) => {
+                if (!prev) return prev;
+                const next = {
+                  ...prev,
+                  current: event.total || prev.total,
+                  skipped: event.skipped ?? prev.skipped,
+                  failed: event.failed ?? prev.failed,
+                  passed: typeof event.passed === "number" ? event.passed : prev.passed,
+                  message: event.message || prev.message,
+                };
+                // Snapshot the final state into a sticky summary that will
+                // remain visible even after live progress is cleared.
+                setLastExplanationSummary(next);
+                return next;
+              });
+              toast.success(event.message);
+              // Refresh questions after primary action (fix prompts, explanations, etc.).
+              fetchFiltered();
+              // If we just ran Fix Mixed Media Prompts, automatically kick off verification
+              // for the same question IDs in the background so any accidental key changes
+              // or broken questions get flagged.
+              if (selectedAction === "fix-mixed-media-prompts" && questionIds.length > 0) {
+                void fetch("/api/admin/verify-questions", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ questionIds, model: "2.5lite" }),
+                }).catch(() => {
+                  // Silent failure; admins can still run manual verify if needed.
+                });
+              }
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Failed: " + err.message);
+      }
+    } finally {
+      setGeneratingExplanations(false);
+      aiActionAbortRef.current = null;
+      // When the run finishes (successfully or with an error), clear the
+      // live progress object immediately. The final stats have already been
+      // snapshotted into `lastExplanationSummary` on "complete", so the
+      // status bar remains visible until the user dismisses it.
+      setExplanationProgress(null);
+    }
+  }
+
+  function stopAIAction() {
+    // Snapshot whatever progress we have so far so the user still sees
+    // the partial results in the sticky status bar after aborting.
+    setLastExplanationSummary((prev) => explanationProgress ?? prev);
+    aiActionAbortRef.current?.abort();
+    setGeneratingExplanations(false);
+    toast("AI action cancelled");
+    // Clear live progress; the sticky summary (if any) remains until
+    // the user clicks the close button.
+    setExplanationProgress(null);
+  }
+
+  function clearQuestionSelection() {
+    setSelectedQuestions(new Set());
+    setAllFilteredSelected(false);
+  }
+
+  function selectAllFilteredQuestions() {
+    setAllFilteredSelected(true);
+    setSelectedQuestions(new Set(displayedItems.map((q) => q.id)));
+  }
+
+  function toggleQuestion(id: string) {
+    if (allFilteredSelected) {
+      setAllFilteredSelected(false);
+      setSelectedQuestions(new Set(displayedItems.map((q) => q.id).filter((qid) => qid !== id)));
+      return;
+    }
+
+    setSelectedQuestions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (allFilteredSelected) {
+      clearQuestionSelection();
+      return;
+    }
+
+    const allPageSelected =
+      paginatedItems.length > 0 && paginatedItems.every((q) => selectedQuestions.has(q.id));
+
+    if (allPageSelected) {
+      setSelectedQuestions((prev) => {
+        const next = new Set(prev);
+        paginatedItems.forEach((q) => next.delete(q.id));
+        return next;
+      });
+      return;
+    }
+
+    setSelectedQuestions((prev) => {
+      const next = new Set(prev);
+      paginatedItems.forEach((q) => next.add(q.id));
+      return next;
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Subjects Overview */}
+            <Card className="dark:bg-slate-900/60 dark:border-slate-800">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-xl dark:text-white">
+                      <BookOpen className="w-5 h-5 text-blue-500" />
+                      Subjects Overview
+                    </CardTitle>
+                    <CardDescription className="dark:text-slate-400">
+                      {loadingStatus
+                        ? "Loading..."
+                        : `${alreadyAdded.length} of ${allApSubjectsRef.length} subjects have questions`}
+                      {!loadingStatus && (
+                        <span className="block mt-1 text-[11px] text-slate-500 dark:text-slate-500">
+                          v1 = CrackAP, v2 = Varsity Tutors
+                        </span>
+                      )}
+                    </CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tabular-nums leading-tight">
+                      {subjectAggregateCounts.total.toLocaleString()}{" "}
+                      <span className="text-slate-400 font-semibold">-</span>{" "}
+                      {subjectAggregateCounts.v1.toLocaleString()}
+                      <span className="text-slate-500 dark:text-slate-400 text-lg sm:text-xl">
+                        (v1)
+                      </span>{" "}
+                      <span className="text-slate-400 font-semibold">+</span>{" "}
+                      {subjectAggregateCounts.v2.toLocaleString()}
+                      <span className="text-slate-500 dark:text-slate-400 text-lg sm:text-xl">
+                        (v2)
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-500">
+                      Total Questions
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingStatus ? (
+                  <div className="flex items-center justify-center py-5">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {allApSubjectsRef.map((s) => {
+                      const status = subjectStatus[s.code];
+                      const hasQuestions = status?.hasQuestions;
+                      const count = status?.questionCount || 0;
+                      const v1 = status?.crackApCount ?? 0;
+                      const v2 = status?.varsityCount ?? 0;
+
+                      return (
+                        <div
+                          key={s.code}
+                          className={`relative group rounded-lg border-2 p-3 transition-all ${
+                            hasQuestions
+                              ? "border-green-200 bg-green-50 hover:border-green-300 dark:border-green-700 dark:bg-green-900/30"
+                              : "border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-1">
+                            <span
+                              className={`text-xs font-bold ${hasQuestions ? "text-green-700 dark:text-green-400" : "text-slate-400 dark:text-slate-500"}`}
+                            >
+                              {s.code}
+                            </span>
+                            {hasQuestions && (
+                              <button
+                                onClick={() => openSubjectRemoveDialog(s.code)}
+                                disabled={removingSubject === s.code}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600 text-xs font-bold leading-none"
+                                title={`Remove ${s.label}`}
+                              >
+                                {removingSubject === s.code ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  "x"
+                                )}
+                              </button>
+                            )}
+                          </div>
+                          <div
+                            className={`text-xs font-medium leading-tight mb-1 ${hasQuestions ? "text-slate-800 dark:text-slate-200" : "text-slate-500 dark:text-slate-400"}`}
+                          >
+                            {s.label.replace("AP ", "")}
+                          </div>
+                          {hasQuestions ? (
+                            <div className="text-sm font-bold text-green-700 dark:text-green-400 tabular-nums leading-snug break-words">
+                              {count.toLocaleString()}{" "}
+                              <span className="text-slate-500 dark:text-slate-400 font-semibold">
+                                -
+                              </span>{" "}
+                              {v1.toLocaleString()}
+                              <span className="text-green-600/80 dark:text-green-500/90 font-semibold">
+                                (v1)
+                              </span>{" "}
+                              <span className="text-slate-500 dark:text-slate-400 font-semibold">
+                                +
+                              </span>{" "}
+                              {v2.toLocaleString()}
+                              <span className="text-green-600/80 dark:text-green-500/90 font-semibold">
+                                (v2)
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-400 dark:text-slate-500 italic">
+                              No questions yet
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Generate Questions (GenAI library) */}
+            <Card className="border-2 border-dashed border-indigo-500/30 dark:bg-slate-900/60 dark:border-indigo-600/30 rounded-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 dark:text-white">
+                  <Zap className="w-5 h-5 text-indigo-500" />
+                  Generate Questions
+                </CardTitle>
+                <CardDescription className="dark:text-slate-400">
+                  Each subject can be generated once. New rows are stored as GenAI Questions.
+                  Subjects that already have GenAI Questions are not listed.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3 items-end">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                      Subject
+                    </label>
+                    <Select
+                      value={varsitySubjectCode}
+                      onValueChange={setVarsitySubjectCode}
+                      disabled={addingVarsitySubject}
+                    >
+                      <SelectTrigger className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
+                        <SelectValue
+                          placeholder={
+                            loadingStatus
+                              ? "Loading subjects…"
+                              : availableToAddVarsity.length === 0
+                                ? "All subjects already have GenAI Questions"
+                                : "Choose a subject to generate"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableToAddVarsity.map((s) => (
+                          <SelectItem key={s.code} value={s.code}>
+                            {s.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {addingVarsitySubject ? (
+                    <Button
+                      onClick={stopVarsityAddSubject}
+                      variant="destructive"
+                      className="min-w-[140px]"
+                    >
+                      <Square className="w-4 h-4 mr-2" />
+                      Stop generation
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={startVarsityAddSubject}
+                      disabled={
+                        !varsitySubjectCode || loadingStatus || availableToAddVarsity.length === 0
+                      }
+                      className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white min-w-[140px]"
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Generate
+                    </Button>
+                  )}
+                </div>
+
+                {varsitySubjectProgress && (
+                  <div className="space-y-3 pt-2">
+                    <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
+                      <span>{varsitySubjectProgress.message}</span>
+                      {varsitySubjectProgress.total > 0 && (
+                        <span>
+                          {Math.round(
+                            (varsitySubjectProgress.current /
+                              Math.max(varsitySubjectProgress.total, 1)) *
+                              100,
+                          )}
+                          %
+                        </span>
+                      )}
+                    </div>
+                    <Progress
+                      value={
+                        (varsitySubjectProgress.current /
+                          Math.max(varsitySubjectProgress.total, 1)) *
+                        100
+                      }
+                      className="h-2"
+                    />
+                    <div className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="text-slate-600 dark:text-slate-300">
+                        Fetch requests: {varsitySubjectProgress.linksCrawled}
+                      </span>
+                      <span className="text-slate-600 dark:text-slate-300">
+                        Raw questions received: {varsitySubjectProgress.rawQuestionsFound}
+                      </span>
+                      <span className="text-amber-600 dark:text-amber-400">
+                        Dupes skipped: {varsitySubjectProgress.duplicatesSkipped}
+                      </span>
+                      <span className="text-green-600 font-medium">
+                        New unique: {varsitySubjectProgress.imported}
+                      </span>
+                      <span className="text-amber-500">
+                        Invalid skipped: {varsitySubjectProgress.skipped}
+                      </span>
+                      <span className="text-red-600">Errors: {varsitySubjectProgress.errors}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <AlertDialog
+              open={subjectRemoveOpen}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setSubjectRemoveOpen(false);
+                  setSubjectRemoveCode(null);
+                  setSubjectRemoveScope(null);
+                }
+              }}
+            >
+              <AlertDialogContent className="dark:bg-slate-900 dark:border-slate-800">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="dark:text-white">Remove questions</AlertDialogTitle>
+                  <AlertDialogDescription className="dark:text-slate-400 text-left space-y-3">
+                    <span className="block">
+                      This cannot be undone. Choose what to delete for{" "}
+                      <strong className="text-slate-200">
+                        {subjectRemoveCode
+                          ? (allApSubjectsRef.find((s) => s.code === subjectRemoveCode)?.label ??
+                            subjectRemoveCode)
+                          : "—"}
+                      </strong>
+                      :
+                    </span>
+                    <div className="flex flex-col gap-3 pt-1">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="subject-remove-all"
+                          checked={subjectRemoveScope === "all"}
+                          onCheckedChange={(c) => {
+                            setSubjectRemoveScope(c === true ? "all" : null);
+                          }}
+                          className="mt-0.5"
+                        />
+                        <Label
+                          htmlFor="subject-remove-all"
+                          className="text-sm font-normal text-slate-300 cursor-pointer leading-snug"
+                        >
+                          <span className="font-semibold text-slate-100">ALL</span> — remove every
+                          question for this subject
+                        </Label>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="subject-remove-non-vt"
+                          checked={subjectRemoveScope === "non_vt"}
+                          onCheckedChange={(c) => {
+                            setSubjectRemoveScope(c === true ? "non_vt" : null);
+                          }}
+                          className="mt-0.5"
+                        />
+                        <Label
+                          htmlFor="subject-remove-non-vt"
+                          className="text-sm font-normal text-slate-300 cursor-pointer leading-snug"
+                        >
+                          <span className="font-semibold text-slate-100">Non–GenAI Questions</span>{" "}
+                          — remove only questions that are not from the GenAI Questions library
+                          (other or missing source)
+                        </Label>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="subject-remove-vt"
+                          checked={subjectRemoveScope === "vt"}
+                          onCheckedChange={(c) => {
+                            setSubjectRemoveScope(c === true ? "vt" : null);
+                          }}
+                          className="mt-0.5"
+                        />
+                        <Label
+                          htmlFor="subject-remove-vt"
+                          className="text-sm font-normal text-slate-300 cursor-pointer leading-snug"
+                        >
+                          <span className="font-semibold text-slate-100">GenAI Questions</span>
+                          {" — remove only questions created by the Generate Questions flow."}
+                        </Label>
+                      </div>
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    type="button"
+                    className="dark:border-slate-600 dark:text-slate-200"
+                  >
+                    Cancel
+                  </AlertDialogCancel>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={!subjectRemoveScope || removingSubject !== null}
+                    onClick={() => void confirmSubjectRemove()}
+                  >
+                    {removingSubject ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Confirm remove
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Filter Card */}
+            <Card className="dark:bg-slate-900/60 dark:border-slate-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 dark:text-white">
+                  <Search className="w-5 h-5" />
+                  Filter Questions
+                </CardTitle>
+                <CardDescription className="dark:text-slate-400">
+                  Search by subject and section code
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Select value={subject} onValueChange={setSubject}>
+                    <SelectTrigger className="flex-1 bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
+                      <SelectValue placeholder="Select Subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSubjects
+                        .slice()
+                        .sort((a, b) =>
+                          getSubjectDisplayName(a).localeCompare(getSubjectDisplayName(b)),
+                        )
+                        .map((subj) => (
+                          <SelectItem key={subj} value={subj}>
+                            {subj}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={section} onValueChange={setSection} disabled={!subject}>
+                    <SelectTrigger className="flex-1 bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
+                      <SelectValue
+                        placeholder={subject ? "All Sections" : "Select subject first"}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sections</SelectItem>
+                      {availableSections.map((sect) => (
+                        <SelectItem key={sect} value={sect}>
+                          {formatAdminSectionOptionLabel(
+                            subject,
+                            sect,
+                            sectionCounts,
+                            sectionCountsLoading,
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    onClick={() => void handleSearchClick()}
+                    disabled={!subject}
+                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Search
+                  </Button>
+                </div>
+                {SUBJECTS_WITH_LEGACY_SECTION_FIX.includes(subject) ? (
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!token || fixingLegacySections}
+                      onClick={() => void startFixLegacySectionCodes()}
+                      className="dark:border-slate-600 dark:text-slate-200"
+                    >
+                      {fixingLegacySections ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin inline" />
+                          Fixing sections…
+                        </>
+                      ) : (
+                        "Fix section codes"
+                      )}
+                    </Button>
+                    <span>
+                      {subject === "APMACRO"
+                        ? "Remap old scrape codes (e.g. EI→EIBC, NI→NIPD, LR→LRCSP, OT→OEITF) to match official units."
+                        : "Remap legacy U0–U9 section codes to official unit codes (GT, NE, LBE, …) on stored questions."}
+                    </span>
+                  </div>
+                ) : null}
+                <RadioGroup
+                  value={rowQualityFilter}
+                  onValueChange={(v) => {
+                    if (
+                      v === "all" ||
+                      v === "missing_explanation" ||
+                      v === "error_reports" ||
+                      v === "unverified" ||
+                      v === "verification_failed"
+                    ) {
+                      setRowQualityFilter(v);
+                    }
+                  }}
+                  className="flex flex-wrap gap-x-6 gap-y-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="all" id="filter-quality-all" />
+                    <Label
+                      htmlFor="filter-quality-all"
+                      className="text-sm font-medium cursor-pointer dark:text-slate-300"
+                    >
+                      All
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value="missing_explanation"
+                      id="filter-quality-missing-explanation"
+                    />
+                    <Label
+                      htmlFor="filter-quality-missing-explanation"
+                      className="text-sm font-medium cursor-pointer dark:text-slate-300"
+                    >
+                      No Explaination
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="error_reports" id="filter-quality-error-reports" />
+                    <Label
+                      htmlFor="filter-quality-error-reports"
+                      className="text-sm font-medium cursor-pointer dark:text-slate-300"
+                    >
+                      Error Reported
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="unverified" id="filter-quality-unverified" />
+                    <Label
+                      htmlFor="filter-quality-unverified"
+                      className="text-sm font-medium cursor-pointer dark:text-slate-300"
+                    >
+                      Un-Verified
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value="verification_failed"
+                      id="filter-quality-verification-failed"
+                    />
+                    <Label
+                      htmlFor="filter-quality-verification-failed"
+                      className="text-sm font-medium cursor-pointer dark:text-slate-300"
+                    >
+                      Verification Failed
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+
+            <Card className="dark:bg-slate-900/60 dark:border-slate-800 border-indigo-500/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 dark:text-white text-lg">
+                  <Sparkles className="w-5 h-5 text-indigo-400" />
+                  GenAI section top-up
+                </CardTitle>
+                <CardDescription className="dark:text-slate-400">
+                  Generate new multiple-choice questions for the selected subject and unit (Gemini).
+                  Uses the same Subject and Section as Filter Questions above.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3 items-end flex-wrap">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                      Questions to add (1–40)
+                    </label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={40}
+                      value={genaiTopupTargetCount}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value, 10);
+                        setGenaiTopupTargetCount(Number.isFinite(v) ? v : 1);
+                      }}
+                      disabled={genaiTopupRunning || !subject || section === "all"}
+                      className="bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                    />
+                  </div>
+                  {genaiTopupRunning ? (
+                    <Button
+                      type="button"
+                      size="lg"
+                      onClick={stopGenaiTopup}
+                      variant="destructive"
+                      className="min-w-[140px] shrink-0"
+                    >
+                      <Square className="w-4 h-4 mr-2" />
+                      Stop
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="lg"
+                      onClick={() => void startGenaiTopup()}
+                      disabled={!subject || section === "all" || !token}
+                      className="shrink-0 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white min-w-[180px]"
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Generate for section
+                    </Button>
+                  )}
+                </div>
+                {genaiTopupProgress ? (
+                  <div className="space-y-2 pt-1">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {genaiTopupProgress.message}
+                    </p>
+                    {genaiTopupProgress.target != null && genaiTopupProgress.target > 0 ? (
+                      <Progress
+                        value={
+                          ((genaiTopupProgress.saved ?? 0) /
+                            Math.max(genaiTopupProgress.target, 1)) *
+                          100
+                        }
+                        className="h-2"
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+
+            <Card className="dark:bg-slate-900/60 dark:border-slate-800 border-emerald-500/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 dark:text-white text-lg">
+                  <BookOpen className="w-5 h-5 text-emerald-400" />
+                  Fast Path micro-lessons
+                </CardTitle>
+                <CardDescription className="dark:text-slate-400">
+                  Generate unit-level read-before-drill content (Firestore{" "}
+                  <code className="text-xs">micro_lessons</code>). Uses Subject above; pick one
+                  Section or All sections.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {microLessonGenRunning ? (
+                    <Button type="button" variant="destructive" onClick={stopMicroLessonGen}>
+                      <Square className="w-4 h-4 mr-2" />
+                      Stop
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        disabled={!subject || !token}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => void startMicroLessonGen(false)}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        {section === "all" ? "Generate all units" : "Generate this unit"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!subject || !token}
+                        onClick={() => void startMicroLessonGen(true)}
+                      >
+                        Force regenerate
+                      </Button>
+                    </>
+                  )}
+                </div>
+                {microLessonGenProgress ? (
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {microLessonGenProgress.message}
+                  </p>
+                ) : null}
+              </CardContent>
+            </Card>
+
+            {/* Questions Table Card */}
+            <Card className="dark:bg-slate-900/60 dark:border-slate-800">
+              <CardHeader className="pb-0">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      <CardTitle className="dark:text-white">
+                        Questions ({displayedItems.length})
+                      </CardTitle>
+                    </div>
+                    <CardDescription>
+                      {rowQualityFilter === "missing_explanation" &&
+                        items.length > 0 &&
+                        "Filter: No Explaination. "}
+                      {rowQualityFilter === "error_reports" &&
+                        items.length > 0 &&
+                        "Filter: Error Reported. "}
+                      {rowQualityFilter === "unverified" &&
+                        items.length > 0 &&
+                        "Filter: Un-Verified. "}
+                      {rowQualityFilter === "verification_failed" &&
+                        items.length > 0 &&
+                        "Filter: Verification Failed. "}
+                      {showOnlyVerificationIncomplete &&
+                        items.length > 0 &&
+                        "Filter: Incomplete Prompt. "}
+                      {showOnlyMixedPrompts &&
+                        items.length > 0 &&
+                        "Filter: Mixed Prompts (text + image choices). "}
+                      {effectiveSelectedCount > 0 && `${effectiveSelectedCount} selected`}
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <Select value={selectedAction} onValueChange={setSelectedAction}>
+                      <SelectTrigger className="w-[280px] bg-white dark:bg-slate-800 dark:text-white dark:border-slate-700">
+                        <SelectValue placeholder="Select Action" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="explanations">Generate Explanations</SelectItem>
+                        <SelectItem value="re-generate-explanations-fresh">
+                          Re-Generate Explanations (overwrite)
+                        </SelectItem>
+                        <SelectItem value="re-generate-explanations">
+                          Reformat Existing Explanations
+                        </SelectItem>
+                        <SelectItem value="study-notes">Generate Study Notes</SelectItem>
+                        <SelectItem value="re-generate-study-notes">
+                          Re-Generate Study Notes
+                        </SelectItem>
+                        <SelectItem value="fix-prompts">Format Questions & Choices</SelectItem>
+                        <SelectItem value="fix-mixed-media-prompts">
+                          Fix Mixed Media Prompts
+                        </SelectItem>
+                        <SelectItem value="grade-difficulty">
+                          Auto-Tag Question Difficulty
+                        </SelectItem>
+                        <SelectItem value="verify-questions">Verify Questions</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {generatingExplanations ? (
+                      <Button onClick={stopAIAction} variant="destructive">
+                        <Square className="w-4 h-4 mr-2" />
+                        Abort
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={executeAIAction}
+                        disabled={effectiveSelectedCount === 0}
+                        className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+                      >
+                        {`Execute (${effectiveSelectedCount})`}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {displayedItems.length > 0 && (
+                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pt-1.5 border-t border-slate-200 dark:border-slate-800">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 m-0 leading-none">
+                      Showing {(questionsPage - 1) * QUESTIONS_PAGE_SIZE + 1}
+                      {"–"}
+                      {Math.min(questionsPage * QUESTIONS_PAGE_SIZE, displayedItems.length)} of{" "}
+                      {displayedItems.length}
+                    </p>
+                    {questionsTotalPages > 1 && (
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          disabled={questionsPage <= 1}
+                          onClick={() => setQuestionsPage((p) => Math.max(1, p - 1))}
+                        >
+                          Previous
+                        </Button>
+                        <span className="text-xs text-slate-600 dark:text-slate-300 leading-none">
+                          Page {questionsPage} of {questionsTotalPages}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          disabled={questionsPage >= questionsTotalPages}
+                          onClick={() =>
+                            setQuestionsPage((p) => Math.min(questionsTotalPages, p + 1))
+                          }
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardHeader>
+              {/* Bulk delete dialog removed from UI */}
+              <CardContent>
+                {(() => {
+                  const status = explanationProgress || lastExplanationSummary;
+                  if (!status) return null;
+
+                  const doneCount =
+                    typeof status.passed === "number"
+                      ? status.passed + status.failed + status.skipped
+                      : status.updated + status.skipped + status.failed;
+
+                  const percent =
+                    status.total > 0
+                      ? Math.round((status.current / Math.max(status.total, 1)) * 100)
+                      : 0;
+
+                  return (
+                    <div className="mb-3">
+                      <div className="h-16 flex items-stretch justify-between rounded-md border border-slate-200/60 bg-slate-50/40 px-3 py-1 text-xs text-slate-700 transition-colors dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-200">
+                        <div className="flex-1 flex flex-col justify-center gap-1 pr-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate">{status.message}</span>
+                            {status.total > 0 && <span className="shrink-0">{percent}%</span>}
+                          </div>
+                          <Progress
+                            value={(status.current / Math.max(status.total || 1, 1)) * 100}
+                            className="h-1.5"
+                          />
+                          <div className="flex flex-wrap gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span className="text-green-600 dark:text-green-400 font-medium">
+                              Done: {doneCount ?? 0}
+                            </span>
+                            <span className="text-amber-500 dark:text-amber-400">
+                              Skipped: {status.skipped}
+                            </span>
+                            <span className="text-red-600 dark:text-red-400">
+                              Failed: {status.failed}
+                            </span>
+                            {typeof status.passed === "number" && (
+                              <span className="text-green-700 dark:text-green-400 font-medium">
+                                Pass: {status.passed}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-start pt-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                            onClick={() => {
+                              setExplanationProgress(null);
+                              setLastExplanationSummary(null);
+                            }}
+                            aria-label="Dismiss status"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                {(showSelectAllFilteredBanner || allFilteredSelected) && (
+                  <div className="mb-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-slate-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-slate-200">
+                    {allFilteredSelected ? (
+                      <>
+                        All {displayedItems.length} questions are selected.{" "}
+                        <button
+                          type="button"
+                          className="font-medium text-blue-700 hover:underline dark:text-blue-400"
+                          onClick={clearQuestionSelection}
+                        >
+                          Clear selection
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        All {paginatedItems.length} questions on this page are selected.{" "}
+                        <button
+                          type="button"
+                          className="font-medium text-blue-700 hover:underline dark:text-blue-400"
+                          onClick={selectAllFilteredQuestions}
+                        >
+                          Select all {displayedItems.length} questions
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+                <div className="overflow-x-auto overflow-y-hidden max-w-full">
+                  <table className="w-full text-sm table-fixed">
+                    <colgroup>
+                      <col className="w-10" />
+                      <col className="w-16" />
+                      <col className="w-14" />
+                      <col style={{ minWidth: 150, maxWidth: 200 }} />
+                      <col style={{ minWidth: 150, maxWidth: 200 }} />
+                      <col className="w-14" />
+                      <col style={{ minWidth: 150, maxWidth: 220 }} />
+                      <col style={{ minWidth: 150, maxWidth: 220 }} />
+                      <col className="w-20" />
+                      <col className="w-16" />
+                      <col style={{ minWidth: 120, maxWidth: 180 }} />
+                      <col style={{ width: "13%" }} />
+                    </colgroup>
+                    <thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700">
+                      <tr>
+                        <th className="p-2 text-center">
+                          <Checkbox
+                            checked={
+                              allPageQuestionsSelected
+                                ? true
+                                : somePageQuestionsSelected
+                                  ? "indeterminate"
+                                  : false
+                            }
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        </th>
+                        <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Subject
+                        </th>
+                        <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Section
+                        </th>
+                        <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Prompt
+                        </th>
+                        <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Choices
+                        </th>
+                        <th className="p-2 text-center font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Ans
+                        </th>
+                        <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Explanation
+                        </th>
+                        <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Study Notes
+                        </th>
+                        <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Difficulty
+                        </th>
+                        <th className="p-2 text-center font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Verify
+                        </th>
+                        <th className="p-2 text-left font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Error reason
+                        </th>
+                        <th className="p-2 text-center font-semibold text-slate-900 dark:text-slate-300 text-xs">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedItems.map((q) => (
+                        <Row
+                          key={q.id}
+                          q={q}
+                          selected={allFilteredSelected || selectedQuestions.has(q.id)}
+                          onToggleSelect={() => toggleQuestion(q.id)}
+                          onSave={updateQuestion}
+                          onDelete={deleteQuestion}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                  {displayedItems.length === 0 && (
+                    <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+                      {items.length > 0 &&
+                      (rowQualityFilter !== "all" ||
+                        showOnlyVerificationIncomplete ||
+                        showOnlyMixedPrompts)
+                        ? "No questions match the current filters."
+                        : "No questions found. Upload a CSV or adjust filters."}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+    </div>
+  );
+}
+
+function getImageUrl(url: string): string {
+  return url;
+}
+
+function Row({
+  q,
+  selected,
+  onToggleSelect,
+  onSave,
+  onDelete,
+}: {
+  q: Question;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onSave: (id: string, patch: Partial<Question>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const renderQuestionPrompt = () => {
+    if (q.prompt_blocks && q.prompt_blocks.length > 0) {
+      return (
+        <div className="text-xs space-y-1 break-words">
+          {q.prompt_blocks.map((block, idx) => {
+            if (block.type === "text") {
+              return <div key={idx}>{truncateText(block.value, 10)}</div>;
+            } else if (block.type === "image") {
+              const imgSrc = getImageUrl(block.url);
+              return (
+                <div key={idx} className="group relative inline-block">
+                  <img
+                    src={imgSrc}
+                    alt={`Question image ${idx + 1}`}
+                    className="h-8 w-auto rounded border border-slate-300 cursor-pointer"
+                  />
+                  <img
+                    src={imgSrc}
+                    alt={`Question image ${idx + 1} enlarged`}
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
+                  />
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+      );
+    }
+
+    const hasImage =
+      q.image_urls?.question &&
+      Array.isArray(q.image_urls.question) &&
+      q.image_urls.question.length > 0;
+    const hasText = q.prompt && q.prompt.trim() !== "";
+
+    if (!hasImage && !hasText) {
+      return <span className="text-slate-400">N/A</span>;
+    }
+
+    return (
+      <div className="text-xs break-words">
+        {hasImage && (
+          <div className="mb-1 space-y-1">
+            {q.image_urls.question.map((url, idx) => {
+              const imgSrc = getImageUrl(url);
+              return (
+                <div key={idx} className="group relative inline-block">
+                  <img
+                    src={imgSrc}
+                    alt={`Question image ${idx + 1}`}
+                    className="h-8 w-auto rounded border border-slate-300 cursor-pointer"
+                  />
+                  <img
+                    src={imgSrc}
+                    alt={`Question image ${idx + 1} enlarged`}
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {hasText && <div>{truncateText(q.prompt, 10)}</div>}
+      </div>
+    );
+  };
+
+  const renderChoice = (choiceKey: "A" | "B" | "C" | "D" | "E") => {
+    if (q.choices && q.choices[choiceKey]) {
+      const blocks = q.choices[choiceKey];
+      return (
+        <div className="text-xs">
+          {blocks.map((block, idx) => {
+            if (block.type === "text") {
+              return <span key={idx}>{truncateText(block.value, 8)}</span>;
+            } else if (block.type === "image") {
+              const imgSrc = getImageUrl(block.url);
+              return (
+                <div key={idx} className="group relative inline-block mr-1">
+                  <img
+                    src={imgSrc}
+                    alt={`Choice ${choiceKey} image ${idx + 1}`}
+                    className="h-6 w-auto rounded border border-slate-300 cursor-pointer"
+                  />
+                  <img
+                    src={imgSrc}
+                    alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
+                  />
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+      );
+    }
+
+    const index = ["A", "B", "C", "D", "E"].indexOf(choiceKey);
+    const choice = Array.isArray(q.choices) ? q.choices[index] : "";
+    const choiceImages = q.image_urls?.[choiceKey];
+    const hasImage = choiceImages && Array.isArray(choiceImages) && choiceImages.length > 0;
+    const hasText = choice && choice.trim() !== "";
+
+    if (!hasImage && !hasText) {
+      return <span className="text-slate-400">N/A</span>;
+    }
+
+    return (
+      <div>
+        {hasImage && (
+          <div className="mb-1 space-x-1">
+            {choiceImages.map((url, idx) => {
+              const imgSrc = getImageUrl(url);
+              return (
+                <div key={idx} className="group relative inline-block">
+                  <img
+                    src={imgSrc}
+                    alt={`Choice ${choiceKey} image ${idx + 1}`}
+                    className="h-6 w-auto rounded border border-slate-300 cursor-pointer"
+                  />
+                  <img
+                    src={imgSrc}
+                    alt={`Choice ${choiceKey} image ${idx + 1} enlarged`}
+                    className="hidden group-hover:block absolute z-50 left-0 top-0 max-w-md w-auto max-h-96 rounded border-2 border-blue-500 shadow-lg"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {hasText && <span>{truncateText(choice, 8)}</span>}
+      </div>
+    );
+  };
+
+  return (
+    <tr className="border-b hover:bg-slate-50 dark:hover:bg-slate-700 dark:border-slate-700">
+      <td className="p-2 text-center align-top">
+        <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
+      </td>
+      <td className="p-2 align-top text-xs break-words dark:text-slate-300">
+        {q.subject_code ? getSubjectDisplayName(q.subject_code) : "-"}
+      </td>
+      <td className="p-2 align-top text-xs break-words dark:text-slate-300">
+        {q.section_code || "-"}
+      </td>
+      <td className="p-2 align-top min-w-[150px] max-w-[200px]">
+        <div className="flex items-start gap-1">
+          <div
+            className="flex-1 min-w-0"
+            title={
+              q.prompt_blocks
+                ? q.prompt_blocks
+                    .filter((b): b is Block => b.type === "text")
+                    .map((b) => (b as { value: string }).value)
+                    .join(" ")
+                : q.prompt || ""
+            }
+          >
+            {renderQuestionPrompt()}
+          </div>
+        </div>
+      </td>
+      <td className="p-2 align-top min-w-[150px] max-w-[200px]">
+        <div className="flex items-start gap-1">
+          <div className="text-xs space-y-1 flex-1 min-w-0">
+            {(["A", "B", "C", "D", "E"] as const).map((letter) => (
+              <div key={letter} className="break-words">
+                <span className="font-medium">{letter}.</span> {renderChoice(letter)}
+              </div>
+            ))}
+          </div>
+        </div>
+      </td>
+      <td className="p-2 text-center align-top font-semibold text-xs">
+        <div className="flex items-center justify-center gap-1">
+          <span>({String.fromCharCode(65 + q.answerIndex)})</span>
+        </div>
+      </td>
+      <td className="p-2 align-top text-xs break-words min-w-[150px] max-w-[220px]">
+        <div className="flex items-start gap-1">
+          <div className="flex-1 min-w-0" title={q.explanation || ""}>
+            <span
+              dangerouslySetInnerHTML={{
+                __html: renderSimpleMarkdownHtml(truncateText(q.explanation || "-", 12)),
+              }}
+            />
+          </div>
+        </div>
+      </td>
+      <td className="p-2 align-top text-xs break-words min-w-[150px] max-w-[220px]">
+        <div className="flex items-start gap-1">
+          <div
+            className="flex-1 min-w-0 text-slate-700 dark:text-slate-300 leading-relaxed"
+            title={getStudyNoteFromQuestion(q) || ""}
+          >
+            {truncateText(getStudyNoteFromQuestion(q) || "-", 12)}
+          </div>
+        </div>
+      </td>
+      <td className="p-2 align-top text-xs break-words dark:text-slate-300">
+        {getDifficultyFromQuestion(q) || "-"}
+      </td>
+      <td className="p-2 text-center align-top text-xs">
+        <VerificationStatusSelect q={q} onSave={onSave} />
+      </td>
+      <td className="p-2 align-top text-xs break-words min-w-[120px] max-w-[180px]">
+        <div className="flex items-start gap-1">
+          <div className="flex-1 min-w-0">
+            {(q.tags || []).includes("error_reported") ? (
+              <div
+                className="text-red-600 dark:text-red-400 font-medium"
+                title={getErrorReasonFromQuestion(q) || "Reported"}
+              >
+                {truncateText(getErrorReasonFromQuestion(q) || "Reported", 10)}
+              </div>
+            ) : (
+              <span className="text-slate-400">-</span>
+            )}
+          </div>
+        </div>
+      </td>
+      <td className="p-2 text-center align-top">
+        <div className="flex gap-1 justify-center flex-col">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setPreviewOpen(true)}
+            className="text-xs px-2 h-7"
+          >
+            <Eye className="h-3.5 w-3.5 mr-1 inline" />
+            Preview
+          </Button>
+          {(q.tags || []).includes("error_reported") && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const newTags = (q.tags || []).filter(
+                  (t) =>
+                    t !== "error_reported" &&
+                    !t.startsWith("error_reason:") &&
+                    !t.startsWith("error_details:"),
+                );
+                onSave(q.id, { tags: newTags });
+              }}
+              className="text-xs px-2 h-7 border-blue-500 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl"
+            >
+              Mark fixed
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => onDelete(q.id)}
+            className="text-xs px-2 h-7"
+          >
+            Delete
+          </Button>
+        </div>
+        <AdminQuestionQuizPreviewDialog
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          question={q}
+        />
+      </td>
+    </tr>
+  );
+}

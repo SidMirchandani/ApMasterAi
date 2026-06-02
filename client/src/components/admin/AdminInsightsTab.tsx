@@ -6,8 +6,28 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, PieChart, Pie } from "recharts";
-import { Users, MessageCircle, Loader2, Calendar, BookOpen, MapPin, ClipboardList, ListChecks } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Cell,
+  PieChart,
+  Pie,
+} from "recharts";
+import {
+  Users,
+  MessageCircle,
+  Loader2,
+  Calendar,
+  BookOpen,
+  MapPin,
+  ClipboardList,
+  ListChecks,
+} from "lucide-react";
 import {
   SUBJECT_DISPLAY_NAMES,
   getSubjectDisplayName,
@@ -134,7 +154,9 @@ function formatChartDate(dateStr: string) {
     new Intl.DateTimeFormat("en-US", { timeZone: CHART_TIMEZONE, year: "numeric" }).format(d),
   );
   const thisYearEt = Number(
-    new Intl.DateTimeFormat("en-US", { timeZone: CHART_TIMEZONE, year: "numeric" }).format(new Date()),
+    new Intl.DateTimeFormat("en-US", { timeZone: CHART_TIMEZONE, year: "numeric" }).format(
+      new Date(),
+    ),
   );
   return d.toLocaleDateString("en-US", {
     timeZone: CHART_TIMEZONE,
@@ -225,7 +247,8 @@ function RegionDonutOutsideLabel(props: {
   const cy = Number(props.cy);
   const midAngle = Number(props.midAngle) || 0;
   const outerR = Number(props.outerRadius);
-  if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(outerR) || outerR <= 0) return null;
+  if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(outerR) || outerR <= 0)
+    return null;
   if (typeof props.percent === "number" && props.percent > 0 && props.percent < 0.022) return null;
 
   const labelName = String(props.name ?? props.payload?.name ?? "");
@@ -243,7 +266,9 @@ function RegionDonutOutsideLabel(props: {
   const ex = mx + (isRight ? 1 : -1) * horiz;
   const ey = my;
   const dotFill =
-    typeof props.payload?.fill === "string" && props.payload.fill ? props.payload.fill : "hsl(217, 91%, 50%)";
+    typeof props.payload?.fill === "string" && props.payload.fill
+      ? props.payload.fill
+      : "hsl(217, 91%, 50%)";
   const text = `${labelName} (${labelValue.toLocaleString()})`;
 
   return (
@@ -276,6 +301,11 @@ type GeoSnapshot = Pick<
   InsightsData,
   "usersByState" | "internationalRegionCount" | "statesWithUsersCount"
 >;
+
+const INSIGHTS_PART_CACHE_TTL_MS = 2 * 60 * 1000;
+type InsightsPartCacheEntry<T> = { data: T; at: number };
+const summaryInsightsCache = new Map<string, InsightsPartCacheEntry<Partial<InsightsData>>>();
+const geoInsightsCache = new Map<string, InsightsPartCacheEntry<GeoSnapshot>>();
 
 export function AdminInsightsTab({ token }: { token: string }) {
   const narrow = useNarrowInsights(640);
@@ -322,8 +352,10 @@ export function AdminInsightsTab({ token }: { token: string }) {
       averageApScoreLift: a.averageApScoreLift ?? s.averageApScoreLift,
       averageApScoreLiftBySubject: a.averageApScoreLiftBySubject ?? s.averageApScoreLiftBySubject,
       usersByState: g?.usersByState ?? a.usersByState ?? s.usersByState ?? [],
-      internationalRegionCount: g?.internationalRegionCount ?? a.internationalRegionCount ?? s.internationalRegionCount,
-      statesWithUsersCount: g?.statesWithUsersCount ?? a.statesWithUsersCount ?? s.statesWithUsersCount ?? 0,
+      internationalRegionCount:
+        g?.internationalRegionCount ?? a.internationalRegionCount ?? s.internationalRegionCount,
+      statesWithUsersCount:
+        g?.statesWithUsersCount ?? a.statesWithUsersCount ?? s.statesWithUsersCount ?? 0,
       totalQuizzesTaken: s.totalQuizzesTaken ?? 0,
       totalStudentQuestionAttempts: s.totalStudentQuestionAttempts ?? 0,
       signUpsOverTime: a.signUpsOverTime ?? [],
@@ -348,6 +380,13 @@ export function AdminInsightsTab({ token }: { token: string }) {
 
   useEffect(() => {
     if (!token) return;
+    const cached = summaryInsightsCache.get(token);
+    if (cached && Date.now() - cached.at < INSIGHTS_PART_CACHE_TTL_MS) {
+      setSummary(cached.data);
+      setSummaryLoading(false);
+      setSummaryError(null);
+      return;
+    }
     setSummaryLoading(true);
     setSummaryError(null);
     fetch("/api/admin/insights?part=summary", { headers: { Authorization: `Bearer ${token}` } })
@@ -356,7 +395,9 @@ export function AdminInsightsTab({ token }: { token: string }) {
         return res.json();
       })
       .then((json) => {
-        setSummary(json.data || null);
+        const payload = json.data || null;
+        setSummary(payload);
+        if (payload) summaryInsightsCache.set(token, { data: payload, at: Date.now() });
       })
       .catch((err) => setSummaryError(err.message))
       .finally(() => setSummaryLoading(false));
@@ -364,6 +405,13 @@ export function AdminInsightsTab({ token }: { token: string }) {
 
   useEffect(() => {
     if (!token) return;
+    const cached = geoInsightsCache.get(token);
+    if (cached && Date.now() - cached.at < INSIGHTS_PART_CACHE_TTL_MS) {
+      setGeoSnapshot(cached.data);
+      setGeoLoading(false);
+      setGeoError(null);
+      return;
+    }
     setGeoLoading(true);
     setGeoError(null);
     fetch("/api/admin/insights?part=geo", { headers: { Authorization: `Bearer ${token}` } })
@@ -374,6 +422,7 @@ export function AdminInsightsTab({ token }: { token: string }) {
       .then((json) => {
         const payload = json.data || null;
         setGeoSnapshot(payload);
+        if (payload) geoInsightsCache.set(token, { data: payload, at: Date.now() });
       })
       .catch((err) => setGeoError(err.message))
       .finally(() => setGeoLoading(false));
@@ -430,23 +479,31 @@ export function AdminInsightsTab({ token }: { token: string }) {
   }
 
   const hasSignupData =
-    data.signUpsOverTime.length > 0 &&
-    data.signUpsOverTime.some((p) => p.cumulative > 0);
+    data.signUpsOverTime.length > 0 && data.signUpsOverTime.some((p) => p.cumulative > 0);
 
-  const enrollmentsOverTime = useMemo(() => data.enrollmentsOverTime ?? [], [data.enrollmentsOverTime]);
+  const enrollmentsOverTime = useMemo(
+    () => data.enrollmentsOverTime ?? [],
+    [data.enrollmentsOverTime],
+  );
   const hasEnrollmentData = useMemo(
     () => enrollmentsOverTime.length > 0 && enrollmentsOverTime.some((p) => p.cumulative > 0),
     [enrollmentsOverTime],
   );
-  const signupDates = useMemo(() => data.signUpsOverTime.map((p) => p.date), [data.signUpsOverTime]);
-  const enrollmentDates = useMemo(() => enrollmentsOverTime.map((p) => p.date), [enrollmentsOverTime]);
+  const signupDates = useMemo(
+    () => data.signUpsOverTime.map((p) => p.date),
+    [data.signUpsOverTime],
+  );
+  const enrollmentDates = useMemo(
+    () => enrollmentsOverTime.map((p) => p.date),
+    [enrollmentsOverTime],
+  );
   const axisTickBudget = narrow ? 6 : 11;
   const signupXTicks = getXAxisTicks(signupDates, axisTickBudget);
   const enrollmentXTicks = getXAxisTicks(enrollmentDates, axisTickBudget);
 
   const liftBarRows = SHOW_AVERAGE_AP_SCORE_LIFT_UI
     ? [...(data.averageApScoreLiftBySubject ?? [])].sort((a, b) =>
-        compareSubjectsByShortName(a.subjectId, b.subjectId)
+        compareSubjectsByShortName(a.subjectId, b.subjectId),
       )
     : [];
   const hasLiftBySubject =
@@ -469,7 +526,9 @@ export function AdminInsightsTab({ token }: { token: string }) {
   const usersByState = data.usersByState ?? [];
   const hasUsersByState = usersByState.some((s) => s.count > 0);
   const statePieData = useMemo(() => {
-    const usersByStateSorted = [...usersByState].filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
+    const usersByStateSorted = [...usersByState]
+      .filter((s) => s.count > 0)
+      .sort((a, b) => b.count - a.count);
     return usersByStateSorted.map((s, index) => {
       const code =
         s.stateCode === "International" ? "International" : s.stateCode.trim().toUpperCase();
@@ -481,8 +540,9 @@ export function AdminInsightsTab({ token }: { token: string }) {
   }, [usersByState]);
   const totalAttributedUsers = statePieData.reduce((sum, row) => sum + row.value, 0);
   const singleRegion = statePieData.length === 1 ? statePieData[0] : null;
-  const regionChartHeight =
-    singleRegion ? 300 : Math.min(500, 250 + Math.min(statePieData.length, 12) * 18);
+  const regionChartHeight = singleRegion
+    ? 300
+    : Math.min(500, 250 + Math.min(statePieData.length, 12) * 18);
   const regionDonutRadii =
     statePieData.length > 14
       ? narrow
@@ -552,36 +612,36 @@ export function AdminInsightsTab({ token }: { token: string }) {
           const showStatesUnavailable = item.needsGeo && geoError && !geoSnapshot;
           const valueDisplay = showStatesUnavailable ? "—" : item.display;
           return (
-          <motion.div
-            key={item.key}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.05 * i }}
-          >
-            <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                  {item.label}
-                </CardTitle>
-                <item.icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {kpiPending ? (
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-8 w-28" />
-                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-blue-500/70" />
-                  </div>
-                ) : (
-                <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {valueDisplay}
-                </div>
-                )}
-                {item.sub ? (
-                  <p className="text-xs text-muted-foreground mt-1.5 leading-snug">{item.sub}</p>
-                ) : null}
-              </CardContent>
-            </Card>
-          </motion.div>
+            <motion.div
+              key={item.key}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.05 * i }}
+            >
+              <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    {item.label}
+                  </CardTitle>
+                  <item.icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  {kpiPending ? (
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-8 w-28" />
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-blue-500/70" />
+                    </div>
+                  ) : (
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {valueDisplay}
+                    </div>
+                  )}
+                  {item.sub ? (
+                    <p className="text-xs text-muted-foreground mt-1.5 leading-snug">{item.sub}</p>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
       </div>
@@ -602,7 +662,9 @@ export function AdminInsightsTab({ token }: { token: string }) {
               <Skeleton className="h-4 w-72 mt-2 max-w-full" />
             </CardHeader>
             <CardContent>
-              <Skeleton className={narrow ? "h-[220px] w-full rounded-lg" : "h-[280px] w-full rounded-lg"} />
+              <Skeleton
+                className={narrow ? "h-[220px] w-full rounded-lg" : "h-[280px] w-full rounded-lg"}
+              />
             </CardContent>
           </Card>
           <div className="flex flex-wrap items-center gap-2">
@@ -659,196 +721,215 @@ export function AdminInsightsTab({ token }: { token: string }) {
       ) : null}
 
       {/* Users by inferred region (US state) — donut + legend / single-region hero (stable while changing date range) */}
-      {hasUsersByState && (geoSnapshot != null || !!analytics) && !(analyticsError && !analytics && !geoSnapshot) && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-visible">
-            <CardHeader className="pb-2">
-              <CardTitle className="dark:text-white">Users by Region</CardTitle>
-              <CardDescription className="dark:text-slate-400">
-                Inferred from IP —{" "}
-                <span className="text-slate-600 dark:text-slate-300 font-medium tabular-nums">
-                  {totalAttributedUsers.toLocaleString()} {totalAttributedUsers === 1 ? "User" : "Users"}
-                </span>{" "}
-                across {statesWithUsers} US {statesWithUsers === 1 ? "state" : "states"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-1 pb-3 overflow-visible">
-              {singleRegion ? (
-                <div className="flex flex-col items-center justify-center gap-5 py-1">
-                  <div className={`relative shrink-0 ${narrow ? "h-[250px] w-[250px]" : "h-[300px] w-[300px]"}`}>
-                    <ChartContainer
-                      config={chartConfig}
-                      className="aspect-auto absolute inset-0 h-full w-full [&_.recharts-responsive-container]:!h-full [&_.recharts-responsive-container]:!w-full"
+      {hasUsersByState &&
+        (geoSnapshot != null || !!analytics) &&
+        !(analyticsError && !analytics && !geoSnapshot) && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-visible">
+              <CardHeader className="pb-2">
+                <CardTitle className="dark:text-white">Users by Region</CardTitle>
+                <CardDescription className="dark:text-slate-400">
+                  Inferred from IP —{" "}
+                  <span className="text-slate-600 dark:text-slate-300 font-medium tabular-nums">
+                    {totalAttributedUsers.toLocaleString()}{" "}
+                    {totalAttributedUsers === 1 ? "User" : "Users"}
+                  </span>{" "}
+                  across {statesWithUsers} US {statesWithUsers === 1 ? "state" : "states"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-1 pb-3 overflow-visible">
+                {singleRegion ? (
+                  <div className="flex flex-col items-center justify-center gap-5 py-1">
+                    <div
+                      className={`relative shrink-0 ${narrow ? "h-[250px] w-[250px]" : "h-[300px] w-[300px]"}`}
                     >
-                      <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
-                        <Pie
-                          data={statePieData}
-                          dataKey="value"
-                          nameKey="abbr"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={narrow ? "58%" : "60%"}
-                          outerRadius={narrow ? "88%" : "90%"}
-                          paddingAngle={0}
-                          strokeWidth={0}
-                          labelLine={false}
-                          isAnimationActive={false}
-                          label={false}
-                        >
-                          {statePieData.map((entry) => (
-                            <Cell key={`state-${entry.code}`} fill={entry.fill} className="stroke-transparent" />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ChartContainer>
-                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-                      <span className="text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-slate-900 dark:text-white">
-                        {singleRegion.value.toLocaleString()}
-                      </span>
-                      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground mt-1">
-                        users
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-center space-y-3 max-w-sm">
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Region</p>
-                      <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-0.5">
-                        {singleRegion.fullName}
-                      </p>
-                    </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      All attributed signups map to this state so far. When more states appear, you will see a
-                      breakdown here.
-                    </p>
-                    <div className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50 px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-300">
-                      100% of attributed users
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3 lg:gap-4 min-w-0">
-                  <div
-                    className="mx-auto w-full max-w-[520px] shrink-0 pt-0 min-w-0"
-                    style={{ height: regionChartHeight }}
-                  >
-                    <ChartContainer
-                      config={chartConfig}
-                      className="aspect-auto h-full w-full overflow-visible [&_.recharts-responsive-container]:!h-full [&_.recharts-responsive-container]:!w-full [&_.recharts-surface]:overflow-visible [&_.recharts-wrapper]:overflow-visible"
-                    >
-                      <PieChart
-                        margin={{
-                          top: narrow ? 22 : 28,
-                          bottom: narrow ? 18 : 24,
-                          left: narrow ? 68 : 88,
-                          right: narrow ? 68 : 88,
-                        }}
+                      <ChartContainer
+                        config={chartConfig}
+                        className="aspect-auto absolute inset-0 h-full w-full [&_.recharts-responsive-container]:!h-full [&_.recharts-responsive-container]:!w-full"
                       >
-                        <ChartTooltip
-                          content={({ active, payload }) => {
-                            if (!active || !payload?.length) return null;
-                            const p = payload[0].payload as {
-                              fullName: string;
-                              abbr: string;
-                              value: number;
-                              fill?: string;
-                            };
-                            const pct =
-                              totalAttributedUsers > 0
-                                ? ((p.value / totalAttributedUsers) * 100).toFixed(1)
-                                : "0";
-                            return (
-                              <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
-                                <div className="font-medium">{p.fullName}</div>
-                                <div className="mt-1 text-muted-foreground">
-                                  {p.value.toLocaleString()} users · {pct}%
-                                </div>
-                              </div>
-                            );
-                          }}
-                        />
-                        <Pie
-                          data={statePieData}
-                          dataKey="value"
-                          nameKey="abbr"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={regionDonutRadii.inner}
-                          outerRadius={regionDonutRadii.outer}
-                          paddingAngle={statePieData.length > 1 ? 0.6 : 0}
-                          strokeWidth={0}
-                          labelLine={false}
-                          isAnimationActive={false}
-                          label={(labelProps) => <RegionDonutOutsideLabel {...labelProps} />}
-                        >
-                          {statePieData.map((entry) => (
-                            <Cell key={`state-${entry.code}`} fill={entry.fill} className="stroke-transparent" />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ChartContainer>
-                  </div>
-                  <ul
-                    className="flex-1 min-w-0 list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1.5 content-start"
-                    aria-label="Users by region breakdown"
-                  >
-                    {statePieData.map((row) => {
-                      const pct =
-                        totalAttributedUsers > 0 ? (row.value / totalAttributedUsers) * 100 : 0;
-                      return (
-                        <li
-                          key={row.code}
-                          className="min-w-0 rounded-md border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20 px-2 py-1.5"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span
-                                className="h-2 w-2 shrink-0 rounded-full shadow-sm"
-                                style={{ backgroundColor: row.fill }}
-                                aria-hidden
-                              />
-                              <span
-                                className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate"
-                                title={row.code === "International" ? row.fullName : `${row.fullName} (${row.abbr})`}
-                              >
-                                {row.fullName}
-                              </span>
-                            </div>
-                            <div className="flex items-baseline gap-1.5 shrink-0 tabular-nums text-xs">
-                              <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                {row.value.toLocaleString()}
-                              </span>
-                              <span className="text-muted-foreground">
-                                {pct >= 0.1 ? `${pct.toFixed(1)}%` : "<0.1%"}
-                              </span>
-                            </div>
-                          </div>
-                          <div
-                            className="mt-1 h-1 rounded-full bg-slate-200/80 dark:bg-slate-700/80 overflow-hidden"
-                            role="presentation"
+                        <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+                          <Pie
+                            data={statePieData}
+                            dataKey="value"
+                            nameKey="abbr"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={narrow ? "58%" : "60%"}
+                            outerRadius={narrow ? "88%" : "90%"}
+                            paddingAngle={0}
+                            strokeWidth={0}
+                            labelLine={false}
+                            isAnimationActive={false}
+                            label={false}
                           >
+                            {statePieData.map((entry) => (
+                              <Cell
+                                key={`state-${entry.code}`}
+                                fill={entry.fill}
+                                className="stroke-transparent"
+                              />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ChartContainer>
+                      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+                        <span className="text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-slate-900 dark:text-white">
+                          {singleRegion.value.toLocaleString()}
+                        </span>
+                        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground mt-1">
+                          users
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-center space-y-3 max-w-sm">
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                          Region
+                        </p>
+                        <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-0.5">
+                          {singleRegion.fullName}
+                        </p>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        All attributed signups map to this state so far. When more states appear,
+                        you will see a breakdown here.
+                      </p>
+                      <div className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50 px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                        100% of attributed users
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 lg:gap-4 min-w-0">
+                    <div
+                      className="mx-auto w-full max-w-[520px] shrink-0 pt-0 min-w-0"
+                      style={{ height: regionChartHeight }}
+                    >
+                      <ChartContainer
+                        config={chartConfig}
+                        className="aspect-auto h-full w-full overflow-visible [&_.recharts-responsive-container]:!h-full [&_.recharts-responsive-container]:!w-full [&_.recharts-surface]:overflow-visible [&_.recharts-wrapper]:overflow-visible"
+                      >
+                        <PieChart
+                          margin={{
+                            top: narrow ? 22 : 28,
+                            bottom: narrow ? 18 : 24,
+                            left: narrow ? 68 : 88,
+                            right: narrow ? 68 : 88,
+                          }}
+                        >
+                          <ChartTooltip
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const p = payload[0].payload as {
+                                fullName: string;
+                                abbr: string;
+                                value: number;
+                                fill?: string;
+                              };
+                              const pct =
+                                totalAttributedUsers > 0
+                                  ? ((p.value / totalAttributedUsers) * 100).toFixed(1)
+                                  : "0";
+                              return (
+                                <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
+                                  <div className="font-medium">{p.fullName}</div>
+                                  <div className="mt-1 text-muted-foreground">
+                                    {p.value.toLocaleString()} users · {pct}%
+                                  </div>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Pie
+                            data={statePieData}
+                            dataKey="value"
+                            nameKey="abbr"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={regionDonutRadii.inner}
+                            outerRadius={regionDonutRadii.outer}
+                            paddingAngle={statePieData.length > 1 ? 0.6 : 0}
+                            strokeWidth={0}
+                            labelLine={false}
+                            isAnimationActive={false}
+                            label={(labelProps) => <RegionDonutOutsideLabel {...labelProps} />}
+                          >
+                            {statePieData.map((entry) => (
+                              <Cell
+                                key={`state-${entry.code}`}
+                                fill={entry.fill}
+                                className="stroke-transparent"
+                              />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ChartContainer>
+                    </div>
+                    <ul
+                      className="flex-1 min-w-0 list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1.5 content-start"
+                      aria-label="Users by region breakdown"
+                    >
+                      {statePieData.map((row) => {
+                        const pct =
+                          totalAttributedUsers > 0 ? (row.value / totalAttributedUsers) * 100 : 0;
+                        return (
+                          <li
+                            key={row.code}
+                            className="min-w-0 rounded-md border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20 px-2 py-1.5"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className="h-2 w-2 shrink-0 rounded-full shadow-sm"
+                                  style={{ backgroundColor: row.fill }}
+                                  aria-hidden
+                                />
+                                <span
+                                  className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate"
+                                  title={
+                                    row.code === "International"
+                                      ? row.fullName
+                                      : `${row.fullName} (${row.abbr})`
+                                  }
+                                >
+                                  {row.fullName}
+                                </span>
+                              </div>
+                              <div className="flex items-baseline gap-1.5 shrink-0 tabular-nums text-xs">
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                  {row.value.toLocaleString()}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {pct >= 0.1 ? `${pct.toFixed(1)}%` : "<0.1%"}
+                                </span>
+                              </div>
+                            </div>
                             <div
-                              className="h-full rounded-full transition-all"
-                              style={{
-                                width: `${Math.min(100, pct)}%`,
-                                backgroundColor: row.fill,
-                              }}
-                            />
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+                              className="mt-1 h-1 rounded-full bg-slate-200/80 dark:bg-slate-700/80 overflow-hidden"
+                              role="presentation"
+                            >
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{
+                                  width: `${Math.min(100, pct)}%`,
+                                  backgroundColor: row.fill,
+                                }}
+                              />
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
       {/* Average AP Score Lift per Subject — hidden unless SHOW_AVERAGE_AP_SCORE_LIFT_UI; API still returns lift data. */}
       {analytics && !analyticsError && hasLiftBySubject && (
@@ -902,382 +983,450 @@ export function AdminInsightsTab({ token }: { token: string }) {
       )}
 
       {analytics && !analyticsError ? (
-      <div className="relative">
-      {rangeChartsLoading ? (
-        <div className="absolute right-0 top-0 z-10 flex items-center gap-2 rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm border border-border/50">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500/80" />
-          Updating charts…
+        <div className="relative">
+          {rangeChartsLoading ? (
+            <div className="absolute right-0 top-0 z-10 flex items-center gap-2 rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm border border-border/50">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500/80" />
+              Updating charts…
+            </div>
+          ) : null}
+          <>
+            {/* Date range selector */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                Date Range (US Eastern):
+              </span>
+              {RANGE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setDateRange(opt.value)}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    dateRange === opt.value
+                      ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-white"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted dark:bg-slate-700 dark:hover:bg-slate-600"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => {
+                  setCustomStartDate(e.target.value);
+                  setDateRange("custom");
+                }}
+                className="rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground"
+                aria-label="Start date"
+                title="Start Pick"
+              />
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => {
+                  setCustomEndDate(e.target.value);
+                  setDateRange("custom");
+                }}
+                className="rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground"
+                aria-label="End date"
+                title="End Pick"
+              />
+            </div>
+
+            <div className="space-y-6 mt-4">
+              {/* Hero: Cumulative signups */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="dark:bg-slate-900/70 dark:border-slate-800 overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl dark:text-white">
+                      Cumulative Signups Over Time
+                    </CardTitle>
+                    <CardDescription className="dark:text-slate-400">
+                      Total Registered Users Over Time
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {hasSignupData ? (
+                      <ChartContainer
+                        config={chartConfig}
+                        className="aspect-auto h-[320px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
+                      >
+                        <AreaChart
+                          data={data.signUpsOverTime}
+                          margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 36 : 28 }}
+                        >
+                          <defs>
+                            <linearGradient id="cumulativeGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.5} />
+                              <stop
+                                offset="100%"
+                                stopColor="hsl(142, 76%, 36%)"
+                                stopOpacity={0.05}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis
+                            dataKey="date"
+                            {...(signupXTicks
+                              ? { ticks: signupXTicks, interval: 0 as const }
+                              : { minTickGap: 28 })}
+                            tick={{ fontSize: narrow ? 10 : 11 }}
+                            tickMargin={6}
+                            tickFormatter={(v) => formatAxisDate(String(v), narrow)}
+                            angle={narrow && signupDates.length > 18 ? -35 : 0}
+                            textAnchor={narrow && signupDates.length > 18 ? "end" : "middle"}
+                            height={narrow && signupDates.length > 18 ? 48 : 28}
+                          />
+                          <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 40 : 52} />
+                          <ChartTooltip
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const p = payload[0].payload as SignUpPoint;
+                              return (
+                                <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
+                                  <div className="font-medium">{formatChartDate(p.date)}</div>
+                                  <div className="mt-1 text-muted-foreground">
+                                    New: {p.count.toLocaleString()} · Total:{" "}
+                                    {p.cumulative.toLocaleString()}
+                                  </div>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="cumulative"
+                            stroke="hsl(142, 76%, 36%)"
+                            strokeWidth={2}
+                            fill="url(#cumulativeGradient)"
+                          />
+                        </AreaChart>
+                      </ChartContainer>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-[280px] text-center text-slate-500 dark:text-slate-400">
+                        <Users className="h-12 w-12 mb-3 opacity-50" />
+                        <p className="font-medium">No Signups Yet</p>
+                        <p className="text-sm mt-1">
+                          Cumulative Signups Will Appear Here Once Users Join.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Daily signups (secondary) – bar chart, same x-axis range as Cumulative */}
+              {hasSignupData && data.signUpsOverTime.some((p) => p.count > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.15 }}
+                >
+                  <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="dark:text-white">New Signups Per Day</CardTitle>
+                      <CardDescription className="dark:text-slate-400">
+                        Daily Registration Count
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ChartContainer
+                        config={chartConfig}
+                        className="aspect-auto h-[220px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
+                      >
+                        <BarChart
+                          data={data.signUpsOverTime}
+                          margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 40 : 32 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis
+                            dataKey="date"
+                            {...(signupXTicks
+                              ? { ticks: signupXTicks, interval: 0 as const }
+                              : { minTickGap: 32 })}
+                            tick={{ fontSize: narrow ? 10 : 11 }}
+                            tickMargin={6}
+                            tickFormatter={(v) => formatAxisDate(String(v), narrow)}
+                            angle={narrow && signupDates.length > 14 ? -40 : 0}
+                            textAnchor={narrow && signupDates.length > 14 ? "end" : "middle"}
+                            height={narrow && signupDates.length > 14 ? 52 : 30}
+                          />
+                          <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 36 : 48} />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar
+                            dataKey="count"
+                            fill="var(--color-signups)"
+                            radius={[4, 4, 0, 0]}
+                            name="New Signups"
+                          />
+                        </BarChart>
+                      </ChartContainer>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Cumulative subjects enrolled over time */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <Card className="dark:bg-slate-900/70 dark:border-slate-800 overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl dark:text-white">
+                      Cumulative Subjects Enrolled Over Time
+                    </CardTitle>
+                    <CardDescription className="dark:text-slate-400">
+                      Total Subject Enrollments Over Time
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {hasEnrollmentData ? (
+                      <ChartContainer
+                        config={chartConfig}
+                        className="aspect-auto h-[320px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
+                      >
+                        <AreaChart
+                          data={enrollmentsOverTime}
+                          margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 36 : 28 }}
+                        >
+                          <defs>
+                            <linearGradient
+                              id="enrollmentCumulativeGradient"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop offset="0%" stopColor="hsl(200, 70%, 40%)" stopOpacity={0.5} />
+                              <stop
+                                offset="100%"
+                                stopColor="hsl(200, 70%, 40%)"
+                                stopOpacity={0.05}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis
+                            dataKey="date"
+                            {...(enrollmentXTicks
+                              ? { ticks: enrollmentXTicks, interval: 0 as const }
+                              : { minTickGap: 28 })}
+                            tick={{ fontSize: narrow ? 10 : 11 }}
+                            tickMargin={6}
+                            tickFormatter={(v) => formatAxisDate(String(v), narrow)}
+                            angle={narrow && enrollmentDates.length > 18 ? -35 : 0}
+                            textAnchor={narrow && enrollmentDates.length > 18 ? "end" : "middle"}
+                            height={narrow && enrollmentDates.length > 18 ? 48 : 28}
+                          />
+                          <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 40 : 52} />
+                          <ChartTooltip
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const p = payload[0].payload as SignUpPoint;
+                              return (
+                                <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
+                                  <div className="font-medium">{formatChartDate(p.date)}</div>
+                                  <div className="mt-1 text-muted-foreground">
+                                    New: {p.count.toLocaleString()} · Total:{" "}
+                                    {p.cumulative.toLocaleString()}
+                                  </div>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="cumulative"
+                            stroke="hsl(200, 70%, 40%)"
+                            strokeWidth={2}
+                            fill="url(#enrollmentCumulativeGradient)"
+                          />
+                        </AreaChart>
+                      </ChartContainer>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-[280px] text-center text-slate-500 dark:text-slate-400">
+                        <BookOpen className="h-12 w-12 mb-3 opacity-50" />
+                        <p className="font-medium">No Enrollment History Yet</p>
+                        <p className="text-sm mt-1">
+                          Enrollment Over Time Will Appear When Enrollment Timestamps Are Available.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* New subjects enrolled per day */}
+              {hasEnrollmentData && enrollmentsOverTime.some((p) => p.count > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.15 }}
+                >
+                  <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="dark:text-white">
+                        New Subjects Enrolled Per Day
+                      </CardTitle>
+                      <CardDescription className="dark:text-slate-400">
+                        Daily Subject Enrollment Count
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ChartContainer
+                        config={chartConfig}
+                        className="aspect-auto h-[220px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
+                      >
+                        <BarChart
+                          data={enrollmentsOverTime}
+                          margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 40 : 32 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis
+                            dataKey="date"
+                            {...(enrollmentXTicks
+                              ? { ticks: enrollmentXTicks, interval: 0 as const }
+                              : { minTickGap: 32 })}
+                            tick={{ fontSize: narrow ? 10 : 11 }}
+                            tickMargin={6}
+                            tickFormatter={(v) => formatAxisDate(String(v), narrow)}
+                            angle={narrow && enrollmentDates.length > 14 ? -40 : 0}
+                            textAnchor={narrow && enrollmentDates.length > 14 ? "end" : "middle"}
+                            height={narrow && enrollmentDates.length > 14 ? 52 : 30}
+                          />
+                          <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 36 : 48} />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar
+                            dataKey="count"
+                            fill="hsl(200, 70%, 40%)"
+                            radius={[4, 4, 0, 0]}
+                            name="New Enrollments"
+                          />
+                        </BarChart>
+                      </ChartContainer>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Course enrollments with display names */}
+              {courseEnrollmentsOrdered.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="dark:text-white">Enrollments by Subject</CardTitle>
+                      <CardDescription className="dark:text-slate-400">
+                        New enrollments per subject with a recorded date in{" "}
+                        {getRangeLabel(dateRange, customStartDate, customEndDate)}
+                        {dateRange === "ytd" ? " (year to date)" : ""}. Matches the date range
+                        control above.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ChartContainer
+                        config={chartConfig}
+                        className="w-full aspect-auto min-h-0 [&_.recharts-wrapper]:min-w-0"
+                        style={{
+                          height: Math.max(
+                            320,
+                            courseEnrollmentsOrdered.length * (narrow ? 32 : 36),
+                          ),
+                        }}
+                      >
+                        <BarChart
+                          data={courseEnrollmentsOrdered.map((e) => ({
+                            ...e,
+                            label: chartLabelForSubject(e.displayName, e.subjectId),
+                            labelCompact: getSubjectShortName(e.subjectId),
+                            fullName: fullSubjectName(e.displayName, e.subjectId),
+                          }))}
+                          margin={{
+                            top: 12,
+                            right: narrow ? 8 : 16,
+                            left: narrow ? 4 : 8,
+                            bottom: 44,
+                          }}
+                          layout="vertical"
+                        >
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis
+                            type="number"
+                            tick={{ fontSize: narrow ? 10 : 12 }}
+                            tickMargin={10}
+                            allowDecimals={false}
+                            domain={[0, "auto"]}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="labelCompact"
+                            width={narrow ? 100 : 120}
+                            interval={0}
+                            tick={{ fontSize: narrow ? 10 : 12 }}
+                            tickMargin={4}
+                          />
+                          <ChartTooltip
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const p = payload[0].payload as CourseEnrollment & {
+                                fullName?: string;
+                              };
+                              return (
+                                <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
+                                  <div className="font-medium">
+                                    {p.fullName ?? chartLabelForSubject(p.displayName, p.subjectId)}
+                                  </div>
+                                  <div className="mt-1 text-muted-foreground">
+                                    Enrollments: {p.count.toLocaleString()}
+                                  </div>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Enrollments">
+                            {courseEnrollmentsOrdered.map((_, index) => (
+                              <Cell key={index} fill={getEnrollmentBarShade(index)} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ChartContainer>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </div>
+          </>
         </div>
       ) : null}
-      <>
-      {/* Date range selector */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-slate-500 dark:text-slate-400">Date Range (US Eastern):</span>
-        {RANGE_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setDateRange(opt.value)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              dateRange === opt.value
-                ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-white"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted dark:bg-slate-700 dark:hover:bg-slate-600"
-            }`}
+
+      {analytics &&
+        !analyticsError &&
+        !rangeChartsLoading &&
+        !hasSignupData &&
+        courseEnrollmentsOrdered.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25 }}
           >
-            {opt.label}
-          </button>
-        ))}
-        <input
-          type="date"
-          value={customStartDate}
-          onChange={(e) => {
-            setCustomStartDate(e.target.value);
-            setDateRange("custom");
-          }}
-          className="rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground"
-          aria-label="Start date"
-          title="Start Pick"
-        />
-        <input
-          type="date"
-          value={customEndDate}
-          onChange={(e) => {
-            setCustomEndDate(e.target.value);
-            setDateRange("custom");
-          }}
-          className="rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground"
-          aria-label="End date"
-          title="End Pick"
-        />
-      </div>
-
-      <div className="space-y-6 mt-4">
-      {/* Hero: Cumulative signups */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <Card className="dark:bg-slate-900/70 dark:border-slate-800 overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl dark:text-white">Cumulative Signups Over Time</CardTitle>
-            <CardDescription className="dark:text-slate-400">Total Registered Users Over Time</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {hasSignupData ? (
-              <ChartContainer
-                config={chartConfig}
-                className="aspect-auto h-[320px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
-              >
-                <AreaChart
-                  data={data.signUpsOverTime}
-                  margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 36 : 28 }}
-                >
-                  <defs>
-                    <linearGradient id="cumulativeGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.5} />
-                      <stop offset="100%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.05} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    dataKey="date"
-                    {...(signupXTicks ? { ticks: signupXTicks, interval: 0 as const } : { minTickGap: 28 })}
-                    tick={{ fontSize: narrow ? 10 : 11 }}
-                    tickMargin={6}
-                    tickFormatter={(v) => formatAxisDate(String(v), narrow)}
-                    angle={narrow && signupDates.length > 18 ? -35 : 0}
-                    textAnchor={narrow && signupDates.length > 18 ? "end" : "middle"}
-                    height={narrow && signupDates.length > 18 ? 48 : 28}
-                  />
-                  <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 40 : 52} />
-                  <ChartTooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const p = payload[0].payload as SignUpPoint;
-                      return (
-                        <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
-                          <div className="font-medium">{formatChartDate(p.date)}</div>
-                          <div className="mt-1 text-muted-foreground">
-                            New: {p.count.toLocaleString()} · Total: {p.cumulative.toLocaleString()}
-                          </div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="cumulative"
-                    stroke="hsl(142, 76%, 36%)"
-                    strokeWidth={2}
-                    fill="url(#cumulativeGradient)"
-                  />
-                </AreaChart>
-              </ChartContainer>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[280px] text-center text-slate-500 dark:text-slate-400">
-                <Users className="h-12 w-12 mb-3 opacity-50" />
-                <p className="font-medium">No Signups Yet</p>
-                <p className="text-sm mt-1">Cumulative Signups Will Appear Here Once Users Join.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Daily signups (secondary) – bar chart, same x-axis range as Cumulative */}
-      {hasSignupData && data.signUpsOverTime.some((p) => p.count > 0) && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.15 }}
-        >
-          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-            <CardHeader>
-              <CardTitle className="dark:text-white">New Signups Per Day</CardTitle>
-              <CardDescription className="dark:text-slate-400">
-                Daily Registration Count
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={chartConfig}
-                className="aspect-auto h-[220px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
-              >
-                <BarChart
-                  data={data.signUpsOverTime}
-                  margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 40 : 32 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    dataKey="date"
-                    {...(signupXTicks ? { ticks: signupXTicks, interval: 0 as const } : { minTickGap: 32 })}
-                    tick={{ fontSize: narrow ? 10 : 11 }}
-                    tickMargin={6}
-                    tickFormatter={(v) => formatAxisDate(String(v), narrow)}
-                    angle={narrow && signupDates.length > 14 ? -40 : 0}
-                    textAnchor={narrow && signupDates.length > 14 ? "end" : "middle"}
-                    height={narrow && signupDates.length > 14 ? 52 : 30}
-                  />
-                  <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 36 : 48} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="count" fill="var(--color-signups)" radius={[4, 4, 0, 0]} name="New Signups" />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Cumulative subjects enrolled over time */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
-        <Card className="dark:bg-slate-900/70 dark:border-slate-800 overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl dark:text-white">Cumulative Subjects Enrolled Over Time</CardTitle>
-            <CardDescription className="dark:text-slate-400">Total Subject Enrollments Over Time</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {hasEnrollmentData ? (
-              <ChartContainer
-                config={chartConfig}
-                className="aspect-auto h-[320px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
-              >
-                <AreaChart
-                  data={enrollmentsOverTime}
-                  margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 36 : 28 }}
-                >
-                  <defs>
-                    <linearGradient id="enrollmentCumulativeGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(200, 70%, 40%)" stopOpacity={0.5} />
-                      <stop offset="100%" stopColor="hsl(200, 70%, 40%)" stopOpacity={0.05} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    dataKey="date"
-                    {...(enrollmentXTicks ? { ticks: enrollmentXTicks, interval: 0 as const } : { minTickGap: 28 })}
-                    tick={{ fontSize: narrow ? 10 : 11 }}
-                    tickMargin={6}
-                    tickFormatter={(v) => formatAxisDate(String(v), narrow)}
-                    angle={narrow && enrollmentDates.length > 18 ? -35 : 0}
-                    textAnchor={narrow && enrollmentDates.length > 18 ? "end" : "middle"}
-                    height={narrow && enrollmentDates.length > 18 ? 48 : 28}
-                  />
-                  <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 40 : 52} />
-                  <ChartTooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const p = payload[0].payload as SignUpPoint;
-                      return (
-                        <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
-                          <div className="font-medium">{formatChartDate(p.date)}</div>
-                          <div className="mt-1 text-muted-foreground">
-                            New: {p.count.toLocaleString()} · Total: {p.cumulative.toLocaleString()}
-                          </div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="cumulative"
-                    stroke="hsl(200, 70%, 40%)"
-                    strokeWidth={2}
-                    fill="url(#enrollmentCumulativeGradient)"
-                  />
-                </AreaChart>
-              </ChartContainer>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[280px] text-center text-slate-500 dark:text-slate-400">
-                <BookOpen className="h-12 w-12 mb-3 opacity-50" />
-                <p className="font-medium">No Enrollment History Yet</p>
-                <p className="text-sm mt-1">
-                  Enrollment Over Time Will Appear When Enrollment Timestamps Are Available.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* New subjects enrolled per day */}
-      {hasEnrollmentData && enrollmentsOverTime.some((p) => p.count > 0) && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.15 }}
-        >
-          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-            <CardHeader>
-              <CardTitle className="dark:text-white">New Subjects Enrolled Per Day</CardTitle>
-              <CardDescription className="dark:text-slate-400">
-                Daily Subject Enrollment Count
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={chartConfig}
-                className="aspect-auto h-[220px] w-full min-h-0 [&_.recharts-cartesian-grid_line]:stroke-muted/50 [&_.recharts-wrapper]:min-w-0"
-              >
-                <BarChart
-                  data={enrollmentsOverTime}
-                  margin={{ top: 10, right: 10, left: 4, bottom: narrow ? 40 : 32 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    dataKey="date"
-                    {...(enrollmentXTicks ? { ticks: enrollmentXTicks, interval: 0 as const } : { minTickGap: 32 })}
-                    tick={{ fontSize: narrow ? 10 : 11 }}
-                    tickMargin={6}
-                    tickFormatter={(v) => formatAxisDate(String(v), narrow)}
-                    angle={narrow && enrollmentDates.length > 14 ? -40 : 0}
-                    textAnchor={narrow && enrollmentDates.length > 14 ? "end" : "middle"}
-                    height={narrow && enrollmentDates.length > 14 ? 52 : 30}
-                  />
-                  <YAxis tick={{ fontSize: narrow ? 10 : 12 }} width={narrow ? 36 : 48} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="count" fill="hsl(200, 70%, 40%)" radius={[4, 4, 0, 0]} name="New Enrollments" />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Course enrollments with display names */}
-      {courseEnrollmentsOrdered.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-            <CardHeader>
-              <CardTitle className="dark:text-white">Enrollments by Subject</CardTitle>
-              <CardDescription className="dark:text-slate-400">
-                New enrollments per subject with a recorded date in{" "}
-                {getRangeLabel(dateRange, customStartDate, customEndDate)}
-                {dateRange === "ytd" ? " (year to date)" : ""}. Matches the date range control above.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={chartConfig}
-                className="w-full aspect-auto min-h-0 [&_.recharts-wrapper]:min-w-0"
-                style={{ height: Math.max(320, courseEnrollmentsOrdered.length * (narrow ? 32 : 36)) }}
-              >
-                <BarChart
-                  data={courseEnrollmentsOrdered.map((e) => ({
-                    ...e,
-                    label: chartLabelForSubject(e.displayName, e.subjectId),
-                    labelCompact: getSubjectShortName(e.subjectId),
-                    fullName: fullSubjectName(e.displayName, e.subjectId),
-                  }))}
-                  margin={{
-                    top: 12,
-                    right: narrow ? 8 : 16,
-                    left: narrow ? 4 : 8,
-                    bottom: 44,
-                  }}
-                  layout="vertical"
-                >
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    type="number"
-                    tick={{ fontSize: narrow ? 10 : 12 }}
-                    tickMargin={10}
-                    allowDecimals={false}
-                    domain={[0, "auto"]}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="labelCompact"
-                    width={narrow ? 100 : 120}
-                    interval={0}
-                    tick={{ fontSize: narrow ? 10 : 12 }}
-                    tickMargin={4}
-                  />
-                  <ChartTooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const p = payload[0].payload as CourseEnrollment & { fullName?: string };
-                      return (
-                        <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
-                          <div className="font-medium">{p.fullName ?? chartLabelForSubject(p.displayName, p.subjectId)}</div>
-                          <div className="mt-1 text-muted-foreground">Enrollments: {p.count.toLocaleString()}</div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Enrollments">
-                    {courseEnrollmentsOrdered.map((_, index) => (
-                      <Cell key={index} fill={getEnrollmentBarShade(index)} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-      </div>
-      </>
-      </div>
-      ) : null}
-
-      {analytics && !analyticsError && !rangeChartsLoading && !hasSignupData && courseEnrollmentsOrdered.length === 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}>
-          <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-            <CardContent className="py-5 text-center text-slate-500 dark:text-slate-400">
-              No Chart Data Yet. More Activity Will Populate Trends and Distributions.
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+            <Card className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+              <CardContent className="py-5 text-center text-slate-500 dark:text-slate-400">
+                No Chart Data Yet. More Activity Will Populate Trends and Distributions.
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
     </div>
   );
 }

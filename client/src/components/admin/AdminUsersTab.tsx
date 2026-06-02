@@ -41,7 +41,12 @@ import {
 import toast from "react-hot-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const PAGE_SIZE = 50;
+const UI_PAGE_SIZE = 50;
+const FETCH_PAGE_SIZE = 300;
+const USERS_CACHE_TTL_MS = 2 * 60 * 1000;
+
+type UsersCacheEntry = { users: AdminUser[]; cachedAt: number };
+const usersHydrationCache = new Map<string, UsersCacheEntry>();
 const DATE_PRESETS = [
   { key: "7d", label: "Last 7 Days", days: 7 },
   { key: "30d", label: "Last Month", days: 30 },
@@ -189,7 +194,9 @@ function compareUsers(a: AdminUser, b: AdminUser, key: UserSortKey, dir: "asc" |
   let cmp = 0;
   switch (key) {
     case "firstName":
-      cmp = (a.firstName ?? "").localeCompare(b.firstName ?? "", undefined, { sensitivity: "base" });
+      cmp = (a.firstName ?? "").localeCompare(b.firstName ?? "", undefined, {
+        sensitivity: "base",
+      });
       break;
     case "lastName":
       cmp = (a.lastName ?? "").localeCompare(b.lastName ?? "", undefined, { sensitivity: "base" });
@@ -223,12 +230,19 @@ function compareUsers(a: AdminUser, b: AdminUser, key: UserSortKey, dir: "asc" |
   return dir === "asc" ? cmp : -cmp;
 }
 
-function mergeUsersById(existing: AdminUser[], incoming: AdminUser[], preferExisting: boolean): AdminUser[] {
+function mergeUsersById(
+  existing: AdminUser[],
+  incoming: AdminUser[],
+  preferExisting: boolean,
+): AdminUser[] {
   const merged = new Map<string, AdminUser>();
   for (const user of existing) merged.set(user.id, user);
   for (const user of incoming) {
     const current = merged.get(user.id);
-    merged.set(user.id, preferExisting && current ? { ...user, ...current } : { ...current, ...user });
+    merged.set(
+      user.id,
+      preferExisting && current ? { ...user, ...current } : { ...current, ...user },
+    );
   }
   return Array.from(merged.values());
 }
@@ -299,9 +313,12 @@ export function AdminUsersTab({
   const loaderRunRef = useRef(0);
 
   const fetchUsersPage = useCallback(
-    async (cursor: string | null, signal?: AbortSignal): Promise<AdminUsersPageResponse["data"]> => {
+    async (
+      cursor: string | null,
+      signal?: AbortSignal,
+    ): Promise<AdminUsersPageResponse["data"]> => {
       const params = new URLSearchParams({
-        limit: String(PAGE_SIZE),
+        limit: String(FETCH_PAGE_SIZE),
         orderBy: "joinDate",
         dir: "desc",
       });
@@ -320,16 +337,23 @@ export function AdminUsersTab({
   );
 
   const hydrateRemainingUsers = useCallback(
-    async (initialCursor: string | null, runId: number, controller: AbortController) => {
+    async (
+      initialCursor: string | null,
+      runId: number,
+      controller: AbortController,
+      accumulated: AdminUser[],
+    ): Promise<AdminUser[]> => {
       let cursor = initialCursor;
       let hasMore = Boolean(cursor);
+      let allUsers = accumulated;
 
       while (hasMore && cursor && !controller.signal.aborted) {
         nextCursorRef.current = cursor;
         const pageData = await fetchUsersPage(cursor, controller.signal);
-        if (loaderRunRef.current !== runId || controller.signal.aborted) return;
+        if (loaderRunRef.current !== runId || controller.signal.aborted) return allUsers;
         const nextUsers = Array.isArray(pageData?.users) ? pageData.users : [];
-        setUsers((prev) => mergeUsersById(prev, nextUsers, true));
+        allUsers = mergeUsersById(allUsers, nextUsers, true);
+        setUsers(allUsers);
         cursor = pageData?.nextCursor || null;
         hasMore = Boolean(pageData?.hasMore && cursor);
         nextCursorRef.current = cursor;
@@ -338,12 +362,22 @@ export function AdminUsersTab({
       if (loaderRunRef.current === runId && !controller.signal.aborted) {
         nextCursorRef.current = null;
       }
+      return allUsers;
     },
     [fetchUsersPage],
   );
 
   const hydrateUsers = useCallback(async () => {
     if (!token) return;
+    const cached = usersHydrationCache.get(token);
+    if (cached && Date.now() - cached.cachedAt < USERS_CACHE_TTL_MS) {
+      setUsers(cached.users);
+      setLoading(false);
+      setLoadError(null);
+      nextCursorRef.current = null;
+      return;
+    }
+
     const runId = loaderRunRef.current + 1;
     loaderRunRef.current = runId;
     const controller = new AbortController();
@@ -357,12 +391,19 @@ export function AdminUsersTab({
       try {
         const firstPage = await fetchUsersPage(null, controller.signal);
         if (loaderRunRef.current !== runId || controller.signal.aborted) return;
-        const firstUsers = Array.isArray(firstPage?.users) ? firstPage.users : [];
-        setUsers(firstUsers);
+        let allUsers = Array.isArray(firstPage?.users) ? firstPage.users : [];
+        setUsers(allUsers);
         setLoading(false);
         nextCursorRef.current = firstPage?.nextCursor || null;
 
-        await hydrateRemainingUsers(firstPage?.nextCursor || null, runId, controller);
+        allUsers = await hydrateRemainingUsers(
+          firstPage?.nextCursor || null,
+          runId,
+          controller,
+          allUsers,
+        );
+        if (loaderRunRef.current !== runId || controller.signal.aborted) return;
+        usersHydrationCache.set(token, { users: allUsers, cachedAt: Date.now() });
       } catch (err) {
         if (controller.signal.aborted || loaderRunRef.current !== runId) return;
         const message = err instanceof Error ? err.message : "Failed to load users";
@@ -378,9 +419,10 @@ export function AdminUsersTab({
   }, [fetchUsersPage, hydrateRemainingUsers, token]);
 
   const fetchUsers = useCallback(async () => {
+    usersHydrationCache.delete(token);
     const cleanup = await hydrateUsers();
     return cleanup;
-  }, [hydrateUsers]);
+  }, [hydrateUsers, token]);
 
   useEffect(() => {
     let cleanup: void | (() => void);
@@ -403,13 +445,18 @@ export function AdminUsersTab({
     loaderRunRef.current = runId;
     const controller = new AbortController();
     setLoadError(null);
-    void hydrateRemainingUsers(cursor, runId, controller).catch((err) => {
-      if (controller.signal.aborted || loaderRunRef.current !== runId) return;
-      const message = err instanceof Error ? err.message : "Failed to load users";
-      setLoadError(message);
-      toast.error(message, { id: "admin-users-load" });
-    });
-  }, [hydrateRemainingUsers, hydrateUsers, users.length]);
+    void hydrateRemainingUsers(cursor, runId, controller, users)
+      .then((allUsers) => {
+        if (controller.signal.aborted || loaderRunRef.current !== runId) return;
+        usersHydrationCache.set(token, { users: allUsers, cachedAt: Date.now() });
+      })
+      .catch((err) => {
+        if (controller.signal.aborted || loaderRunRef.current !== runId) return;
+        const message = err instanceof Error ? err.message : "Failed to load users";
+        setLoadError(message);
+        toast.error(message, { id: "admin-users-load" });
+      });
+  }, [hydrateRemainingUsers, hydrateUsers, token, users]);
 
   useEffect(() => {
     setPage(0);
@@ -432,10 +479,10 @@ export function AdminUsersTab({
     return [...searched].sort((a, b) => compareUsers(a, b, sortKey, sortDir));
   }, [joinDateUsers, deferredSearch, sortKey, sortDir]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / UI_PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
-  const pageStart = safePage * PAGE_SIZE;
-  const pageUsers = filteredUsers.slice(pageStart, pageStart + PAGE_SIZE);
+  const pageStart = safePage * UI_PAGE_SIZE;
+  const pageUsers = filteredUsers.slice(pageStart, pageStart + UI_PAGE_SIZE);
   const pageIds = pageUsers.map((u) => u.id);
   const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
   const somePageSelected = pageIds.some((id) => selectedIds.has(id));
@@ -445,7 +492,9 @@ export function AdminUsersTab({
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "joinDate" || key === "questionCount" || key === "subjectCount" ? "desc" : "asc");
+      setSortDir(
+        key === "joinDate" || key === "questionCount" || key === "subjectCount" ? "desc" : "asc",
+      );
     }
   }
 
@@ -498,7 +547,11 @@ export function AdminUsersTab({
   async function setUserBanned(user: AdminUser, banned: boolean) {
     try {
       const data = await patchUser(user, { banned });
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: data.status ?? (banned ? "banned" : "active") } : u)));
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id ? { ...u, status: data.status ?? (banned ? "banned" : "active") } : u,
+        ),
+      );
       toast.success(banned ? `Banned: ${user.email}` : `Unbanned: ${user.email}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update ban status");
@@ -528,7 +581,9 @@ export function AdminUsersTab({
   async function setUserState(user: AdminUser, nextState: string | null) {
     try {
       const data = await patchUser(user, { inferredState: nextState });
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, state: data.state ?? null } : u)));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, state: data.state ?? null } : u)),
+      );
       toast.success(`State updated: ${user.email}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update state");
@@ -536,7 +591,10 @@ export function AdminUsersTab({
   }
 
   async function promptAndSetUserState(user: AdminUser) {
-    const next = window.prompt("Set 2-letter state code (example: NJ). Leave blank to clear.", user.state ?? "");
+    const next = window.prompt(
+      "Set 2-letter state code (example: NJ). Leave blank to clear.",
+      user.state ?? "",
+    );
     if (next == null) return;
     const normalized = next.trim().toUpperCase();
     if (normalized === "") {
@@ -553,7 +611,9 @@ export function AdminUsersTab({
   async function clearGarbledLastName(user: AdminUser) {
     try {
       const data = await patchUser(user, { profileAction: "clear_garbled_last_name" });
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, lastName: data.lastName ?? "" } : u)));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, lastName: data.lastName ?? "" } : u)),
+      );
       toast.success(`Last name cleaned: ${user.email}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to clean last name");
@@ -588,12 +648,17 @@ export function AdminUsersTab({
     }
   }
 
-  async function runBulk(action: "ban" | "unban" | "grantAdmin" | "revokeAdmin" | "clearLastName" | "setState") {
+  async function runBulk(
+    action: "ban" | "unban" | "grantAdmin" | "revokeAdmin" | "clearLastName" | "setState",
+  ) {
     const selected = users.filter((u) => selectedIds.has(u.id));
     if (!selected.length) return;
     let bodyFor: (user: AdminUser) => Record<string, unknown>;
     if (action === "setState") {
-      const next = window.prompt("Set 2-letter state code for selected users. Leave blank to clear.", "");
+      const next = window.prompt(
+        "Set 2-letter state code for selected users. Leave blank to clear.",
+        "",
+      );
       if (next == null) return;
       const normalized = next.trim().toUpperCase();
       if (normalized !== "" && !/^[A-Z]{2}$/.test(normalized)) {
@@ -624,7 +689,6 @@ export function AdminUsersTab({
         failed += 1;
       }
     }
-    await fetchUsers();
     toast[failed ? "error" : "success"](
       failed ? `Bulk update finished with ${failed} failures.` : "Bulk update complete.",
       { id: toastId },
@@ -704,23 +768,31 @@ export function AdminUsersTab({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => runBulk("setState")}>Set/Clear State</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => runBulk("setState")}>
+                    Set/Clear State
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => runBulk("ban")}>Ban selected</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => runBulk("unban")}>Unban selected</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => runBulk("unban")}>
+                    Unban selected
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => runBulk("grantAdmin")}>Grant DB admin</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => runBulk("revokeAdmin")}>Revoke DB admin</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => runBulk("grantAdmin")}>
+                    Grant DB admin
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => runBulk("revokeAdmin")}>
+                    Revoke DB admin
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => runBulk("clearLastName")}>Blank garbled last names</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => runBulk("clearLastName")}>
+                    Blank garbled last names
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
           </div>
 
           {loadError && (
-            <div
-              className="flex flex-col gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200 sm:flex-row sm:items-center sm:justify-between"
-            >
+            <div className="flex flex-col gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200 sm:flex-row sm:items-center sm:justify-between">
               <span>Could not load all users in the background.</span>
               <Button type="button" size="sm" variant="outline" onClick={retryBackgroundLoad}>
                 Retry
@@ -730,7 +802,11 @@ export function AdminUsersTab({
 
           <div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
             <span>
-              Showing <strong>{showingFrom}-{showingTo}</strong> of <strong>{filteredUsers.length}</strong>
+              Showing{" "}
+              <strong>
+                {showingFrom}-{showingTo}
+              </strong>{" "}
+              of <strong>{filteredUsers.length}</strong>
             </span>
             <div className="flex items-center gap-2">
               <Button
@@ -774,15 +850,70 @@ export function AdminUsersTab({
                       aria-label="Select current page"
                     />
                   </TableHead>
-                  <SortableHead label={`FName (${selectedIds.size})`} columnKey="firstName" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortableHead label="LName" columnKey="lastName" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortableHead label="Email" columnKey="email" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortableHead label="State" columnKey="state" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortableHead label="# Subjects" columnKey="subjectCount" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortableHead label="# Questions" columnKey="questionCount" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right" />
-                  <SortableHead label="Join Date" columnKey="joinDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortableHead label="Status" columnKey="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                  <SortableHead label="Admin" columnKey="admin" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                  <SortableHead
+                    label={`FName (${selectedIds.size})`}
+                    columnKey="firstName"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableHead
+                    label="LName"
+                    columnKey="lastName"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableHead
+                    label="Email"
+                    columnKey="email"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableHead
+                    label="State"
+                    columnKey="state"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableHead
+                    label="# Subjects"
+                    columnKey="subjectCount"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableHead
+                    label="# Questions"
+                    columnKey="questionCount"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                    className="text-right"
+                  />
+                  <SortableHead
+                    label="Join Date"
+                    columnKey="joinDate"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableHead
+                    label="Status"
+                    columnKey="status"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortableHead
+                    label="Admin"
+                    columnKey="admin"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
                   <TableHead className="w-[70px] text-right font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -809,13 +940,23 @@ export function AdminUsersTab({
                           aria-label={`Select ${user.email}`}
                         />
                       </TableCell>
-                      <TableCell className="font-medium dark:text-slate-200">{displayNamePart(user.firstName)}</TableCell>
-                      <TableCell className="dark:text-slate-300">{displayNamePart(user.lastName)}</TableCell>
-                      <TableCell className="max-w-[240px] truncate dark:text-slate-300" title={user.email}>
+                      <TableCell className="font-medium dark:text-slate-200">
+                        {displayNamePart(user.firstName)}
+                      </TableCell>
+                      <TableCell className="dark:text-slate-300">
+                        {displayNamePart(user.lastName)}
+                      </TableCell>
+                      <TableCell
+                        className="max-w-[240px] truncate dark:text-slate-300"
+                        title={user.email}
+                      >
                         {user.email}
                       </TableCell>
                       <TableCell className="dark:text-slate-300">{user.state || "-"}</TableCell>
-                      <TableCell className="dark:text-slate-300" title={user.subjectNames.join(", ")}>
+                      <TableCell
+                        className="dark:text-slate-300"
+                        title={user.subjectNames.join(", ")}
+                      >
                         {user.subjectCount}
                         {user.subjectNames.length > 0 && (
                           <span className="ml-1 text-xs text-slate-500">
@@ -824,8 +965,12 @@ export function AdminUsersTab({
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums dark:text-slate-300">{user.questionCount}</TableCell>
-                      <TableCell className="dark:text-slate-300">{formatDate(user.joinDate)}</TableCell>
+                      <TableCell className="text-right tabular-nums dark:text-slate-300">
+                        {user.questionCount}
+                      </TableCell>
+                      <TableCell className="dark:text-slate-300">
+                        {formatDate(user.joinDate)}
+                      </TableCell>
                       <TableCell>
                         <span
                           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -852,12 +997,21 @@ export function AdminUsersTab({
                       <TableCell className="text-right">
                         <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for ${user.email}`}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              aria-label={`Actions for ${user.email}`}
+                            >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuItem onClick={() => router.push(`/admin/users/${encodeURIComponent(user.id)}/dashboard`)}>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                router.push(`/admin/users/${encodeURIComponent(user.id)}/dashboard`)
+                              }
+                            >
                               <User className="mr-2 h-4 w-4" />
                               See Details
                             </DropdownMenuItem>
@@ -868,7 +1022,9 @@ export function AdminUsersTab({
                                   <MapPin className="mr-2 h-4 w-4" />
                                   {user.state ? "Update/Clear State" : "Set State"}
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setUserBanned(user, user.status === "active")}>
+                                <DropdownMenuItem
+                                  onClick={() => setUserBanned(user, user.status === "active")}
+                                >
                                   <Ban className="mr-2 h-4 w-4" />
                                   {user.status === "active" ? "Ban User" : "Unban User"}
                                 </DropdownMenuItem>
@@ -916,7 +1072,9 @@ export function AdminUsersTab({
           {!loading && filteredUsers.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Users className="mb-4 h-12 w-12 text-slate-400" />
-              <p className="text-lg font-medium text-slate-900 dark:text-slate-200">No users match this view</p>
+              <p className="text-lg font-medium text-slate-900 dark:text-slate-200">
+                No users match this view
+              </p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Adjust the join date range or search query.
               </p>
@@ -924,7 +1082,9 @@ export function AdminUsersTab({
           )}
 
           <div className="rounded-md border border-slate-200 p-3 dark:border-slate-800">
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Date Range User Breakdown</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Date Range User Breakdown
+            </p>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               Total users in range: <strong>{joinDateUsers.length}</strong>
             </p>

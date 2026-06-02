@@ -3,7 +3,6 @@ import type { DocumentData, Firestore, QueryDocumentSnapshot } from "firebase-ad
 import { getFirebaseAdmin } from "../../../server/firebase-admin";
 import { isAdminEmailFromEnv } from "../../../server/platform-admin";
 import { requireAdmin } from "../../../server/next-api-auth";
-import { deriveShowInAdminUserList } from "../../../server/admin-user-list";
 import { getUserStatsBatch } from "../../../server/user-stats";
 
 type RowOut = {
@@ -28,9 +27,7 @@ type RowOut = {
 };
 
 const DEFAULT_LIMIT = 50;
-const MAX_LIMIT = 100;
-const USER_SCAN_BATCH_MULTIPLIER = 3;
-const USER_SCAN_BATCH_MAX = 250;
+const MAX_LIMIT = 500;
 const IN_QUERY_CHUNK_SIZE = 30;
 
 function toIso(value: unknown): string {
@@ -53,10 +50,18 @@ function cleanText(value: unknown): string | null {
   return trimmed || null;
 }
 
-function splitDisplayName(data: DocumentData): { firstName: string | null; lastName: string | null; name: string | null } {
+function splitDisplayName(data: DocumentData): {
+  firstName: string | null;
+  lastName: string | null;
+  name: string | null;
+} {
   const firstName = cleanText(data.firstName);
   const lastName = cleanText(data.lastName);
-  const name = cleanText(data.displayName) || cleanText(data.username) || [firstName, lastName].filter(Boolean).join(" ") || null;
+  const name =
+    cleanText(data.displayName) ||
+    cleanText(data.username) ||
+    [firstName, lastName].filter(Boolean).join(" ") ||
+    null;
   if (firstName || lastName) return { firstName, lastName, name };
   if (!name) return { firstName: null, lastName: null, name: null };
   const parts = name.split(/\s+/).filter(Boolean);
@@ -65,16 +70,6 @@ function splitDisplayName(data: DocumentData): { firstName: string | null; lastN
     lastName: parts.slice(1).join(" ") || null,
     name,
   };
-}
-
-function isDocEligibleForAdminBrowse(data: DocumentData): boolean {
-  if (data.showInAdminUserList === true) return true;
-  if (data.showInAdminUserList === false) return false;
-  return deriveShowInAdminUserList({
-    email: data.email,
-    username: typeof data.username === "string" ? data.username : data.displayName,
-    displayName: data.displayName,
-  });
 }
 
 function subjectNameFromDoc(data: DocumentData): string | null {
@@ -87,7 +82,10 @@ function chunk<T>(values: T[], size: number): T[][] {
   return out;
 }
 
-async function loadSubjectsForUserIds(firestore: Firestore, userIds: string[]): Promise<Map<string, string[]>> {
+async function loadSubjectsForUserIds(
+  firestore: Firestore,
+  userIds: string[],
+): Promise<Map<string, string[]>> {
   const out = new Map<string, string[]>();
   const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
   if (!uniqueIds.length) return out;
@@ -114,19 +112,32 @@ async function loadSubjectsForUserIds(firestore: Firestore, userIds: string[]): 
     }
   }
   for (const [key, list] of out) {
-    out.set(key, Array.from(new Set(list)).sort((a, b) => a.localeCompare(b)));
+    out.set(
+      key,
+      Array.from(new Set(list)).sort((a, b) => a.localeCompare(b)),
+    );
   }
   return out;
 }
 
-function getSubjectsForUser(subjectsByUser: Map<string, string[]>, docId: string, firebaseUid: string | null): string[] {
-  return subjectsByUser.get(docId) ?? (firebaseUid ? subjectsByUser.get(firebaseUid) : undefined) ?? [];
+function getSubjectsForUser(
+  subjectsByUser: Map<string, string[]>,
+  docId: string,
+  firebaseUid: string | null,
+): string[] {
+  return (
+    subjectsByUser.get(docId) ?? (firebaseUid ? subjectsByUser.get(firebaseUid) : undefined) ?? []
+  );
 }
 
-function mapDoc(doc: QueryDocumentSnapshot, subjects: string[], stats: Partial<{
-  coursesEnrolledTotal: number;
-  questionsAnsweredTotal: number;
-}> | null): RowOut {
+function mapDoc(
+  doc: QueryDocumentSnapshot,
+  subjects: string[],
+  stats: Partial<{
+    coursesEnrolledTotal: number;
+    questionsAnsweredTotal: number;
+  }> | null,
+): RowOut {
   const data = doc.data();
   const email = String(data.email || data.username || "(no email)");
   const names = splitDisplayName(data);
@@ -153,7 +164,8 @@ function mapDoc(doc: QueryDocumentSnapshot, subjects: string[], stats: Partial<{
     hasEnvAdmin,
     hasDbAdmin,
     subjectCount,
-    questionCount: typeof stats?.questionsAnsweredTotal === "number" ? Number(stats.questionsAnsweredTotal) : 0,
+    questionCount:
+      typeof stats?.questionsAnsweredTotal === "number" ? Number(stats.questionsAnsweredTotal) : 0,
     subjectNames: subjects,
     totalCoursesEnrolled: subjectCount,
   };
@@ -171,7 +183,11 @@ function routeParam(value: string | string[] | undefined): string {
 
 async function getCheapEligibleTotal(firestore: Firestore): Promise<number | null> {
   try {
-    const snap = await firestore.collection("users").where("showInAdminUserList", "==", true).count().get();
+    const snap = await firestore
+      .collection("users")
+      .where("showInAdminUserList", "==", true)
+      .count()
+      .get();
     return Number(snap.data().count || 0);
   } catch {
     return null;
@@ -193,14 +209,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const limit = parseLimit(req.query.limit);
     const cursor = routeParam(req.query.cursor);
-    const scanBatchSize = Math.min(
-      USER_SCAN_BATCH_MAX,
-      Math.max(limit * USER_SCAN_BATCH_MULTIPLIER, limit),
-    );
     const totalUsersPromise = getCheapEligibleTotal(firestore);
 
     let query = firestore
       .collection("users")
+      .where("showInAdminUserList", "==", true)
       .orderBy("createdAt", "desc")
       .select(
         "firebaseUid",
@@ -229,32 +242,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       query = query.startAfter(cursorSnap);
     }
 
-    const eligibleDocs: QueryDocumentSnapshot[] = [];
-    let lastScannedDoc: QueryDocumentSnapshot | null = null;
-    let nextCursorDoc: QueryDocumentSnapshot | null = null;
-    let exhausted = false;
-    let filledPage = false;
-
-    while (eligibleDocs.length < limit && !exhausted) {
-      const snap = await query.limit(scanBatchSize).get();
-      if (snap.empty) {
-        exhausted = true;
-        break;
-      }
-      lastScannedDoc = snap.docs[snap.docs.length - 1] ?? lastScannedDoc;
-      for (const doc of snap.docs) {
-        nextCursorDoc = doc;
-        if (isDocEligibleForAdminBrowse(doc.data())) {
-          eligibleDocs.push(doc);
-          if (eligibleDocs.length >= limit) {
-            filledPage = true;
-            break;
-          }
-        }
-      }
-      exhausted = snap.size < scanBatchSize;
-      if (!exhausted && lastScannedDoc) query = query.startAfter(lastScannedDoc);
-    }
+    const snap = await query.limit(limit).get();
+    const eligibleDocs = snap.docs;
+    const lastDoc = eligibleDocs[eligibleDocs.length - 1] ?? null;
+    const hasMore = eligibleDocs.length === limit;
 
     const userIds = eligibleDocs.map((doc) => doc.id);
     const firebaseUids = eligibleDocs
@@ -271,7 +262,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const data = doc.data();
       const firebaseUid = cleanText(data.firebaseUid) || doc.id;
       const subjects = getSubjectsForUser(subjectsByUser, doc.id, firebaseUid);
-      const stats = statsByUser.get(doc.id) ?? (firebaseUid ? statsByUser.get(firebaseUid) : undefined) ?? null;
+      const stats =
+        statsByUser.get(doc.id) ?? (firebaseUid ? statsByUser.get(firebaseUid) : undefined) ?? null;
       return mapDoc(doc, subjects, stats);
     });
 
@@ -279,8 +271,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       success: true,
       data: {
         users,
-        nextCursor: (filledPage || !exhausted) && nextCursorDoc ? nextCursorDoc.id : null,
-        hasMore: (filledPage || !exhausted) && Boolean(nextCursorDoc),
+        nextCursor: hasMore && lastDoc ? lastDoc.id : null,
+        hasMore,
         loadedCount: users.length,
         totalUsers,
       },
