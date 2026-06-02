@@ -17,10 +17,7 @@ function getPromptFromQuestion(doc: any): string | undefined {
   return undefined;
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
@@ -41,30 +38,41 @@ export default async function handler(
     const limit = parseInt(req.query.limit as string) || 20;
     let dueReviews = await storage.getDueReviews(userId, subjectId, limit, unitId);
 
-    // Enrich with question content from Firestore so review page has prompt/choices/explanation
+    // Enrich with question content from Firestore so review page has prompt/choices/explanation.
+    // Batch all missing-question reads into a single getAll() instead of N sequential doc reads.
     try {
       const db = getDb();
       const questionsRef = db.collection("questions");
-      const enriched = await Promise.all(
-        dueReviews.map(async (item: any) => {
-          if (item.prompt != null && item.choices != null) return item;
-          try {
-            const snap = await questionsRef.doc(item.questionId).get();
-            if (!snap.exists) return item;
-            const doc = snap.data() as any;
-            return {
-              ...item,
-              prompt: item.prompt ?? getPromptFromQuestion(doc),
-              choices: item.choices ?? doc.choices,
-              answerIndex: item.answerIndex ?? doc.answerIndex,
-              explanation: item.explanation ?? doc.explanation,
-            };
-          } catch {
-            return item;
-          }
-        })
+
+      const missingIds = Array.from(
+        new Set(
+          dueReviews
+            .filter((item: any) => item.prompt == null || item.choices == null)
+            .map((item: any) => item.questionId)
+            .filter((id: any): id is string => typeof id === "string" && id.length > 0),
+        ),
       );
-      dueReviews = enriched;
+
+      if (missingIds.length > 0) {
+        const snaps = await db.getAll(...missingIds.map((id) => questionsRef.doc(id)));
+        const docById = new Map<string, any>();
+        for (const snap of snaps) {
+          if (snap.exists) docById.set(snap.id, snap.data());
+        }
+
+        dueReviews = dueReviews.map((item: any) => {
+          if (item.prompt != null && item.choices != null) return item;
+          const doc = docById.get(item.questionId);
+          if (!doc) return item;
+          return {
+            ...item,
+            prompt: item.prompt ?? getPromptFromQuestion(doc),
+            choices: item.choices ?? doc.choices,
+            answerIndex: item.answerIndex ?? doc.answerIndex,
+            explanation: item.explanation ?? doc.explanation,
+          };
+        });
+      }
     } catch (e) {
       console.warn("Due reviews enrichment failed, returning without question content:", e);
     }

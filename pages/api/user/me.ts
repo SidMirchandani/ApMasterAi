@@ -4,10 +4,7 @@ import { isAdminEmailFromEnv } from "../../../server/platform-admin";
 import { maybeUpdateUserGeoState } from "../../../server/user-geo-state";
 import { requireUser } from "../../../server/next-api-auth";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
@@ -47,14 +44,11 @@ export default async function handler(
       });
     }
 
-    await maybeUpdateUserGeoState(db, userId, req);
-    const refreshedUserDoc = await db.collection("users").doc(userId).get();
-    const userData = refreshedUserDoc.data() ?? userDoc.data();
+    const userData = userDoc.data();
+    // Pass the already-fetched doc so the geo updater skips its own read, and reuse its
+    // resolved state instead of re-reading the user doc a second time.
+    const inferredState = await maybeUpdateUserGeoState(db, userId, req, userData ?? null);
     const experimentalFeaturesEnabled = userData?.experimentalFeaturesEnabled === true;
-    const inferredState =
-      typeof userData?.inferredState === "string" && /^[A-Z]{2}$/i.test(userData.inferredState.trim())
-        ? userData.inferredState.trim().toUpperCase()
-        : null;
 
     return res.status(200).json({
       success: true,
@@ -67,8 +61,7 @@ export default async function handler(
         photoURL: userData?.photoURL,
         state: inferredState,
         experimentalFeaturesEnabled,
-        isAdmin:
-          isAdminEmailFromEnv(user.email ?? userData?.email) || userData?.isAdmin === true,
+        isAdmin: isAdminEmailFromEnv(user.email ?? userData?.email) || userData?.isAdmin === true,
       },
     });
   } catch (error) {

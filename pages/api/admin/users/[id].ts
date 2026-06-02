@@ -5,12 +5,19 @@ import { isAdminEmailFromEnv } from "../../../../server/platform-admin";
 import { requireAdmin } from "../../../../server/next-api-auth";
 import { mergeAdminUserListIntoFirestorePatch } from "../../../../server/admin-user-list";
 import { buildUserSearchFields } from "../../../../server/user-search-fields";
+import { invalidateBanStatusCache } from "../../../../server/user-ban";
 
 function getRouteId(req: NextApiRequest): string {
-  return typeof req.query.id === "string" ? req.query.id : Array.isArray(req.query.id) ? req.query.id[0] : "";
+  return typeof req.query.id === "string"
+    ? req.query.id
+    : Array.isArray(req.query.id)
+      ? req.query.id[0]
+      : "";
 }
 
-function normalizeState(raw: unknown): { ok: true; value: string | null } | { ok: false; error: string } {
+function normalizeState(
+  raw: unknown,
+): { ok: true; value: string | null } | { ok: false; error: string } {
   if (typeof raw === "string") {
     const trimmed = raw.trim().toUpperCase();
     if (trimmed === "") return { ok: true, value: null };
@@ -29,7 +36,11 @@ function isGarbledLastName(value: unknown): boolean {
   return trimmed.length > 0 && trimmed.length <= 4 && /^[^A-Za-z0-9]+$/.test(trimmed);
 }
 
-async function deleteMatchingCollectionDocs(db: FirebaseFirestore.Firestore, collection: string, userIds: string[]) {
+async function deleteMatchingCollectionDocs(
+  db: FirebaseFirestore.Firestore,
+  collection: string,
+  userIds: string[],
+) {
   const unique = Array.from(new Set(userIds.filter(Boolean)));
   for (const userId of unique) {
     const snap = await db.collection(collection).where("userId", "==", userId).get();
@@ -81,7 +92,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const userIds = Array.from(new Set([id, authUid].filter(Boolean)));
     await Promise.all([
-      ...userIds.map((uid) => db.collection("user_stats").doc(uid).delete().catch(() => undefined)),
+      ...userIds.map((uid) =>
+        db
+          .collection("user_stats")
+          .doc(uid)
+          .delete()
+          .catch(() => undefined),
+      ),
       deleteMatchingCollectionDocs(db, "user_subjects", userIds),
       deleteMatchingCollectionDocs(db, "user_question_state", userIds),
     ]);
@@ -89,7 +106,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       await firebaseAdmin.auth.deleteUser(authUid);
     } catch (e: unknown) {
-      const code = e && typeof e === "object" && "code" in e ? String((e as { code?: string }).code) : "";
+      const code =
+        e && typeof e === "object" && "code" in e ? String((e as { code?: string }).code) : "";
       if (code !== "auth/user-not-found") {
         const msg = e instanceof Error ? e.message : "Auth delete failed";
         return res.status(500).json({ error: msg });
@@ -124,7 +142,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  if (typeof wantAdmin === "boolean" && wantAdmin === false && id === admin.uid && !isAdminEmailFromEnv(admin.email)) {
+  if (
+    typeof wantAdmin === "boolean" &&
+    wantAdmin === false &&
+    id === admin.uid &&
+    !isAdminEmailFromEnv(admin.email)
+  ) {
     return res.status(403).json({
       error: "You cannot remove your own Firestore admin flag without being on ADMIN_EMAILS.",
     });
@@ -149,18 +172,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     patch.lastName = "";
   }
 
-  const resolvedState =
-    hasInferredStateUpdate
-      ? normalizedInferredState
-      : typeof targetData.inferredState === "string"
-        ? targetData.inferredState
-        : null;
-  const resolvedLastName =
-    Object.prototype.hasOwnProperty.call(patch, "lastName")
-      ? String(patch.lastName || "")
-      : typeof targetData.lastName === "string"
-        ? targetData.lastName
-        : null;
+  const resolvedState = hasInferredStateUpdate
+    ? normalizedInferredState
+    : typeof targetData.inferredState === "string"
+      ? targetData.inferredState
+      : null;
+  const resolvedLastName = Object.prototype.hasOwnProperty.call(patch, "lastName")
+    ? String(patch.lastName || "")
+    : typeof targetData.lastName === "string"
+      ? targetData.lastName
+      : null;
 
   Object.assign(
     patch,
@@ -200,7 +221,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       await firebaseAdmin.auth.updateUser(authUid, { disabled: wantBanned });
     } catch (e: unknown) {
-      const code = e && typeof e === "object" && "code" in e ? String((e as { code?: string }).code) : "";
+      const code =
+        e && typeof e === "object" && "code" in e ? String((e as { code?: string }).code) : "";
       if (code !== "auth/user-not-found") {
         const msg = e instanceof Error ? e.message : "Auth update failed";
         return res.status(500).json({ error: msg });
@@ -209,6 +231,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   await userRef.update(patch);
+
+  if (typeof wantBanned === "boolean") {
+    invalidateBanStatusCache();
+  }
 
   const refreshed = (await userRef.get()).data()!;
   const hasDbAdmin = refreshed.isAdmin === true;

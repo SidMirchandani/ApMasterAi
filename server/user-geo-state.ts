@@ -52,18 +52,34 @@ function shouldRunGeoLookup(opts: {
  * Exported for user creation paths that only have a raw IP string (no Request).
  * Pass `headers` from the incoming request when available so Vercel geo headers are used (avoids geoip-lite on serverless).
  */
+function normalizeInferredState(st: unknown): string | null {
+  return hasValidInferredState(st) ? (st as string).trim().toUpperCase() : null;
+}
+
+/**
+ * @param existingData Pre-fetched user document data. When provided, the internal
+ *   `users/{userId}` read is skipped (the caller already has the doc).
+ * @returns The inferred US state to use after any update (newly resolved state when a
+ *   lookup just succeeded, otherwise the existing state), or null when unknown.
+ */
 export async function maybeUpdateUserGeoStateFromIp(
   firestore: Firestore,
   userId: string,
   ip: string | null,
   headers?: IncomingHttpHeaders,
-): Promise<void> {
+  existingData?: Record<string, unknown> | null,
+): Promise<string | null> {
   try {
     const ref = firestore.collection("users").doc(userId);
-    const snap = await ref.get();
-    if (!snap.exists) return;
-
-    const data = snap.data() ?? {};
+    let data: Record<string, unknown>;
+    if (existingData !== undefined) {
+      if (existingData === null) return null;
+      data = existingData;
+    } else {
+      const snap = await ref.get();
+      if (!snap.exists) return null;
+      data = snap.data() ?? {};
+    }
     const inferredState = data.inferredState;
     const hasState = hasValidInferredState(inferredState);
 
@@ -80,13 +96,10 @@ export async function maybeUpdateUserGeoStateFromIp(
         lastSuccessMs,
       })
     ) {
-      return;
+      return normalizeInferredState(inferredState);
     }
 
-    const { state, reason, inferenceSource } = lookupUsStateFromIpWithReason(
-      ip,
-      headers,
-    );
+    const { state, reason, inferenceSource } = lookupUsStateFromIpWithReason(ip, headers);
     const now = FieldValue.serverTimestamp();
 
     const update: Record<string, unknown> = {
@@ -96,8 +109,7 @@ export async function maybeUpdateUserGeoStateFromIp(
 
     if (state) {
       update.inferredState = state;
-      update.inferenceSource =
-        inferenceSource === "vercel_geo" ? "vercel_geo" : "ip";
+      update.inferenceSource = inferenceSource === "vercel_geo" ? "vercel_geo" : "ip";
       update.inferredStateAt = now;
       update.lastIpGeoSuccessAt = now;
     }
@@ -136,8 +148,13 @@ export async function maybeUpdateUserGeoStateFromIp(
     });
 
     await ref.update(update);
+    return (
+      (typeof update.inferredState === "string" ? update.inferredState : null) ??
+      normalizeInferredState(data.inferredState)
+    );
   } catch (e) {
     console.warn("[maybeUpdateUserGeoStateFromIp]", e);
+    return existingData ? normalizeInferredState(existingData.inferredState) : null;
   }
 }
 
@@ -149,7 +166,8 @@ export async function maybeUpdateUserGeoState(
   firestore: Firestore,
   userId: string,
   req: NextApiRequest,
-): Promise<void> {
+  existingData?: Record<string, unknown> | null,
+): Promise<string | null> {
   const ip = getClientIp(req);
-  await maybeUpdateUserGeoStateFromIp(firestore, userId, ip, req.headers);
+  return maybeUpdateUserGeoStateFromIp(firestore, userId, ip, req.headers, existingData);
 }

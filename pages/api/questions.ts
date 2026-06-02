@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "../../server/db";
+import { requireUser } from "../../server/next-api-auth";
 import { SUBJECT_SECTION_CODES } from "../../server/subject-sections";
 
 // Exam weight distribution for different subjects
@@ -227,15 +228,101 @@ function normalizeTags(data: { tags?: unknown }): string[] {
   return data.tags.filter((t: unknown) => typeof t === "string") as string[];
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
-  if (req.method !== "GET") {
-    return res
-      .status(405)
-      .json({ success: false, message: "Method not allowed" });
+type QuestionsRef = FirebaseFirestore.CollectionReference;
+type QuestionDoc = Record<string, any> & { id: string; tags: string[] };
+
+/**
+ * Random-sample up to `want` docs from an already-filtered query using the per-document
+ * `rand` field instead of scanning the whole result set.
+ *
+ * Technique: pick a random pivot in [0,1), grab the first `want` docs with `rand >= pivot`,
+ * then wrap around to `rand < pivot` if the pivot landed too high. Reads at most ~`want` docs.
+ * Requires a composite index covering the equality filters plus (rand ASC).
+ */
+async function sampleByRand(
+  base: FirebaseFirestore.Query,
+  want: number,
+): Promise<FirebaseFirestore.QueryDocumentSnapshot[]> {
+  if (want <= 0) return [];
+  const pivot = Math.random();
+  const firstSnap = await base.where("rand", ">=", pivot).orderBy("rand").limit(want).get();
+  let docs = firstSnap.docs;
+  if (docs.length < want) {
+    const secondSnap = await base
+      .where("rand", "<", pivot)
+      .orderBy("rand")
+      .limit(want - docs.length)
+      .get();
+    docs = docs.concat(secondSnap.docs);
   }
+  return docs;
+}
+
+/**
+ * Build a randomized question pool of (roughly) `want` items for a subject, optionally scoped to
+ * one or more section codes (e.g. APCSA maps one logical section to several legacy codes; pass an
+ * empty array for a subject-wide pool). Falls back to a bounded scan when the `rand`-based sample
+ * returns nothing (e.g. older docs missing `rand`, or a missing index) so callers never get empty.
+ */
+async function buildRandomQuestionPool(
+  questionsRef: QuestionsRef,
+  subjectCode: string,
+  sectionCodes: string[],
+  want: number,
+): Promise<QuestionDoc[]> {
+  if (want <= 0) return [];
+
+  const bySubject = questionsRef.where("subject_code", "==", subjectCode);
+  const baseForCode = (code: string) => bySubject.where("section_code", "==", code);
+
+  let snapshotsPerQuery: FirebaseFirestore.QueryDocumentSnapshot[][];
+  if (sectionCodes.length === 0) {
+    snapshotsPerQuery = [await sampleByRand(bySubject, want)];
+  } else if (sectionCodes.length === 1) {
+    snapshotsPerQuery = [await sampleByRand(baseForCode(sectionCodes[0]), want)];
+  } else {
+    snapshotsPerQuery = await Promise.all(
+      sectionCodes.map((code) => sampleByRand(baseForCode(code), want)),
+    );
+  }
+
+  const byId = new Map<string, QuestionDoc>();
+  for (const docs of snapshotsPerQuery) {
+    for (const doc of docs) {
+      if (byId.has(doc.id)) continue;
+      const data = doc.data();
+      byId.set(doc.id, { id: doc.id, ...data, tags: normalizeTags(data) });
+    }
+  }
+
+  // Safety net: if random sampling produced nothing (legacy docs without `rand`, or the
+  // composite index is missing), fall back to a bounded scan so results are never empty.
+  if (byId.size === 0) {
+    const fallbackLimit = Math.min(400, Math.max(want * 4, 50));
+    let fallback: FirebaseFirestore.Query = bySubject;
+    if (sectionCodes.length === 1) {
+      fallback = bySubject.where("section_code", "==", sectionCodes[0]);
+    } else if (sectionCodes.length > 1) {
+      fallback = bySubject.where("section_code", "in", sectionCodes);
+    }
+    const fallbackSnap = await fallback.limit(fallbackLimit).get();
+    for (const doc of fallbackSnap.docs) {
+      if (byId.has(doc.id)) continue;
+      const data = doc.data();
+      byId.set(doc.id, { id: doc.id, ...data, tags: normalizeTags(data) });
+    }
+  }
+
+  return Array.from(byId.values()).sort(() => Math.random() - 0.5);
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ success: false, message: "Method not allowed" });
+  }
+
+  const user = await requireUser(req, res);
+  if (!user) return;
 
   const { subject, section, limit, ids, excludeIds } = req.query;
 
@@ -258,16 +345,12 @@ export default async function handler(
         .filter(Boolean);
       if (idList.length > 0) {
         const questionsRef = db.collection("questions");
-        const snapshots = await Promise.all(
-          idList.map((id) => questionsRef.doc(id).get()),
-        );
+        const snapshots = await Promise.all(idList.map((id) => questionsRef.doc(id).get()));
         const questions = idList
           .map((id, i) => {
             const doc = snapshots[i];
             const data = doc?.exists ? doc.data() : null;
-            return data
-              ? { id: doc!.id, ...data, tags: normalizeTags(data) }
-              : null;
+            return data ? { id: doc!.id, ...data, tags: normalizeTags(data) } : null;
           })
           .filter(Boolean);
         return res.status(200).json({
@@ -311,33 +394,25 @@ export default async function handler(
         selectedBySection[sectionCode] = [];
 
         if (sectionQuestionCount > 0) {
-          // Fetch ALL questions for this section (no limit)
-          // APCSA: include legacy section codes (PT, UO, BEI, etc.) so old questions are included
+          // Random-sample via the `rand` field instead of reading the entire section.
+          // Over-fetch a buffer beyond the target so leftover questions can cover any
+          // per-section shortfall during redistribution below.
+          // APCSA: include legacy section codes (PT, UO, BEI, etc.) so old questions are included.
           const sectionCodesToQuery =
-            (subject as string) === "APCSA" &&
-            APCSA_SECTION_QUERY_MAP[sectionCode]
+            (subject as string) === "APCSA" && APCSA_SECTION_QUERY_MAP[sectionCode]
               ? APCSA_SECTION_QUERY_MAP[sectionCode]
               : [sectionCode];
-          const sectionSnapshot =
-            sectionCodesToQuery.length === 1
-              ? await questionsRef
-                  .where("subject_code", "==", subject as string)
-                  .where("section_code", "==", sectionCode)
-                  .get()
-              : await questionsRef
-                  .where("subject_code", "==", subject as string)
-                  .where("section_code", "in", sectionCodesToQuery)
-                  .get();
+          const want = sectionQuestionCount + Math.min(25, Math.ceil(sectionQuestionCount * 0.5) + 3);
+          const sectionQuestions = await buildRandomQuestionPool(
+            questionsRef,
+            subject as string,
+            sectionCodesToQuery,
+            want,
+          );
 
-          const sectionQuestions = sectionSnapshot.docs.map((doc) => {
-            const data = doc.data();
-            return { id: doc.id, ...data, tags: normalizeTags(data) };
-          });
-
-          // Shuffle and keep as a section pool; selection happens after all pools are loaded.
-          const shuffled = sectionQuestions.sort(() => Math.random() - 0.5);
-          sectionPools[sectionCode] = shuffled;
-          const selected = shuffled.slice(0, sectionQuestionCount);
+          // Pool is already randomized; selection happens after all pools are loaded.
+          sectionPools[sectionCode] = sectionQuestions;
+          const selected = sectionQuestions.slice(0, sectionQuestionCount);
           selectedBySection[sectionCode] = selected;
           remainingQuestions -= selected.length;
           sectionSelectionTelemetry.push({
@@ -365,10 +440,7 @@ export default async function handler(
       // Redistribute any shortfall to sections that still have unused inventory.
       let remainingNeeded =
         questionLimit -
-        Object.values(selectedBySection).reduce(
-          (sum, list) => sum + list.length,
-          0,
-        );
+        Object.values(selectedBySection).reduce((sum, list) => sum + list.length, 0);
       if (remainingNeeded > 0) {
         const poolOrder = sectionEntries.map(([sectionCode]) => sectionCode);
         while (remainingNeeded > 0) {
@@ -405,16 +477,13 @@ export default async function handler(
         );
         if (totalShortfall > 0) {
           // eslint-disable-next-line no-console
-          console.warn(
-            "[API/questions] Weighted full-length generation had section shortfall",
-            {
-              subject,
-              requested: questionLimit,
-              returning: finalQuestions.length,
-              totalShortfall,
-              sectionSelectionTelemetry,
-            },
-          );
+          console.warn("[API/questions] Weighted full-length generation had section shortfall", {
+            subject,
+            requested: questionLimit,
+            returning: finalQuestions.length,
+            totalShortfall,
+            sectionSelectionTelemetry,
+          });
         }
       }
 
@@ -433,61 +502,28 @@ export default async function handler(
             .filter(Boolean)
         : [],
     );
-    const fetchLimit = Math.min(
-      500,
-      questionLimit * 4 + excludeSet.size * 2,
-    );
     const questionsRef = db.collection("questions");
-    let query = questionsRef.where("subject_code", "==", subject as string);
+    const sectionCodesToQuery = section
+      ? (subject as string) === "APCSA" && APCSA_SECTION_QUERY_MAP[section as string]
+        ? APCSA_SECTION_QUERY_MAP[section as string]
+        : [section as string]
+      : [];
 
-    if (section) {
-      const sectionCodesToQuery =
-        (subject as string) === "APCSA" &&
-        APCSA_SECTION_QUERY_MAP[section as string]
-          ? APCSA_SECTION_QUERY_MAP[section as string]
-          : [section as string];
-      if (sectionCodesToQuery.length === 1) {
-        query = query.where("section_code", "==", section as string);
-      } else {
-        query = query.where("section_code", "in", sectionCodesToQuery);
-      }
-    }
+    // Random-sample via the `rand` field, over-fetching enough to absorb excluded IDs and
+    // still hit the requested limit. Capped so a single request never reads too many docs.
+    const want = Math.min(
+      500,
+      questionLimit + excludeSet.size + Math.min(25, Math.ceil(questionLimit * 0.5) + 3),
+    );
+    const pool = await buildRandomQuestionPool(
+      questionsRef,
+      subject as string,
+      sectionCodesToQuery,
+      want,
+    );
 
-    const snapshot = await query.limit(fetchLimit).get();
-    // If no results and section was specified, log sample documents for debugging
-    if (process.env.NODE_ENV !== "production") {
-      if (snapshot.empty && section) {
-        const sampleQuery = await questionsRef
-          .where("subject_code", "==", subject as string)
-          .limit(5)
-          .get();
-
-        const samples = sampleQuery.docs.map((doc) => ({
-          id: doc.id,
-          subject_code: doc.data().subject_code,
-          section_code: doc.data().section_code,
-        }));
-      }
-    }
-
-    if (snapshot.empty) {
-      return res.status(200).json({
-        success: true,
-        data: [],
-      });
-    }
-
-    const allQuestions = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return { id: doc.id, ...data, tags: normalizeTags(data) };
-    });
-
-    const filtered =
-      excludeSet.size > 0
-        ? allQuestions.filter((q) => !excludeSet.has(q.id))
-        : allQuestions;
-    const shuffled = filtered.sort(() => Math.random() - 0.5);
-    const questions = shuffled.slice(0, questionLimit);
+    const filtered = excludeSet.size > 0 ? pool.filter((q) => !excludeSet.has(q.id)) : pool;
+    const questions = filtered.slice(0, questionLimit);
     return res.status(200).json({
       success: true,
       data: questions,

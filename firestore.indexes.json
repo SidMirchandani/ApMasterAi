@@ -1,4 +1,3 @@
-
 {
   "indexes": [
     {
@@ -15,6 +14,31 @@
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "subjectId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "questions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject_code", "order": "ASCENDING" },
+        { "fieldPath": "section_code", "order": "ASCENDING" },
+        { "fieldPath": "rand", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "questions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject_code", "order": "ASCENDING" },
+        { "fieldPath": "rand", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "showInAdminUserList", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
   ],
