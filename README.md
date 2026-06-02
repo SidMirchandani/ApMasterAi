@@ -9,12 +9,12 @@ APMaster is an **AI-assisted AP exam prep platform** built for students who care
 
 **Built with:** [**TypeScript**](https://www.typescriptlang.org/) · [**React**](https://react.dev/) · [**Next.js**](https://nextjs.org/) (Pages Router)
 
-The codebase is **TypeScript end-to-end**—from React components in `client/src/**` through Next.js pages and API routes in `pages/**`, to the Express infrastructure layer in `server/**`. The student UI is a **React 18** app delivered by **Next.js 14**; server logic runs on Node with shared types, `tsc` validation (`npm run check`), and Zod-backed request validation.
+The codebase is **TypeScript end-to-end**—from React components in `client/src/**` through Next.js pages and API routes in `pages/**`, to a shared TypeScript service layer in `server/**`. The student UI is a **React 18** app delivered by **Next.js 14**; API logic runs as serverless functions on Node with shared types, `tsc` validation (`npm run check`), and Zod-backed request validation.
 
-APMaster is engineered to solve the primary friction points of AI study tools: slow generation times, hallucinated context, and unsustainable API costs. By treating LLM token usage as a strict constraint, we built an architecture that scales efficiently, allowing us to provide the platform entirely free of charge.
+APMaster is engineered around the primary friction points of AI study tools: slow generation, hallucinated context, and unsustainable API costs. By treating LLM token usage as a first-class constraint — caching aggressively and calling the model only for net-new work — the platform keeps its marginal cost per student low enough to offer free.
 - **Personalized practice and diagnostics** across multiple AP subjects.
 - **AI-generated explanations and contextual hints** that feel like a good TA, not a black box.
-- **Highly efficient backend** that utilizes strict caching, batching, and stream processing to minimize API token costs, ensuring the platform remains scalable and entirely free.
+- **Cost-aware backend** that leans on caching, batching, and streaming to minimize API token usage and keep the platform free for students.
 
 ---
 
@@ -34,10 +34,10 @@ APMaster is both a **student-facing study experience** and a **latency-aware AI 
 
 | Layer | Technologies |
 | --- | --- |
-| **Language** | **TypeScript** across client, Next.js, and Express (`tsconfig.json`, `npm run check`) |
+| **Language** | **TypeScript** end-to-end — client, Next.js pages/API, and the `server/**` service layer (`tsconfig.json`, `npm run check`) |
 | **UI** | **React 18** components + hooks (`client/src/**`) |
-| **App framework** | **Next.js 14** — pages, routing, and API routes (`pages/**`, `pages/api/**`) |
-| **Long-running services** | **Express** (TypeScript) in `server/**` — not NestJS; batching, DB health, and warm connections |
+| **App framework** | **Next.js 14** — pages, routing, and serverless API routes (`pages/**`, `pages/api/**`) |
+| **Service layer** | **TypeScript modules** in `server/**` — Firestore access, batch utilities, and domain logic imported by the API routes |
 
 - **Frontend (React + Next.js + TypeScript)**
   - **Next.js** for file-based routing, SSR/SSG where used, and colocated **API routes** under `pages/api/**`.
@@ -47,22 +47,21 @@ APMaster is both a **student-facing study experience** and a **latency-aware AI 
 
 - **Backend & Infrastructure (TypeScript on Node)**
   - **Next.js API routes** (`pages/api/**`) — typed handlers for user-facing HTTP/JSON and SSE endpoints.
-  - **Express server** (`server/**`) — TypeScript services for long-lived infrastructure, Firestore connection management, and batch/utility flows.
+  - **Service layer** (`server/**`) — TypeScript modules for Firestore access, connection health/retry, batch utilities, and domain logic, imported directly by the API routes.
   - **Firebase Admin SDK** for privileged Firestore + Storage access (`server/firebase-admin.ts`).
   - **Firestore** as the primary data store, with **careful subcollection modeling** for high-frequency updates.
-  - **Firebase DataConnect** (`dataconnect` + `dataconnect-generated`) for typed access to Firestore.
 
 - **AI & Integrations**
   - **Google Gemini** via `@google/genai` / `@google/generative-ai` with shared configuration in `lib/gemini-models.ts`.
   - **Server-only LLM access**, wrapped in **batch processors**, **retry logic**, and **SSE-based streaming**.
 
-The hybrid Next.js + Express architecture is intentional: Next.js focuses on **user-facing APIs and pages**, while Express runs longer-lived services and connection management that benefit from **warm, stateful processes**.
+The split is intentional: thin Next.js API handlers own HTTP concerns (auth, validation, response shape), while the `server/**` modules hold the reusable domain logic, Firestore access, and batch machinery — so the same service code backs both student endpoints and admin tooling.
 
 ---
 
-### 3. Hybrid Architecture – Next.js + Express
+### 3. Backend Architecture — Layered Next.js Services
 
-APMaster is not “just a Next.js app” and not “just an Express backend” – it’s a **TypeScript hybrid**:
+The backend is a Next.js (Pages Router) app deployed on Vercel: every endpoint is a **serverless function** under `pages/api/**`, layered over a shared TypeScript service module set in `server/**`.
 
 - **Next.js layer (`pages` and `pages/api`)** — React pages and typed API handlers
   - Handles **all user-facing routes**: dashboard, study views, quizzes, auth flows.
@@ -75,18 +74,13 @@ APMaster is not “just a Next.js app” and not “just an Express backend” �
       - `pages/api/chat-explanation.ts`
   - These endpoints are optimized for **HTTP ergonomics and developer experience**: clean handlers, validation, and direct mapping to the frontend.
 
-- **Express layer (`server/**`)** — Node/TypeScript services (complements Next.js; no separate NestJS app)
-  - Entry point: `server/index.ts`.
-  - Manages **long-lived infrastructure**:
-    - Firestore admin initialization (`server/firebase-admin.ts`).
-    - Connection health, retries, and reconnection logic (`server/db.ts`, `server/db-health-monitor.ts`, `server/db-retry-handler.ts`).
-    - Storage operations (`server/storage.ts`) and other utility endpoints.
-  - Hosts **batch and integration utilities**, including:
-    - `server/replit_integrations/batch/utils.ts` – concurrency-limited, retry-aware batch processors (with optional SSE helpers).
+- **Service layer (`server/**`)** — Node/TypeScript modules imported by the API routes (not a separate running server)
+  - Firestore Admin initialization as a **module-scoped singleton** (`server/firebase-admin.ts`), reused across invocations on a warm function instance.
+  - Connection management and retry/backoff logic (`server/db.ts`, `server/db-retry-handler.ts`).
+  - Storage and persistence helpers (`server/storage.ts`).
+  - **Batch and integration utilities** — `server/replit_integrations/batch/utils.ts` provides concurrency-limited, retry-aware batch processors (with optional SSE helpers).
 
-In practice:
-- **Next.js API routes** are the **face** of the backend that the React app talks to.
-- The **Express server** is the **muscle and connective tissue**, ideal for **heavy-duty batch processing, connection reuse, and long-running operations**.
+In practice the API routes stay thin: they authenticate, validate, and delegate to `server/**`, which holds the reusable logic. Keeping that logic in a module layer (rather than inline per handler) is what lets the same code back student endpoints, admin QC tools, and one-off scripts.
 
 ---
 
@@ -96,21 +90,17 @@ In practice:
 
 ```mermaid
 flowchart LR
-  userBrowser["User browser"] --> clientApp["Next.js+React client"]
-  clientApp --> apiRoutes["Next.js_API_routes"]
-  clientApp --> expressServer["Express_server"]
-  apiRoutes --> firestore["Firestore_(admin_SDK)"]
-  expressServer --> firestore
-  apiRoutes --> gemini["Gemini_(LLM)"]
-  expressServer --> gemini
-  firestore --> storage["Cloud_Storage"]
+  userBrowser["User browser"] --> clientApp["Next.js + React client"]
+  clientApp --> apiRoutes["Next.js API routes (serverless)"]
+  apiRoutes --> serviceLayer["server/** service layer"]
+  serviceLayer --> firestore["Firestore (Admin SDK)"]
+  serviceLayer --> gemini["Gemini (LLM)"]
+  firestore --> storage["Cloud Storage"]
 ```
 
-- The browser talks to the **Next.js client app**, which calls **Next.js API routes** for most user flows.
-- For batchy, infra-style operations, the API routes or **admin QC** endpoints rely on the **Express server**, which already has **warm Firestore and Gemini connections**.
-- Both layers ultimately converge on **Firestore, Cloud Storage, and Gemini**, but with **different lifecycles**:
-  - Next.js routes: request–response oriented.
-  - Express server: longer-lived, connection-aware processes.
+- The browser talks to the **Next.js client app**, which calls **Next.js API routes** for all user flows.
+- Each route authenticates and validates, then delegates to the **`server/**` service layer** for Firestore access, Gemini calls, and batch work.
+- Firestore and Gemini clients are initialized once per function instance and **reused while it stays warm**, so back-to-back requests avoid repeated cold initialization.
 
 #### 4.2 AI Batch Processing & SSE
 
@@ -143,7 +133,7 @@ APMaster’s Firestore schema is designed for **per-user, frequent writes** and 
 
 - **Core collections** (from `SECURITY_AUDIT.md` and implementation):
   - `users` – core user profile, roles, and high-level settings.
-  - `user_subjects` – per-subject progress, scores, and metadata.
+  - `user_subjects` – per-subject progress, scores, and metadata, with **embedded unit-progress** and per-test subcollections (`fullLengthTests`, `diagnosticTests`, `unitQuizResults`) that compose into the dashboard read path.
   - `user_bookmarks` – saved questions, review lists.
   - `score_history` – longitudinal performance data.
   - Question banks and test definitions stored in subject-oriented collections.
@@ -185,16 +175,23 @@ Latency isn’t an afterthought here—it is a **core design constraint**. APMas
     - Optional **SSE hooks** so any batchable process can stream structured progress events.
 
 - **Cold start and connection strategy**
-  - `server/db.ts`, `server/db-health-monitor.ts`, and `server/db-retry-handler.ts` work together to:
-    - **Reuse Firestore connections** across requests in the Express process.
-    - Proactively detect and recover from stale or failed connections.
+  - `server/db.ts` and `server/db-retry-handler.ts` work together to:
+    - **Reuse Firestore connections** across invocations on a warm serverless instance (module-scoped Admin SDK singletons).
+    - Wrap database operations in **retry-with-backoff** so transient failures don't surface to the user.
     - Keep the **Firestore “pipes” warm**, so when Gemini finishes a batch and we persist results, we’re not paying additional cold-start penalties.
   - This connection reuse also indirectly helps **Gemini flows**: the less time we spend reconciling DB connections, the more of our latency budget can be dedicated to **model inference and streaming tokens**.
 
 - **Cache-First Architecture & Cost Avoidance**
   - We utilize React Query + Contexts to aggressively pre-fetch and cache per-user state (progress, bookmarks, question metadata) locally.
   - **How it saves AI costs:** By ensuring the client and backend already hold the necessary instructional context via low-cost Firestore reads, we eliminate redundant LLM calls. The AI is only triggered for net-new generative tasks, rather than re-evaluating existing state.
-  - **Scalability impact:** This strict caching layer acts as a firewall against unnecessary API token consumption. It decouples user growth from our AI billing curve, ensuring the system remains financially sustainable and permanently free for students at any scale.
+  - **Why it matters:** caching per-user state in low-cost Firestore reads keeps redundant LLM calls — the dominant cost — off the hot path, which is what makes a free tier sustainable as usage grows.
+
+- **Read-Path Latency: Dashboard Composition**
+  - The dashboard is the highest-traffic authenticated view, so its data path is **composed into a single warm round-trip** instead of a fan-out of per-card requests. `GET /api/user/subjects?includeTestHistory=1` returns each subject with its **embedded unit-progress** alongside a **per-subject test-history map**; the `fullLengthTests`, `diagnosticTests`, and `unitQuizResults` subcollections are read **concurrently** (`Promise.all`) and projected to only the fields the dashboard needs (Firestore `.select(...)`). History is resolved for **active subjects only** — archived courses render as a name-only list and never trigger reads.
+  - **Identity resolution is cached.** Token verification, the ban check, and the Firebase-UID → internal-user lookup sit on every authenticated request. The ban check and user lookup run **concurrently**, and the stable UID → userId mapping is **memoized in warm-instance memory**, so repeat requests skip the Firestore hop entirely.
+  - **Stale-while-revalidate on the client.** React Query holds dashboard state with a short `staleTime` and `keepPreviousData`, so in-app navigation paints **instantly from cache** while any refresh happens in the background. Freshness is guaranteed by **prefix invalidation**: mutating flows (adding a course, completing a quiz or diagnostic) invalidate the `["subjects"]` query key, forcing a fresh read on the next view.
+  - **Static config is cached at the edge.** Read-only configuration such as per-unit difficulty is served with long-lived `Cache-Control` (`max-age` / `s-maxage` + `stale-while-revalidate`), so repeated reads resolve from the browser/CDN rather than re-invoking the function on every visit.
+  - **Profile sync is idempotent per session.** Auth-state restoration syncs the user profile **once per session per UID** (covering first sign-in and attribution), rather than issuing an awaited write on every navigation.
 
 ---
 
@@ -221,21 +218,21 @@ Together, these flows show how to wire **end-to-end AI features** (from UX to LL
 
 ---
 
-### 8. Security & Production Readiness
+### 8. Security & Data Handling
 
-APMaster is designed with a **production-grade security posture** suitable for handling student data and AI credentials on the server side.
+APMaster handles student data and AI credentials behind a server-side trust boundary, with per-user access scoped by Firestore security rules.
 
 - **Secrets isolation**
-  - All **high-privilege credentials** (e.g. Firestore service accounts, AI API keys) are loaded **only in server runtimes** (Next.js API routes and the Express layer), never in the browser.
+  - All **high-privilege credentials** (e.g. Firestore service accounts, AI API keys) are loaded **only in server runtimes** (Next.js API routes / the `server/**` layer), never in the browser.
   - The client receives **scoped, least-privilege Firebase configuration**, while write paths that touch AI and PII are mediated by backend services.
 
-- **Data segmentation & PII handling**
-  - Per-user state is **partitioned by user** in Firestore, with security rules that scope access to the authenticated user’s documents.
-  - PII and performance data are modeled so that **AI pipelines operate on opaque IDs and derived features** wherever possible, not raw identifiers.
+- **Data segmentation**
+  - Per-user state is **partitioned by user** in Firestore, with security rules that scope access to the authenticated user's own documents (`request.auth.uid == userId`).
+  - Shared content (courses, question banks) is **client-readable but client-immutable** — writes are allowed only through the Admin SDK on the server.
 
-- **Defense-in-depth**
-  - Firestore and Storage security rules enforce **role-aware access** (student vs. admin) and tight scoping of read/write operations.
-  - Server-side enforcement layers validate payloads, rate-limit sensitive operations, and centralize AI key usage behind narrow interfaces.
+- **Server-side enforcement**
+  - Firestore and Storage rules scope read/write access per user, and admin-only mutations are gated **server-side** rather than by client flags (see `SECURITY_AUDIT.md`).
+  - API handlers validate payloads with **Zod**, and AI keys stay behind server-only modules; upstream Gemini rate limits are absorbed with **retry-and-backoff** so transient quota errors don't surface to users.
 
 - **Operational rigor**
   - A dedicated `SECURITY_AUDIT.md` documents threat models, how secrets are stored, and what classes of logs are retained or deliberately dropped.
@@ -250,4 +247,4 @@ APMaster is designed with a **production-grade security posture** suitable for h
 - **Pluggable model backends**, allowing us to swap Gemini for other providers with the same batching/streaming guarantees.
 - **Teacher-facing tooling**: class dashboards, assignment flows, and shared test libraries.
 
-APMaster demonstrates how applying rigorous algorithmic principles—like concurrency control, stream processing, and cache-first state management—can transform a standard AI wrapper into a fast, cost-efficient, production-ready system.
+APMaster shows how a few systems principles — concurrency control, streaming for low time-to-first-token, and cache-first state management — turn a thin AI wrapper into a responsive, cost-efficient product.

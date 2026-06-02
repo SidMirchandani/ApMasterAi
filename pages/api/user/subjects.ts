@@ -120,8 +120,13 @@ async function getFastPathTestHistory(subject: UserSubject) {
 async function getTestHistoryBySubject(
   subjects: UserSubject[],
 ) {
+  // The dashboard only renders projections for active subjects; archived ones
+  // show as a name-only list. Skip the per-subject history reads for them.
+  const activeSubjects = subjects.filter(
+    (subject) => !(subject as { archived?: boolean }).archived,
+  );
   const entries = await Promise.all(
-    subjects.map(async (subject) => [
+    activeSubjects.map(async (subject) => [
       subject.subjectId,
       await getFastPathTestHistory(subject),
     ] as const),
@@ -141,10 +146,20 @@ function logDashboardSubjectsTiming(
   console.info(`[subjects API][dashboard] ${label} ${details}`);
 }
 
+// A Firebase UID maps to a stable internal userId, so cache the mapping in
+// warm-instance memory to skip the Firestore user lookup on repeat requests.
+const userIdCache = new Map<string, { userId: string; expiry: number }>();
+const USER_ID_CACHE_TTL_MS = 5 * 60 * 1000;
+
 async function getOrCreateUser(
   firebaseUid: string,
   req: NextApiRequest,
 ): Promise<string> {
+  const cached = userIdCache.get(firebaseUid);
+  if (cached && cached.expiry > Date.now()) {
+    return cached.userId;
+  }
+
   try {
     let user = await storage.getUserByFirebaseUid(firebaseUid);
 
@@ -157,6 +172,10 @@ async function getOrCreateUser(
       );
     }
 
+    userIdCache.set(firebaseUid, {
+      userId: user.id,
+      expiry: Date.now() + USER_ID_CACHE_TTL_MS,
+    });
     return user.id;
   } catch (error) {
     console.error("[subjects API] Error in getOrCreateUser:", error);
@@ -191,12 +210,16 @@ export default async function handler(
     });
   }
 
-  if (!(await assertNotBanned(res, decodedToken.uid))) return;
-
   const firebaseUid = decodedToken.uid;
 
   try {
-    const userId = await getOrCreateUser(firebaseUid, req);
+    // Ban check and user lookup both only need the uid — run them concurrently
+    // instead of paying two sequential Firestore round-trips on every request.
+    const [notBanned, userId] = await Promise.all([
+      assertNotBanned(res, firebaseUid),
+      getOrCreateUser(firebaseUid, req),
+    ]);
+    if (!notBanned) return;
 
     switch (method) {
       case "GET": {
@@ -286,6 +309,10 @@ export default async function handler(
     }
   } catch (error) {
     console.error(`[subjects API][${req.method}] Unhandled error:`, error);
+
+    // The parallel ban check may have already sent a response (e.g. 403) before
+    // another task threw — avoid attempting to send headers twice.
+    if (res.headersSent) return;
 
     // Check if it's a database connection error
     const errorMessage = error instanceof Error ? error.message : String(error);

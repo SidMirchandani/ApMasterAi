@@ -133,9 +133,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
               const authUser = convertFirebaseUser(firebaseUser);
               setUser(authUser);
               setError(null);
-              // Save user profile when they log in (Google, email, etc.)
+              // Sync the profile once per session per uid (covers first sign-in
+              // and attribution settling). Doing it on every auth-state event
+              // meant an awaited write on each load/navigation; gate it so
+              // routine session restores don't block on a redundant round-trip.
               if (firebaseUser && firebaseUser.email) {
-                await saveUserProfile(firebaseUser);
+                const syncKey = `profileSynced:${firebaseUser.uid}`;
+                const alreadySynced =
+                  typeof window !== "undefined" &&
+                  window.sessionStorage.getItem(syncKey);
+                if (!alreadySynced) {
+                  await saveUserProfile(firebaseUser);
+                  try {
+                    window.sessionStorage.setItem(syncKey, "1");
+                  } catch {
+                    /* sessionStorage unavailable (e.g. private mode) — best effort */
+                  }
+                }
               }
             } catch (error) {
               console.error("Error processing auth state change:", error);

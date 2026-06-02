@@ -17,7 +17,7 @@ import Navigation from "@/components/ui/navigation";
 import { ApMasterLogoMark } from "@/components/ui/ap-master-logo-mark";
 import SimpleFooter from "@/components/sections/simple-footer";
 import { useAuth } from "@/contexts/auth-context";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { formatDate } from "@/lib/date";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -144,7 +144,12 @@ export default function Dashboard({
         : json;
     },
     enabled: isAuthenticated,
-    staleTime: 0,
+    // Cache briefly so in-app navigation back to the dashboard renders instantly
+    // from cache instead of re-running the test-history aggregation every time.
+    // Mutating flows (add subject, quiz/diagnostic completion) invalidate the
+    // ["subjects"] prefix, so any real change still forces a fresh fetch.
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
     retry: 2,
   });
