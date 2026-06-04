@@ -117,8 +117,10 @@ export default function Dashboard({
     staleTime: 5 * 60 * 1000,
   });
   const isAdmin = adminCheck?.data?.isAdmin ?? false;
+  // Fast Path is an experimental feature for the logged-in admin only.
+  // Never surface it when viewing another user's page — they haven't opted in.
   const showAdminFeatures =
-    isAdminReadOnly || (isAdmin && (adminCheck?.data?.experimentalFeaturesEnabled ?? false));
+    !isAdminReadOnly && isAdmin && (adminCheck?.data?.experimentalFeaturesEnabled ?? false);
 
   const {
     data: subjectsResponse,
